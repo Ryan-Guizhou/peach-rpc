@@ -1,0 +1,11 @@
+peach:
+  rpc:
+    registry:
+      type: memory
+    server:
+      enabled: true
+      host: 127.0.0.1
+      port: 19090
+    client:
+      enabled: true
+      timeout: 3s
