@@ -18,6 +18,7 @@ FORBIDDEN_CORE_IMPORTS = (
 )
 EXPECTED_MODULES = (
     "peach-rpc-core",
+    "peach-rpc-codegen",
     "peach-rpc-codec-fory",
     "peach-rpc-transport-vertx",
     "peach-rpc-registry-etcd",

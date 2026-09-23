@@ -87,6 +87,7 @@ public class PeachRpcProperties {
         }
         private String type = "memory";
         private String endpoints = "http://127.0.0.1:2379";
+        private String namespace = "default";
         private long leaseTtlSeconds = 30;
 
         /**
@@ -108,21 +109,39 @@ public class PeachRpcProperties {
         }
 
         /**
-         * 返回Etcd 节点地址，多个地址使用逗号分隔。
+         * 返回注册中心节点地址，多个地址使用逗号分隔。
          *
-         * @return Etcd 节点地址，多个地址使用逗号分隔
+         * @return 注册中心节点地址，多个地址使用逗号分隔
          */
         public String getEndpoints() {
             return endpoints;
         }
 
         /**
-         * 设置Etcd 节点地址，多个地址使用逗号分隔。
+         * 设置注册中心节点地址，多个地址使用逗号分隔。
          *
          * @param endpoints Etcd 节点地址，多个地址使用逗号分隔
          */
         public void setEndpoints(String endpoints) {
             this.endpoints = endpoints;
+        }
+
+        /**
+         * 返回注册中心逻辑命名空间。
+         *
+         * @return 注册中心逻辑命名空间
+         */
+        public String getNamespace() {
+            return namespace;
+        }
+
+        /**
+         * 设置注册中心逻辑命名空间。
+         *
+         * @param namespace 注册中心逻辑命名空间
+         */
+        public void setNamespace(String namespace) {
+            this.namespace = namespace;
         }
 
         /**

@@ -11,7 +11,11 @@ public enum RpcMessageType {
     /** 连接级心跳响应。 */
     PONG((byte) 4),
     /** 服务端排空或连接关闭通知。 */
-    GO_AWAY((byte) 5);
+    GO_AWAY((byte) 5),
+    /** 连接能力声明。 */
+    HELLO((byte) 6),
+    /** 连接能力协商响应。 */
+    HELLO_ACK((byte) 7);
 
     private final byte code;
 

@@ -1,8 +1,11 @@
 package io.peach.rpc.examples;
 
+import io.peach.rpc.api.PeachRpcContract;
+
 /**
  * 示例问候服务。
  */
+@PeachRpcContract
 public interface GreetingService {
 
     /**

@@ -5,16 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.codec.RpcCodec;
 import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryListener;
-import io.peach.rpc.registry.RegistrySnapshot;
-import io.peach.rpc.registry.RegistrySubscription;
+import io.peach.rpc.registry.ServiceRegistrar;
 import io.peach.rpc.transport.RpcRequestHandler;
 import io.peach.rpc.transport.RpcTransportServer;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -29,7 +24,7 @@ public class PeachRpcServerStartTest {
         TestTransportServer transport = new TestTransportServer();
         RpcCodec codec = new NoopCodec();
         PeachRpcServer server = PeachRpcServer.builder()
-                .registry(registry)
+                .serviceRegistrar(registry)
                 .transportServer(transport)
                 .codecRegistry(RpcCodecRegistry.of(codec))
                 .bindEndpoint(new RpcEndpoint("127.0.0.1", 19090))
@@ -87,7 +82,7 @@ public class PeachRpcServerStartTest {
         }
     }
 
-    private static final class FailingRegistry implements Registry {
+    private static final class FailingRegistry implements ServiceRegistrar {
         private final AtomicInteger registerCount = new AtomicInteger();
         private final AtomicInteger unregisterCount = new AtomicInteger();
 
@@ -106,19 +101,6 @@ public class PeachRpcServerStartTest {
             return CompletableFuture.completedFuture(null);
         }
 
-        @Override
-        public CompletionStage<RegistrySnapshot> lookup(ServiceKey key) {
-            return CompletableFuture.completedFuture(new RegistrySnapshot(List.of(), 0));
-        }
-
-        @Override
-        public RegistrySubscription subscribe(ServiceKey key, RegistryListener listener) {
-            return () -> { };
-        }
-
-        @Override
-        public void close() {
-        }
     }
 
     private static final class TestTransportServer implements RpcTransportServer {
