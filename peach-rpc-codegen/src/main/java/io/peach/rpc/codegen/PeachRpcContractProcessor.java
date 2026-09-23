@@ -80,29 +80,26 @@ public final class PeachRpcContractProcessor extends AbstractProcessor {
                 .getQualifiedName()
                 .toString();
         String serviceName = service.getSimpleName().toString();
-        String factoryName = serviceName + "PeachRpcClientFactory";
-        String qualifiedFactory = packageName.isEmpty()
-                ? factoryName
-                : packageName + '.' + factoryName;
-
-        try {
-            JavaFileObject source = processingEnv.getFiler()
-                    .createSourceFile(qualifiedFactory, service);
-            try (Writer writer = source.openWriter()) {
-                writer.write(generate(
+        String clientFactoryName = serviceName + "PeachRpcClientFactory";
+        String serverFactoryName = serviceName + "PeachRpcServerFactory";
+        writeSource(
+                packageName,
+                clientFactoryName,
+                service,
+                generateClient(
                         packageName,
                         service,
-                        factoryName,
+                        clientFactoryName,
                         methods));
-            }
-        } catch (FilerException ignored) {
-            // 同一轮增量编译可能已经生成目标文件。
-        } catch (IOException error) {
-            processingEnv.getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Failed to generate Peach RPC client stub: " + error.getMessage(),
-                    service);
-        }
+        writeSource(
+                packageName,
+                serverFactoryName,
+                service,
+                generateServer(
+                        packageName,
+                        service,
+                        serverFactoryName,
+                        methods));
     }
 
     private List<ExecutableElement> collectMethods(TypeElement service) {
@@ -137,7 +134,31 @@ public final class PeachRpcContractProcessor extends AbstractProcessor {
         return methods;
     }
 
-    private String generate(
+    private void writeSource(
+            String packageName,
+            String simpleName,
+            TypeElement service,
+            String content) {
+        String qualifiedName = packageName.isEmpty()
+                ? simpleName
+                : packageName + '.' + simpleName;
+        try {
+            JavaFileObject source = processingEnv.getFiler()
+                    .createSourceFile(qualifiedName, service);
+            try (Writer writer = source.openWriter()) {
+                writer.write(content);
+            }
+        } catch (FilerException ignored) {
+            // 同一轮增量编译可能已经生成目标文件。
+        } catch (IOException error) {
+            processingEnv.getMessager().printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Failed to generate Peach RPC source: " + error.getMessage(),
+                    service);
+        }
+    }
+
+    private String generateClient(
             String packageName,
             TypeElement service,
             String factoryName,
@@ -231,53 +252,168 @@ public final class PeachRpcContractProcessor extends AbstractProcessor {
                     .append(' ')
                     .append(parameter.getSimpleName());
         }
-        source.append(") {\n")
-                .append("            Object[] arguments = new Object[] {");
-        for (int i = 0; i < method.getParameters().size(); i++) {
-            if (i > 0) {
-                source.append(", ");
-            }
-            source.append(method.getParameters().get(i).getSimpleName());
-        }
-        source.append("};\n");
+        source.append(") {\n");
 
+        String invocation = invocationCall(method, index);
         TypeMirror returnType = method.getReturnType();
         String erasedReturn = processingEnv.getTypeUtils()
                 .erasure(returnType)
                 .toString();
         if (returnType.getKind() == TypeKind.VOID) {
-            source.append("            invocation.invoke(METHOD_")
-                    .append(index)
-                    .append(", arguments).toCompletableFuture().join();\n")
+            source.append("            ")
+                    .append(invocation)
+                    .append(".toCompletableFuture().join();\n")
                     .append("        }\n\n");
             return;
         }
         if ("java.util.concurrent.CompletionStage".equals(erasedReturn)) {
             source.append("            return (")
                     .append(returnType)
-                    .append(") (java.util.concurrent.CompletionStage<?>) invocation.invoke(METHOD_")
-                    .append(index)
-                    .append(", arguments);\n")
+                    .append(") (java.util.concurrent.CompletionStage<?>) ")
+                    .append(invocation)
+                    .append(";\n")
                     .append("        }\n\n");
             return;
         }
         if ("java.util.concurrent.CompletableFuture".equals(erasedReturn)) {
             source.append("            return (")
                     .append(returnType)
-                    .append(") (java.util.concurrent.CompletableFuture<?>) invocation.invoke(METHOD_")
-                    .append(index)
-                    .append(", arguments).toCompletableFuture();\n")
+                    .append(") (java.util.concurrent.CompletableFuture<?>) ")
+                    .append(invocation)
+                    .append(".toCompletableFuture();\n")
                     .append("        }\n\n");
             return;
         }
 
-        source.append("            Object result = invocation.invoke(METHOD_")
-                .append(index)
-                .append(", arguments).toCompletableFuture().join();\n")
+        source.append("            Object result = ")
+                .append(invocation)
+                .append(".toCompletableFuture().join();\n")
                 .append("            return ")
                 .append(castExpression(returnType, "result"))
                 .append(";\n")
                 .append("        }\n\n");
+    }
+
+    private String invocationCall(
+            ExecutableElement method,
+            int index) {
+        int count = method.getParameters().size();
+        StringBuilder call = new StringBuilder("invocation.invoke");
+        call.append(count <= 4 ? Integer.toString(count) : "N")
+                .append("(METHOD_")
+                .append(index);
+        if (count <= 4) {
+            for (VariableElement parameter : method.getParameters()) {
+                call.append(", ").append(parameter.getSimpleName());
+            }
+        } else {
+            call.append(", new Object[] {");
+            for (int i = 0; i < count; i++) {
+                if (i > 0) {
+                    call.append(", ");
+                }
+                call.append(method.getParameters().get(i).getSimpleName());
+            }
+            call.append('}');
+        }
+        return call.append(')').toString();
+    }
+
+    private String generateServer(
+            String packageName,
+            TypeElement service,
+            String factoryName,
+            List<ExecutableElement> methods) {
+        String serviceType = service.getQualifiedName().toString();
+        StringBuilder source = new StringBuilder();
+        if (!packageName.isEmpty()) {
+            source.append("package ").append(packageName).append(";\n\n");
+        }
+        source.append("/** ").append(service.getSimpleName())
+                .append(" 的 Peach RPC 编译期 Provider Dispatcher 工厂。 */\n")
+                .append("@").append(Generated.class.getName())
+                .append("(\"").append(getClass().getName()).append("\")\n")
+                .append("public final class ").append(factoryName)
+                .append(" implements io.peach.rpc.generated.RpcGeneratedServerFactory<")
+                .append(serviceType).append("> {\n\n")
+                .append("    /** 创建生成式 Provider Dispatcher 工厂。 */\n")
+                .append("    public ").append(factoryName).append("() {\n")
+                .append("    }\n\n");
+
+        for (int index = 0; index < methods.size(); index++) {
+            source.append("    private static final int METHOD_")
+                    .append(index)
+                    .append(" = ")
+                    .append(methodId(methods.get(index)))
+                    .append(";\n");
+        }
+        if (!methods.isEmpty()) {
+            source.append('\n');
+        }
+
+        source.append("    @Override\n")
+                .append("    public Class<").append(serviceType)
+                .append("> serviceType() {\n")
+                .append("        return ").append(serviceType).append(".class;\n")
+                .append("    }\n\n")
+                .append("    @Override\n")
+                .append("    public io.peach.rpc.generated.RpcGeneratedServerDispatcher create(")
+                .append(serviceType)
+                .append(" target) {\n")
+                .append("        java.util.Objects.requireNonNull(target, \"target\");\n")
+                .append("        return (methodId, arguments) -> switch (methodId) {\n");
+
+        for (int index = 0; index < methods.size(); index++) {
+            appendServerCase(source, methods.get(index), index);
+        }
+
+        source.append("            default -> throw new NoSuchMethodException(")
+                .append("\"Unknown method id: \" + methodId);\n")
+                .append("        };\n")
+                .append("    }\n")
+                .append("}\n");
+        return source.toString();
+    }
+
+    private void appendServerCase(
+            StringBuilder source,
+            ExecutableElement method,
+            int index) {
+        source.append("            case METHOD_")
+                .append(index)
+                .append(" -> ");
+        if (method.getReturnType().getKind() == TypeKind.VOID) {
+            source.append("{\n")
+                    .append("                target.")
+                    .append(method.getSimpleName())
+                    .append('(');
+            appendServerArguments(source, method);
+            source.append(");\n")
+                    .append("                yield null;\n")
+                    .append("            }\n");
+            return;
+        }
+        source.append("target.")
+                .append(method.getSimpleName())
+                .append('(');
+        appendServerArguments(source, method);
+        source.append(");\n");
+    }
+
+    private void appendServerArguments(
+            StringBuilder source,
+            ExecutableElement method) {
+        for (int i = 0; i < method.getParameters().size(); i++) {
+            if (i > 0) {
+                source.append(", ");
+            }
+            TypeMirror type = method.getParameters().get(i).asType();
+            source.append('(')
+                    .append(type)
+                    .append(") arguments[")
+                    .append(i)
+                    .append(']');
+        }
     }
 
     private String castExpression(TypeMirror type, String value) {

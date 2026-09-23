@@ -178,6 +178,8 @@ public class PeachRpcProperties {
         private int maxFrameBytes = 16 * 1024 * 1024;
         private int maxWriteQueueBytes = 4 * 1024 * 1024;
         private Duration connectTimeout = Duration.ofSeconds(3);
+        private Duration handshakeTimeout = Duration.ofSeconds(3);
+        private int connectionsPerEndpoint = 1;
 
         /**
          * 返回Transport SPI 名称。
@@ -249,6 +251,42 @@ public class PeachRpcProperties {
          */
         public void setMaxWriteQueueBytes(int maxWriteQueueBytes) {
             this.maxWriteQueueBytes = maxWriteQueueBytes;
+        }
+
+        /**
+         * 返回协议握手超时时间。
+         *
+         * @return 协议握手超时时间
+         */
+        public Duration getHandshakeTimeout() {
+            return handshakeTimeout;
+        }
+
+        /**
+         * 设置协议握手超时时间。
+         *
+         * @param handshakeTimeout 协议握手超时时间
+         */
+        public void setHandshakeTimeout(Duration handshakeTimeout) {
+            this.handshakeTimeout = handshakeTimeout;
+        }
+
+        /**
+         * 返回每个服务端点的连接分片数。
+         *
+         * @return 每个服务端点的连接分片数
+         */
+        public int getConnectionsPerEndpoint() {
+            return connectionsPerEndpoint;
+        }
+
+        /**
+         * 设置每个服务端点的连接分片数。
+         *
+         * @param connectionsPerEndpoint 每个服务端点的连接分片数
+         */
+        public void setConnectionsPerEndpoint(int connectionsPerEndpoint) {
+            this.connectionsPerEndpoint = connectionsPerEndpoint;
         }
 
         /**

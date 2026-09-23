@@ -30,6 +30,23 @@ class FrameAccumulatorTest {
         assertArrayEquals(second, decoded.get(1));
     }
 
+    @Test
+    void shouldRemainWritableAfterExactlyConsumedFrame() {
+        byte[] first = frame(11L, new byte[] {1, 2});
+        byte[] second = frame(12L, new byte[] {3, 4});
+        int maxFrameBytes = Math.max(first.length, second.length);
+        FrameAccumulator accumulator =
+                new FrameAccumulator(maxFrameBytes);
+        List<byte[]> decoded = new ArrayList<>();
+
+        accumulator.accept(Buffer.buffer(first), decoded::add);
+        accumulator.accept(Buffer.buffer(second), decoded::add);
+
+        assertEquals(2, decoded.size());
+        assertArrayEquals(first, decoded.get(0));
+        assertArrayEquals(second, decoded.get(1));
+    }
+
     private static byte[] frame(long requestId, byte[] payload) {
         return RpcProtocolCodec.encode(new RpcFrame(
                 RpcMessageType.RESPONSE,

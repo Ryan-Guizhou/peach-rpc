@@ -39,6 +39,53 @@ class RpcProtocolCodecTest {
         assertArrayEquals(input.payload(), decoded.payload());
     }
 
+
+    @Test
+    void shouldEncodeUnaryRequestWithoutGenericMetadataObjects() {
+        long deadline = 2_000_000_000_123L;
+        byte[] payload = new byte[] {4, 5, 6};
+
+        byte[] encoded = RpcProtocolCodec.encodeRequest(
+                (byte) 1,
+                11,
+                22,
+                deadline,
+                payload);
+        RpcFrameView view = RpcProtocolCodec.view(encoded);
+
+        assertEquals(RpcMessageType.REQUEST, view.messageType());
+        assertEquals(RpcStatus.OK, view.status());
+        assertEquals(0L, view.requestId());
+        assertEquals(11, view.serviceId());
+        assertEquals(22, view.methodId());
+        assertEquals(deadline, view.deadlineEpochMillis());
+        assertArrayEquals(payload, view.payloadCopy());
+
+        RpcProtocolCodec.writeRequestId(encoded, 99L);
+        assertEquals(99L, RpcProtocolCodec.view(encoded).requestId());
+    }
+
+    @Test
+    void shouldEncodeUnaryResponseWithoutMetadata() {
+        byte[] payload = new byte[] {7, 8};
+
+        byte[] encoded = RpcProtocolCodec.encodeResponse(
+                (byte) 1,
+                RpcStatus.OK,
+                88L,
+                12,
+                23,
+                payload);
+        RpcFrame decoded = RpcProtocolCodec.decode(encoded);
+
+        assertEquals(RpcMessageType.RESPONSE, decoded.messageType());
+        assertEquals(88L, decoded.requestId());
+        assertEquals(12, decoded.serviceId());
+        assertEquals(23, decoded.methodId());
+        assertEquals(Map.of(), decoded.metadata());
+        assertArrayEquals(payload, decoded.payload());
+    }
+
     @Test
     void shouldRejectBrokenMagic() {
         byte[] frame = RpcProtocolCodec.encode(new RpcFrame(

@@ -5,6 +5,8 @@ import io.peach.rpc.api.RpcMethodDescriptor;
 import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.codec.RpcCodecRegistry;
 import io.peach.rpc.codec.RpcMethodCodec;
+import io.peach.rpc.generated.RpcGeneratedServerDispatcher;
+import io.peach.rpc.generated.RpcGeneratedServers;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
@@ -14,60 +16,97 @@ import java.util.Map;
 /** Provider 启动阶段预解析的服务分派表。 */
 final class ServiceBinding {
     private final Map<Integer, Invoker> methods;
+    private final RpcGeneratedServerDispatcher generatedDispatcher;
 
     ServiceBinding(
             ServiceKey serviceKey,
             Class<?> api,
             Object target,
             RpcCodecRegistry codecs) {
+        this.generatedDispatcher = RpcGeneratedServers
+                .create(api, target)
+                .orElse(null);
+
         Map<Integer, Invoker> resolved = new HashMap<>();
         for (Method method : api.getMethods()) {
             try {
                 int methodId = RpcIds.methodId(method);
-                Method implementation = target.getClass()
-                        .getMethod(method.getName(), method.getParameterTypes());
-                MethodHandle handle = MethodHandles.publicLookup()
-                        .unreflect(implementation)
-                        .bindTo(target);
-                RpcMethodDescriptor descriptor = RpcMethodDescriptor.from(serviceKey, method);
+                MethodHandle handle = generatedDispatcher == null
+                        ? resolveHandle(target, method)
+                        : null;
+                RpcMethodDescriptor descriptor =
+                        RpcMethodDescriptor.from(serviceKey, method);
                 Map<Byte, RpcMethodCodec> methodCodecs = new HashMap<>();
                 for (byte codecId : codecs.supportedCodecIds()) {
-                    methodCodecs.put(codecId, codecs.bind(descriptor, codecId));
+                    methodCodecs.put(
+                            codecId,
+                            codecs.bind(descriptor, codecId));
                 }
                 Invoker previous = resolved.putIfAbsent(
                         methodId,
-                        new Invoker(handle, Map.copyOf(methodCodecs)));
+                        new Invoker(
+                                handle,
+                                Map.copyOf(methodCodecs)));
                 if (previous != null) {
                     throw new IllegalStateException(
-                            "Method id collision in " + api.getName() + ": " + methodId);
+                            "Method id collision in "
+                                    + api.getName()
+                                    + ": "
+                                    + methodId);
                 }
             } catch (ReflectiveOperationException error) {
                 throw new IllegalArgumentException(
-                        "Service implementation does not implement " + method, error);
+                        "Service implementation does not implement "
+                                + method,
+                        error);
             }
         }
         this.methods = Map.copyOf(resolved);
     }
 
-    RpcMethodCodec codec(int methodId, byte codecId) throws NoSuchMethodException {
+    RpcMethodCodec codec(
+            int methodId,
+            byte codecId) throws NoSuchMethodException {
         Invoker invoker = require(methodId);
         RpcMethodCodec codec = invoker.codecs().get(codecId);
         if (codec == null) {
             throw new IllegalArgumentException(
-                    "Unsupported codec " + Byte.toUnsignedInt(codecId)
-                            + " for method " + methodId);
+                    "Unsupported codec "
+                            + Byte.toUnsignedInt(codecId)
+                            + " for method "
+                            + methodId);
         }
         return codec;
     }
 
-    Object invoke(int methodId, Object[] arguments) throws Throwable {
-        return require(methodId).handle().invokeWithArguments(arguments);
+    Object invoke(
+            int methodId,
+            Object[] arguments) throws Throwable {
+        Invoker invoker = require(methodId);
+        if (generatedDispatcher != null) {
+            return generatedDispatcher.invoke(methodId, arguments);
+        }
+        return invoker.handle().invokeWithArguments(arguments);
     }
 
-    private Invoker require(int methodId) throws NoSuchMethodException {
+    private static MethodHandle resolveHandle(
+            Object target,
+            Method method) throws ReflectiveOperationException {
+        Method implementation = target.getClass()
+                .getMethod(
+                        method.getName(),
+                        method.getParameterTypes());
+        return MethodHandles.publicLookup()
+                .unreflect(implementation)
+                .bindTo(target);
+    }
+
+    private Invoker require(
+            int methodId) throws NoSuchMethodException {
         Invoker invoker = methods.get(methodId);
         if (invoker == null) {
-            throw new NoSuchMethodException("Unknown method id: " + methodId);
+            throw new NoSuchMethodException(
+                    "Unknown method id: " + methodId);
         }
         return invoker;
     }

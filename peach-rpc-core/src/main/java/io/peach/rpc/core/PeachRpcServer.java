@@ -11,7 +11,7 @@ import io.peach.rpc.codec.RpcCodecRegistry;
 import io.peach.rpc.codec.RpcMethodCodec;
 import io.peach.rpc.codec.RpcCodecIds;
 import io.peach.rpc.protocol.RpcErrorCodec;
-import io.peach.rpc.protocol.RpcFrame;
+import io.peach.rpc.protocol.RpcFrameView;
 import io.peach.rpc.protocol.RpcMessageType;
 import io.peach.rpc.protocol.RpcProtocolCodec;
 import io.peach.rpc.protocol.RpcProtocolException;
@@ -202,9 +202,9 @@ public final class PeachRpcServer implements AutoCloseable {
     private CompletionStage<byte[]> handle(
             RpcEndpoint remote,
             byte[] rawFrame) {
-        RpcFrame request;
+        RpcFrameView request;
         try {
-            request = RpcProtocolCodec.decode(rawFrame);
+            request = RpcProtocolCodec.view(rawFrame);
         } catch (RuntimeException error) {
             return CompletableFuture.failedFuture(error);
         }
@@ -223,8 +223,8 @@ public final class PeachRpcServer implements AutoCloseable {
 
         long deadline;
         try {
-            deadline = parseDeadline(request);
-        } catch (NumberFormatException error) {
+            deadline = request.deadlineEpochMillis();
+        } catch (RpcProtocolException error) {
             return CompletableFuture.completedFuture(
                     frameworkError(
                             request,
@@ -286,13 +286,15 @@ public final class PeachRpcServer implements AutoCloseable {
     }
 
     private void execute(
-            RpcFrame request,
+            RpcFrameView request,
             ServiceBinding binding,
             RpcMethodCodec methodCodec,
             CompletableFuture<byte[]> result) {
         try {
-            Object[] arguments =
-                    methodCodec.decodeArguments(request.payload());
+            Object[] arguments = methodCodec.decodeArguments(
+                    request.bytes(),
+                    request.payloadOffset(),
+                    request.payloadLength());
             Object value = binding.invoke(
                     request.methodId(),
                     arguments);
@@ -322,7 +324,7 @@ public final class PeachRpcServer implements AutoCloseable {
     }
 
     private static byte[] frameworkError(
-            RpcFrame request,
+            RpcFrameView request,
             RpcStatus status,
             String message) {
         return errorResponse(
@@ -333,7 +335,7 @@ public final class PeachRpcServer implements AutoCloseable {
     }
 
     private static byte[] errorResponse(
-            RpcFrame request,
+            RpcFrameView request,
             RpcStatus status,
             String errorType,
             String message) {
@@ -345,24 +347,17 @@ public final class PeachRpcServer implements AutoCloseable {
     }
 
     private static byte[] response(
-            RpcFrame request,
+            RpcFrameView request,
             byte codecId,
             RpcStatus status,
             byte[] payload) {
-        return RpcProtocolCodec.encode(new RpcFrame(
-                RpcMessageType.RESPONSE,
+        return RpcProtocolCodec.encodeResponse(
                 codecId,
                 status,
                 request.requestId(),
                 request.serviceId(),
                 request.methodId(),
-                Map.of(),
-                payload));
-    }
-
-    private static long parseDeadline(RpcFrame frame) {
-        String value = frame.metadata().get("deadlineEpochMillis");
-        return value == null ? 0 : Long.parseLong(value);
+                payload);
     }
 
     private static ServiceInstance runtimeInstance(

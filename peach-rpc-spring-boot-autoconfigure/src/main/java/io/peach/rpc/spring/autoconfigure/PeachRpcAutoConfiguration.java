@@ -88,17 +88,23 @@ public class PeachRpcAutoConfiguration {
      * 创建 Transport 运行参数。
      *
      * @param properties Peach RPC 配置
+     * @param codecRegistry Codec 注册表
      * @return Transport 运行参数
      */
     @Bean
     @ConditionalOnMissingBean
-    public RpcTransportOptions peachRpcTransportOptions(PeachRpcProperties properties) {
+    public RpcTransportOptions peachRpcTransportOptions(
+            PeachRpcProperties properties,
+            RpcCodecRegistry codecRegistry) {
         PeachRpcProperties.Transport transport = properties.getTransport();
         return new RpcTransportOptions(
                 transport.getMaxInflightPerConnection(),
                 transport.getMaxFrameBytes(),
                 transport.getMaxWriteQueueBytes(),
-                transport.getConnectTimeout());
+                transport.getConnectTimeout(),
+                transport.getHandshakeTimeout(),
+                codecRegistry.supportedCodecIds(),
+                transport.getConnectionsPerEndpoint());
     }
 
     /**

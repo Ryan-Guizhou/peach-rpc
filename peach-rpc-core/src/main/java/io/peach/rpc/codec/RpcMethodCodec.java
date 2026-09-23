@@ -11,6 +11,77 @@ public interface RpcMethodCodec {
     byte codecId();
 
     /**
+     * 编码零参数调用。
+     *
+     * @return 编码结果
+     */
+    default byte[] encode0() {
+        return encodeArguments(new Object[0]);
+    }
+
+    /**
+     * 编码单参数调用。
+     *
+     * @param argument0 参数 0
+     * @return 编码结果
+     */
+    default byte[] encode1(Object argument0) {
+        return encodeArguments(new Object[] {argument0});
+    }
+
+    /**
+     * 编码双参数调用。
+     *
+     * @param argument0 参数 0
+     * @param argument1 参数 1
+     * @return 编码结果
+     */
+    default byte[] encode2(Object argument0, Object argument1) {
+        return encodeArguments(new Object[] {argument0, argument1});
+    }
+
+    /**
+     * 编码三参数调用。
+     *
+     * @param argument0 参数 0
+     * @param argument1 参数 1
+     * @param argument2 参数 2
+     * @return 编码结果
+     */
+    default byte[] encode3(
+            Object argument0,
+            Object argument1,
+            Object argument2) {
+        return encodeArguments(new Object[] {
+                argument0,
+                argument1,
+                argument2
+        });
+    }
+
+    /**
+     * 编码四参数调用。
+     *
+     * @param argument0 参数 0
+     * @param argument1 参数 1
+     * @param argument2 参数 2
+     * @param argument3 参数 3
+     * @return 编码结果
+     */
+    default byte[] encode4(
+            Object argument0,
+            Object argument1,
+            Object argument2,
+            Object argument3) {
+        return encodeArguments(new Object[] {
+                argument0,
+                argument1,
+                argument2,
+                argument3
+        });
+    }
+
+    /**
      * 编码调用参数。
      *
      * @param arguments 参数
@@ -27,6 +98,27 @@ public interface RpcMethodCodec {
     Object[] decodeArguments(byte[] payload);
 
     /**
+     * 从完整帧的 Payload 区间解码调用参数。
+     *
+     * <p>默认实现为兼容旧 Codec 创建 Payload 副本；支持 buffer/slice
+     * 解码的 Codec 应覆盖该方法。
+     *
+     * @param frame 完整帧
+     * @param offset Payload offset
+     * @param length Payload length
+     * @return 参数
+     */
+    default Object[] decodeArguments(
+            byte[] frame,
+            int offset,
+            int length) {
+        return decodeArguments(java.util.Arrays.copyOfRange(
+                frame,
+                offset,
+                offset + length));
+    }
+
+    /**
      * 编码成功返回值。
      *
      * @param value 返回值
@@ -41,4 +133,22 @@ public interface RpcMethodCodec {
      * @return 返回值
      */
     Object decodeResult(byte[] payload);
+
+    /**
+     * 从完整帧的 Payload 区间解码成功返回值。
+     *
+     * @param frame 完整帧
+     * @param offset Payload offset
+     * @param length Payload length
+     * @return 返回值
+     */
+    default Object decodeResult(
+            byte[] frame,
+            int offset,
+            int length) {
+        return decodeResult(java.util.Arrays.copyOfRange(
+                frame,
+                offset,
+                offset + length));
+    }
 }

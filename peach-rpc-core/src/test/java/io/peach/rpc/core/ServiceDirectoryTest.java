@@ -1,6 +1,6 @@
 package io.peach.rpc.core;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.ServiceInstance;
@@ -30,7 +30,7 @@ class ServiceDirectoryTest {
             registry.publish(new RegistrySnapshot(List.of(newer), 20));
             registry.publish(new RegistrySnapshot(List.of(older), 19));
 
-            assertEquals(List.of(newer), directory.snapshot());
+            assertArrayEquals(new ServiceInstance[] {newer}, directory.snapshot());
         }
     }
 

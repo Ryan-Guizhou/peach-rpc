@@ -76,9 +76,7 @@ public interface OrderService {
 </plugin>
 ```
 
-编译器生成 `<Service>PeachRpcClientFactory`。Consumer `refer()` 会优先发现生成 Factory，找不到时再回退到配置的 `ProxyFactory`。
-
-当前 V2-A 只生成 Consumer Stub；Generated Server Dispatcher 属于 V2-B。
+编译器同时生成 `<Service>PeachRpcClientFactory` 与 `<Service>PeachRpcServerFactory`。Consumer `refer()` 优先使用 Generated Stub；Provider 注册服务时优先使用 Generated Dispatcher。缺失生成代码时分别回退到配置的 `ProxyFactory` 与 MethodHandle。
 
 ## 5. 主要配置
 
@@ -86,7 +84,9 @@ public interface OrderService {
 - `peach.rpc.registry.type`：`memory` 或 `etcd`，也可以是自定义 SPI 名称。
 - `peach.rpc.registry.namespace`：公共逻辑命名空间，默认 `default`；未来 Nacos/Kubernetes 等 Adapter 复用此语义。
 - `peach.rpc.transport.type`：默认 `vertx`。
-- `peach.rpc.client.proxy`：Generated Stub 缺失时的 fallback，默认 `jdk`。
+- `peach.rpc.transport.handshake-timeout`：协议握手超时，默认 3 秒。
+- `peach.rpc.transport.connections-per-endpoint`：每个服务端点连接分片数，默认 1。
+- `peach.rpc.client.proxy`：Generated Stub 缺失时的 fallback，默认 `jdk`；可显式选择 `cglib` 或可选 Byte Buddy 模块提供的 `bytebuddy`。
 - `peach.rpc.client.load-balancer`：默认 `p2c-ewma`。
 - `peach.rpc.server.max-concurrent`：Provider 最大并发业务执行数。
 - `peach.rpc.transport.max-inflight-per-connection`：单连接最大未完成请求数。
