@@ -10,11 +10,11 @@ import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.codec.RpcCodecRegistry;
 import io.peach.rpc.codec.RpcMethodCodec;
 import io.peach.rpc.generated.RpcGeneratedClients;
-import io.peach.rpc.loadbalance.LoadBalanceContext;
+import io.peach.rpc.generated.RpcGeneratedInvocation;
+import io.peach.rpc.loadbalance.LoadBalanceMetrics;
 import io.peach.rpc.loadbalance.LoadBalancer;
 import io.peach.rpc.protocol.RpcErrorCodec;
-import io.peach.rpc.protocol.RpcFrame;
-import io.peach.rpc.protocol.RpcMessageType;
+import io.peach.rpc.protocol.RpcFrameView;
 import io.peach.rpc.protocol.RpcProtocolCodec;
 import io.peach.rpc.proxy.ProxyFactory;
 import io.peach.rpc.registry.ServiceDiscovery;
@@ -23,14 +23,12 @@ import io.peach.rpc.transport.RpcTransportClient;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 /** Peach RPC Consumer 运行时。 */
 public final class PeachRpcClient implements AutoCloseable {
@@ -41,11 +39,24 @@ public final class PeachRpcClient implements AutoCloseable {
     private final LoadBalancer loadBalancer;
     private final ProxyFactory proxyFactory;
     private final Duration timeout;
-    private final AtomicLong requestIds = new AtomicLong();
     private final ConcurrentMap<ServiceKey, ServiceDirectory> directories =
             new ConcurrentHashMap<>();
     private final ConcurrentMap<RpcEndpoint, EndpointStats> stats =
             new ConcurrentHashMap<>();
+    private final LoadBalanceMetrics loadMetrics =
+            new LoadBalanceMetrics() {
+                @Override
+                public long ewmaLatencyNanos(
+                        ServiceInstance instance) {
+                    return endpointStats(instance).ewma();
+                }
+
+                @Override
+                public int inflight(
+                        ServiceInstance instance) {
+                    return endpointStats(instance).inflight();
+                }
+            };
 
     private PeachRpcClient(Builder builder) {
         this.discovery = Objects.requireNonNull(builder.discovery, "serviceDiscovery");
@@ -97,69 +108,124 @@ public final class PeachRpcClient implements AutoCloseable {
 
         return RpcGeneratedClients.find(api)
                 .map(factory -> factory.create(
-                        (methodId, arguments) -> invoke(
-                                reference,
-                                reference.require(methodId),
-                                arguments)))
+                        new GeneratedInvocation(reference)))
                 .orElseGet(() -> proxyFactory.create(
                         api,
-                        (method, arguments) -> invoke(
+                        (method, arguments) -> invokeN(
                                 reference,
                                 reference.require(method),
                                 arguments)));
     }
 
-    private CompletionStage<Object> invoke(
+    private CompletionStage<Object> invoke0(
+            ClientReference reference,
+            ClientMethodBinding method) {
+        return invokeEncoded(
+                reference,
+                method,
+                method.codec().encode0());
+    }
+
+    private CompletionStage<Object> invoke1(
+            ClientReference reference,
+            ClientMethodBinding method,
+            Object argument0) {
+        return invokeEncoded(
+                reference,
+                method,
+                method.codec().encode1(argument0));
+    }
+
+    private CompletionStage<Object> invoke2(
+            ClientReference reference,
+            ClientMethodBinding method,
+            Object argument0,
+            Object argument1) {
+        return invokeEncoded(
+                reference,
+                method,
+                method.codec().encode2(argument0, argument1));
+    }
+
+    private CompletionStage<Object> invoke3(
+            ClientReference reference,
+            ClientMethodBinding method,
+            Object argument0,
+            Object argument1,
+            Object argument2) {
+        return invokeEncoded(
+                reference,
+                method,
+                method.codec().encode3(
+                        argument0,
+                        argument1,
+                        argument2));
+    }
+
+    private CompletionStage<Object> invoke4(
+            ClientReference reference,
+            ClientMethodBinding method,
+            Object argument0,
+            Object argument1,
+            Object argument2,
+            Object argument3) {
+        return invokeEncoded(
+                reference,
+                method,
+                method.codec().encode4(
+                        argument0,
+                        argument1,
+                        argument2,
+                        argument3));
+    }
+
+    private CompletionStage<Object> invokeN(
             ClientReference reference,
             ClientMethodBinding method,
             Object[] arguments) {
-        List<ServiceInstance> instances = reference.directory().snapshot();
-        if (instances.isEmpty()) {
-            return CompletableFuture.failedFuture(new RpcUnavailableException(
-                    "No available instance for " + reference.key().canonicalName()));
+        return invokeEncoded(
+                reference,
+                method,
+                method.codec().encodeArguments(arguments));
+    }
+
+    private CompletionStage<Object> invokeEncoded(
+            ClientReference reference,
+            ClientMethodBinding method,
+            byte[] encodedArguments) {
+        ServiceInstance[] instances =
+                reference.directory().snapshot();
+        if (instances.length == 0) {
+            return CompletableFuture.failedFuture(
+                    new RpcUnavailableException(
+                            "No available instance for "
+                                    + reference.key().canonicalName()));
         }
 
-        List<LoadBalanceContext> candidates = instances.stream()
-                .map(instance -> {
-                    EndpointStats endpointStats = stats.computeIfAbsent(
-                            instance.endpoint(),
-                            ignored -> new EndpointStats());
-                    return new LoadBalanceContext(
-                            instance,
-                            endpointStats.ewma(),
-                            endpointStats.inflight());
-                })
-                .toList();
-        ServiceInstance selected = loadBalancer.select(candidates);
+        ServiceInstance selected =
+                loadBalancer.select(instances, loadMetrics);
         if (selected == null) {
             return CompletableFuture.failedFuture(new RpcUnavailableException(
                     "No available instance for " + reference.key().canonicalName()));
         }
 
-        EndpointStats endpointStats = stats.computeIfAbsent(
-                selected.endpoint(),
-                ignored -> new EndpointStats());
+        EndpointStats endpointStats = endpointStats(selected);
         long startedAtNanos = System.nanoTime();
         endpointStats.begin();
 
-        long requestId = requestIds.incrementAndGet();
-        RpcFrame request = new RpcFrame(
-                RpcMessageType.REQUEST,
+        long deadlineEpochMillis =
+                System.currentTimeMillis() + timeout.toMillis();
+        byte[] request = RpcProtocolCodec.encodeRequest(
                 method.codec().codecId(),
-                RpcStatus.OK,
-                requestId,
                 reference.serviceId(),
                 method.methodId(),
-                Map.of(
-                        "deadlineEpochMillis",
-                        Long.toString(System.currentTimeMillis() + timeout.toMillis())),
-                method.codec().encodeArguments(arguments));
+                deadlineEpochMillis,
+                encodedArguments);
 
         CompletableFuture<Object> result = new CompletableFuture<>();
         transport.request(
                         selected.endpoint(),
-                        requestId,
-                        RpcProtocolCodec.encode(request),
+                        request,
                         timeout)
                 .whenComplete((rawResponse, transportError) -> {
                     endpointStats.end(System.nanoTime() - startedAtNanos);
@@ -172,14 +238,24 @@ public final class PeachRpcClient implements AutoCloseable {
         return result;
     }
 
+    private EndpointStats endpointStats(
+            ServiceInstance instance) {
+        return stats.computeIfAbsent(
+                instance.endpoint(),
+                ignored -> new EndpointStats());
+    }
+
     private static void completeResponse(
             ClientMethodBinding method,
             CompletableFuture<Object> result,
             byte[] rawResponse) {
         try {
-            RpcFrame response = RpcProtocolCodec.decode(rawResponse);
+            RpcFrameView response = RpcProtocolCodec.view(rawResponse);
             if (response.status() != RpcStatus.OK) {
-                var remoteError = RpcErrorCodec.decode(response.payload());
+                var remoteError = RpcErrorCodec.decode(
+                        response.bytes(),
+                        response.payloadOffset(),
+                        response.payloadLength());
                 result.completeExceptionally(new RpcException(remoteError.message()));
                 return;
             }
@@ -187,7 +263,10 @@ public final class PeachRpcClient implements AutoCloseable {
                 throw new RpcException(
                         "RPC response codec does not match bound method codec");
             }
-            result.complete(method.codec().decodeResult(response.payload()));
+            result.complete(method.codec().decodeResult(
+                    response.bytes(),
+                    response.payloadOffset(),
+                    response.payloadLength()));
         } catch (Throwable error) {
             result.completeExceptionally(error);
         }
@@ -261,6 +340,83 @@ public final class PeachRpcClient implements AutoCloseable {
     private record ClientMethodBinding(
             int methodId,
             RpcMethodCodec codec) {
+    }
+
+    private final class GeneratedInvocation implements RpcGeneratedInvocation {
+        private final ClientReference reference;
+
+        private GeneratedInvocation(ClientReference reference) {
+            this.reference = reference;
+        }
+
+        @Override
+        public CompletionStage<Object> invoke0(int methodId) {
+            return PeachRpcClient.this.invoke0(
+                    reference,
+                    reference.require(methodId));
+        }
+
+        @Override
+        public CompletionStage<Object> invoke1(
+                int methodId,
+                Object argument0) {
+            return PeachRpcClient.this.invoke1(
+                    reference,
+                    reference.require(methodId),
+                    argument0);
+        }
+
+        @Override
+        public CompletionStage<Object> invoke2(
+                int methodId,
+                Object argument0,
+                Object argument1) {
+            return PeachRpcClient.this.invoke2(
+                    reference,
+                    reference.require(methodId),
+                    argument0,
+                    argument1);
+        }
+
+        @Override
+        public CompletionStage<Object> invoke3(
+                int methodId,
+                Object argument0,
+                Object argument1,
+                Object argument2) {
+            return PeachRpcClient.this.invoke3(
+                    reference,
+                    reference.require(methodId),
+                    argument0,
+                    argument1,
+                    argument2);
+        }
+
+        @Override
+        public CompletionStage<Object> invoke4(
+                int methodId,
+                Object argument0,
+                Object argument1,
+                Object argument2,
+                Object argument3) {
+            return PeachRpcClient.this.invoke4(
+                    reference,
+                    reference.require(methodId),
+                    argument0,
+                    argument1,
+                    argument2,
+                    argument3);
+        }
+
+        @Override
+        public CompletionStage<Object> invokeN(
+                int methodId,
+                Object[] arguments) {
+            return PeachRpcClient.this.invokeN(
+                    reference,
+                    reference.require(methodId),
+                    arguments);
+        }
     }
 
     /** Consumer 运行时 Builder。 */

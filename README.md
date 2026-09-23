@@ -7,17 +7,17 @@
 
 Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框架。当前 `0.1.x` 重点不是堆叠功能，而是先建立可长期演进的数据面与控制面边界：长连接多路复用、本地服务目录、有界并发、SPI 扩展、二进制协议、Spring Boot Starter 和可重复性能基准。
 
-> 当前状态：Preview。当前已具备编译期 Consumer Stub、方法级 Codec Binding 和注册/发现能力拆分；Generated Server Dispatcher、真实连接握手、TLS/mTLS、完整 Retry Budget、熔断/异常实例剔除、流式 RPC、OpenTelemetry 等仍属于后续生产门禁。
+> 当前状态：Preview。V2-B 已接通编译期 Consumer Stub / Provider Dispatcher、真实 HELLO/HELLO_ACK、连接分片、connection-local pending、FrameView 与 Unary 协议快路径；TLS/mTLS、完整 Retry Budget、熔断/异常实例剔除、流式 RPC、OpenTelemetry 和端到端 Buffer ownership 仍属于后续生产门禁。
 
 核心能力：
 
-- Vert.x TCP 长连接，基于 Request ID 多路复用，不按请求重复建连。
+- Vert.x TCP 长连接，基于 connection-local Request ID 多路复用；支持每端点连接分片、握手超时和 GO_AWAY。
 - Consumer 本地服务目录，请求热路径不访问 Etcd。
 - Etcd Lease + Range/Watch + revision 感知重同步。
-- P2C + EWMA + inflight + 静态权重负载均衡。
+- P2C + EWMA + inflight + 静态权重负载均衡；默认热路径直接读取数组快照与实时指标，不构建候选 List。
 - Provider 虚拟线程执行，同时通过并发准入限制保护资源边界。
-- Fory 默认编解码；请求参数/结果/错误按方法粒度预绑定 Codec，Transport、Registry、Codec、LoadBalancer、Proxy 均保留 SPI 扩展边界。
-- 标注 `@PeachRpcContract` 的接口可在编译期生成 Consumer Stub；生成产物优先于动态代理，JDK Proxy 为 fallback，CGLIB 为兼容插件。
+- Fory 默认编解码；方法级 Codec 支持直接从 Frame payload slice 解码，框架错误继续使用 Core 独立线协议。
+- 标注 `@PeachRpcContract` 的接口同时生成 Consumer Stub 与 Provider Dispatcher；0~4 参数 Consumer CallSite 使用专用入口，JDK/CGLIB/Byte Buddy 只作为 fallback。
 - Spring Boot Starter，支持 `@PeachRpcService` 和 `@PeachRpcReference`。
 
 <!-- doc-section:architecture -->
@@ -48,7 +48,7 @@ flowchart LR
 <!-- doc-section:modules -->
 ## 模块
 
-当前 Reactor 从早期 17 个“概念粒度模块”收敛后，在高性能 V2 中保持 10 个有真实依赖隔离价值的模块：
+当前 Reactor 从早期 17 个“概念粒度模块”收敛后，在高性能 V2 中保持 11 个有真实依赖隔离价值的模块：
 
 | 模块 | 职责 |
 |---|---|
@@ -58,6 +58,7 @@ flowchart LR
 | `peach-rpc-transport-vertx` | Vert.x TCP Transport |
 | `peach-rpc-registry-etcd` | Etcd Registry |
 | `peach-rpc-proxy-cglib` | 可选 CGLIB Proxy |
+| `peach-rpc-proxy-bytebuddy` | 可选 Byte Buddy Runtime Proxy fallback |
 | `peach-rpc-spring-boot-autoconfigure` | Spring Boot 自动装配 |
 | `peach-rpc-spring-boot-starter` | 业务项目推荐依赖入口 |
 | `peach-rpc-examples` | Spring Boot 使用示例 |
@@ -153,6 +154,8 @@ public interface UserService {
 | `peach.rpc.registry.namespace` | `default` | 注册中心逻辑命名空间 |
 | `peach.rpc.registry.lease-ttl-seconds` | `30` | Etcd Lease TTL |
 | `peach.rpc.transport.type` | `vertx` | Transport SPI 名称 |
+| `peach.rpc.transport.handshake-timeout` | `3s` | TCP 建连后协议握手超时 |
+| `peach.rpc.transport.connections-per-endpoint` | `1` | 每个服务端点的连接分片数 |
 | `peach.rpc.client.enabled` | `true` | 是否创建 Consumer |
 | `peach.rpc.client.timeout` | `3s` | 默认 RPC 超时 |
 | `peach.rpc.client.proxy` | `jdk` | Proxy SPI 名称 |
@@ -186,4 +189,5 @@ CI 使用 JDK 21 执行相同门禁。根 POM 使用 `${revision}` 和 flatten p
 - [开发规范](docs/development.md)
 - [实施路线](docs/implementation-plan.md)
 - [高性能内核 V2 计划](docs/high-performance-kernel-v2-plan.md)
+- [高性能内核 V2-B 实现](docs/high-performance-kernel-v2b.md)
 

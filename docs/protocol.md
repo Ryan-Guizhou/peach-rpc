@@ -14,17 +14,13 @@ Peach RPC v1 使用 32 字节固定大端 Header，后接 Metadata 与 Payload�
 | Codec | 1 | Codec 编号 |
 | Compression | 1 | 压缩编号 |
 | Status | 1 | 响应状态 |
-| Request ID | 8 | 多路复用关联标识 |
+| Request ID | 8 | connection-local 多路复用关联标识 |
 | Service ID | 4 | 稳定服务编号 |
 | Method ID | 4 | 稳定方法编号 |
 | Metadata Length | 2 | Metadata 长度 |
 | Payload Length | 4 | Payload 长度 |
 
-Decoder 校验 Magic、Version、长度和单帧大小。
-
 ## 2. Message Type
-
-当前协议编号：
 
 | 类型 | ID |
 |---|---:|
@@ -36,15 +32,11 @@ Decoder 校验 Magic、Version、长度和单帧大小。
 | HELLO | 6 |
 | HELLO_ACK | 7 |
 
-HELLO/HELLO_ACK 的能力模型和协商算法已经实现，但 Vert.x Transport 尚未在真实 TCP 建连流程中启用它们；该接线属于 V2-B。
-
 ## 3. Codec ID
-
-Codec ID 是稳定线协议 ABI：
 
 | ID | Codec |
 |---:|---|
-| 0 | Control Reserved |
+| 0 | Core / Control Reserved |
 | 1 | Fory Native |
 | 2 | Fory XLang |
 | 3 | Protobuf |
@@ -52,9 +44,7 @@ Codec ID 是稳定线协议 ABI：
 | 5 | Hessian2 |
 | 6 | JSON |
 
-ID 0 禁止业务 Codec 使用。它专门表示 Peach RPC Core 自有控制/框架载荷。错误响应使用 ID 0 和稳定的 `RpcErrorCodec`，因此业务 Codec 即使是 Protobuf 等方法 Schema Codec，也不需要负责框架错误编码。
-
-后续官方 Codec 必须显式分配固定 ID，不能依赖 SPI/Classpath 加载顺序。
+错误响应使用 Codec ID 0 和 Core 自有 `RpcErrorCodec`，不依赖业务 Codec。
 
 ## 4. Compression ID
 
@@ -64,32 +54,50 @@ ID 0 禁止业务 Codec 使用。它专门表示 Peach RPC Core 自有控制/框
 | 1 | LZ4 |
 | 2 | ZSTD |
 
-当前数据帧仍实际使用 NONE；LZ4/ZSTD 只是协议兼容性预留，V2-B/V2-C 在完成基准后再接入。
+当前数据帧只实际启用 NONE。LZ4/ZSTD 继续保留 wire ID，待基准后再决定默认策略。
 
-## 5. 握手能力
+## 5. HELLO / HELLO_ACK
 
-`RpcConnectionCapabilities` 可以声明：
+Vert.x Transport 已真实启用连接握手。
 
-- 支持的协议版本；
+Client 建立 TCP 后发送 HELLO，包含：
+
+- Protocol Version 集合；
 - Codec 集合；
 - Compression 集合；
 - DEADLINE / CANCEL / STREAMING / GO_AWAY Feature；
 - Max Frame Bytes。
 
-协商规则：
+Server 计算能力交集并回复 HELLO_ACK；Client 再计算相同协商结果。
 
-1. 选择双方最高共同协议版本；
-2. Codec 必须存在非空交集；
-3. Compression 必须存在非空交集；
-4. Feature 取交集；
-5. Max Frame 取双方较小值。
+没有共同 Protocol、Codec 或 Compression 时连接被拒绝。
 
-没有共同协议、Codec 或 Compression 时握手失败。
+Client 和 Server 都有独立 `handshakeTimeout`。握手超时不会进入 Active 状态。
 
-## 6. 当前限制
+## 6. Unary 快路径
 
-- 真实 TCP HELLO/HELLO_ACK 尚未启用；
-- CANCEL 只预留 Feature，没有传播实现；
+普通 Unary REQUEST 使用 `encodeRequest`：
+
+- Request ID 初始为 0；
+- Transport 在目标 Connection Event Loop 内分配 connection-local Request ID；
+- Deadline 直接编码为 `deadlineEpochMillis=<digits>\n`；
+- 不构造 Metadata Map。
+
+普通 Unary RESPONSE 使用 `encodeResponse`，当前不携带 Metadata。
+
+控制帧和兼容场景仍可使用通用 `RpcFrame` 编解码。
+
+## 7. Frame View
+
+接收端使用 `RpcFrameView` 解析 Header，同时保留 backing byte[]。
+
+Payload 由 offset/length 表示。支持 slice decode 的 Codec 可以直接消费完整帧区间，不需要 Core 再复制 payload。
+
+## 8. 当前限制
+
+- CANCEL Feature 已保留但尚未传播；
 - Streaming 未实现；
-- Compression 尚未接入数据面；
-- TLS/mTLS 不属于 v1 当前实现。
+- Compression 尚未进入数据面；
+- GO_AWAY 可用于拒绝/连接失败，但完整 graceful drain 状态机尚未实现；
+- TLS/mTLS 未实现；
+- Transport/Core 仍以 byte[] 完整帧为 API 边界。

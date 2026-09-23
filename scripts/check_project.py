@@ -23,6 +23,7 @@ EXPECTED_MODULES = (
     "peach-rpc-transport-vertx",
     "peach-rpc-registry-etcd",
     "peach-rpc-proxy-cglib",
+    "peach-rpc-proxy-bytebuddy",
     "peach-rpc-spring-boot-autoconfigure",
     "peach-rpc-spring-boot-starter",
     "peach-rpc-examples",

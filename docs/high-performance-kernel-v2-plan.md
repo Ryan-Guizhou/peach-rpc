@@ -15,7 +15,7 @@
 
 ## 3. V2 分阶段计划
 
-### V2-A：Core 契约稳定化（本 PR）
+### V2-A：Core 契约稳定化（已完成并合并）
 
 - Registry 拆分为 ServiceDiscovery 与 ServiceRegistrar。
 - RegistryFactory 使用强类型 RegistryOptions，并预留 providerOptions 扩展袋。
@@ -28,14 +28,30 @@
 - 保留 JDK Proxy 作为未生成 Stub 时的兼容 fallback。
 - 保持现有 Vert.x / Etcd / Fory / Starter 可编译可运行。
 
-### V2-B：热路径替换
+### V2-B：热路径替换（当前 PR）
 
-- Generated Stub 成为默认 Consumer 路径。
-- Generated Dispatcher 替换 Provider MethodHandle 默认分派。
-- Vert.x 连接建立阶段真正执行 HELLO / HELLO_ACK。
-- 增加 Byte Buddy Runtime Stub fallback。
-- Fory 类型扫描、显式注册与固定 Type ID。
-- Event Loop 亲和连接组与 connection-local pending table。
+已完成：
+
+- Generated Stub 作为 Consumer 默认高性能路径。
+- 0~4 参数 Generated CallSite。
+- Generated Provider Dispatcher，缺失时 MethodHandle fallback。
+- Vert.x 真实 HELLO / HELLO_ACK。
+- Client/Server handshake timeout。
+- Event Loop 本地 connection pending table 与 connection-local Request ID。
+- 每 Endpoint 多连接分片。
+- RpcFrameView 与 payload slice decode。
+- Unary REQUEST/RESPONSE 协议快路径。
+- ServiceDirectory 数组快照。
+- 内置 P2C/EWMA 无候选 List 分配主路径。
+- Byte Buddy Runtime Proxy 可选 fallback。
+- Generated/JDK/Byte Buddy、协议 encode/decode、负载均衡路径 JMH 基准。
+
+明确延期：
+
+- Fory 固定 Type ID 与强制显式注册。必须先定义稳定 ID、冲突检测和滚动升级策略。
+- 端到端 Buffer ownership / Buffer-oriented Codec。
+- Generated Provider 参数链完全消除 Object[]。
+- Provider execution policy 分层。
 
 ### V2-C：生态扩展
 
@@ -59,3 +75,16 @@ V2-A 允许 Core API 在 0.x 阶段发生不兼容调整，但要求 Starter 使
 - Handshake 能力协商包含成功、无共同 Codec、版本不兼容测试。
 - Generated Client Processor 至少在 examples 中生成并被运行时优先发现。
 - README 中英文同步，架构文档明确 Current / Next。
+
+
+## 6. V2-B 验收标准
+
+- 全 Reactor `clean verify -Pquality` 通过。
+- Javadoc warning 为 0。
+- 真实握手成功、Codec 不兼容与握手超时均有 Transport 级测试。
+- connection-local Request ID 与连接分片有测试。
+- Generated Client / Server 与运行时 Method ID 一致。
+- Unary 协议快路径有语义等价测试。
+- 默认 P2C/EWMA 使用数组快路径并保留旧 SPI 兼容入口。
+- JMH 基准能够独立构建运行。
+- README 中英文同步，架构/协议/性能文档不把延期能力写成已完成。

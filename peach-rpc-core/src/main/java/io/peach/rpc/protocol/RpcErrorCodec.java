@@ -38,8 +38,28 @@ public final class RpcErrorCodec {
      * @return 远端错误
      */
     public static RpcRemoteError decode(byte[] payload) {
+        return decode(payload, 0, payload.length);
+    }
+
+    /**
+     * 从完整帧的 Payload 区间解码框架级远端错误。
+     *
+     * @param bytes 完整帧或 Payload 数组
+     * @param offset Payload offset
+     * @param length Payload length
+     * @return 远端错误
+     */
+    public static RpcRemoteError decode(
+            byte[] bytes,
+            int offset,
+            int length) {
         try {
-            ByteBuffer buffer = ByteBuffer.wrap(payload).order(ByteOrder.BIG_ENDIAN);
+            ByteBuffer buffer = ByteBuffer.wrap(
+                            bytes,
+                            offset,
+                            length)
+                    .slice()
+                    .order(ByteOrder.BIG_ENDIAN);
             if (!buffer.hasRemaining() || buffer.get() != VERSION) {
                 throw new RpcProtocolException("Unsupported RPC error payload version");
             }
