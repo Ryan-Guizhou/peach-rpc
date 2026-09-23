@@ -8,6 +8,7 @@ import io.peach.rpc.loadbalance.LoadBalancer;
 import io.peach.rpc.proxy.ProxyFactory;
 import io.peach.rpc.registry.Registry;
 import io.peach.rpc.registry.RegistryFactory;
+import io.peach.rpc.registry.RegistryOptions;
 import io.peach.rpc.spi.ExtensionLoader;
 import io.peach.rpc.spring.lifecycle.PeachRpcServerLifecycle;
 import io.peach.rpc.spring.processor.PeachRpcReferenceBeanPostProcessor;
@@ -51,9 +52,12 @@ public class PeachRpcAutoConfiguration {
         PeachRpcProperties.Registry registry = properties.getRegistry();
         RegistryFactory factory = ExtensionLoader.getLoader(RegistryFactory.class)
                 .getExtension(registry.getType());
-        return factory.create(Map.of(
-                "endpoints", registry.getEndpoints(),
-                "leaseTtlSeconds", Long.toString(registry.getLeaseTtlSeconds())));
+        return factory.create(RegistryOptions.fromCsv(
+                registry.getEndpoints(),
+                registry.getNamespace(),
+                Map.of(
+                        "leaseTtlSeconds",
+                        Long.toString(registry.getLeaseTtlSeconds()))));
     }
 
     /**
@@ -147,7 +151,7 @@ public class PeachRpcAutoConfiguration {
             ProxyFactory proxyFactory,
             PeachRpcProperties properties) {
         return PeachRpcClient.builder()
-                .registry(registry)
+                .serviceDiscovery(registry)
                 .codecRegistry(codecRegistry)
                 .transportClient(transportFactory.createClient(transportOptions))
                 .loadBalancer(loadBalancer)
@@ -191,7 +195,8 @@ public class PeachRpcAutoConfiguration {
             PeachRpcProperties properties) {
         PeachRpcProperties.Server server = properties.getServer();
         return PeachRpcServer.builder()
-                .registry(registry)
+                .serviceRegistrar(registry.registrar().orElseThrow(() ->
+                        new IllegalStateException("Configured RPC registry does not support provider registration")))
                 .codecRegistry(codecRegistry)
                 .transportServer(transportFactory.createServer(transportOptions))
                 .bindEndpoint(new RpcEndpoint(server.getHost(), server.getPort()))

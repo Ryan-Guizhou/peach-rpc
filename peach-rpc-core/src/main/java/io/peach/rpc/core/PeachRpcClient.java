@@ -2,20 +2,22 @@ package io.peach.rpc.core;
 
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.RpcException;
-import io.peach.rpc.api.RpcIds;
+import io.peach.rpc.api.RpcMethodDescriptor;
 import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.api.RpcUnavailableException;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.codec.RpcCodec;
 import io.peach.rpc.codec.RpcCodecRegistry;
+import io.peach.rpc.codec.RpcMethodCodec;
+import io.peach.rpc.generated.RpcGeneratedClients;
 import io.peach.rpc.loadbalance.LoadBalanceContext;
 import io.peach.rpc.loadbalance.LoadBalancer;
+import io.peach.rpc.protocol.RpcErrorCodec;
 import io.peach.rpc.protocol.RpcFrame;
 import io.peach.rpc.protocol.RpcMessageType;
 import io.peach.rpc.protocol.RpcProtocolCodec;
 import io.peach.rpc.proxy.ProxyFactory;
-import io.peach.rpc.registry.Registry;
+import io.peach.rpc.registry.ServiceDiscovery;
 import io.peach.rpc.spi.ExtensionLoader;
 import io.peach.rpc.transport.RpcTransportClient;
 import java.lang.reflect.Method;
@@ -32,22 +34,24 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /** Peach RPC Consumer 运行时。 */
 public final class PeachRpcClient implements AutoCloseable {
-    private final Registry registry;
+    private final ServiceDiscovery discovery;
     private final RpcTransportClient transport;
     private final RpcCodecRegistry codecs;
-    private final RpcCodec defaultCodec;
+    private final byte defaultCodecId;
     private final LoadBalancer loadBalancer;
     private final ProxyFactory proxyFactory;
     private final Duration timeout;
     private final AtomicLong requestIds = new AtomicLong();
-    private final ConcurrentMap<ServiceKey, ServiceDirectory> directories = new ConcurrentHashMap<>();
-    private final ConcurrentMap<RpcEndpoint, EndpointStats> stats = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ServiceKey, ServiceDirectory> directories =
+            new ConcurrentHashMap<>();
+    private final ConcurrentMap<RpcEndpoint, EndpointStats> stats =
+            new ConcurrentHashMap<>();
 
     private PeachRpcClient(Builder builder) {
-        this.registry = Objects.requireNonNull(builder.registry, "registry");
+        this.discovery = Objects.requireNonNull(builder.discovery, "serviceDiscovery");
         this.transport = Objects.requireNonNull(builder.transport, "transportClient");
         this.codecs = Objects.requireNonNull(builder.codecs, "codecRegistry");
-        this.defaultCodec = codecs.defaultCodec();
+        this.defaultCodecId = codecs.defaultCodec().code();
         this.loadBalancer = builder.loadBalancer != null
                 ? builder.loadBalancer
                 : ExtensionLoader.getLoader(LoadBalancer.class).getDefaultExtension();
@@ -69,7 +73,8 @@ public final class PeachRpcClient implements AutoCloseable {
     /**
      * 创建指定服务的 Consumer 引用。
      *
-     * <p>服务标识、方法标识和本地目录在此阶段预解析，避免进入单次请求热路径。
+     * <p>服务标识、方法标识、方法 Codec 与本地目录均在此阶段预解析。
+     * 若编译期 Generated Stub 存在则优先使用，否则回退到配置的 ProxyFactory。
      *
      * @param <T> 服务接口类型
      * @param api 服务接口
@@ -80,12 +85,34 @@ public final class PeachRpcClient implements AutoCloseable {
     public <T> T refer(Class<T> api, String version, String group) {
         Objects.requireNonNull(api, "api");
         ServiceKey key = new ServiceKey(api.getName(), version, group);
-        ServiceDirectory directory = directories.computeIfAbsent(key, ignored -> new ServiceDirectory(registry, key));
-        ClientReference reference = ClientReference.create(key, api, directory);
-        return proxyFactory.create(api, (method, args) -> invoke(reference, method, args));
+        ServiceDirectory directory = directories.computeIfAbsent(
+                key,
+                ignored -> new ServiceDirectory(discovery, key));
+        ClientReference reference = ClientReference.create(
+                key,
+                api,
+                directory,
+                codecs,
+                defaultCodecId);
+
+        return RpcGeneratedClients.find(api)
+                .map(factory -> factory.create(
+                        (methodId, arguments) -> invoke(
+                                reference,
+                                reference.require(methodId),
+                                arguments)))
+                .orElseGet(() -> proxyFactory.create(
+                        api,
+                        (method, arguments) -> invoke(
+                                reference,
+                                reference.require(method),
+                                arguments)));
     }
 
-    private CompletionStage<Object> invoke(ClientReference reference, Method method, Object[] args) {
+    private CompletionStage<Object> invoke(
+            ClientReference reference,
+            ClientMethodBinding method,
+            Object[] arguments) {
         List<ServiceInstance> instances = reference.directory().snapshot();
         if (instances.isEmpty()) {
             return CompletableFuture.failedFuture(new RpcUnavailableException(
@@ -95,9 +122,12 @@ public final class PeachRpcClient implements AutoCloseable {
         List<LoadBalanceContext> candidates = instances.stream()
                 .map(instance -> {
                     EndpointStats endpointStats = stats.computeIfAbsent(
-                            instance.endpoint(), ignored -> new EndpointStats());
+                            instance.endpoint(),
+                            ignored -> new EndpointStats());
                     return new LoadBalanceContext(
-                            instance, endpointStats.ewma(), endpointStats.inflight());
+                            instance,
+                            endpointStats.ewma(),
+                            endpointStats.inflight());
                 })
                 .toList();
         ServiceInstance selected = loadBalancer.select(candidates);
@@ -106,51 +136,58 @@ public final class PeachRpcClient implements AutoCloseable {
                     "No available instance for " + reference.key().canonicalName()));
         }
 
-        Integer methodId = reference.methodIds().get(method);
-        if (methodId == null) {
-            return CompletableFuture.failedFuture(new IllegalStateException(
-                    "Method is not part of RPC service contract: " + method));
-        }
-
         EndpointStats endpointStats = stats.computeIfAbsent(
-                selected.endpoint(), ignored -> new EndpointStats());
+                selected.endpoint(),
+                ignored -> new EndpointStats());
         long startedAtNanos = System.nanoTime();
         endpointStats.begin();
 
         long requestId = requestIds.incrementAndGet();
         RpcFrame request = new RpcFrame(
                 RpcMessageType.REQUEST,
-                defaultCodec.code(),
+                method.codec().codecId(),
                 RpcStatus.OK,
                 requestId,
                 reference.serviceId(),
-                methodId,
-                Map.of("deadlineEpochMillis", Long.toString(System.currentTimeMillis() + timeout.toMillis())),
-                defaultCodec.encode(new RpcInvocationPayload(args)));
+                method.methodId(),
+                Map.of(
+                        "deadlineEpochMillis",
+                        Long.toString(System.currentTimeMillis() + timeout.toMillis())),
+                method.codec().encodeArguments(arguments));
 
         CompletableFuture<Object> result = new CompletableFuture<>();
-        transport.request(selected.endpoint(), requestId, RpcProtocolCodec.encode(request), timeout)
+        transport.request(
+                        selected.endpoint(),
+                        requestId,
+                        RpcProtocolCodec.encode(request),
+                        timeout)
                 .whenComplete((rawResponse, transportError) -> {
                     endpointStats.end(System.nanoTime() - startedAtNanos);
                     if (transportError != null) {
                         result.completeExceptionally(transportError);
                         return;
                     }
-                    completeResponse(result, rawResponse);
+                    completeResponse(method, result, rawResponse);
                 });
         return result;
     }
 
-    private void completeResponse(CompletableFuture<Object> result, byte[] rawResponse) {
+    private static void completeResponse(
+            ClientMethodBinding method,
+            CompletableFuture<Object> result,
+            byte[] rawResponse) {
         try {
             RpcFrame response = RpcProtocolCodec.decode(rawResponse);
-            RpcResultPayload payload = codecs.require(response.codec())
-                    .decode(response.payload(), RpcResultPayload.class);
-            if (response.status() != RpcStatus.OK || !payload.success()) {
-                result.completeExceptionally(new RpcException(payload.errorMessage()));
-            } else {
-                result.complete(payload.value());
+            if (response.status() != RpcStatus.OK) {
+                var remoteError = RpcErrorCodec.decode(response.payload());
+                result.completeExceptionally(new RpcException(remoteError.message()));
+                return;
             }
+            if (response.codec() != method.codec().codecId()) {
+                throw new RpcException(
+                        "RPC response codec does not match bound method codec");
+            }
+            result.complete(method.codec().decodeResult(response.payload()));
         } catch (Throwable error) {
             result.completeExceptionally(error);
         }
@@ -166,51 +203,87 @@ public final class PeachRpcClient implements AutoCloseable {
             ServiceKey key,
             int serviceId,
             ServiceDirectory directory,
-            Map<Method, Integer> methodIds) {
+            Map<Method, ClientMethodBinding> methods,
+            Map<Integer, ClientMethodBinding> methodsById) {
+
         private static ClientReference create(
-                ServiceKey key, Class<?> api, ServiceDirectory directory) {
-            Map<Method, Integer> methodIds = new HashMap<>();
-            Map<Integer, Method> collisionGuard = new HashMap<>();
+                ServiceKey key,
+                Class<?> api,
+                ServiceDirectory directory,
+                RpcCodecRegistry codecs,
+                byte codecId) {
+            Map<Method, ClientMethodBinding> methods = new HashMap<>();
+            Map<Integer, ClientMethodBinding> methodsById = new HashMap<>();
             for (Method method : api.getMethods()) {
-                int methodId = RpcIds.methodId(method);
-                Method collision = collisionGuard.putIfAbsent(methodId, method);
+                RpcMethodDescriptor descriptor = RpcMethodDescriptor.from(key, method);
+                ClientMethodBinding binding = new ClientMethodBinding(
+                        descriptor.methodId(),
+                        codecs.bind(descriptor, codecId));
+                ClientMethodBinding collision = methodsById.putIfAbsent(
+                        descriptor.methodId(),
+                        binding);
                 if (collision != null) {
                     throw new IllegalStateException(
-                            "Method id collision in " + api.getName() + ": " + collision + " vs " + method);
+                            "Method id collision in "
+                                    + api.getName()
+                                    + ": "
+                                    + descriptor.methodId());
                 }
-                methodIds.put(method, methodId);
+                methods.put(method, binding);
             }
             return new ClientReference(
-                    key, RpcIds.serviceId(key), directory, Map.copyOf(methodIds));
+                    key,
+                    io.peach.rpc.api.RpcIds.serviceId(key),
+                    directory,
+                    Map.copyOf(methods),
+                    Map.copyOf(methodsById));
+        }
+
+        private ClientMethodBinding require(Method method) {
+            ClientMethodBinding binding = methods.get(method);
+            if (binding == null) {
+                throw new IllegalStateException(
+                        "Method is not part of RPC service contract: " + method);
+            }
+            return binding;
+        }
+
+        private ClientMethodBinding require(int methodId) {
+            ClientMethodBinding binding = methodsById.get(methodId);
+            if (binding == null) {
+                throw new IllegalStateException(
+                        "Method id is not part of RPC service contract: " + methodId);
+            }
+            return binding;
         }
     }
 
-    /**
-     * Consumer 运行时 Builder。
-     */
+    private record ClientMethodBinding(
+            int methodId,
+            RpcMethodCodec codec) {
+    }
+
+    /** Consumer 运行时 Builder。 */
     public static final class Builder {
-        private Registry registry;
+        private ServiceDiscovery discovery;
         private RpcTransportClient transport;
         private RpcCodecRegistry codecs;
         private LoadBalancer loadBalancer;
         private ProxyFactory proxyFactory;
         private Duration timeout = Duration.ofSeconds(3);
 
-        /**
-         * 创建 Consumer Builder。
-         */
+        /** 创建 Consumer Builder。 */
         public Builder() {
         }
 
-
         /**
-         * 设置注册中心。
+         * 设置服务发现控制面。
          *
-         * @param value 注册中心
+         * @param value 服务发现控制面
          * @return Consumer Builder
          */
-        public Builder registry(Registry value) {
-            this.registry = value;
+        public Builder serviceDiscovery(ServiceDiscovery value) {
+            this.discovery = value;
             return this;
         }
 

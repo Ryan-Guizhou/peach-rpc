@@ -1,6 +1,7 @@
 package io.peach.rpc.codec.fory;
 
 import io.peach.rpc.codec.RpcCodec;
+import io.peach.rpc.codec.RpcCodecIds;
 import io.peach.rpc.spi.Extension;
 import org.apache.fory.Fory;
 import org.apache.fory.ThreadSafeFory;
@@ -8,25 +9,23 @@ import org.apache.fory.ThreadSafeFory;
 /**
  * Apache Fory 高性能 Java 对象编解码器。
  *
- * <p>内部复用线程安全的 Fory 实例，避免为单次 RPC 调用重复创建序列化器。
+ * <p>当前 V2-A 仍使用 Fory 通用对象图能力；后续 V2-B 会基于服务契约扫描类型并开启显式注册。
  */
 @Extension("fory")
 public final class ForyRpcCodec implements RpcCodec {
-
-    /**
-     * 创建 Fory RPC 编解码器。
-     */
-    public ForyRpcCodec() {
-    }
 
     private final ThreadSafeFory fory = Fory.builder()
             .withXlang(false)
             .requireClassRegistration(false)
             .buildThreadSafeFory();
 
+    /** 创建 Fory RPC 编解码器。 */
+    public ForyRpcCodec() {
+    }
+
     @Override
     public byte code() {
-        return 1;
+        return RpcCodecIds.FORY_NATIVE;
     }
 
     @Override

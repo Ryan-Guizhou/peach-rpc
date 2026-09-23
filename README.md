@@ -7,7 +7,7 @@
 
 Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框架。当前 `0.1.x` 重点不是堆叠功能，而是先建立可长期演进的数据面与控制面边界：长连接多路复用、本地服务目录、有界并发、SPI 扩展、二进制协议、Spring Boot Starter 和可重复性能基准。
 
-> 当前状态：Preview。已经具备中型项目继续验证和集成的工程基础，但 TLS/mTLS、完整 Retry Budget、熔断/异常实例剔除、流式 RPC、代码生成 Stub/Dispatcher、OpenTelemetry 等仍属于后续生产门禁。
+> 当前状态：Preview。当前已具备编译期 Consumer Stub、方法级 Codec Binding 和注册/发现能力拆分；Generated Server Dispatcher、真实连接握手、TLS/mTLS、完整 Retry Budget、熔断/异常实例剔除、流式 RPC、OpenTelemetry 等仍属于后续生产门禁。
 
 核心能力：
 
@@ -16,8 +16,8 @@ Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框�
 - Etcd Lease + Range/Watch + revision 感知重同步。
 - P2C + EWMA + inflight + 静态权重负载均衡。
 - Provider 虚拟线程执行，同时通过并发准入限制保护资源边界。
-- Fory 默认编解码；Transport、Registry、Codec、LoadBalancer、Proxy 均支持 SPI 替换。
-- JDK Proxy 默认实现，CGLIB 作为兼容插件，未来高性能主路径计划使用编译期生成 Stub/Dispatcher。
+- Fory 默认编解码；请求参数/结果/错误按方法粒度预绑定 Codec，Transport、Registry、Codec、LoadBalancer、Proxy 均保留 SPI 扩展边界。
+- 标注 `@PeachRpcContract` 的接口可在编译期生成 Consumer Stub；生成产物优先于动态代理，JDK Proxy 为 fallback，CGLIB 为兼容插件。
 - Spring Boot Starter，支持 `@PeachRpcService` 和 `@PeachRpcReference`。
 
 <!-- doc-section:architecture -->
@@ -43,16 +43,17 @@ flowchart LR
 
 核心规则：**Spring、Vert.x、Jetcd、Fory、CGLIB 等第三方类型不得进入 Core 公共契约；注册中心访问、SPI 解析和配置解析不得进入单次 RPC 热路径。**
 
-详细说明见 [架构设计](docs/architecture.md)。
+详细说明见 [架构设计](docs/architecture.md) 与 [高性能内核 V2 计划](docs/high-performance-kernel-v2-plan.md)。
 
 <!-- doc-section:modules -->
 ## 模块
 
-当前 Reactor 从早期 17 个模块收敛为 9 个：
+当前 Reactor 从早期 17 个“概念粒度模块”收敛后，在高性能 V2 中保持 10 个有真实依赖隔离价值的模块：
 
 | 模块 | 职责 |
 |---|---|
 | `peach-rpc-core` | 公共 API、SPI、协议、Client/Server、内存 Registry、P2C/EWMA、JDK Proxy |
+| `peach-rpc-codegen` | 编译期 Consumer Stub 注解处理器；不进入运行时热路径 |
 | `peach-rpc-codec-fory` | Apache Fory Codec |
 | `peach-rpc-transport-vertx` | Vert.x TCP Transport |
 | `peach-rpc-registry-etcd` | Etcd Registry |
@@ -128,6 +129,19 @@ public class UserFacade {
 
 如果未配置 Etcd，默认使用内存注册中心，适合单 JVM 示例和测试。
 
+### 4. 可选：启用编译期 Consumer Stub
+
+高性能路径不会把动态代理作为最终主线。服务接口增加：
+
+```java
+@PeachRpcContract
+public interface UserService {
+    User findById(Long id);
+}
+```
+
+并在编译器 annotation processor path 中加入 `peach-rpc-codegen`。运行时会优先使用生成 Stub；未生成时仍回退到配置的 ProxyFactory，因此 Starter 的基本使用方式不变。
+
 <!-- doc-section:configuration -->
 ## 核心配置
 
@@ -135,7 +149,8 @@ public class UserFacade {
 |---|---:|---|
 | `peach.rpc.enabled` | `true` | RPC 总开关 |
 | `peach.rpc.registry.type` | `memory` | Registry SPI 名称 |
-| `peach.rpc.registry.endpoints` | `http://127.0.0.1:2379` | Etcd 地址 |
+| `peach.rpc.registry.endpoints` | `http://127.0.0.1:2379` | 注册中心地址 |
+| `peach.rpc.registry.namespace` | `default` | 注册中心逻辑命名空间 |
 | `peach.rpc.registry.lease-ttl-seconds` | `30` | Etcd Lease TTL |
 | `peach.rpc.transport.type` | `vertx` | Transport SPI 名称 |
 | `peach.rpc.client.enabled` | `true` | 是否创建 Consumer |
@@ -170,4 +185,5 @@ CI 使用 JDK 21 执行相同门禁。根 POM 使用 `${revision}` 和 flatten p
 - [生产就绪门禁](docs/readiness.md)
 - [开发规范](docs/development.md)
 - [实施路线](docs/implementation-plan.md)
+- [高性能内核 V2 计划](docs/high-performance-kernel-v2-plan.md)
 

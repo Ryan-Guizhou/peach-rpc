@@ -37,6 +37,7 @@
 
     <modules>
         <module>peach-rpc-core</module>
+        <module>peach-rpc-codegen</module>
         <module>peach-rpc-codec-fory</module>
         <module>peach-rpc-transport-vertx</module>
         <module>peach-rpc-registry-etcd</module>
@@ -91,6 +92,11 @@
             <dependency>
                 <groupId>io.peach.rpc</groupId>
                 <artifactId>peach-rpc-core</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.peach.rpc</groupId>
+                <artifactId>peach-rpc-codegen</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

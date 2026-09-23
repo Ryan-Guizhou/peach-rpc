@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.registry.Registry;
+import io.peach.rpc.registry.ServiceDiscovery;
 import io.peach.rpc.registry.RegistryListener;
 import io.peach.rpc.registry.RegistrySnapshot;
 import io.peach.rpc.registry.RegistrySubscription;
@@ -43,18 +43,8 @@ class ServiceDirectoryTest {
                 Map.of());
     }
 
-    private static final class CapturingRegistry implements Registry {
+    private static final class CapturingRegistry implements ServiceDiscovery {
         private final AtomicReference<RegistryListener> listener = new AtomicReference<>();
-
-        @Override
-        public CompletionStage<Void> register(ServiceInstance instance) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        @Override
-        public CompletionStage<Void> unregister(ServiceInstance instance) {
-            return CompletableFuture.completedFuture(null);
-        }
 
         @Override
         public CompletionStage<RegistrySnapshot> lookup(ServiceKey key) {
@@ -74,9 +64,5 @@ class ServiceDirectoryTest {
             }
         }
 
-        @Override
-        public void close() {
-            listener.set(null);
-        }
     }
 }

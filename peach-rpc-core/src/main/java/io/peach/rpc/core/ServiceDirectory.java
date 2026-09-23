@@ -2,7 +2,7 @@ package io.peach.rpc.core;
 
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.registry.Registry;
+import io.peach.rpc.registry.ServiceDiscovery;
 import io.peach.rpc.registry.RegistrySnapshot;
 import io.peach.rpc.registry.RegistrySubscription;
 import java.util.List;
@@ -14,8 +14,8 @@ final class ServiceDirectory implements AutoCloseable {
             new AtomicReference<>(new RegistrySnapshot(List.of(), 0));
     private final RegistrySubscription subscription;
 
-    ServiceDirectory(Registry registry, ServiceKey key) {
-        subscription = registry.subscribe(key, this::publish);
+    ServiceDirectory(ServiceDiscovery discovery, ServiceKey key) {
+        subscription = discovery.subscribe(key, this::publish);
     }
 
     private void publish(RegistrySnapshot candidate) {

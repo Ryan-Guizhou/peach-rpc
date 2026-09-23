@@ -3,9 +3,12 @@ package io.peach.rpc.registry.memory;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.registry.Registry;
+import io.peach.rpc.registry.RegistryCapabilities;
+import io.peach.rpc.registry.RegistryCapability;
 import io.peach.rpc.registry.RegistryListener;
 import io.peach.rpc.registry.RegistrySnapshot;
 import io.peach.rpc.registry.RegistrySubscription;
+import io.peach.rpc.registry.ServiceRegistrar;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -15,12 +18,24 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** 进程内注册中心。 */
-final class MemoryRegistry implements Registry {
+final class MemoryRegistry implements Registry, ServiceRegistrar {
+    private static final RegistryCapabilities CAPABILITIES = RegistryCapabilities.of(
+            RegistryCapability.REGISTRATION,
+            RegistryCapability.SUBSCRIPTION,
+            RegistryCapability.REVISION,
+            RegistryCapability.WEIGHT,
+            RegistryCapability.METADATA);
+
     private final ConcurrentMap<ServiceKey, ConcurrentMap<String, ServiceInstance>> data =
             new ConcurrentHashMap<>();
     private final ConcurrentMap<ServiceKey, CopyOnWriteArrayList<RegistryListener>> listeners =
             new ConcurrentHashMap<>();
     private final AtomicLong revision = new AtomicLong();
+
+    @Override
+    public RegistryCapabilities capabilities() {
+        return CAPABILITIES;
+    }
 
     @Override
     public CompletionStage<Void> register(ServiceInstance instance) {
@@ -59,14 +74,17 @@ final class MemoryRegistry implements Registry {
 
     private RegistrySnapshot snapshot(ServiceKey key, long currentRevision) {
         ConcurrentMap<String, ServiceInstance> instances = data.get(key);
-        List<ServiceInstance> values = instances == null ? List.of() : List.copyOf(instances.values());
+        List<ServiceInstance> values = instances == null
+                ? List.of()
+                : List.copyOf(instances.values());
         return new RegistrySnapshot(values, currentRevision);
     }
 
     private void publish(ServiceKey key) {
         long currentRevision = revision.incrementAndGet();
         RegistrySnapshot snapshot = snapshot(key, currentRevision);
-        for (RegistryListener listener : listeners.getOrDefault(key, new CopyOnWriteArrayList<>())) {
+        for (RegistryListener listener
+                : listeners.getOrDefault(key, new CopyOnWriteArrayList<>())) {
             listener.onSnapshot(snapshot);
         }
     }

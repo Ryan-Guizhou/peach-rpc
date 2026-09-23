@@ -7,9 +7,9 @@
 
 Peach RPC is a high-performance and extensible Java RPC framework. The `0.1.x` line focuses on a durable data/control-plane foundation: long-lived multiplexed connections, local service directories, bounded concurrency, SPI extensions, a binary protocol, a Spring Boot Starter, and reproducible benchmarks.
 
-> Status: Preview. The codebase is suitable for continued medium-project integration and validation, but TLS/mTLS, retry budgets, circuit breaking/outlier ejection, streaming RPC, generated stubs/dispatchers, and OpenTelemetry remain production gates.
+> Status: Preview. Compile-time consumer stubs, method-level codec binding, and separated discovery/registration contracts are now present. Generated server dispatchers, live connection handshakes, TLS/mTLS, retry budgets, circuit breaking/outlier ejection, streaming RPC, and OpenTelemetry remain production gates.
 
-Current capabilities include Vert.x TCP multiplexing, Etcd Lease + revision-aware Range/Watch discovery, local service snapshots, P2C+EWMA load balancing, bounded virtual-thread provider execution, Fory codec, SPI adapters, JDK/CGLIB proxy options, and Spring Boot annotations.
+Current capabilities include Vert.x TCP multiplexing, Etcd Lease + revision-aware Range/Watch discovery, local service snapshots, P2C+EWMA load balancing, bounded virtual-thread provider execution, method-bound Fory codec paths, compile-time consumer stubs with proxy fallback, SPI adapters, and Spring Boot annotations.
 
 <!-- doc-section:architecture -->
 ## Architecture
@@ -34,16 +34,17 @@ flowchart LR
 
 Third-party framework types do not belong in Core contracts, and control-plane work must not enter the per-request hot path.
 
-See the Chinese-first [architecture document](docs/architecture.md).
+See the Chinese-first [architecture document](docs/architecture.md) and [V2 high-performance kernel plan](docs/high-performance-kernel-v2-plan.md).
 
 <!-- doc-section:modules -->
 ## Modules
 
-The Reactor is reduced from the early 17-module layout to 9 modules:
+The Reactor is reduced from the early concept-granularity layout and now contains 10 modules with real dependency-isolation value:
 
 | Module | Responsibility |
 |---|---|
 | `peach-rpc-core` | API, SPI, protocol, client/server runtime and lightweight defaults |
+| `peach-rpc-codegen` | Compile-time consumer stub annotation processor; not part of the runtime hot path |
 | `peach-rpc-codec-fory` | Apache Fory codec |
 | `peach-rpc-transport-vertx` | Vert.x TCP transport |
 | `peach-rpc-registry-etcd` | Etcd registry |
@@ -96,9 +97,11 @@ private UserService userService;
 <!-- doc-section:configuration -->
 ## Configuration
 
-The default setup uses the in-memory registry, Vert.x transport, Fory codec, JDK proxy, and P2C+EWMA load balancing. Configure `peach.rpc.registry.type=etcd` for Etcd discovery and `peach.rpc.server.enabled=true` for providers.
+The default setup uses the in-memory registry, Vert.x transport, Fory codec, JDK proxy, and P2C+EWMA load balancing. Configure `peach.rpc.registry.type=etcd` for Etcd discovery, `peach.rpc.registry.namespace` for logical registry isolation, and `peach.rpc.server.enabled=true` for providers.
 
 See [Starter configuration](docs/starter.md).
+
+For the high-performance path, annotate service interfaces with `@PeachRpcContract` and configure `peach-rpc-codegen` as an annotation processor. Runtime discovery prefers the generated client stub and falls back to the configured proxy when no generated stub is present.
 
 <!-- doc-section:build -->
 ## Build

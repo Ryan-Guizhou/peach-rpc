@@ -1,44 +1,42 @@
 package io.peach.rpc.registry;
 
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import java.util.concurrent.CompletionStage;
+import java.util.Optional;
 
-/** 服务注册与发现控制面。 */
-public interface Registry extends AutoCloseable {
-
-    /**
-     * 注册服务实例。
-     *
-     * @param instance 服务实例
-     * @return 注册完成信号
-     */
-    CompletionStage<Void> register(ServiceInstance instance);
+/**
+ * 注册中心适配器统一生命周期入口。
+ *
+ * <p>所有注册中心必须提供服务发现能力；Provider 主动注册能力是可选的，
+ * 用于兼容 Kubernetes EndpointSlice 等 discovery-only 控制面。
+ */
+public interface Registry extends ServiceDiscovery, AutoCloseable {
 
     /**
-     * 注销服务实例。
+     * 返回适配器能力集合。
      *
-     * @param instance 服务实例
-     * @return 注销完成信号
+     * @return 注册中心能力
      */
-    CompletionStage<Void> unregister(ServiceInstance instance);
+    RegistryCapabilities capabilities();
 
     /**
-     * 获取指定服务的当前快照。
+     * 返回 Provider 注册能力。
      *
-     * @param key 服务唯一键
-     * @return 服务实例快照
+     * @return 支持主动注册时返回 Registrar
      */
-    CompletionStage<RegistrySnapshot> lookup(ServiceKey key);
-
-    /**
-     * 订阅指定服务的快照变化。
-     *
-     * @param key 服务唯一键
-     * @param listener 快照监听器
-     * @return 订阅句柄
-     */
-    RegistrySubscription subscribe(ServiceKey key, RegistryListener listener);
+    default Optional<ServiceRegistrar> registrar() {
+        boolean declared = capabilities().supports(
+                RegistryCapability.REGISTRATION);
+        boolean implemented = this instanceof ServiceRegistrar;
+        if (declared != implemented) {
+            throw new IllegalStateException(
+                    "Registry REGISTRATION capability does not match "
+                            + "ServiceRegistrar implementation: "
+                            + getClass().getName());
+        }
+        if (!implemented) {
+            return Optional.empty();
+        }
+        return Optional.of((ServiceRegistrar) this);
+    }
 
     /** 释放注册中心客户端与订阅资源。 */
     @Override

@@ -1,8 +1,10 @@
 package io.peach.rpc.codec;
 
+import io.peach.rpc.api.RpcMethodDescriptor;
 import io.peach.rpc.spi.ExtensionLoader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /** 已解析 Codec 的只读运行时注册表。 */
 public final class RpcCodecRegistry {
@@ -31,8 +33,6 @@ public final class RpcCodecRegistry {
 
     /**
      * 使用显式 Codec 集合构建运行时注册表。
-     *
-     * <p>该入口适合嵌入式运行、测试和不希望依赖 ServiceLoader 的场景。
      *
      * @param defaultCodec 默认 Codec
      * @param codecs 可用 Codec
@@ -63,16 +63,29 @@ public final class RpcCodecRegistry {
     public RpcCodec require(byte code) {
         RpcCodec codec = byCode.get(code);
         if (codec == null) {
-            throw new IllegalArgumentException("Unknown codec code: " + code);
+            throw new IllegalArgumentException("Unknown codec code: " + Byte.toUnsignedInt(code));
         }
         return codec;
     }
 
-    private static void register(Map<Byte, RpcCodec> codecs, RpcCodec codec) {
-        RpcCodec previous = codecs.putIfAbsent(codec.code(), codec);
-        if (previous != null && previous != codec) {
-            throw new IllegalStateException("Duplicate codec code: " + codec.code());
-        }
+    /**
+     * 为指定方法绑定目标 Codec。
+     *
+     * @param descriptor 方法描述
+     * @param codecId Codec 编号
+     * @return 方法级 Codec
+     */
+    public RpcMethodCodec bind(RpcMethodDescriptor descriptor, byte codecId) {
+        return require(codecId).bind(descriptor);
+    }
+
+    /**
+     * 返回支持的 Codec 编号。
+     *
+     * @return 不可变 Codec 编号集合
+     */
+    public Set<Byte> supportedCodecIds() {
+        return byCode.keySet();
     }
 
     /**
@@ -82,5 +95,14 @@ public final class RpcCodecRegistry {
      */
     public RpcCodec defaultCodec() {
         return defaultCodec;
+    }
+
+    private static void register(Map<Byte, RpcCodec> codecs, RpcCodec codec) {
+        RpcCodecIds.validateApplicationCodec(codec.code());
+        RpcCodec previous = codecs.putIfAbsent(codec.code(), codec);
+        if (previous != null && previous != codec) {
+            throw new IllegalStateException(
+                    "Duplicate codec code: " + Byte.toUnsignedInt(codec.code()));
+        }
     }
 }

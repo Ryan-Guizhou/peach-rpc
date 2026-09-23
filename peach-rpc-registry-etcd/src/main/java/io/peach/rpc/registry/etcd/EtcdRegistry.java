@@ -14,9 +14,12 @@ import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.registry.Registry;
+import io.peach.rpc.registry.RegistryCapabilities;
+import io.peach.rpc.registry.RegistryCapability;
 import io.peach.rpc.registry.RegistryListener;
 import io.peach.rpc.registry.RegistrySnapshot;
 import io.peach.rpc.registry.RegistrySubscription;
+import io.peach.rpc.registry.ServiceRegistrar;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
@@ -37,20 +40,39 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Etcd 只位于控制面。Consumer 的请求热路径读取 Core 中的本地服务目录，不访问 Etcd。
  */
-final class EtcdRegistry implements Registry {
+final class EtcdRegistry implements Registry, ServiceRegistrar {
     private static final Logger LOGGER = LoggerFactory.getLogger(EtcdRegistry.class);
-    private static final String ROOT = "/peach-rpc/";
+    private static final String DEFAULT_ROOT = "/peach-rpc/";
     private static final Duration RESUBSCRIBE_DELAY = Duration.ofSeconds(1);
+    private static final RegistryCapabilities CAPABILITIES = RegistryCapabilities.of(
+            RegistryCapability.REGISTRATION,
+            RegistryCapability.SUBSCRIPTION,
+            RegistryCapability.REVISION,
+            RegistryCapability.LEASE,
+            RegistryCapability.WEIGHT,
+            RegistryCapability.METADATA);
 
     private final Client client;
     private final long leaseTtlSeconds;
+    private final String root;
     private final Object leaseMonitor = new Object();
     private volatile CompletableFuture<Long> leaseFuture;
     private volatile CloseableClient keepAliveHandle;
 
-    EtcdRegistry(String[] endpoints, long leaseTtlSeconds) {
+    EtcdRegistry(
+            String[] endpoints,
+            long leaseTtlSeconds,
+            String namespace) {
         this.client = Client.builder().endpoints(endpoints).build();
         this.leaseTtlSeconds = leaseTtlSeconds;
+        this.root = "default".equals(namespace)
+                ? DEFAULT_ROOT
+                : DEFAULT_ROOT + "ns/" + encode(namespace) + '/';
+    }
+
+    @Override
+    public RegistryCapabilities capabilities() {
+        return CAPABILITIES;
     }
 
     @Override
@@ -226,15 +248,16 @@ final class EtcdRegistry implements Registry {
         }
     }
 
-    private static String prefix(ServiceKey key) {
-        return ROOT
+    private String prefix(ServiceKey key) {
+        return root
                 + encode(key.serviceName()) + '/'
                 + encode(key.version()) + '/'
                 + encode(key.group()) + '/';
     }
 
-    private static String key(ServiceInstance instance) {
-        return prefix(instance.serviceKey()) + encode(instance.instanceId());
+    private String key(ServiceInstance instance) {
+        return prefix(instance.serviceKey())
+                + encode(instance.instanceId());
     }
 
     private static String serialize(ServiceInstance instance) {
