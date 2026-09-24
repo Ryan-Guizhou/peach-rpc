@@ -143,6 +143,7 @@ public record RpcTransportOptions(
                 Set.of(RpcCompressionIds.NONE),
                 Set.of(
                         RpcFeature.DEADLINE,
+                        RpcFeature.CANCEL,
                         RpcFeature.GO_AWAY),
                 maxFrameBytes);
     }
