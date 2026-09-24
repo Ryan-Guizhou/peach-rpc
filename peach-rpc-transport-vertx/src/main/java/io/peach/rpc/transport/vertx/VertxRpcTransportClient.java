@@ -7,6 +7,7 @@ import io.peach.rpc.api.RpcTimeoutException;
 import io.peach.rpc.api.RpcUnavailableException;
 import io.peach.rpc.codec.RpcCodecIds;
 import io.peach.rpc.protocol.RpcErrorCodec;
+import io.peach.rpc.protocol.RpcFeature;
 import io.peach.rpc.protocol.RpcFrame;
 import io.peach.rpc.protocol.RpcHandshakeCodec;
 import io.peach.rpc.protocol.RpcMessageType;
@@ -219,6 +220,7 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                 new CompletableFuture<>();
 
         private boolean open = true;
+        private boolean draining;
         private int inflight;
         private long nextRequestId;
         private RpcNegotiatedCapabilities negotiated;
@@ -306,7 +308,10 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                 byte[] bytes,
                 Duration timeout,
                 CompletableFuture<byte[]> result) {
-            if (!open) {
+            if (result.isDone()) {
+                return;
+            }
+            if (!open || draining) {
                 result.completeExceptionally(
                         new RpcUnavailableException(
                                 "Connection closed: "
@@ -351,6 +356,12 @@ final class VertxRpcTransportClient implements RpcTransportClient {
             pending.put(
                     requestId,
                     new PendingRequest(result, timerId));
+            result.whenComplete((ignoredValue, ignoredError) -> {
+                if (result.isCancelled()) {
+                    context.runOnContext(ignored ->
+                            cancelPending(requestId));
+                }
+            });
             socket.write(Buffer.buffer(bytes))
                     .onFailure(error ->
                             failPending(requestId, error));
@@ -370,9 +381,33 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                 return;
             }
             inflight--;
+            sendCancel(requestId);
             removed.future().completeExceptionally(
                     new RpcTimeoutException(
                             "RPC request timed out"));
+            closeIfDrained();
+        }
+
+        private void cancelPending(long requestId) {
+            PendingRequest removed = pending.remove(requestId);
+            if (removed == null) {
+                return;
+            }
+            vertx.cancelTimer(removed.timerId());
+            inflight--;
+            sendCancel(requestId);
+            closeIfDrained();
+        }
+
+        private void sendCancel(long requestId) {
+            if (!open
+                    || negotiated == null
+                    || !negotiated.features().contains(RpcFeature.CANCEL)) {
+                return;
+            }
+            socket.write(Buffer.buffer(
+                            RpcProtocolCodec.encodeCancel(requestId)))
+                    .onFailure(this::failAll);
         }
 
         private void failPending(
@@ -414,16 +449,28 @@ final class VertxRpcTransportClient implements RpcTransportClient {
             vertx.cancelTimer(request.timerId());
             inflight--;
             request.future().complete(bytes);
+            closeIfDrained();
         }
 
         private void handleGoAway(byte[] bytes) {
             try {
                 RpcFrame frame = RpcProtocolCodec.decode(bytes);
                 var error = RpcErrorCodec.decode(frame.payload());
-                failAll(new RpcProtocolException(
-                        "Remote GO_AWAY: " + error.message()));
+                draining = true;
+                group.release(slot, this);
+                LOGGER.debug(
+                        "RPC connection is draining: endpoint={}, reason={}",
+                        endpoint.authority(),
+                        error.message());
+                closeIfDrained();
             } catch (Throwable error) {
                 failAll(error);
+            }
+        }
+
+        private void closeIfDrained() {
+            if (draining && pending.isEmpty() && open) {
+                socket.close();
             }
         }
 
