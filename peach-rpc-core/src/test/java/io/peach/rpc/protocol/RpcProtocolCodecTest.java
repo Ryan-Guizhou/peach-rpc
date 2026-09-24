@@ -87,6 +87,16 @@ class RpcProtocolCodecTest {
     }
 
     @Test
+    void shouldEncodeCancelFrame() {
+        byte[] encoded = RpcProtocolCodec.encodeCancel(77L);
+        RpcFrame decoded = RpcProtocolCodec.decode(encoded);
+
+        assertEquals(RpcMessageType.CANCEL, decoded.messageType());
+        assertEquals(77L, decoded.requestId());
+        assertEquals(0, decoded.payload().length);
+    }
+
+    @Test
     void shouldRejectBrokenMagic() {
         byte[] frame = RpcProtocolCodec.encode(new RpcFrame(
                 RpcMessageType.PING,
