@@ -17,6 +17,7 @@ import io.peach.rpc.protocol.RpcProtocolCodec;
 import io.peach.rpc.protocol.RpcProtocolException;
 import io.peach.rpc.registry.ServiceRegistrar;
 import io.peach.rpc.transport.RpcTransportServer;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
@@ -43,6 +45,7 @@ public final class PeachRpcServer implements AutoCloseable {
     private final RpcCodecRegistry codecs;
     private final RpcEndpoint bindEndpoint;
     private final Semaphore admission;
+    private final Duration drainTimeout;
     private final ExecutorService executor =
             Executors.newVirtualThreadPerTaskExecutor();
     private final ConcurrentMap<Integer, ServiceBinding> bindings =
@@ -68,6 +71,9 @@ public final class PeachRpcServer implements AutoCloseable {
                 builder.bind,
                 "bindEndpoint");
         this.admission = new Semaphore(builder.maxConcurrent);
+        this.drainTimeout = Objects.requireNonNull(
+                builder.drainTimeout,
+                "drainTimeout");
     }
 
     /**
@@ -277,11 +283,16 @@ public final class PeachRpcServer implements AutoCloseable {
         }
 
         CompletableFuture<byte[]> result = new CompletableFuture<>();
-        executor.submit(() -> execute(
+        Future<?> task = executor.submit(() -> execute(
                 request,
                 binding,
                 methodCodec,
                 result));
+        result.whenComplete((ignoredValue, ignoredError) -> {
+            if (result.isCancelled()) {
+                task.cancel(true);
+            }
+        });
         return result;
     }
 
@@ -307,6 +318,9 @@ public final class PeachRpcServer implements AutoCloseable {
                     RpcStatus.OK,
                     methodCodec.encodeResult(value)));
         } catch (Throwable error) {
+            if (result.isCancelled()) {
+                return;
+            }
             LOGGER.warn(
                     "RPC service invocation failed: requestId={}, serviceId={}, methodId={}",
                     request.requestId(),
@@ -373,10 +387,17 @@ public final class PeachRpcServer implements AutoCloseable {
 
     @Override
     public void close() {
-        State previous = state.getAndSet(State.CLOSED);
-        if (previous == State.CLOSED) {
+        State current = state.get();
+        if (current == State.CLOSED) {
             return;
         }
+
+        boolean drain = current == State.STARTED
+                && state.compareAndSet(State.STARTED, State.DRAINING);
+        if (!drain) {
+            state.set(State.CLOSED);
+        }
+
         RpcEndpoint endpoint = actualEndpoint;
         if (endpoint != null) {
             for (ServiceInstance configured : configuredInstances) {
@@ -393,6 +414,20 @@ public final class PeachRpcServer implements AutoCloseable {
                 }
             }
         }
+
+        if (drain) {
+            try {
+                transport.drain(drainTimeout)
+                        .toCompletableFuture()
+                        .join();
+            } catch (RuntimeException error) {
+                LOGGER.warn(
+                        "RPC graceful drain failed; forcing transport close",
+                        error);
+            } finally {
+                state.set(State.CLOSED);
+            }
+        }
         transport.close();
         executor.close();
     }
@@ -401,6 +436,7 @@ public final class PeachRpcServer implements AutoCloseable {
         NEW,
         STARTING,
         STARTED,
+        DRAINING,
         CLOSED
     }
 
@@ -411,6 +447,7 @@ public final class PeachRpcServer implements AutoCloseable {
         private RpcCodecRegistry codecs;
         private RpcEndpoint bind;
         private int maxConcurrent = 4096;
+        private Duration drainTimeout = Duration.ofSeconds(30);
 
         /** 创建 Provider Builder。 */
         public Builder() {
@@ -472,6 +509,21 @@ public final class PeachRpcServer implements AutoCloseable {
                         "maxConcurrent must be positive");
             }
             this.maxConcurrent = value;
+            return this;
+        }
+
+        /**
+         * 设置 Provider 优雅排空超时时间。
+         *
+         * @param value 最大排空时间
+         * @return Provider Builder
+         */
+        public Builder drainTimeout(Duration value) {
+            if (value == null || value.isNegative() || value.isZero()) {
+                throw new IllegalArgumentException(
+                        "drainTimeout must be positive");
+            }
+            this.drainTimeout = value;
             return this;
         }
 
