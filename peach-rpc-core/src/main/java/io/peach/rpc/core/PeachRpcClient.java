@@ -1,8 +1,11 @@
 package io.peach.rpc.core;
 
+import io.peach.rpc.api.PeachRpcIdempotent;
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.RpcException;
 import io.peach.rpc.api.RpcMethodDescriptor;
+import io.peach.rpc.api.RpcOverloadedException;
+import io.peach.rpc.api.RpcRemoteException;
 import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.api.RpcUnavailableException;
 import io.peach.rpc.api.ServiceInstance;
@@ -25,10 +28,14 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 /** Peach RPC Consumer 运行时。 */
 public final class PeachRpcClient implements AutoCloseable {
@@ -39,6 +46,8 @@ public final class PeachRpcClient implements AutoCloseable {
     private final LoadBalancer loadBalancer;
     private final ProxyFactory proxyFactory;
     private final Duration timeout;
+    private final RpcClientResilienceOptions resilienceOptions;
+    private final RetryBudget retryBudget;
     private final ConcurrentMap<ServiceKey, ServiceDirectory> directories =
             new ConcurrentHashMap<>();
     private final ConcurrentMap<RpcEndpoint, EndpointStats> stats =
@@ -56,6 +65,12 @@ public final class PeachRpcClient implements AutoCloseable {
                         ServiceInstance instance) {
                     return endpointStats(instance).inflight();
                 }
+
+                @Override
+                public boolean available(
+                        ServiceInstance instance) {
+                    return endpointStats(instance).available();
+                }
             };
 
     private PeachRpcClient(Builder builder) {
@@ -70,6 +85,10 @@ public final class PeachRpcClient implements AutoCloseable {
                 ? builder.proxyFactory
                 : ExtensionLoader.getLoader(ProxyFactory.class).getDefaultExtension();
         this.timeout = Objects.requireNonNull(builder.timeout, "timeout");
+        this.resilienceOptions = Objects.requireNonNull(
+                builder.resilienceOptions,
+                "resilienceOptions");
+        this.retryBudget = new RetryBudget(resilienceOptions);
     }
 
     /**
@@ -104,7 +123,8 @@ public final class PeachRpcClient implements AutoCloseable {
                 api,
                 directory,
                 codecs,
-                defaultCodecId);
+                defaultCodecId,
+                resilienceOptions);
 
         return RpcGeneratedClients.find(api)
                 .map(factory -> factory.create(
@@ -193,28 +213,79 @@ public final class PeachRpcClient implements AutoCloseable {
             ClientReference reference,
             ClientMethodBinding method,
             byte[] encodedArguments) {
-        ServiceInstance[] instances =
-                reference.directory().snapshot();
-        if (instances.length == 0) {
+        retryBudget.onRequest();
+        if (!method.circuitBreaker().tryAcquire()) {
             return CompletableFuture.failedFuture(
+                    new RpcUnavailableException(
+                            "RPC circuit is open for "
+                                    + reference.key().canonicalName()
+                                    + '#'
+                                    + method.methodId()));
+        }
+
+        long deadlineNanos = System.nanoTime() + timeout.toNanos();
+        CompletableFuture<Object> result = new CompletableFuture<>();
+        result.whenComplete((ignoredValue, ignoredError) -> {
+            if (result.isCancelled()) {
+                method.circuitBreaker().onCancelled();
+            }
+        });
+        attempt(
+                reference,
+                method,
+                encodedArguments,
+                deadlineNanos,
+                1,
+                result);
+        return result;
+    }
+
+    private void attempt(
+            ClientReference reference,
+            ClientMethodBinding method,
+            byte[] encodedArguments,
+            long deadlineNanos,
+            int attempt,
+            CompletableFuture<Object> result) {
+        if (result.isDone()) {
+            return;
+        }
+        long remainingNanos = deadlineNanos - System.nanoTime();
+        if (remainingNanos <= 0L) {
+            method.circuitBreaker().onFailure();
+            result.completeExceptionally(
+                    new io.peach.rpc.api.RpcTimeoutException(
+                            "RPC request deadline exceeded"));
+            return;
+        }
+
+        ServiceInstance[] instances = reference.directory().snapshot();
+        ServiceInstance selected = instances.length == 0
+                ? null
+                : loadBalancer.select(instances, loadMetrics);
+        if (selected == null) {
+            retryOrComplete(
+                    reference,
+                    method,
+                    encodedArguments,
+                    deadlineNanos,
+                    attempt,
+                    result,
                     new RpcUnavailableException(
                             "No available instance for "
                                     + reference.key().canonicalName()));
-        }
-
-        ServiceInstance selected =
-                loadBalancer.select(instances, loadMetrics);
-        if (selected == null) {
-            return CompletableFuture.failedFuture(new RpcUnavailableException(
-                    "No available instance for " + reference.key().canonicalName()));
+            return;
         }
 
         EndpointStats endpointStats = endpointStats(selected);
         long startedAtNanos = System.nanoTime();
         endpointStats.begin();
 
+        long remainingMillis = Math.max(
+                1L,
+                TimeUnit.NANOSECONDS.toMillis(remainingNanos));
         long deadlineEpochMillis =
-                System.currentTimeMillis() + timeout.toMillis();
+                System.currentTimeMillis() + remainingMillis;
         byte[] request = RpcProtocolCodec.encodeRequest(
                 method.codec().codecId(),
                 reference.serviceId(),
@@ -222,20 +293,151 @@ public final class PeachRpcClient implements AutoCloseable {
                 deadlineEpochMillis,
                 encodedArguments);
 
-        CompletableFuture<Object> result = new CompletableFuture<>();
-        transport.request(
+        CompletableFuture<byte[]> transportFuture = transport.request(
                         selected.endpoint(),
                         request,
-                        timeout)
-                .whenComplete((rawResponse, transportError) -> {
-                    endpointStats.end(System.nanoTime() - startedAtNanos);
-                    if (transportError != null) {
-                        result.completeExceptionally(transportError);
-                        return;
-                    }
-                    completeResponse(method, result, rawResponse);
-                });
-        return result;
+                        Duration.ofNanos(remainingNanos))
+                .toCompletableFuture();
+        result.whenComplete((ignoredValue, ignoredError) -> {
+            if (result.isCancelled()) {
+                transportFuture.cancel(true);
+            }
+        });
+
+        transportFuture.whenComplete((rawResponse, transportError) -> {
+            long elapsed = System.nanoTime() - startedAtNanos;
+            if (result.isCancelled()) {
+                endpointStats.endCancelled(elapsed);
+                return;
+            }
+            if (transportError != null) {
+                Throwable failure = unwrap(transportError);
+                if (failure instanceof CancellationException) {
+                    endpointStats.endCancelled(elapsed);
+                    return;
+                }
+                endpointStats.endFailure(elapsed, resilienceOptions);
+                retryOrComplete(
+                        reference,
+                        method,
+                        encodedArguments,
+                        deadlineNanos,
+                        attempt,
+                        result,
+                        failure);
+                return;
+            }
+
+            try {
+                Object value = decodeResponse(method, rawResponse);
+                endpointStats.endSuccess(elapsed);
+                method.circuitBreaker().onSuccess();
+                result.complete(value);
+            } catch (RpcRemoteException remoteError) {
+                if (isRetryable(remoteError)) {
+                    endpointStats.endFailure(elapsed, resilienceOptions);
+                    retryOrComplete(
+                            reference,
+                            method,
+                            encodedArguments,
+                            deadlineNanos,
+                            attempt,
+                            result,
+                            remoteError);
+                } else {
+                    endpointStats.endSuccess(elapsed);
+                    method.circuitBreaker().onSuccess();
+                    result.completeExceptionally(remoteError);
+                }
+            } catch (Throwable error) {
+                endpointStats.endFailure(elapsed, resilienceOptions);
+                retryOrComplete(
+                        reference,
+                        method,
+                        encodedArguments,
+                        deadlineNanos,
+                        attempt,
+                        result,
+                        error);
+            }
+        });
+    }
+
+    private void retryOrComplete(
+            ClientReference reference,
+            ClientMethodBinding method,
+            byte[] encodedArguments,
+            long deadlineNanos,
+            int attempt,
+            CompletableFuture<Object> result,
+            Throwable failure) {
+        if (result.isDone()) {
+            return;
+        }
+        boolean retry = method.idempotent()
+                && isRetryable(failure)
+                && attempt < resilienceOptions.maxAttempts()
+                && retryBudget.tryAcquireRetry();
+        if (!retry) {
+            method.circuitBreaker().onFailure();
+            result.completeExceptionally(failure);
+            return;
+        }
+
+        long remainingNanos = deadlineNanos - System.nanoTime();
+        long delayMillis = retryDelayMillis(attempt);
+        if (remainingNanos
+                <= TimeUnit.MILLISECONDS.toNanos(delayMillis)) {
+            method.circuitBreaker().onFailure();
+            result.completeExceptionally(failure);
+            return;
+        }
+        CompletableFuture.delayedExecutor(
+                        delayMillis,
+                        TimeUnit.MILLISECONDS)
+                .execute(() -> attempt(
+                        reference,
+                        method,
+                        encodedArguments,
+                        deadlineNanos,
+                        attempt + 1,
+                        result));
+    }
+
+    private long retryDelayMillis(int attempt) {
+        long base = resilienceOptions.retryBaseBackoff().toMillis();
+        long max = resilienceOptions.retryMaxBackoff().toMillis();
+        if (base == 0L || max == 0L) {
+            return 0L;
+        }
+        int shift = Math.min(Math.max(attempt - 1, 0), 20);
+        long ceiling = base > (Long.MAX_VALUE >> shift)
+                ? max
+                : Math.min(max, base << shift);
+        return ceiling <= 1L
+                ? ceiling
+                : ThreadLocalRandom.current().nextLong(ceiling + 1L);
+    }
+
+    private static boolean isRetryable(Throwable error) {
+        if (error instanceof RpcUnavailableException
+                || error instanceof RpcOverloadedException) {
+            return true;
+        }
+        if (error instanceof RpcRemoteException remote) {
+            return remote.status() == RpcStatus.UNAVAILABLE
+                    || remote.status() == RpcStatus.OVERLOADED
+                    || remote.status() == RpcStatus.INTERNAL_ERROR;
+        }
+        return false;
+    }
+
+    private static Throwable unwrap(Throwable error) {
+        if (error instanceof CompletionException
+                && error.getCause() != null) {
+            return error.getCause();
+        }
+        return error;
     }
 
     private EndpointStats endpointStats(
@@ -245,31 +447,28 @@ public final class PeachRpcClient implements AutoCloseable {
                 ignored -> new EndpointStats());
     }
 
-    private static void completeResponse(
+    private static Object decodeResponse(
             ClientMethodBinding method,
-            CompletableFuture<Object> result,
             byte[] rawResponse) {
-        try {
-            RpcFrameView response = RpcProtocolCodec.view(rawResponse);
-            if (response.status() != RpcStatus.OK) {
-                var remoteError = RpcErrorCodec.decode(
-                        response.bytes(),
-                        response.payloadOffset(),
-                        response.payloadLength());
-                result.completeExceptionally(new RpcException(remoteError.message()));
-                return;
-            }
-            if (response.codec() != method.codec().codecId()) {
-                throw new RpcException(
-                        "RPC response codec does not match bound method codec");
-            }
-            result.complete(method.codec().decodeResult(
+        RpcFrameView response = RpcProtocolCodec.view(rawResponse);
+        if (response.status() != RpcStatus.OK) {
+            var remoteError = RpcErrorCodec.decode(
                     response.bytes(),
                     response.payloadOffset(),
-                    response.payloadLength()));
-        } catch (Throwable error) {
-            result.completeExceptionally(error);
+                    response.payloadLength());
+            throw new RpcRemoteException(
+                    response.status(),
+                    remoteError.errorType(),
+                    remoteError.message());
         }
+        if (response.codec() != method.codec().codecId()) {
+            throw new RpcException(
+                    "RPC response codec does not match bound method codec");
+        }
+        return method.codec().decodeResult(
+                response.bytes(),
+                response.payloadOffset(),
+                response.payloadLength());
     }
 
     @Override
@@ -290,14 +489,19 @@ public final class PeachRpcClient implements AutoCloseable {
                 Class<?> api,
                 ServiceDirectory directory,
                 RpcCodecRegistry codecs,
-                byte codecId) {
+                byte codecId,
+                RpcClientResilienceOptions resilienceOptions) {
             Map<Method, ClientMethodBinding> methods = new HashMap<>();
             Map<Integer, ClientMethodBinding> methodsById = new HashMap<>();
             for (Method method : api.getMethods()) {
                 RpcMethodDescriptor descriptor = RpcMethodDescriptor.from(key, method);
                 ClientMethodBinding binding = new ClientMethodBinding(
                         descriptor.methodId(),
-                        codecs.bind(descriptor, codecId));
+                        codecs.bind(descriptor, codecId),
+                        method.isAnnotationPresent(PeachRpcIdempotent.class),
+                        new RpcCircuitBreaker(
+                                resilienceOptions.circuitConsecutiveFailureThreshold(),
+                                resilienceOptions.circuitOpenDuration()));
                 ClientMethodBinding collision = methodsById.putIfAbsent(
                         descriptor.methodId(),
                         binding);
@@ -339,7 +543,9 @@ public final class PeachRpcClient implements AutoCloseable {
 
     private record ClientMethodBinding(
             int methodId,
-            RpcMethodCodec codec) {
+            RpcMethodCodec codec,
+            boolean idempotent,
+            RpcCircuitBreaker circuitBreaker) {
     }
 
     private final class GeneratedInvocation implements RpcGeneratedInvocation {
@@ -427,6 +633,8 @@ public final class PeachRpcClient implements AutoCloseable {
         private LoadBalancer loadBalancer;
         private ProxyFactory proxyFactory;
         private Duration timeout = Duration.ofSeconds(3);
+        private RpcClientResilienceOptions resilienceOptions =
+                RpcClientResilienceOptions.DEFAULT;
 
         /** 创建 Consumer Builder。 */
         public Builder() {
@@ -498,6 +706,19 @@ public final class PeachRpcClient implements AutoCloseable {
                 throw new IllegalArgumentException("timeout must be positive");
             }
             this.timeout = value;
+            return this;
+        }
+
+        /**
+         * 设置 Consumer 容错参数。
+         *
+         * @param value 容错参数
+         * @return Consumer Builder
+         */
+        public Builder resilienceOptions(RpcClientResilienceOptions value) {
+            this.resilienceOptions = Objects.requireNonNull(
+                    value,
+                    "resilienceOptions");
             return this;
         }
 
