@@ -25,14 +25,27 @@ public final class P2cEwmaLoadBalancer implements LoadBalancer {
             return null;
         }
         if (size == 1) {
-            return candidates[0];
+            return metrics.available(candidates[0])
+                    ? candidates[0]
+                    : null;
         }
 
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        int firstIndex = random.nextInt(size);
-        int secondIndex = random.nextInt(size - 1);
-        if (secondIndex >= firstIndex) {
-            secondIndex++;
+        int firstIndex = findAvailable(
+                candidates,
+                metrics,
+                random.nextInt(size),
+                -1);
+        if (firstIndex < 0) {
+            return null;
+        }
+        int secondIndex = findAvailable(
+                candidates,
+                metrics,
+                random.nextInt(size),
+                firstIndex);
+        if (secondIndex < 0) {
+            return candidates[firstIndex];
         }
 
         ServiceInstance first = candidates[firstIndex];
@@ -64,6 +77,20 @@ public final class P2cEwmaLoadBalancer implements LoadBalancer {
         return score(first) <= score(second)
                 ? first.instance()
                 : second.instance();
+    }
+
+    private static int findAvailable(
+            ServiceInstance[] candidates,
+            LoadBalanceMetrics metrics,
+            int start,
+            int excluded) {
+        for (int offset = 0; offset < candidates.length; offset++) {
+            int index = (start + offset) % candidates.length;
+            if (index != excluded && metrics.available(candidates[index])) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     private static double score(
