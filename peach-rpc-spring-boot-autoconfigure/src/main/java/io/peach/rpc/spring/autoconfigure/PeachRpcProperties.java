@@ -322,6 +322,7 @@ public class PeachRpcProperties {
         private Duration timeout = Duration.ofSeconds(3);
         private String loadBalancer = "p2c-ewma";
         private String proxy = "jdk";
+        private final Resilience resilience = new Resilience();
 
         /**
          * 返回是否启用 Consumer。
@@ -394,6 +395,85 @@ public class PeachRpcProperties {
         public void setProxy(String proxy) {
             this.proxy = proxy;
         }
+
+        /**
+         * 返回 Consumer 容错配置。
+         *
+         * @return Consumer 容错配置
+         */
+        public Resilience getResilience() {
+            return resilience;
+        }
+    }
+
+    /** Consumer 重试、异常实例剔除与熔断配置。 */
+    public static class Resilience {
+
+        /** 创建 Consumer 容错配置。 */
+        public Resilience() {
+        }
+
+        private int maxAttempts = 2;
+        private double retryBudgetRatio = 0.10d;
+        private int retryBudgetMinRetries = 10;
+        private int retryBudgetMaxRetries = 100;
+        private Duration retryBaseBackoff = Duration.ofMillis(10);
+        private Duration retryMaxBackoff = Duration.ofMillis(100);
+        private int outlierConsecutiveFailureThreshold = 5;
+        private Duration outlierEjectionDuration = Duration.ofSeconds(30);
+        private int circuitConsecutiveFailureThreshold = 20;
+        private Duration circuitOpenDuration = Duration.ofSeconds(10);
+
+        /** @return 单次逻辑调用最大尝试次数 */
+        public int getMaxAttempts() { return maxAttempts; }
+        /** @param value 单次逻辑调用最大尝试次数 */
+        public void setMaxAttempts(int value) { maxAttempts = value; }
+        /** @return 每个原始请求补充的重试额度比例 */
+        public double getRetryBudgetRatio() { return retryBudgetRatio; }
+        /** @param value 每个原始请求补充的重试额度比例 */
+        public void setRetryBudgetRatio(double value) { retryBudgetRatio = value; }
+        /** @return 初始最低重试额度 */
+        public int getRetryBudgetMinRetries() { return retryBudgetMinRetries; }
+        /** @param value 初始最低重试额度 */
+        public void setRetryBudgetMinRetries(int value) { retryBudgetMinRetries = value; }
+        /** @return 最大累计重试额度 */
+        public int getRetryBudgetMaxRetries() { return retryBudgetMaxRetries; }
+        /** @param value 最大累计重试额度 */
+        public void setRetryBudgetMaxRetries(int value) { retryBudgetMaxRetries = value; }
+        /** @return 首次重试最大退避窗口 */
+        public Duration getRetryBaseBackoff() { return retryBaseBackoff; }
+        /** @param value 首次重试最大退避窗口 */
+        public void setRetryBaseBackoff(Duration value) { retryBaseBackoff = value; }
+        /** @return 最大重试退避窗口 */
+        public Duration getRetryMaxBackoff() { return retryMaxBackoff; }
+        /** @param value 最大重试退避窗口 */
+        public void setRetryMaxBackoff(Duration value) { retryMaxBackoff = value; }
+        /** @return 连续基础设施失败的端点剔除阈值 */
+        public int getOutlierConsecutiveFailureThreshold() {
+            return outlierConsecutiveFailureThreshold;
+        }
+        /** @param value 连续基础设施失败的端点剔除阈值 */
+        public void setOutlierConsecutiveFailureThreshold(int value) {
+            outlierConsecutiveFailureThreshold = value;
+        }
+        /** @return 端点临时剔除时间 */
+        public Duration getOutlierEjectionDuration() { return outlierEjectionDuration; }
+        /** @param value 端点临时剔除时间 */
+        public void setOutlierEjectionDuration(Duration value) {
+            outlierEjectionDuration = value;
+        }
+        /** @return 方法连续基础设施失败熔断阈值 */
+        public int getCircuitConsecutiveFailureThreshold() {
+            return circuitConsecutiveFailureThreshold;
+        }
+        /** @param value 方法连续基础设施失败熔断阈值 */
+        public void setCircuitConsecutiveFailureThreshold(int value) {
+            circuitConsecutiveFailureThreshold = value;
+        }
+        /** @return 熔断打开时间 */
+        public Duration getCircuitOpenDuration() { return circuitOpenDuration; }
+        /** @param value 熔断打开时间 */
+        public void setCircuitOpenDuration(Duration value) { circuitOpenDuration = value; }
     }
 
     /**
@@ -410,6 +490,7 @@ public class PeachRpcProperties {
         private String host = "0.0.0.0";
         private int port = 19090;
         private int maxConcurrent = 4096;
+        private Duration drainTimeout = Duration.ofSeconds(30);
 
         /**
          * 返回是否启用 Provider。
@@ -481,6 +562,24 @@ public class PeachRpcProperties {
          */
         public void setMaxConcurrent(int maxConcurrent) {
             this.maxConcurrent = maxConcurrent;
+        }
+
+        /**
+         * 返回 Provider 优雅排空超时时间。
+         *
+         * @return 优雅排空超时时间
+         */
+        public Duration getDrainTimeout() {
+            return drainTimeout;
+        }
+
+        /**
+         * 设置 Provider 优雅排空超时时间。
+         *
+         * @param drainTimeout 优雅排空超时时间
+         */
+        public void setDrainTimeout(Duration drainTimeout) {
+            this.drainTimeout = drainTimeout;
         }
     }
 }

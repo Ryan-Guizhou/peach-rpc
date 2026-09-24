@@ -4,6 +4,7 @@ import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.codec.RpcCodecRegistry;
 import io.peach.rpc.core.PeachRpcClient;
 import io.peach.rpc.core.PeachRpcServer;
+import io.peach.rpc.core.RpcClientResilienceOptions;
 import io.peach.rpc.loadbalance.LoadBalancer;
 import io.peach.rpc.proxy.ProxyFactory;
 import io.peach.rpc.registry.Registry;
@@ -108,6 +109,31 @@ public class PeachRpcAutoConfiguration {
     }
 
     /**
+     * 创建 Consumer 容错参数。
+     *
+     * @param properties Peach RPC 配置
+     * @return Consumer 容错参数
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public RpcClientResilienceOptions peachRpcClientResilienceOptions(
+            PeachRpcProperties properties) {
+        PeachRpcProperties.Resilience resilience =
+                properties.getClient().getResilience();
+        return new RpcClientResilienceOptions(
+                resilience.getMaxAttempts(),
+                resilience.getRetryBudgetRatio(),
+                resilience.getRetryBudgetMinRetries(),
+                resilience.getRetryBudgetMaxRetries(),
+                resilience.getRetryBaseBackoff(),
+                resilience.getRetryMaxBackoff(),
+                resilience.getOutlierConsecutiveFailureThreshold(),
+                resilience.getOutlierEjectionDuration(),
+                resilience.getCircuitConsecutiveFailureThreshold(),
+                resilience.getCircuitOpenDuration());
+    }
+
+    /**
      * 创建 Consumer 负载均衡器。
      *
      * @param properties Peach RPC 配置
@@ -155,6 +181,7 @@ public class PeachRpcAutoConfiguration {
             RpcTransportOptions transportOptions,
             LoadBalancer loadBalancer,
             ProxyFactory proxyFactory,
+            RpcClientResilienceOptions resilienceOptions,
             PeachRpcProperties properties) {
         return PeachRpcClient.builder()
                 .serviceDiscovery(registry)
@@ -163,6 +190,7 @@ public class PeachRpcAutoConfiguration {
                 .loadBalancer(loadBalancer)
                 .proxyFactory(proxyFactory)
                 .timeout(properties.getClient().getTimeout())
+                .resilienceOptions(resilienceOptions)
                 .build();
     }
 
@@ -207,6 +235,7 @@ public class PeachRpcAutoConfiguration {
                 .transportServer(transportFactory.createServer(transportOptions))
                 .bindEndpoint(new RpcEndpoint(server.getHost(), server.getPort()))
                 .maxConcurrent(server.getMaxConcurrent())
+                .drainTimeout(server.getDrainTimeout())
                 .build();
     }
 

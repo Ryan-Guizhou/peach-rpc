@@ -5,7 +5,9 @@ import java.util.Objects;
 /** 携带远端 RPC 状态与脱敏异常类型的调用异常。 */
 public final class RpcRemoteException extends RpcException {
 
+    /** 远端返回的 RPC 状态。 */
     private final RpcStatus status;
+    /** 远端脱敏后的异常类型。 */
     private final String remoteErrorType;
 
     /**
@@ -26,12 +28,20 @@ public final class RpcRemoteException extends RpcException {
                 "remoteErrorType");
     }
 
-    /** @return RPC 状态 */
+    /**
+     * 返回 RPC 状态。
+     *
+     * @return RPC 状态
+     */
     public RpcStatus status() {
         return status;
     }
 
-    /** @return 远端脱敏异常类型 */
+    /**
+     * 返回远端脱敏异常类型。
+     *
+     * @return 远端脱敏异常类型
+     */
     public String remoteErrorType() {
         return remoteErrorType;
     }
