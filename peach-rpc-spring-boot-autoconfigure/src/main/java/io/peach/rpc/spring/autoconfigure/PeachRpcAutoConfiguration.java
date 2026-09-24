@@ -168,6 +168,7 @@ public class PeachRpcAutoConfiguration {
      * @param transportOptions Transport 配置
      * @param loadBalancer 负载均衡器
      * @param proxyFactory 代理工厂
+     * @param resilienceOptions Consumer 容错参数
      * @param properties Peach RPC 配置
      * @return Consumer 运行时
      */
