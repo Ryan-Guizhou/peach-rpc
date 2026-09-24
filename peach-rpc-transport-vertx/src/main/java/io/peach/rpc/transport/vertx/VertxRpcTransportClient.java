@@ -456,6 +456,11 @@ final class VertxRpcTransportClient implements RpcTransportClient {
             try {
                 RpcFrame frame = RpcProtocolCodec.decode(bytes);
                 var error = RpcErrorCodec.decode(frame.payload());
+                if (frame.status() != RpcStatus.UNAVAILABLE) {
+                    failAll(new RpcProtocolException(
+                            "Remote GO_AWAY: " + error.message()));
+                    return;
+                }
                 draining = true;
                 group.release(slot, this);
                 LOGGER.debug(

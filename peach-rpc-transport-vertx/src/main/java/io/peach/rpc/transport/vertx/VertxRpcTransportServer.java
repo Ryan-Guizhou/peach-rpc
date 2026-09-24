@@ -312,6 +312,10 @@ final class VertxRpcTransportServer implements RpcTransportServer {
         }
 
         private void beginDrain() {
+            if (Vertx.currentContext() != context) {
+                context.runOnContext(ignored -> beginDrain());
+                return;
+            }
             if (!open || connectionDraining) {
                 return;
             }
