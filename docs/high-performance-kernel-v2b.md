@@ -197,21 +197,26 @@ V2-B 没有宣称零分配。
 
 基准模块只提供可重复测量能力。仓库文档不写未经固定机器、JVM、参数和 warmup 验证的百分比结论。
 
-## 5. 下一阶段
+## 5. V2-B 之后的生产内核收尾
 
-### V2-C 前的内核收尾
+V2-B.1 第一批已经完成：
 
-优先级：
+1. Raw Vert.x echo 与完整 RPC Added Latency 基线；
+2. Cancellation；
+3. Retry Budget；
+4. outlier ejection / circuit breaking；
+5. graceful GO_AWAY drain。
+
+后续仍需：
 
 1. Buffer ownership / Buffer-oriented Codec；
-2. Raw Vert.x echo 与完整 RPC Added Latency；
-3. Provider execution policy：direct / CPU / blocking virtual；
-4. Cancellation；
-5. Retry Budget；
-6. outlier ejection / circuit breaking；
-7. graceful GO_AWAY drain；
-8. TLS/mTLS；
-9. metrics/tracing/JFR。
+2. Provider execution policy：direct / CPU / blocking virtual；
+3. TLS/mTLS；
+4. metrics/tracing/JFR；
+5. Fory 稳定 Type ID / Schema fingerprint；
+6. Etcd compaction/recovery 专项测试。
+
+具体实现边界见 [V2-B.1 生产内核第一批](production-kernel-v2b1.md)。
 
 ### 生态扩展
 
