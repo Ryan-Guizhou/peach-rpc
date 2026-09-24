@@ -424,55 +424,135 @@ public class PeachRpcProperties {
         private int circuitConsecutiveFailureThreshold = 20;
         private Duration circuitOpenDuration = Duration.ofSeconds(10);
 
-        /** @return 单次逻辑调用最大尝试次数 */
+        /**
+         * 返回单次逻辑调用最大尝试次数，包含首次调用。
+         *
+         * @return 单次逻辑调用最大尝试次数
+         */
         public int getMaxAttempts() { return maxAttempts; }
-        /** @param value 单次逻辑调用最大尝试次数 */
+        /**
+         * 设置单次逻辑调用最大尝试次数，包含首次调用。
+         *
+         * @param value 单次逻辑调用最大尝试次数
+         */
         public void setMaxAttempts(int value) { maxAttempts = value; }
-        /** @return 每个原始请求补充的重试额度比例 */
+        /**
+         * 返回每个原始请求补充的重试额度比例。
+         *
+         * @return 重试额度比例
+         */
         public double getRetryBudgetRatio() { return retryBudgetRatio; }
-        /** @param value 每个原始请求补充的重试额度比例 */
+        /**
+         * 设置每个原始请求补充的重试额度比例。
+         *
+         * @param value 重试额度比例
+         */
         public void setRetryBudgetRatio(double value) { retryBudgetRatio = value; }
-        /** @return 初始最低重试额度 */
+        /**
+         * 返回初始最低重试额度。
+         *
+         * @return 初始最低重试额度
+         */
         public int getRetryBudgetMinRetries() { return retryBudgetMinRetries; }
-        /** @param value 初始最低重试额度 */
+        /**
+         * 设置初始最低重试额度。
+         *
+         * @param value 初始最低重试额度
+         */
         public void setRetryBudgetMinRetries(int value) { retryBudgetMinRetries = value; }
-        /** @return 最大累计重试额度 */
+        /**
+         * 返回最大累计重试额度。
+         *
+         * @return 最大累计重试额度
+         */
         public int getRetryBudgetMaxRetries() { return retryBudgetMaxRetries; }
-        /** @param value 最大累计重试额度 */
+        /**
+         * 设置最大累计重试额度。
+         *
+         * @param value 最大累计重试额度
+         */
         public void setRetryBudgetMaxRetries(int value) { retryBudgetMaxRetries = value; }
-        /** @return 首次重试最大退避窗口 */
+        /**
+         * 返回首次重试最大退避窗口。
+         *
+         * @return 首次重试最大退避窗口
+         */
         public Duration getRetryBaseBackoff() { return retryBaseBackoff; }
-        /** @param value 首次重试最大退避窗口 */
+        /**
+         * 设置首次重试最大退避窗口。
+         *
+         * @param value 首次重试最大退避窗口
+         */
         public void setRetryBaseBackoff(Duration value) { retryBaseBackoff = value; }
-        /** @return 最大重试退避窗口 */
+        /**
+         * 返回最大重试退避窗口。
+         *
+         * @return 最大重试退避窗口
+         */
         public Duration getRetryMaxBackoff() { return retryMaxBackoff; }
-        /** @param value 最大重试退避窗口 */
+        /**
+         * 设置最大重试退避窗口。
+         *
+         * @param value 最大重试退避窗口
+         */
         public void setRetryMaxBackoff(Duration value) { retryMaxBackoff = value; }
-        /** @return 连续基础设施失败的端点剔除阈值 */
+        /**
+         * 返回连续基础设施失败的端点剔除阈值。
+         *
+         * @return 端点剔除阈值
+         */
         public int getOutlierConsecutiveFailureThreshold() {
             return outlierConsecutiveFailureThreshold;
         }
-        /** @param value 连续基础设施失败的端点剔除阈值 */
+        /**
+         * 设置连续基础设施失败的端点剔除阈值。
+         *
+         * @param value 端点剔除阈值
+         */
         public void setOutlierConsecutiveFailureThreshold(int value) {
             outlierConsecutiveFailureThreshold = value;
         }
-        /** @return 端点临时剔除时间 */
+        /**
+         * 返回端点临时剔除时间。
+         *
+         * @return 端点临时剔除时间
+         */
         public Duration getOutlierEjectionDuration() { return outlierEjectionDuration; }
-        /** @param value 端点临时剔除时间 */
+        /**
+         * 设置端点临时剔除时间。
+         *
+         * @param value 端点临时剔除时间
+         */
         public void setOutlierEjectionDuration(Duration value) {
             outlierEjectionDuration = value;
         }
-        /** @return 方法连续基础设施失败熔断阈值 */
+        /**
+         * 返回方法连续基础设施失败熔断阈值。
+         *
+         * @return 方法熔断阈值
+         */
         public int getCircuitConsecutiveFailureThreshold() {
             return circuitConsecutiveFailureThreshold;
         }
-        /** @param value 方法连续基础设施失败熔断阈值 */
+        /**
+         * 设置方法连续基础设施失败熔断阈值。
+         *
+         * @param value 方法熔断阈值
+         */
         public void setCircuitConsecutiveFailureThreshold(int value) {
             circuitConsecutiveFailureThreshold = value;
         }
-        /** @return 熔断打开时间 */
+        /**
+         * 返回熔断打开时间。
+         *
+         * @return 熔断打开时间
+         */
         public Duration getCircuitOpenDuration() { return circuitOpenDuration; }
-        /** @param value 熔断打开时间 */
+        /**
+         * 设置熔断打开时间。
+         *
+         * @param value 熔断打开时间
+         */
         public void setCircuitOpenDuration(Duration value) { circuitOpenDuration = value; }
     }
 
