@@ -108,11 +108,37 @@ final class VertxRpcTransportClient implements RpcTransportClient {
             int current = cursor.get();
             int index = current % slots.length();
             cursor.set(current == Integer.MAX_VALUE ? 0 : current + 1);
-            return connection(index)
-                    .thenCompose(connection ->
-                            connection.request(
-                                    frame,
-                                    timeout));
+
+            CompletableFuture<byte[]> result = new CompletableFuture<>();
+            connection(index).whenComplete((connection, connectError) -> {
+                if (connectError != null) {
+                    result.completeExceptionally(connectError);
+                    return;
+                }
+                if (result.isCancelled()) {
+                    return;
+                }
+
+                CompletableFuture<byte[]> request = connection
+                        .request(frame, timeout)
+                        .toCompletableFuture();
+                result.whenComplete((ignoredValue, ignoredError) -> {
+                    if (result.isCancelled()) {
+                        request.cancel(true);
+                    }
+                });
+                request.whenComplete((response, requestError) -> {
+                    if (result.isDone()) {
+                        return;
+                    }
+                    if (requestError != null) {
+                        result.completeExceptionally(requestError);
+                    } else {
+                        result.complete(response);
+                    }
+                });
+            });
+            return result;
         }
 
         private CompletionStage<Connection> connection(int index) {
