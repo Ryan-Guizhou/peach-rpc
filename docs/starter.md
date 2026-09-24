@@ -45,6 +45,15 @@ private OrderService orderService;
 
 默认调用超时为 3 秒，可通过 `peach.rpc.client.timeout` 修改。
 
+自动重试默认最多 2 次 attempt，但**只有显式标注 `@PeachRpcIdempotent` 的服务方法才允许重试**。未标注方法无论 Retry Budget 是否有余额都不会由框架自动重试：
+
+```java
+@PeachRpcIdempotent
+Order findById(Long id);
+```
+
+该注解表示业务方确认“相同参数重复执行不会产生不可接受的重复副作用”。创建订单、扣款、转账等接口不应仅为了获得重试而添加该注解，除非业务本身已有可靠幂等键/幂等语义。
+
 ## 4. 可选：编译期 Consumer Stub
 
 普通 Starter 不要求代码生成，因此现有业务可继续使用 JDK Proxy fallback。
@@ -89,7 +98,16 @@ public interface OrderService {
 - `peach.rpc.client.proxy`：Generated Stub 缺失时的 fallback，默认 `jdk`；可显式选择 `cglib` 或可选 Byte Buddy 模块提供的 `bytebuddy`。
 - `peach.rpc.client.load-balancer`：默认 `p2c-ewma`。
 - `peach.rpc.server.max-concurrent`：Provider 最大并发业务执行数。
+- `peach.rpc.server.drain-timeout`：Provider 关闭时等待 inflight 排空的最大时间，默认 30 秒。
 - `peach.rpc.transport.max-inflight-per-connection`：单连接最大未完成请求数。
+- `peach.rpc.client.resilience.max-attempts`：单次逻辑调用最大尝试次数，默认 2，包含首次调用。
+- `peach.rpc.client.resilience.retry-budget-ratio`：每个原始请求补充的全局重试额度比例，默认 0.10。
+- `peach.rpc.client.resilience.retry-budget-min-retries` / `retry-budget-max-retries`：重试预算突发下限/上限，默认 10/100。
+- `peach.rpc.client.resilience.retry-base-backoff` / `retry-max-backoff`：随机退避窗口，默认 10ms/100ms。
+- `peach.rpc.client.resilience.outlier-consecutive-failure-threshold`：Endpoint 连续基础设施失败剔除阈值，默认 5。
+- `peach.rpc.client.resilience.outlier-ejection-duration`：Endpoint 临时剔除时间，默认 30 秒。
+- `peach.rpc.client.resilience.circuit-consecutive-failure-threshold`：方法级熔断连续失败阈值，默认 20。
+- `peach.rpc.client.resilience.circuit-open-duration`：Circuit OPEN 时间，默认 10 秒。
 
 ## 6. Bean 覆盖
 

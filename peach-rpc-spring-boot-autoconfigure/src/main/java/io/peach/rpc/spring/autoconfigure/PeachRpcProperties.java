@@ -322,6 +322,7 @@ public class PeachRpcProperties {
         private Duration timeout = Duration.ofSeconds(3);
         private String loadBalancer = "p2c-ewma";
         private String proxy = "jdk";
+        private final Resilience resilience = new Resilience();
 
         /**
          * 返回是否启用 Consumer。
@@ -394,6 +395,165 @@ public class PeachRpcProperties {
         public void setProxy(String proxy) {
             this.proxy = proxy;
         }
+
+        /**
+         * 返回 Consumer 容错配置。
+         *
+         * @return Consumer 容错配置
+         */
+        public Resilience getResilience() {
+            return resilience;
+        }
+    }
+
+    /** Consumer 重试、异常实例剔除与熔断配置。 */
+    public static class Resilience {
+
+        /** 创建 Consumer 容错配置。 */
+        public Resilience() {
+        }
+
+        private int maxAttempts = 2;
+        private double retryBudgetRatio = 0.10d;
+        private int retryBudgetMinRetries = 10;
+        private int retryBudgetMaxRetries = 100;
+        private Duration retryBaseBackoff = Duration.ofMillis(10);
+        private Duration retryMaxBackoff = Duration.ofMillis(100);
+        private int outlierConsecutiveFailureThreshold = 5;
+        private Duration outlierEjectionDuration = Duration.ofSeconds(30);
+        private int circuitConsecutiveFailureThreshold = 20;
+        private Duration circuitOpenDuration = Duration.ofSeconds(10);
+
+        /**
+         * 返回单次逻辑调用最大尝试次数，包含首次调用。
+         *
+         * @return 单次逻辑调用最大尝试次数
+         */
+        public int getMaxAttempts() { return maxAttempts; }
+        /**
+         * 设置单次逻辑调用最大尝试次数，包含首次调用。
+         *
+         * @param value 单次逻辑调用最大尝试次数
+         */
+        public void setMaxAttempts(int value) { maxAttempts = value; }
+        /**
+         * 返回每个原始请求补充的重试额度比例。
+         *
+         * @return 重试额度比例
+         */
+        public double getRetryBudgetRatio() { return retryBudgetRatio; }
+        /**
+         * 设置每个原始请求补充的重试额度比例。
+         *
+         * @param value 重试额度比例
+         */
+        public void setRetryBudgetRatio(double value) { retryBudgetRatio = value; }
+        /**
+         * 返回初始最低重试额度。
+         *
+         * @return 初始最低重试额度
+         */
+        public int getRetryBudgetMinRetries() { return retryBudgetMinRetries; }
+        /**
+         * 设置初始最低重试额度。
+         *
+         * @param value 初始最低重试额度
+         */
+        public void setRetryBudgetMinRetries(int value) { retryBudgetMinRetries = value; }
+        /**
+         * 返回最大累计重试额度。
+         *
+         * @return 最大累计重试额度
+         */
+        public int getRetryBudgetMaxRetries() { return retryBudgetMaxRetries; }
+        /**
+         * 设置最大累计重试额度。
+         *
+         * @param value 最大累计重试额度
+         */
+        public void setRetryBudgetMaxRetries(int value) { retryBudgetMaxRetries = value; }
+        /**
+         * 返回首次重试最大退避窗口。
+         *
+         * @return 首次重试最大退避窗口
+         */
+        public Duration getRetryBaseBackoff() { return retryBaseBackoff; }
+        /**
+         * 设置首次重试最大退避窗口。
+         *
+         * @param value 首次重试最大退避窗口
+         */
+        public void setRetryBaseBackoff(Duration value) { retryBaseBackoff = value; }
+        /**
+         * 返回最大重试退避窗口。
+         *
+         * @return 最大重试退避窗口
+         */
+        public Duration getRetryMaxBackoff() { return retryMaxBackoff; }
+        /**
+         * 设置最大重试退避窗口。
+         *
+         * @param value 最大重试退避窗口
+         */
+        public void setRetryMaxBackoff(Duration value) { retryMaxBackoff = value; }
+        /**
+         * 返回连续基础设施失败的端点剔除阈值。
+         *
+         * @return 端点剔除阈值
+         */
+        public int getOutlierConsecutiveFailureThreshold() {
+            return outlierConsecutiveFailureThreshold;
+        }
+        /**
+         * 设置连续基础设施失败的端点剔除阈值。
+         *
+         * @param value 端点剔除阈值
+         */
+        public void setOutlierConsecutiveFailureThreshold(int value) {
+            outlierConsecutiveFailureThreshold = value;
+        }
+        /**
+         * 返回端点临时剔除时间。
+         *
+         * @return 端点临时剔除时间
+         */
+        public Duration getOutlierEjectionDuration() { return outlierEjectionDuration; }
+        /**
+         * 设置端点临时剔除时间。
+         *
+         * @param value 端点临时剔除时间
+         */
+        public void setOutlierEjectionDuration(Duration value) {
+            outlierEjectionDuration = value;
+        }
+        /**
+         * 返回方法连续基础设施失败熔断阈值。
+         *
+         * @return 方法熔断阈值
+         */
+        public int getCircuitConsecutiveFailureThreshold() {
+            return circuitConsecutiveFailureThreshold;
+        }
+        /**
+         * 设置方法连续基础设施失败熔断阈值。
+         *
+         * @param value 方法熔断阈值
+         */
+        public void setCircuitConsecutiveFailureThreshold(int value) {
+            circuitConsecutiveFailureThreshold = value;
+        }
+        /**
+         * 返回熔断打开时间。
+         *
+         * @return 熔断打开时间
+         */
+        public Duration getCircuitOpenDuration() { return circuitOpenDuration; }
+        /**
+         * 设置熔断打开时间。
+         *
+         * @param value 熔断打开时间
+         */
+        public void setCircuitOpenDuration(Duration value) { circuitOpenDuration = value; }
     }
 
     /**
@@ -410,6 +570,7 @@ public class PeachRpcProperties {
         private String host = "0.0.0.0";
         private int port = 19090;
         private int maxConcurrent = 4096;
+        private Duration drainTimeout = Duration.ofSeconds(30);
 
         /**
          * 返回是否启用 Provider。
@@ -481,6 +642,24 @@ public class PeachRpcProperties {
          */
         public void setMaxConcurrent(int maxConcurrent) {
             this.maxConcurrent = maxConcurrent;
+        }
+
+        /**
+         * 返回 Provider 优雅排空超时时间。
+         *
+         * @return 优雅排空超时时间
+         */
+        public Duration getDrainTimeout() {
+            return drainTimeout;
+        }
+
+        /**
+         * 设置 Provider 优雅排空超时时间。
+         *
+         * @param drainTimeout 优雅排空超时时间
+         */
+        public void setDrainTimeout(Duration drainTimeout) {
+            this.drainTimeout = drainTimeout;
         }
     }
 }

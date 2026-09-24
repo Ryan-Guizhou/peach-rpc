@@ -59,7 +59,7 @@ flowchart LR
     Pending --> TCP[TCP]
 ```
 
-默认 P2C/EWMA 直接读取 `ServiceInstance[]` 和实时 EndpointStats，不构造临时候选 List。
+默认 P2C/EWMA 直接读取 `ServiceInstance[]` 和实时 EndpointStats，不构造临时候选 List。V2-B.1 起 EndpointStats 还承载本地 Outlier Ejection 状态，被临时剔除的实例不会进入默认 P2C 候选。方法绑定同时持有独立 Circuit Breaker；自动重试只允许显式 `@PeachRpcIdempotent` 方法，并受 Retry Budget 与逻辑 Deadline 约束。
 
 ## 4. Provider 数据面
 
@@ -78,7 +78,7 @@ FrameAccumulator
  -> unary response fast encode
 ```
 
-业务代码仍默认进入受 Semaphore 限制的虚拟线程执行器，不运行在 Event Loop。
+业务代码仍默认进入受 Semaphore 限制的虚拟线程执行器，不运行在 Event Loop。Transport 收到 CANCEL 后取消 connection-local inflight Future，Core 再中断对应虚拟线程任务。
 
 ## 5. 连接模型
 
@@ -100,8 +100,12 @@ stateDiagram-v2
     Connecting --> Handshaking: TCP connected
     Handshaking --> Active: HELLO/ACK negotiated
     Handshaking --> Closed: timeout/rejected
-    Active --> Closed: error/GO_AWAY/close
+    Active --> Draining: GO_AWAY(UNAVAILABLE)
+    Draining --> Closed: inflight=0/timeout
+    Active --> Closed: fatal error/close
 ```
+
+正常 Provider 关闭时先从 Registry 注销实例，再对已有连接进入 Draining；新请求不再接收，已有 inflight 允许完成。
 
 ## 6. Codec 边界
 
@@ -130,16 +134,23 @@ Registry 仍然只位于控制面。Consumer 热路径不访问 Etcd。
 
 `ServiceDirectory` 在 Registry snapshot 更新时转换为数组快照，旧 revision 被忽略。
 
-## 9. 当前明确未完成
+## 9. V2-B.1 已补齐的生产行为
+
+- CANCEL 已真实传播，并能中断 Provider 虚拟线程任务；
+- 仅 `@PeachRpcIdempotent` 方法可进入受 Retry Budget 约束的自动重试；
+- Endpoint Outlier Ejection 与方法级 Circuit Breaker 已接入 Consumer 数据面；
+- GO_AWAY 已区分 fatal error 与 graceful drain；
+- Provider 关闭先注销 Registry，再等待 inflight 排空；
+- 已建立 Raw Vert.x / 完整 RPC 端到端延迟基线。
+
+## 10. 当前明确未完成
 
 - Transport/Core 仍以 byte[] frame 为边界；
 - FrameAccumulator 仍需产出完整 byte[]；
 - Fory 参数仍存在 Object[]；
-- CANCEL 尚未传播；
-- Retry Budget、Circuit Breaker、Outlier Ejection 未实现；
-- GO_AWAY 尚未实现完整 graceful drain；
 - TLS/mTLS 未实现；
 - Provider execution policy 尚未拆分 direct / CPU / blocking virtual；
-- OpenTelemetry/Micrometer/JFR 仍待接入。
+- OpenTelemetry/Micrometer/JFR 仍待接入；
+- Fory 稳定 Type ID / Schema fingerprint 未实现。
 
-详细热路径说明见 [V2-B 实现说明](high-performance-kernel-v2b.md)。
+详细热路径说明见 [V2-B 实现说明](high-performance-kernel-v2b.md) 与 [V2-B.1 生产内核第一批](production-kernel-v2b1.md)。

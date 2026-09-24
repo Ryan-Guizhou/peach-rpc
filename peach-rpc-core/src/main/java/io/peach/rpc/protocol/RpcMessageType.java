@@ -15,7 +15,9 @@ public enum RpcMessageType {
     /** 连接能力声明。 */
     HELLO((byte) 6),
     /** 连接能力协商响应。 */
-    HELLO_ACK((byte) 7);
+    HELLO_ACK((byte) 7),
+    /** 取消指定 connection-local Request ID 的调用。 */
+    CANCEL((byte) 8);
 
     private final byte code;
 

@@ -52,6 +52,36 @@ class P2cEwmaLoadBalancerTest {
         }
     }
 
+    @Test
+    void shouldSkipUnavailableOutlier() {
+        ServiceInstance first = instance("node-1", 19090);
+        ServiceInstance second = instance("node-2", 19091);
+        LoadBalanceMetrics metrics = new LoadBalanceMetrics() {
+            @Override
+            public long ewmaLatencyNanos(ServiceInstance instance) {
+                return 1_000_000L;
+            }
+
+            @Override
+            public int inflight(ServiceInstance instance) {
+                return 0;
+            }
+
+            @Override
+            public boolean available(ServiceInstance instance) {
+                return instance == second;
+            }
+        };
+
+        for (int index = 0; index < 20; index++) {
+            assertEquals(
+                    second,
+                    loadBalancer.select(
+                            new ServiceInstance[] {first, second},
+                            metrics));
+        }
+    }
+
     private static ServiceInstance instance(String id, int port) {
         return new ServiceInstance(
                 id,
