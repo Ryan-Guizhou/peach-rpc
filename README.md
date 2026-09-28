@@ -7,7 +7,7 @@
 
 Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框架。当前 `0.1.x` 重点不是堆叠功能，而是先建立可长期演进的数据面与控制面边界：长连接多路复用、本地服务目录、有界并发、SPI 扩展、二进制协议、Spring Boot Starter 和可重复性能基准。
 
-> 当前状态：Preview。V2-C.1 开始扩展生产控制面：Provider/Consumer 由 `@PeachRpcService` 与 `@PeachRpcReference` 按需激活，Examples 拆为独立 API/Provider/Consumer 应用，并新增 Nacos 3.2.4 Registry Adapter。Heartbeat、TLS/mTLS、Micrometer/OpenTelemetry/JFR Adapter、端到端 Buffer ownership、Fory 稳定 Type ID、Etcd compaction 专项与流式 RPC 仍属于后续生产门禁。
+> 当前状态：Preview。V2-C.1 已在当前开发分支完成注解驱动运行时、Examples 拆分与 Nacos 3.2.4 Registry Adapter。下一阶段生产主线优先补齐连接级 Heartbeat/idle/reconnect、Registry 故障恢复验证、TLS/mTLS、可观测 Adapter、Wire Compatibility 与完整性能矩阵。统一能力状态与优先级见 [Production Roadmap / Capability Matrix](docs/production-roadmap.md)。
 
 核心能力：
 
@@ -52,7 +52,7 @@ flowchart LR
 
 核心规则：**Spring、Vert.x、Jetcd、Nacos、Fory、CGLIB 等第三方类型不得进入 Core 公共契约；注册中心访问、SPI 解析和配置解析不得进入单次 RPC 热路径。**
 
-详细说明见 [架构设计](docs/architecture.md) 与 [高性能内核 V2 计划](docs/high-performance-kernel-v2-plan.md)。
+详细说明见 [架构设计](docs/architecture.md)、[Production Roadmap / Capability Matrix](docs/production-roadmap.md) 与 [高性能内核 V2 计划](docs/high-performance-kernel-v2-plan.md)。
 
 <!-- doc-section:modules -->
 ## 模块
@@ -206,6 +206,7 @@ CI 使用 JDK 21 执行相同门禁。根 POM 使用 `${revision}` 和 flatten p
 - [SPI 扩展指南](docs/spi.md)
 - [Nacos Registry Adapter](docs/registry-nacos.md)
 - [性能基准](docs/performance.md)
+- [Production Roadmap / Capability Matrix](docs/production-roadmap.md)
 - [生产就绪门禁](docs/readiness.md)
 - [开发规范](docs/development.md)
 - [实施路线](docs/implementation-plan.md)
