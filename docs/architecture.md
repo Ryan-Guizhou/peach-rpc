@@ -78,7 +78,13 @@ FrameAccumulator
  -> unary response fast encode
 ```
 
-业务代码仍默认进入受 Semaphore 限制的虚拟线程执行器，不运行在 Event Loop。Transport 收到 CANCEL 后取消 connection-local inflight Future，Core 再中断对应虚拟线程任务。
+Provider 业务执行按方法绑定为三类资源策略：
+
+- `BLOCKING_VIRTUAL`：默认；进入受全局 admission 保护的虚拟线程，适合 JDBC、文件、同步 HTTP/SDK；
+- `CPU`：进入有界固定线程池，线程数与队列容量可配置，队列满时返回 OVERLOADED；
+- `DIRECT`：直接在 Transport Event Loop 执行，只适合极短且确定不阻塞的纯内存逻辑；默认禁止，必须 Provider 显式允许。
+
+Transport 收到 CANCEL 后取消 connection-local inflight Future，Core 再中断可取消的 Provider 执行任务。
 
 ## 5. 连接模型
 
@@ -128,29 +134,42 @@ RpcProtocolCodec.encodeResponse(...);
 
 Request deadline 直接写 ASCII metadata，不创建 Map/Long String/StringBuilder。接收端 `RpcFrameView` 不复制 Metadata/Payload。
 
-## 8. 控制面
+## 8. 可观测性边界
+
+Core 提供 `RpcObserver`，不依赖 Micrometer、OpenTelemetry 或 JFR。当前暴露：
+
+- Consumer attempt 完成；
+- Consumer retry 调度；
+- Provider invocation 完成。
+
+默认 NOOP Observer 不创建事件对象；多个 Observer 可以组合，且单个 Observer 的运行时异常不会反向破坏 RPC 主链。后续 Micrometer、OpenTelemetry 和 JFR 通过 Adapter 映射这些事件。
+
+## 9. 控制面
 
 Registry 仍然只位于控制面。Consumer 热路径不访问 Etcd。
 
 `ServiceDirectory` 在 Registry snapshot 更新时转换为数组快照，旧 revision 被忽略。
 
-## 9. V2-B.1 已补齐的生产行为
+## 10. V2-B.1 已补齐的生产行为
 
 - CANCEL 已真实传播，并能中断 Provider 虚拟线程任务；
 - 仅 `@PeachRpcIdempotent` 方法可进入受 Retry Budget 约束的自动重试；
 - Endpoint Outlier Ejection 与方法级 Circuit Breaker 已接入 Consumer 数据面；
 - GO_AWAY 已区分 fatal error 与 graceful drain；
 - Provider 关闭先注销 Registry，再等待 inflight 排空；
-- 已建立 Raw Vert.x / 完整 RPC 端到端延迟基线。
+- 已建立 Raw Vert.x / 完整 RPC 端到端延迟基线；
+- Provider execution policy 已拆分 BLOCKING_VIRTUAL / CPU / guarded DIRECT；
+- 已建立低依赖 RpcObserver 生命周期契约；
+- Etcd Adapter 已有真实 Etcd 注册、Watch、namespace 与 Lease 集成测试。
 
-## 10. 当前明确未完成
+## 11. 当前明确未完成
 
 - Transport/Core 仍以 byte[] frame 为边界；
 - FrameAccumulator 仍需产出完整 byte[]；
 - Fory 参数仍存在 Object[]；
 - TLS/mTLS 未实现；
-- Provider execution policy 尚未拆分 direct / CPU / blocking virtual；
-- OpenTelemetry/Micrometer/JFR 仍待接入；
+- Micrometer/OpenTelemetry/JFR 具体 Adapter 仍待接入；
+- Etcd compaction/recovery 专项故障测试仍需补强；
 - Fory 稳定 Type ID / Schema fingerprint 未实现。
 
 详细热路径说明见 [V2-B 实现说明](high-performance-kernel-v2b.md) 与 [V2-B.1 生产内核第一批](production-kernel-v2b1.md)。

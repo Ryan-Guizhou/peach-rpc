@@ -7,7 +7,7 @@
 
 Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框架。当前 `0.1.x` 重点不是堆叠功能，而是先建立可长期演进的数据面与控制面边界：长连接多路复用、本地服务目录、有界并发、SPI 扩展、二进制协议、Spring Boot Starter 和可重复性能基准。
 
-> 当前状态：Preview。V2-B.1 第一批已接通调用取消传播、仅幂等方法可用的 Retry Budget、端点异常剔除、方法级 Circuit Breaker、Provider Graceful Drain，以及 Raw Vert.x / 完整 RPC 端到端延迟基线。TLS/mTLS、Micrometer/OpenTelemetry/JFR、端到端 Buffer ownership、Fory 稳定 Type ID 与流式 RPC 仍属于后续生产门禁。
+> 当前状态：Preview。V2-B.1 已完成两批生产内核收尾：第一批包含 Cancellation、Retry Budget、Outlier Ejection、Circuit Breaker、Graceful Drain 与端到端延迟基线；第二批增加 Provider Execution Policy、低依赖 RpcObserver 可观测性契约，以及基于真实 Etcd 的 Registry 集成测试。TLS/mTLS、Micrometer/OpenTelemetry/JFR Adapter、端到端 Buffer ownership、Fory 稳定 Type ID、Etcd compaction 专项与流式 RPC 仍属于后续生产门禁。
 
 核心能力：
 
@@ -15,13 +15,15 @@ Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框�
 - Consumer 本地服务目录，请求热路径不访问 Etcd。
 - Etcd Lease + Range/Watch + revision 感知重同步。
 - P2C + EWMA + inflight + 静态权重负载均衡；默认热路径直接读取数组快照与实时指标，不构建候选 List。
-- Provider 虚拟线程执行，同时通过并发准入限制保护资源边界。
+- Provider 默认使用 BLOCKING_VIRTUAL；可通过 `@PeachRpcExecution(CPU)` 使用有界 CPU 线程池，DIRECT 默认关闭且必须显式允许。
 - Fory 默认编解码；方法级 Codec 支持直接从 Frame payload slice 解码，框架错误继续使用 Core 独立线协议。
 - 标注 `@PeachRpcContract` 的接口同时生成 Consumer Stub 与 Provider Dispatcher；0~4 参数 Consumer CallSite 使用专用入口，JDK/CGLIB/Byte Buddy 只作为 fallback。
 - Spring Boot Starter，支持 `@PeachRpcService` 和 `@PeachRpcReference`。
 - Consumer 可使用 `@PeachRpcIdempotent` 显式声明允许自动重试的方法；重试受全局 Budget、整体 Deadline 与抖动退避共同约束。
 - Endpoint 连续基础设施失败会被临时剔除，方法级连续失败会触发 Circuit Breaker，避免故障实例和依赖持续放大尾延迟。
 - Consumer timeout/主动取消会通过 `CANCEL` 控制帧传播到 Provider；Provider 关闭时先注销服务、发送 GO_AWAY 并等待 inflight 排空。
+- Core 提供无 Micrometer/OpenTelemetry 依赖的 `RpcObserver`，支持 Client attempt/retry 与 Provider invocation 生命周期事件；默认 NOOP 不创建事件对象。
+- Etcd Adapter 增加真实 Etcd 集成测试，覆盖注册/注销、Watch 快照、namespace 隔离和 Lease 过期。
 
 <!-- doc-section:architecture -->
 ## 架构
@@ -166,6 +168,9 @@ public interface UserService {
 | `peach.rpc.server.enabled` | `false` | 是否启动 Provider |
 | `peach.rpc.server.port` | `19090` | Provider 端口 |
 | `peach.rpc.server.max-concurrent` | `4096` | Provider 最大并发业务请求数 |
+| `peach.rpc.server.execution.allow-direct` | `false` | 是否允许 DIRECT 方法进入 Transport Event Loop |
+| `peach.rpc.server.execution.cpu-parallelism` | CPU 核数 | CPU 执行池线程数 |
+| `peach.rpc.server.execution.cpu-queue-capacity` | `1024` | CPU 执行池有界队列容量 |
 
 完整说明见 [Spring Boot Starter 与配置](docs/starter.md)。
 
@@ -194,4 +199,5 @@ CI 使用 JDK 21 执行相同门禁。根 POM 使用 `${revision}` 和 flatten p
 - [高性能内核 V2 计划](docs/high-performance-kernel-v2-plan.md)
 - [高性能内核 V2-B 实现](docs/high-performance-kernel-v2b.md)
 - [V2-B.1 生产内核第一批](docs/production-kernel-v2b1.md)
+- [V2-B.1 生产内核第二批](docs/production-kernel-v2b1-phase2.md)
 

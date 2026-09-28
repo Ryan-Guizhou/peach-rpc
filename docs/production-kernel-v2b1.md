@@ -133,3 +133,8 @@ STARTED
 - Streaming RPC 未实现。
 
 因此 V2-B.1 第一批完成后项目仍保持 Preview 状态，而不是直接宣称 Production GA。
+
+
+## 9. 后续批次
+
+V2-B.1 第二批已经继续补齐 Provider Execution Policy、RpcObserver 可观测性基础契约和真实 Etcd 集成测试，详见 [V2-B.1 生产内核第二批](production-kernel-v2b1-phase2.md)。
