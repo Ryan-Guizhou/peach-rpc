@@ -100,7 +100,7 @@ Vert.x Client 为每个 Endpoint 维护可配置数量的连接分片。
 - FrameAccumulator；
 - negotiated capabilities。
 
-连接建立后必须完成 HELLO / HELLO_ACK。Client/Server 均设置独立 handshake timeout。
+连接建立后必须完成 HELLO / HELLO_ACK。Client/Server 均设置独立 handshake timeout。V2-C.2 起 HEARTBEAT 作为握手 Feature 协商：双方都支持时，空闲连接使用 PING/PONG 主动检测 silent/half-open connection；异常连接由 Consumer 在下一次业务请求时通过单飞连接槽重建，并使用 exponential backoff + full jitter。
 
 ```mermaid
 stateDiagram-v2
@@ -108,12 +108,17 @@ stateDiagram-v2
     Connecting --> Handshaking: TCP connected
     Handshaking --> Active: HELLO/ACK negotiated
     Handshaking --> Closed: timeout/rejected
+    Active --> HeartbeatWait: idle / PING
+    HeartbeatWait --> Active: inbound / PONG
+    HeartbeatWait --> Closed: heartbeat timeout
     Active --> Draining: GO_AWAY(UNAVAILABLE)
     Draining --> Closed: inflight=0/timeout
     Active --> Closed: fatal error/close
 ```
 
-正常 Provider 关闭时先从 Registry 注销实例，再对已有连接进入 Draining；新请求不再接收，已有 inflight 允许完成。
+正常 Provider 关闭时先从 Registry 注销实例，再对已有连接进入 Draining；新请求不再接收，已有 inflight 允许完成。Graceful GO_AWAY 不计作异常连接恢复失败，因此不会污染 reconnect backoff。
+
+Consumer 的逻辑 timeout 还覆盖连接获取与 HELLO/ACK。Request 同时携带旧 `deadlineEpochMillis` 与 V2-C.2 新增的 `timeoutBudgetMillis`，新 Provider 优先使用相对预算语义避免跨节点 wall-clock 偏差；旧节点仍可按绝对 Deadline 工作。
 
 ## 6. Codec 边界
 
