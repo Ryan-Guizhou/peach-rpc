@@ -84,6 +84,15 @@ class RpcProtocolCodecTest {
         assertEquals(
                 timeoutBudgetMillis,
                 view.timeoutBudgetMillis());
+
+        assertTrue(
+                RpcProtocolCodec.rewriteTimeoutBudgetMillis(
+                        encoded,
+                        25L));
+        assertEquals(
+                25L,
+                RpcProtocolCodec.view(encoded)
+                        .timeoutBudgetMillis());
     }
 
     @Test
