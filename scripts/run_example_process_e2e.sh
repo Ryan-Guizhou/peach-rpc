@@ -76,7 +76,7 @@ wait_for_success_count() {
 
 start_provider
 
-java -jar "$CONSUMER_JAR"   --peach.rpc.registry.endpoints="$NACOS_ENDPOINT"   --peach.rpc.example.repeat-interval-millis=200   >"$CONSUMER_LOG" 2>&1 &
+java -jar "$CONSUMER_JAR"   --peach.rpc.registry.endpoints="$NACOS_ENDPOINT"   --peach.rpc.example.repeat-interval-millis=200   --peach.rpc.client.resilience.circuit-open-duration=500ms   --peach.rpc.client.resilience.outlier-ejection-duration=500ms   >"$CONSUMER_LOG" 2>&1 &
 CONSUMER_PID=$!
 
 wait_for_success_count 1
