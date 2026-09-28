@@ -66,7 +66,7 @@ Client 建立 TCP 后发送 HELLO，包含：
 - Protocol Version 集合；
 - Codec 集合；
 - Compression 集合；
-- DEADLINE / CANCEL / STREAMING / GO_AWAY Feature；
+- DEADLINE / CANCEL / STREAMING / GO_AWAY / HEARTBEAT Feature；
 - Max Frame Bytes。
 
 Server 计算能力交集并回复 HELLO_ACK；Client 再计算相同协商结果。
@@ -110,7 +110,22 @@ CANCEL 只有在 HELLO/HELLO_ACK 双方协商出 `RpcFeature.CANCEL` 时发送�
 
 Provider 关闭流程先从 Registry 注销服务，再进入 DRAINING。Transport 对已有连接发送 `GO_AWAY(UNAVAILABLE)`，拒绝新的 REQUEST，但允许已接收请求完成；inflight 清零或达到 drain timeout 后关闭连接。协议错误使用其他状态的 GO_AWAY，仍属于 fatal connection error，不进入 graceful drain。
 
-## 9. 当前限制
+## 9. Heartbeat 与连接恢复
+
+V2-C.2 将 PING/PONG 从“预留 Message Type”接入真实连接生命周期。
+
+- Heartbeat 必须通过 HELLO/HELLO_ACK 协商出 `RpcFeature.HEARTBEAT` 后才能发送；
+- Client/Server 都只在连接空闲达到 `heartbeatInterval` 后发送 PING；
+- 每条连接最多存在一个 outstanding PING；
+- 任意有效入站帧都证明连接仍然存活，并清除当前 heartbeat wait；
+- 超过 `heartbeatTimeout` 未收到入站流量时关闭连接；
+- Consumer 后续请求会通过单飞连接槽重建连接；
+- 连续连接失败使用 exponential backoff + full jitter，并受最大窗口限制；
+- graceful GO_AWAY/drain 不计作异常连接恢复失败。
+
+因此旧版本节点不理解 HEARTBEAT feature 时，新节点不会向它主动发送 PING/PONG，支持滚动升级。
+
+## 10. 当前限制
 
 - Streaming 未实现；
 - Compression 尚未进入数据面；
