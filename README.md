@@ -199,4 +199,5 @@ CI 使用 JDK 21 执行相同门禁。根 POM 使用 `${revision}` 和 flatten p
 - [高性能内核 V2 计划](docs/high-performance-kernel-v2-plan.md)
 - [高性能内核 V2-B 实现](docs/high-performance-kernel-v2b.md)
 - [V2-B.1 生产内核第一批](docs/production-kernel-v2b1.md)
+- [V2-B.1 生产内核第二批](docs/production-kernel-v2b1-phase2.md)
 
