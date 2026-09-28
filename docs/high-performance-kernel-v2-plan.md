@@ -53,6 +53,25 @@
 - Generated Provider 参数链完全消除 Object[]。
 - Provider execution policy 分层。
 
+### V2-B.1：生产内核第一批（已实现）
+
+- CANCEL 真实传播：Consumer timeout/主动取消 -> Transport CANCEL -> Provider Future/虚拟线程中断。
+- `@PeachRpcIdempotent` 显式幂等声明。
+- 全局 Retry Budget、最大 attempt、共享 Deadline 与随机退避。
+- Endpoint Outlier Ejection，默认 P2C/EWMA 跳过被剔除实例。
+- 方法级 Circuit Breaker。
+- Provider Registry unregister + GO_AWAY + inflight graceful drain。
+- Raw Vert.x 与完整 Peach RPC 的端到端 AverageTime 基线。
+
+仍保留到后续生产内核：
+
+- Buffer ownership / Buffer-oriented Codec；
+- Provider execution policy；
+- TLS/mTLS；
+- Micrometer/OpenTelemetry/JFR；
+- Fory 稳定 Type ID / Schema fingerprint；
+- Etcd compaction/recovery 专项集成测试。
+
 ### V2-C：生态扩展
 
 - Codec：Protobuf、Kryo、Hessian2、JSON。
@@ -88,3 +107,15 @@ V2-A 允许 Core API 在 0.x 阶段发生不兼容调整，但要求 Starter 使
 - 默认 P2C/EWMA 使用数组快路径并保留旧 SPI 兼容入口。
 - JMH 基准能够独立构建运行。
 - README 中英文同步，架构/协议/性能文档不把延期能力写成已完成。
+
+
+## 7. V2-B.1 第一批验收标准
+
+- CANCEL 在真实 Vert.x 连接上有 Transport 测试，并验证 Provider Future 被取消。
+- Graceful Drain 测试验证 inflight 未完成时 drain 不提前结束，完成后正常退出。
+- Retry Budget 与 Circuit Breaker 有独立单元测试。
+- P2C/EWMA 有测试证明被 Outlier Ejection 的实例不会被选择。
+- Starter 暴露 resilience 与 drain 配置，并保持默认安全语义：未标注幂等的方法不自动重试。
+- Raw Vert.x / 完整 RPC JMH 基线可独立构建。
+- README 中英文、协议、架构、性能与 readiness 文档同步。
+- 全 Reactor `clean verify -Pquality` 通过，Javadoc warning 为 0。

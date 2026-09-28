@@ -1,6 +1,7 @@
 package io.peach.rpc.protocol;
 
 import io.peach.rpc.api.RpcStatus;
+import io.peach.rpc.codec.RpcCodecIds;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -179,6 +180,30 @@ public final class RpcProtocolCodec {
                 bytes,
                 HEADER_LENGTH,
                 actualPayload.length);
+        return bytes;
+    }
+
+    /**
+     * 编码调用取消控制帧。
+     *
+     * @param requestId 需要取消的 connection-local Request ID
+     * @return 完整取消帧
+     */
+    public static byte[] encodeCancel(long requestId) {
+        if (requestId == 0L) {
+            throw new IllegalArgumentException("requestId must be non-zero");
+        }
+        byte[] bytes = new byte[HEADER_LENGTH];
+        writeHeader(
+                bytes,
+                RpcMessageType.CANCEL,
+                RpcCodecIds.CONTROL,
+                RpcStatus.OK,
+                requestId,
+                0,
+                0,
+                0,
+                0);
         return bytes;
     }
 

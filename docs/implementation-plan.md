@@ -17,7 +17,17 @@
 
 ## Phase 3：生产治理
 
+已完成第一批：
+
 - Retry Budget、Cancel、Circuit Breaker、Outlier Ejection。
-- Graceful Drain、TLS/mTLS。
+- Graceful Drain。
+- Raw Vert.x / 完整 RPC 端到端延迟基线。
+
+后续：
+
+- TLS/mTLS。
 - Micrometer/OpenTelemetry/JFR。
+- Buffer ownership / Buffer-oriented Codec。
+- Provider execution policy。
+- Fory 稳定 Type ID / Schema fingerprint。
 - Etcd compaction/recovery 专项测试。

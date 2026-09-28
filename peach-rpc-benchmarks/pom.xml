@@ -22,6 +22,14 @@
         </dependency>
         <dependency>
             <groupId>io.peach.rpc</groupId>
+            <artifactId>peach-rpc-codec-fory</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.peach.rpc</groupId>
+            <artifactId>peach-rpc-transport-vertx</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.peach.rpc</groupId>
             <artifactId>peach-rpc-proxy-bytebuddy</artifactId>
         </dependency>
         <dependency>

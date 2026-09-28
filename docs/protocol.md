@@ -31,6 +31,7 @@ Peach RPC v1 使用 32 字节固定大端 Header，后接 Metadata 与 Payload�
 | GO_AWAY | 5 |
 | HELLO | 6 |
 | HELLO_ACK | 7 |
+| CANCEL | 8 |
 
 ## 3. Codec ID
 
@@ -93,11 +94,25 @@ Client 和 Server 都有独立 `handshakeTimeout`。握手超时不会进入 Act
 
 Payload 由 offset/length 表示。支持 slice decode 的 Codec 可以直接消费完整帧区间，不需要 Core 再复制 payload。
 
-## 8. 当前限制
+## 8. CANCEL 与 Graceful Drain
 
-- CANCEL Feature 已保留但尚未传播；
+V2-B.1 第一批已经把取消传播接入真实 Vert.x Transport：
+
+```text
+Consumer Future.cancel / timeout
+  -> CANCEL(requestId)
+  -> Provider connection-local inflight table
+  -> cancel handler future
+  -> interrupt virtual-thread task
+```
+
+CANCEL 只有在 HELLO/HELLO_ACK 双方协商出 `RpcFeature.CANCEL` 时发送。未知或已经完成的 Request ID 按幂等控制消息处理，不产生业务响应。
+
+Provider 关闭流程先从 Registry 注销服务，再进入 DRAINING。Transport 对已有连接发送 `GO_AWAY(UNAVAILABLE)`，拒绝新的 REQUEST，但允许已接收请求完成；inflight 清零或达到 drain timeout 后关闭连接。协议错误使用其他状态的 GO_AWAY，仍属于 fatal connection error，不进入 graceful drain。
+
+## 9. 当前限制
+
 - Streaming 未实现；
 - Compression 尚未进入数据面；
-- GO_AWAY 可用于拒绝/连接失败，但完整 graceful drain 状态机尚未实现；
 - TLS/mTLS 未实现；
 - Transport/Core 仍以 byte[] 完整帧为 API 边界。

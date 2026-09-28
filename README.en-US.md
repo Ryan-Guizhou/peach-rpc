@@ -7,9 +7,9 @@
 
 Peach RPC is a high-performance and extensible Java RPC framework. The `0.1.x` line focuses on a durable data/control-plane foundation: long-lived multiplexed connections, local service directories, bounded concurrency, SPI extensions, a binary protocol, a Spring Boot Starter, and reproducible benchmarks.
 
-> Status: Preview. V2-B now includes compile-time consumer stubs and provider dispatchers, live HELLO/HELLO_ACK negotiation, connection sharding, connection-local pending tables, frame views, and unary protocol fast paths. TLS/mTLS, retry budgets, circuit breaking/outlier ejection, streaming RPC, OpenTelemetry, and end-to-end buffer ownership remain production gates.
+> Status: Preview. The first V2-B.1 production-kernel batch now includes cancellation propagation, retry budgets restricted to explicitly idempotent methods, endpoint outlier ejection, method-level circuit breaking, provider graceful drain, and a Raw Vert.x vs full-RPC end-to-end latency baseline. TLS/mTLS, Micrometer/OpenTelemetry/JFR, end-to-end buffer ownership, stable Fory type IDs, and streaming RPC remain production gates.
 
-Current capabilities include Vert.x TCP multiplexing with connection-local request IDs, Etcd Lease + revision-aware Range/Watch discovery, immutable array service snapshots, allocation-light P2C+EWMA selection, bounded virtual-thread provider execution, method-bound Fory slice decoding, generated client/server paths, and optional JDK/CGLIB/Byte Buddy fallbacks.
+Current capabilities include Vert.x TCP multiplexing with connection-local request IDs, Etcd Lease + revision-aware Range/Watch discovery, immutable array service snapshots, allocation-light P2C+EWMA selection, bounded virtual-thread provider execution, method-bound Fory slice decoding, generated client/server paths, optional JDK/CGLIB/Byte Buddy fallbacks, bounded idempotent retries, outlier ejection, method-level circuit breaking, cancellation propagation, and graceful provider draining.
 
 <!-- doc-section:architecture -->
 ## Architecture
@@ -100,7 +100,9 @@ private UserService userService;
 
 The default setup uses the in-memory registry, Vert.x transport, Fory codec, JDK proxy, and P2C+EWMA load balancing. Configure `peach.rpc.registry.type=etcd` for Etcd discovery, `peach.rpc.registry.namespace` for logical registry isolation, and `peach.rpc.server.enabled=true` for providers.
 
-See [Starter configuration](docs/starter.md).
+See [Starter configuration](docs/starter.md). Retry is opt-in per method through `@PeachRpcIdempotent`; non-idempotent methods are never retried automatically.
+
+The V2-B.1 production-kernel behavior and remaining gates are documented in [production-kernel-v2b1.md](docs/production-kernel-v2b1.md).
 
 For the high-performance path, annotate service interfaces with `@PeachRpcContract` and configure `peach-rpc-codegen` as an annotation processor. The processor emits both the consumer stub and provider dispatcher. Runtime discovery prefers generated code and falls back to the configured proxy/MethodHandle path when generated artifacts are absent.
 

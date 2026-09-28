@@ -7,7 +7,7 @@
 
 Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框架。当前 `0.1.x` 重点不是堆叠功能，而是先建立可长期演进的数据面与控制面边界：长连接多路复用、本地服务目录、有界并发、SPI 扩展、二进制协议、Spring Boot Starter 和可重复性能基准。
 
-> 当前状态：Preview。V2-B 已接通编译期 Consumer Stub / Provider Dispatcher、真实 HELLO/HELLO_ACK、连接分片、connection-local pending、FrameView 与 Unary 协议快路径；TLS/mTLS、完整 Retry Budget、熔断/异常实例剔除、流式 RPC、OpenTelemetry 和端到端 Buffer ownership 仍属于后续生产门禁。
+> 当前状态：Preview。V2-B.1 第一批已接通调用取消传播、仅幂等方法可用的 Retry Budget、端点异常剔除、方法级 Circuit Breaker、Provider Graceful Drain，以及 Raw Vert.x / 完整 RPC 端到端延迟基线。TLS/mTLS、Micrometer/OpenTelemetry/JFR、端到端 Buffer ownership、Fory 稳定 Type ID 与流式 RPC 仍属于后续生产门禁。
 
 核心能力：
 
@@ -19,6 +19,9 @@ Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框�
 - Fory 默认编解码；方法级 Codec 支持直接从 Frame payload slice 解码，框架错误继续使用 Core 独立线协议。
 - 标注 `@PeachRpcContract` 的接口同时生成 Consumer Stub 与 Provider Dispatcher；0~4 参数 Consumer CallSite 使用专用入口，JDK/CGLIB/Byte Buddy 只作为 fallback。
 - Spring Boot Starter，支持 `@PeachRpcService` 和 `@PeachRpcReference`。
+- Consumer 可使用 `@PeachRpcIdempotent` 显式声明允许自动重试的方法；重试受全局 Budget、整体 Deadline 与抖动退避共同约束。
+- Endpoint 连续基础设施失败会被临时剔除，方法级连续失败会触发 Circuit Breaker，避免故障实例和依赖持续放大尾延迟。
+- Consumer timeout/主动取消会通过 `CANCEL` 控制帧传播到 Provider；Provider 关闭时先注销服务、发送 GO_AWAY 并等待 inflight 排空。
 
 <!-- doc-section:architecture -->
 ## 架构
@@ -190,4 +193,5 @@ CI 使用 JDK 21 执行相同门禁。根 POM 使用 `${revision}` 和 flatten p
 - [实施路线](docs/implementation-plan.md)
 - [高性能内核 V2 计划](docs/high-performance-kernel-v2-plan.md)
 - [高性能内核 V2-B 实现](docs/high-performance-kernel-v2b.md)
+- [V2-B.1 生产内核第一批](docs/production-kernel-v2b1.md)
 

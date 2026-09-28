@@ -44,7 +44,8 @@ V2-B 仍不是零分配：
 - `InvocationPathBenchmark`：Generated / JDK Proxy / Byte Buddy；
 - `ProtocolDecodeBenchmark`：full decode / RpcFrameView；
 - `ProtocolEncodeBenchmark`：generic request encode / unary fast encode；
-- `LoadBalancePathBenchmark`：List contexts / array + metrics。
+- `LoadBalancePathBenchmark`：List contexts / array + metrics；
+- `EndToEndLatencyBenchmark`：单并发 Raw Vert.x loopback echo 与完整 Peach RPC echo。
 
 构建：
 
@@ -60,17 +61,19 @@ java -jar peach-rpc-benchmarks/target/benchmarks.jar
 
 正式结果必须记录机器型号、CPU 核数、JDK、JVM 参数、warmup、measurement、fork 和 payload 大小。
 
+`EndToEndLatencyBenchmark.rawVertxEcho` 是网络/Vert.x loopback 基线，`peachRpcEcho` 包含 Generated Stub、Codec、协议、Transport、Provider Dispatcher 与返回解码。两者 AverageTime 差值用于观察当前机器上的 **RPC Added Latency**，仓库不提交未固定测试环境的百分比结论。
+
 ## 下一批基准
 
 需要继续增加：
 
-1. Raw Vert.x echo；
-2. RPC no-op 64B / 256B / 1KiB / 16KiB / 1MiB；
-3. concurrency 1 / 16 / 64 / 256 / 1024 / 10000；
-4. Generated Dispatcher / MethodHandle；
-5. Fory generic / slice decode；
-6. connection count 1 / 2 / 4 / 8；
-7. overload / slow consumer；
+1. RPC no-op 64B / 256B / 1KiB / 16KiB / 1MiB；
+2. concurrency 1 / 16 / 64 / 256 / 1024 / 10000；
+3. Generated Dispatcher / MethodHandle；
+4. Fory generic / slice decode；
+5. connection count 1 / 2 / 4 / 8；
+6. overload / slow consumer；
+7. retry/circuit/outlier 故障注入；
 8. GC 与 allocation profiler。
 
 所有优化必须通过基准证明收益，不能仅因为“理论上更快”进入默认路径。

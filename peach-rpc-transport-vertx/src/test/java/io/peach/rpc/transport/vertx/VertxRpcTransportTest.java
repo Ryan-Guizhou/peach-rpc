@@ -2,6 +2,7 @@ package io.peach.rpc.transport.vertx;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,7 +24,10 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 class VertxRpcTransportTest {
@@ -169,6 +173,106 @@ class VertxRpcTransportTest {
         }
     }
 
+
+    @Test
+    void clientCancellationShouldCancelProviderRequest()
+            throws Exception {
+        int port = findFreePort();
+        RpcTransportOptions options = options(
+                Set.of(RpcCodecIds.FORY_NATIVE),
+                1);
+        VertxRpcTransportServer server =
+                new VertxRpcTransportServer(options);
+        VertxRpcTransportClient client =
+                new VertxRpcTransportClient(options);
+        RpcEndpoint endpoint =
+                new RpcEndpoint("127.0.0.1", port);
+        CountDownLatch handled = new CountDownLatch(1);
+        AtomicReference<CompletableFuture<byte[]>> provider =
+                new AtomicReference<>();
+
+        try {
+            server.start(endpoint, (remote, requestBytes) -> {
+                        CompletableFuture<byte[]> pending =
+                                new CompletableFuture<>();
+                        provider.set(pending);
+                        handled.countDown();
+                        return pending;
+                    })
+                    .toCompletableFuture()
+                    .join();
+
+            CompletableFuture<byte[]> call = client.request(
+                            endpoint,
+                            request(),
+                            Duration.ofSeconds(5))
+                    .toCompletableFuture();
+            assertTrue(handled.await(2, TimeUnit.SECONDS));
+            assertTrue(call.cancel(true));
+
+            long deadline = System.nanoTime()
+                    + TimeUnit.SECONDS.toNanos(2);
+            while (!provider.get().isCancelled()
+                    && System.nanoTime() < deadline) {
+                Thread.sleep(10);
+            }
+            assertTrue(provider.get().isCancelled());
+        } finally {
+            client.close();
+            server.close();
+        }
+    }
+
+    @Test
+    void gracefulDrainShouldWaitForInflightRequest()
+            throws Exception {
+        int port = findFreePort();
+        RpcTransportOptions options = options(
+                Set.of(RpcCodecIds.FORY_NATIVE),
+                1);
+        VertxRpcTransportServer server =
+                new VertxRpcTransportServer(options);
+        VertxRpcTransportClient client =
+                new VertxRpcTransportClient(options);
+        RpcEndpoint endpoint =
+                new RpcEndpoint("127.0.0.1", port);
+        CountDownLatch handled = new CountDownLatch(1);
+        AtomicReference<byte[]> requestBytes = new AtomicReference<>();
+        CompletableFuture<byte[]> provider = new CompletableFuture<>();
+
+        try {
+            server.start(endpoint, (remote, bytes) -> {
+                        requestBytes.set(bytes);
+                        handled.countDown();
+                        return provider;
+                    })
+                    .toCompletableFuture()
+                    .join();
+
+            CompletableFuture<byte[]> call = client.request(
+                            endpoint,
+                            request(),
+                            Duration.ofSeconds(5))
+                    .toCompletableFuture();
+            assertTrue(handled.await(2, TimeUnit.SECONDS));
+
+            CompletableFuture<Void> drain = server.drain(
+                            Duration.ofSeconds(2))
+                    .toCompletableFuture();
+            assertFalse(drain.isDone());
+
+            provider.complete(response(
+                    requestBytes.get(),
+                    new byte[] {4, 5, 6}));
+            assertArrayEquals(
+                    new byte[] {4, 5, 6},
+                    RpcProtocolCodec.decode(call.join()).payload());
+            drain.join();
+        } finally {
+            client.close();
+            server.close();
+        }
+    }
 
     @Test
     void clientShouldFailWhenHelloAckNeverArrives()
