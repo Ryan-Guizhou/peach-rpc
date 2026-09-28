@@ -13,7 +13,7 @@ import io.peach.rpc.codec.RpcCodecRegistry;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
 
-class ServiceBindingExecutionTest {
+public class ServiceBindingExecutionTest {
 
     @Test
     void shouldResolveExecutionModePerMethod() throws Exception {
@@ -55,7 +55,7 @@ class ServiceBindingExecutionTest {
         return RpcIds.methodId(method);
     }
 
-    interface ExecutionService {
+    public interface ExecutionService {
         String blocking();
 
         @PeachRpcExecution(RpcExecutionMode.CPU)
@@ -65,7 +65,7 @@ class ServiceBindingExecutionTest {
         String direct();
     }
 
-    static final class ExecutionServiceImpl implements ExecutionService {
+    public static final class ExecutionServiceImpl implements ExecutionService {
         @Override
         public String blocking() {
             return "blocking";
@@ -82,11 +82,11 @@ class ServiceBindingExecutionTest {
         }
     }
 
-    interface SafeService {
+    public interface SafeService {
         String execute();
     }
 
-    static final class SafeServiceImpl implements SafeService {
+    public static final class SafeServiceImpl implements SafeService {
         @Override
         public String execute() {
             return "ok";

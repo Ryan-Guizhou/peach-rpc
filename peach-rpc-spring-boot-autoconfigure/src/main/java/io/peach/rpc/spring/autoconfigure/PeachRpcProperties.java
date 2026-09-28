@@ -571,6 +571,7 @@ public class PeachRpcProperties {
         private int port = 19090;
         private int maxConcurrent = 4096;
         private Duration drainTimeout = Duration.ofSeconds(30);
+        private final Execution execution = new Execution();
 
         /**
          * 返回是否启用 Provider。
@@ -660,6 +661,82 @@ public class PeachRpcProperties {
          */
         public void setDrainTimeout(Duration drainTimeout) {
             this.drainTimeout = drainTimeout;
+        }
+
+        /**
+         * 返回 Provider 执行资源配置。
+         *
+         * @return Provider 执行资源配置
+         */
+        public Execution getExecution() {
+            return execution;
+        }
+    }
+
+    /** Provider 业务执行资源配置。 */
+    public static class Execution {
+
+        /** 创建 Provider 执行资源配置。 */
+        public Execution() {
+        }
+
+        private boolean allowDirect;
+        private int cpuParallelism =
+                Math.max(1, Runtime.getRuntime().availableProcessors());
+        private int cpuQueueCapacity = 1024;
+
+        /**
+         * 返回是否允许 DIRECT 方法运行在 Transport Event Loop。
+         *
+         * @return 是否允许 DIRECT
+         */
+        public boolean isAllowDirect() {
+            return allowDirect;
+        }
+
+        /**
+         * 设置是否允许 DIRECT 方法运行在 Transport Event Loop。
+         *
+         * @param allowDirect 是否允许 DIRECT
+         */
+        public void setAllowDirect(boolean allowDirect) {
+            this.allowDirect = allowDirect;
+        }
+
+        /**
+         * 返回 CPU 执行池线程数。
+         *
+         * @return CPU 执行池线程数
+         */
+        public int getCpuParallelism() {
+            return cpuParallelism;
+        }
+
+        /**
+         * 设置 CPU 执行池线程数。
+         *
+         * @param cpuParallelism CPU 执行池线程数
+         */
+        public void setCpuParallelism(int cpuParallelism) {
+            this.cpuParallelism = cpuParallelism;
+        }
+
+        /**
+         * 返回 CPU 执行池有界队列容量。
+         *
+         * @return CPU 执行池队列容量
+         */
+        public int getCpuQueueCapacity() {
+            return cpuQueueCapacity;
+        }
+
+        /**
+         * 设置 CPU 执行池有界队列容量。
+         *
+         * @param cpuQueueCapacity CPU 执行池队列容量
+         */
+        public void setCpuQueueCapacity(int cpuQueueCapacity) {
+            this.cpuQueueCapacity = cpuQueueCapacity;
         }
     }
 }
