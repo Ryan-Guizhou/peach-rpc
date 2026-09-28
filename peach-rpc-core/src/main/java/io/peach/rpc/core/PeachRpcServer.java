@@ -2,6 +2,7 @@ package io.peach.rpc.core;
 
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.RpcException;
+import io.peach.rpc.api.RpcExecutionMode;
 import io.peach.rpc.api.RpcIds;
 import io.peach.rpc.api.RpcRemoteError;
 import io.peach.rpc.api.RpcStatus;
@@ -31,7 +32,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,8 +51,10 @@ public final class PeachRpcServer implements AutoCloseable {
     private final RpcEndpoint bindEndpoint;
     private final Semaphore admission;
     private final Duration drainTimeout;
-    private final ExecutorService executor =
+    private final RpcProviderExecutionOptions executionOptions;
+    private final ExecutorService blockingExecutor =
             Executors.newVirtualThreadPerTaskExecutor();
+    private final ThreadPoolExecutor cpuExecutor;
     private final ConcurrentMap<Integer, ServiceBinding> bindings =
             new ConcurrentHashMap<>();
     private final List<ServiceInstance> configuredInstances =
@@ -74,6 +81,20 @@ public final class PeachRpcServer implements AutoCloseable {
         this.drainTimeout = Objects.requireNonNull(
                 builder.drainTimeout,
                 "drainTimeout");
+        this.executionOptions = Objects.requireNonNull(
+                builder.executionOptions,
+                "executionOptions");
+        this.cpuExecutor = new ThreadPoolExecutor(
+                executionOptions.cpuParallelism(),
+                executionOptions.cpuParallelism(),
+                0L,
+                TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(
+                        executionOptions.cpuQueueCapacity()),
+                Thread.ofPlatform()
+                        .name("peach-rpc-cpu-", 0)
+                        .factory(),
+                new ThreadPoolExecutor.AbortPolicy());
     }
 
     /**
@@ -112,9 +133,17 @@ public final class PeachRpcServer implements AutoCloseable {
 
         ServiceKey key = new ServiceKey(api.getName(), version, group);
         int serviceId = RpcIds.serviceId(key);
+        ServiceBinding binding =
+                new ServiceBinding(key, api, implementation, codecs);
+        if (binding.usesDirectExecution()
+                && !executionOptions.allowDirect()) {
+            throw new IllegalStateException(
+                    "DIRECT RPC execution is disabled; enable it explicitly before registering "
+                            + api.getName());
+        }
         ServiceBinding previous = bindings.putIfAbsent(
                 serviceId,
-                new ServiceBinding(key, api, implementation, codecs));
+                binding);
         if (previous != null) {
             throw new IllegalStateException(
                     "Service id collision: " + serviceId);
@@ -283,11 +312,43 @@ public final class PeachRpcServer implements AutoCloseable {
         }
 
         CompletableFuture<byte[]> result = new CompletableFuture<>();
-        Future<?> task = executor.submit(() -> execute(
-                request,
-                binding,
-                methodCodec,
-                result));
+        RpcExecutionMode executionMode;
+        try {
+            executionMode = binding.executionMode(request.methodId());
+        } catch (NoSuchMethodException error) {
+            admission.release();
+            return CompletableFuture.completedFuture(
+                    frameworkError(
+                            request,
+                            RpcStatus.METHOD_NOT_FOUND,
+                            "Method not found"));
+        }
+
+        if (executionMode == RpcExecutionMode.DIRECT) {
+            execute(request, binding, methodCodec, result);
+            return result;
+        }
+
+        ExecutorService selectedExecutor =
+                executionMode == RpcExecutionMode.CPU
+                        ? cpuExecutor
+                        : blockingExecutor;
+        Future<?> task;
+        try {
+            task = selectedExecutor.submit(() -> execute(
+                    request,
+                    binding,
+                    methodCodec,
+                    result));
+        } catch (RejectedExecutionException error) {
+            admission.release();
+            return CompletableFuture.completedFuture(
+                    errorResponse(
+                            request,
+                            RpcStatus.OVERLOADED,
+                            RpcException.class.getName(),
+                            "Provider execution queue is full"));
+        }
         result.whenComplete((ignoredValue, ignoredError) -> {
             if (result.isCancelled()) {
                 task.cancel(true);
@@ -429,7 +490,8 @@ public final class PeachRpcServer implements AutoCloseable {
             }
         }
         transport.close();
-        executor.close();
+        blockingExecutor.close();
+        cpuExecutor.shutdownNow();
     }
 
     private enum State {
@@ -448,6 +510,8 @@ public final class PeachRpcServer implements AutoCloseable {
         private RpcEndpoint bind;
         private int maxConcurrent = 4096;
         private Duration drainTimeout = Duration.ofSeconds(30);
+        private RpcProviderExecutionOptions executionOptions =
+                RpcProviderExecutionOptions.DEFAULT;
 
         /** 创建 Provider Builder。 */
         public Builder() {
@@ -524,6 +588,19 @@ public final class PeachRpcServer implements AutoCloseable {
                         "drainTimeout must be positive");
             }
             this.drainTimeout = value;
+            return this;
+        }
+
+        /**
+         * 设置 Provider 业务执行资源策略。
+         *
+         * @param value 执行资源配置
+         * @return Provider Builder
+         */
+        public Builder executionOptions(RpcProviderExecutionOptions value) {
+            this.executionOptions = Objects.requireNonNull(
+                    value,
+                    "executionOptions");
             return this;
         }
 
