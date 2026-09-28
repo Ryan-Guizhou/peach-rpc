@@ -350,6 +350,12 @@ public final class RpcProtocolCodec {
         return false;
     }
 
+    /**
+     * 覆盖 Unary REQUEST 固定 Header 中的 connection-local Request ID。
+     *
+     * @param bytes 完整 REQUEST 帧
+     * @param requestId connection-local Request ID，必须非零
+     */
     public static void writeRequestId(
             byte[] bytes,
             long requestId) {
