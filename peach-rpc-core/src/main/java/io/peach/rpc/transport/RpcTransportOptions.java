@@ -9,7 +9,7 @@ import java.time.Duration;
 import java.util.Set;
 
 /**
- * 传输层容量、超时与连接能力配置。
+ * 传输层容量、超时、连接恢复与连接能力配置。
  *
  * @param maxInflightPerConnection 单连接最大并发请求数
  * @param maxFrameBytes 单个完整协议帧最大字节数
@@ -18,6 +18,10 @@ import java.util.Set;
  * @param handshakeTimeout 协议握手超时时间
  * @param codecIds 当前进程可用 Codec 线协议编号
  * @param connectionsPerEndpoint 每个服务端点的连接分片数
+ * @param heartbeatInterval 空闲连接发送 PING 前的间隔
+ * @param heartbeatTimeout PING 发出后等待活跃流量/PONG 的最长时间
+ * @param reconnectBaseBackoff 异常建连/断链后的基础重连退避
+ * @param reconnectMaxBackoff 重连退避最大窗口
  */
 public record RpcTransportOptions(
         int maxInflightPerConnection,
@@ -26,7 +30,20 @@ public record RpcTransportOptions(
         Duration connectTimeout,
         Duration handshakeTimeout,
         Set<Byte> codecIds,
-        int connectionsPerEndpoint) {
+        int connectionsPerEndpoint,
+        Duration heartbeatInterval,
+        Duration heartbeatTimeout,
+        Duration reconnectBaseBackoff,
+        Duration reconnectMaxBackoff) {
+
+    private static final Duration DEFAULT_HEARTBEAT_INTERVAL =
+            Duration.ofSeconds(30);
+    private static final Duration DEFAULT_HEARTBEAT_TIMEOUT =
+            Duration.ofSeconds(10);
+    private static final Duration DEFAULT_RECONNECT_BASE_BACKOFF =
+            Duration.ofMillis(50);
+    private static final Duration DEFAULT_RECONNECT_MAX_BACKOFF =
+            Duration.ofSeconds(3);
 
     /** 默认传输配置。 */
     public static final RpcTransportOptions DEFAULT = new RpcTransportOptions(
@@ -36,7 +53,11 @@ public record RpcTransportOptions(
             Duration.ofSeconds(3),
             Duration.ofSeconds(3),
             Set.of(RpcCodecIds.FORY_NATIVE),
-            1);
+            1,
+            DEFAULT_HEARTBEAT_INTERVAL,
+            DEFAULT_HEARTBEAT_TIMEOUT,
+            DEFAULT_RECONNECT_BASE_BACKOFF,
+            DEFAULT_RECONNECT_MAX_BACKOFF);
 
     /**
      * 保留 V2-A 四参数构造方式。
@@ -113,6 +134,39 @@ public record RpcTransportOptions(
                 connectionsPerEndpoint);
     }
 
+    /**
+     * 保留 V2-C.1 七参数构造方式。
+     *
+     * @param maxInflightPerConnection 单连接最大并发请求数
+     * @param maxFrameBytes 单帧最大字节数
+     * @param maxWriteQueueBytes 写队列最大字节数
+     * @param connectTimeout 建连超时
+     * @param handshakeTimeout 握手超时
+     * @param codecIds 可用 Codec
+     * @param connectionsPerEndpoint 每端点连接数
+     */
+    public RpcTransportOptions(
+            int maxInflightPerConnection,
+            int maxFrameBytes,
+            int maxWriteQueueBytes,
+            Duration connectTimeout,
+            Duration handshakeTimeout,
+            Set<Byte> codecIds,
+            int connectionsPerEndpoint) {
+        this(
+                maxInflightPerConnection,
+                maxFrameBytes,
+                maxWriteQueueBytes,
+                connectTimeout,
+                handshakeTimeout,
+                codecIds,
+                connectionsPerEndpoint,
+                DEFAULT_HEARTBEAT_INTERVAL,
+                DEFAULT_HEARTBEAT_TIMEOUT,
+                DEFAULT_RECONNECT_BASE_BACKOFF,
+                DEFAULT_RECONNECT_MAX_BACKOFF);
+    }
+
     /** 校验容量、超时与能力配置。 */
     public RpcTransportOptions {
         if (maxInflightPerConnection <= 0
@@ -124,6 +178,14 @@ public record RpcTransportOptions(
         }
         requirePositive(connectTimeout, "connectTimeout");
         requirePositive(handshakeTimeout, "handshakeTimeout");
+        requirePositive(heartbeatInterval, "heartbeatInterval");
+        requirePositive(heartbeatTimeout, "heartbeatTimeout");
+        requirePositive(reconnectBaseBackoff, "reconnectBaseBackoff");
+        requirePositive(reconnectMaxBackoff, "reconnectMaxBackoff");
+        if (reconnectMaxBackoff.compareTo(reconnectBaseBackoff) < 0) {
+            throw new IllegalArgumentException(
+                    "reconnectMaxBackoff must be >= reconnectBaseBackoff");
+        }
         codecIds = codecIds == null ? Set.of() : Set.copyOf(codecIds);
         if (codecIds.isEmpty()) {
             throw new IllegalArgumentException(
@@ -144,7 +206,8 @@ public record RpcTransportOptions(
                 Set.of(
                         RpcFeature.DEADLINE,
                         RpcFeature.CANCEL,
-                        RpcFeature.GO_AWAY),
+                        RpcFeature.GO_AWAY,
+                        RpcFeature.HEARTBEAT),
                 maxFrameBytes);
     }
 
