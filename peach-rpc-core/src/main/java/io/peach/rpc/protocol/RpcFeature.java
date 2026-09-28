@@ -9,7 +9,9 @@ public enum RpcFeature {
     /** 流式 RPC。 */
     STREAMING(1 << 2),
     /** GO_AWAY 优雅排空。 */
-    GO_AWAY(1 << 3);
+    GO_AWAY(1 << 3),
+    /** 应用层 PING/PONG 心跳。 */
+    HEARTBEAT(1 << 4);
 
     private final int mask;
 
