@@ -24,8 +24,8 @@ public record RegistryOptions(
                         .map(String::trim)
                         .filter(value -> !value.isEmpty())
                         .toList();
-        namespace = namespace == null || namespace.isBlank()
-                ? "default"
+        namespace = namespace == null
+                ? ""
                 : namespace.trim();
         providerOptions = providerOptions == null
                 ? Map.of()

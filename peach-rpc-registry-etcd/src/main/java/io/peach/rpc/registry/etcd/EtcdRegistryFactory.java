@@ -30,9 +30,12 @@ public final class EtcdRegistryFactory implements RegistryFactory {
             throw new IllegalArgumentException(
                     "leaseTtlSeconds must be positive");
         }
+        String namespace = options.namespace().isBlank()
+                ? "default"
+                : options.namespace();
         return new EtcdRegistry(
                 configured.toArray(String[]::new),
                 leaseTtlSeconds,
-                options.namespace());
+                namespace);
     }
 }

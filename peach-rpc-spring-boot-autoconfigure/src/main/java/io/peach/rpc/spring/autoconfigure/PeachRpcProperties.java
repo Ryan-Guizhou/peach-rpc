@@ -86,9 +86,10 @@ public class PeachRpcProperties {
         public Registry() {
         }
         private String type = "memory";
-        private String endpoints = "http://127.0.0.1:2379";
-        private String namespace = "default";
+        private String endpoints = "";
+        private String namespace = "";
         private long leaseTtlSeconds = 30;
+        private final Nacos nacos = new Nacos();
 
         /**
          * 返回注册中心 SPI 名称。
@@ -160,6 +161,60 @@ public class PeachRpcProperties {
          */
         public void setLeaseTtlSeconds(long leaseTtlSeconds) {
             this.leaseTtlSeconds = leaseTtlSeconds;
+        }
+
+        /**
+         * 返回 Nacos Adapter 配置。
+         *
+         * @return Nacos Adapter 配置
+         */
+        public Nacos getNacos() {
+            return nacos;
+        }
+    }
+
+    /** Nacos Registry Adapter 配置。 */
+    public static class Nacos {
+
+        /** 创建 Nacos 配置。 */
+        public Nacos() {
+        }
+
+        private String group = "PEACH_RPC";
+        private String cluster = "DEFAULT";
+        private String username = "";
+        private String password = "";
+
+        public String getGroup() {
+            return group;
+        }
+
+        public void setGroup(String group) {
+            this.group = group;
+        }
+
+        public String getCluster() {
+            return cluster;
+        }
+
+        public void setCluster(String cluster) {
+            this.cluster = cluster;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
         }
     }
 
@@ -566,9 +621,11 @@ public class PeachRpcProperties {
          */
         public Server() {
         }
-        private boolean enabled;
+        private boolean enabled = true;
         private String host = "0.0.0.0";
         private int port = 19090;
+        private String advertisedHost = "";
+        private int advertisedPort;
         private int maxConcurrent = 4096;
         private Duration drainTimeout = Duration.ofSeconds(30);
         private Duration controlPlaneTimeout = Duration.ofSeconds(3);
@@ -626,6 +683,22 @@ public class PeachRpcProperties {
          */
         public void setPort(int port) {
             this.port = port;
+        }
+
+        public String getAdvertisedHost() {
+            return advertisedHost;
+        }
+
+        public void setAdvertisedHost(String advertisedHost) {
+            this.advertisedHost = advertisedHost;
+        }
+
+        public int getAdvertisedPort() {
+            return advertisedPort;
+        }
+
+        public void setAdvertisedPort(int advertisedPort) {
+            this.advertisedPort = advertisedPort;
         }
 
         /**

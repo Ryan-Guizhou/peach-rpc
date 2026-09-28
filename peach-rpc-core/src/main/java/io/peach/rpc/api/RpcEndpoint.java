@@ -16,8 +16,8 @@ public record RpcEndpoint(String host, int port) {
         if (host.isBlank()) {
             throw new IllegalArgumentException("host must not be blank");
         }
-        if (port < 1 || port > 65_535) {
-            throw new IllegalArgumentException("port must be between 1 and 65535");
+        if (port < 0 || port > 65_535) {
+            throw new IllegalArgumentException("port must be between 0 and 65535");
         }
     }
 

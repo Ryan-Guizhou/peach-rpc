@@ -50,6 +50,8 @@ public final class PeachRpcServer implements AutoCloseable {
     private final RpcTransportServer transport;
     private final RpcCodecRegistry codecs;
     private final RpcEndpoint bindEndpoint;
+    private final String advertisedHost;
+    private final int advertisedPort;
     private final Semaphore admission;
     private final Duration drainTimeout;
     private final Duration controlPlaneTimeout;
@@ -66,6 +68,7 @@ public final class PeachRpcServer implements AutoCloseable {
             new AtomicReference<>(State.NEW);
 
     private volatile RpcEndpoint actualEndpoint;
+    private volatile RpcEndpoint advertisedEndpoint;
 
     private PeachRpcServer(Builder builder) {
         this.registrar = Objects.requireNonNull(
@@ -80,6 +83,8 @@ public final class PeachRpcServer implements AutoCloseable {
         this.bindEndpoint = Objects.requireNonNull(
                 builder.bind,
                 "bindEndpoint");
+        this.advertisedHost = builder.advertisedHost;
+        this.advertisedPort = builder.advertisedPort;
         this.admission = new Semaphore(builder.maxConcurrent);
         this.drainTimeout = Objects.requireNonNull(
                 builder.drainTimeout,
@@ -187,10 +192,20 @@ public final class PeachRpcServer implements AutoCloseable {
                         return;
                     }
                     actualEndpoint = endpoint;
-                    registerConfiguredServices(endpoint)
+                    RpcEndpoint published;
+                    try {
+                        published = resolveAdvertisedEndpoint(endpoint);
+                    } catch (RuntimeException error) {
+                        state.set(State.CLOSED);
+                        transport.close();
+                        started.completeExceptionally(error);
+                        return;
+                    }
+                    advertisedEndpoint = published;
+                    registerConfiguredServices(published)
                             .whenComplete((ignored, registryError) -> {
                                 if (registryError != null) {
-                                    rollbackRegisteredServices(endpoint)
+                                    rollbackRegisteredServices(published)
                                             .whenComplete((rollbackIgnored, rollbackError) -> {
                                                 state.set(State.CLOSED);
                                                 transport.close();
@@ -203,12 +218,38 @@ public final class PeachRpcServer implements AutoCloseable {
                                 }
                                 state.set(State.STARTED);
                                 LOGGER.info(
-                                        "Peach RPC server started at {}",
-                                        endpoint.authority());
+                                        "Peach RPC server started: bind={}, advertised={}",
+                                        endpoint.authority(),
+                                        published.authority());
                                 started.complete(endpoint);
                             });
                 });
         return started;
+    }
+
+    private RpcEndpoint resolveAdvertisedEndpoint(RpcEndpoint endpoint) {
+        String host = advertisedHost;
+        if (host == null || host.isBlank()) {
+            host = bindEndpoint.host();
+            if (isWildcardHost(host)) {
+                throw new IllegalStateException(
+                        "RPC advertised host is required when bind host is " + host);
+            }
+        }
+        int port = advertisedPort > 0
+                ? advertisedPort
+                : endpoint.port();
+        if (port <= 0) {
+            throw new IllegalStateException(
+                    "RPC advertised port could not be resolved");
+        }
+        return new RpcEndpoint(host, port);
+    }
+
+    private static boolean isWildcardHost(String host) {
+        return "0.0.0.0".equals(host)
+                || "::".equals(host)
+                || "[::]".equals(host);
     }
 
     private CompletionStage<Void> registerConfiguredServices(
@@ -511,7 +552,7 @@ public final class PeachRpcServer implements AutoCloseable {
             state.set(State.CLOSED);
         }
 
-        RpcEndpoint endpoint = actualEndpoint;
+        RpcEndpoint endpoint = advertisedEndpoint;
         if (endpoint != null) {
             for (ServiceInstance configured : configuredInstances) {
                 try {
@@ -563,6 +604,8 @@ public final class PeachRpcServer implements AutoCloseable {
         private RpcTransportServer transport;
         private RpcCodecRegistry codecs;
         private RpcEndpoint bind;
+        private String advertisedHost;
+        private int advertisedPort;
         private int maxConcurrent = 4096;
         private Duration drainTimeout = Duration.ofSeconds(30);
         private Duration controlPlaneTimeout = Duration.ofSeconds(3);
@@ -615,6 +658,34 @@ public final class PeachRpcServer implements AutoCloseable {
          */
         public Builder bindEndpoint(RpcEndpoint value) {
             this.bind = value;
+            return this;
+        }
+
+        /**
+         * 设置向 Registry 发布的 Provider 主机地址。
+         *
+         * @param value 发布主机地址
+         * @return Provider Builder
+         */
+        public Builder advertisedHost(String value) {
+            this.advertisedHost = value == null
+                    ? null
+                    : value.trim();
+            return this;
+        }
+
+        /**
+         * 设置向 Registry 发布的 Provider 端口。
+         *
+         * @param value 发布端口，0 表示使用实际监听端口
+         * @return Provider Builder
+         */
+        public Builder advertisedPort(int value) {
+            if (value < 0 || value > 65_535) {
+                throw new IllegalArgumentException(
+                        "advertisedPort must be between 0 and 65535");
+            }
+            this.advertisedPort = value;
             return this;
         }
 

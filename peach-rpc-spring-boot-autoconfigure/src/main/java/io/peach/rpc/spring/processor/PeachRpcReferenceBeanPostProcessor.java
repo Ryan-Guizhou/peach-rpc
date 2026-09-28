@@ -2,6 +2,7 @@ package io.peach.rpc.spring.processor;
 
 import io.peach.rpc.core.PeachRpcClient;
 import io.peach.rpc.spring.annotation.PeachRpcReference;
+import io.peach.rpc.spring.runtime.PeachRpcRuntimeCoordinator;
 import java.lang.reflect.Field;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.ObjectProvider;
@@ -16,34 +17,62 @@ import org.springframework.util.ReflectionUtils;
 public final class PeachRpcReferenceBeanPostProcessor
         implements InstantiationAwareBeanPostProcessor, PriorityOrdered {
 
-    private final ObjectProvider<PeachRpcClient> clientProvider;
+    private final ObjectProvider<PeachRpcRuntimeCoordinator> coordinatorProvider;
 
     /**
      * 创建 Consumer 引用注入处理器。
      *
-     * @param clientProvider Consumer 运行时延迟提供器
+     * @param coordinatorProvider 运行时协调器延迟提供器
      */
-    public PeachRpcReferenceBeanPostProcessor(ObjectProvider<PeachRpcClient> clientProvider) {
-        this.clientProvider = clientProvider;
+    public PeachRpcReferenceBeanPostProcessor(
+            ObjectProvider<PeachRpcRuntimeCoordinator> coordinatorProvider) {
+        this.coordinatorProvider = coordinatorProvider;
     }
 
     @Override
-    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-        ReflectionUtils.doWithFields(bean.getClass(), field -> injectReference(bean, field));
+    public Object postProcessBeforeInitialization(
+            Object bean,
+            String beanName) throws BeansException {
+        ReflectionUtils.doWithFields(
+                bean.getClass(),
+                field -> injectReference(bean, beanName, field));
         return bean;
     }
 
-    private void injectReference(Object bean, Field field) {
+    private void injectReference(
+            Object bean,
+            String beanName,
+            Field field) {
         PeachRpcReference reference = field.getAnnotation(PeachRpcReference.class);
         if (reference == null) {
             return;
         }
         if (!field.getType().isInterface()) {
             throw new IllegalStateException(
-                    "@PeachRpcReference requires an interface field: " + field);
+                    "@PeachRpcReference requires an interface field: bean="
+                            + beanName
+                            + ", field="
+                            + field.getName()
+                            + ", type="
+                            + field.getType().getName());
         }
-        PeachRpcClient client = clientProvider.getObject();
-        Object proxy = client.refer(field.getType(), reference.version(), reference.group());
+        PeachRpcClient client;
+        try {
+            client = coordinatorProvider.getObject().client();
+        } catch (IllegalStateException error) {
+            throw new IllegalStateException(
+                    "Failed to initialize @PeachRpcReference: bean="
+                            + beanName
+                            + ", field="
+                            + field.getName()
+                            + ", interface="
+                            + field.getType().getName(),
+                    error);
+        }
+        Object proxy = client.refer(
+                field.getType(),
+                reference.version(),
+                reference.group());
         ReflectionUtils.makeAccessible(field);
         ReflectionUtils.setField(field, bean, proxy);
     }
