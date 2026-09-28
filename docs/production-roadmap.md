@@ -21,7 +21,7 @@
 | **Future** | 属于长期生态或能力扩展，不应阻塞近期高可用/高性能主线 |
 | **Optional** | 是否实现取决于项目范围，不作为当前 Production GA 的必选门禁 |
 
-> 当前分支 V2-C.1 的实现是否已经进入 `main`，以对应 PR 合并状态为准。本文中的 **Current** 表示当前文档所在分支已经具备该能力。
+> V2-C.1 已进入 `main`。当前 V2-C.2 开发分支正在补齐 Connection & Control-plane HA；本文中的 **Current** 表示当前文档所在分支已经具备该能力。
 
 ---
 
@@ -41,8 +41,8 @@ Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 
 但项目仍定位为 **Preview**。距离“可作为中型项目默认 RPC 层”的主要缺口集中在：
 
-1. 连接级 Heartbeat / idle detection / reconnect 闭环；
-2. Registry 控制面真实故障注入与恢复证明；
+1. Registry 控制面真实故障注入与恢复证明；
+2. 独立进程恢复 E2E 与连接/恢复可观测性；
 3. TLS/mTLS 与证书生命周期；
 4. Micrometer / OpenTelemetry / JFR 具体 Adapter；
 5. Fory Stable Type ID / Schema fingerprint / 滚动升级兼容；
@@ -80,7 +80,7 @@ Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 
 | 能力 | 状态 | 当前实现 | 生产缺口 / 下一步 |
 |---|---|---|---|
-| Deadline / Timeout | **Current** | Consumer 逻辑调用有整体 Deadline | 当前基于 absolute epoch，仍需 relative timeout budget 降低跨节点时钟偏差 |
+| Deadline / Timeout | **Current** | Consumer 逻辑 Deadline 覆盖 connect/handshake/request；Request 双写绝对 Deadline 与相对预算 | 继续补超时/取消竞态与慢连接测试 |
 | CANCEL 传播 | **Current** | timeout / Future.cancel -> Transport CANCEL -> Provider cancel | 补更多竞态/重复 CANCEL/final response race 测试 |
 | 显式幂等重试 | **Current** | 仅 `@PeachRpcIdempotent` 可自动 Retry | 持续保持非幂等默认不重试 |
 | Retry Budget | **Current** | 全局预算 + maxAttempts + jitter backoff | 增加大规模故障时 retry storm 压测 |
@@ -88,7 +88,7 @@ Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 | Circuit Breaker | **Current** | 方法级 CLOSED/OPEN/HALF_OPEN | 增加长时间 half-open / concurrent probe 验证 |
 | P2C/EWMA 与故障状态融合 | **Current** | 被剔除实例不进入默认候选 | 增加大量实例/部分故障基准 |
 | Last-known-good Directory | **Partial** | 数据面读取本地快照，短期控制面故障不会让热路径直接依赖 Registry | 需要通过 Nacos/Etcd 断链与重启故障测试证明行为 |
-| Relative timeout budget | **Proposed** | 尚未实现 | 设计 remaining-time 传播与兼容策略 |
+| Relative timeout budget | **Current** | 新 Request 同时携带 `timeoutBudgetMillis` 与旧 `deadlineEpochMillis`，新 Provider 优先相对预算语义 | Provider 运行中硬超时仍主要依赖 Consumer CANCEL；后续可评估服务端执行计时器 |
 
 ### 3.3 Provider 稳定性
 
@@ -108,10 +108,10 @@ Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 |---|---|---|---|
 | Connection handshake timeout | **Current** | 建连后 HELLO/ACK 有独立超时 | 已具备基础连接保护 |
 | GO_AWAY | **Current** | graceful 与 fatal 语义分离 | 增加更多 race / reconnect 测试 |
-| PING / PONG | **Proposed** | 协议 Message Type 已预留 | 实现应用层 Heartbeat |
-| Idle detection | **Proposed** | 尚未实现 | 基于 lastRead/lastWrite 检测 silent dead connection |
-| Reconnect backoff + jitter | **Proposed** | Registry 已有部分恢复退避，但数据连接未形成统一连接恢复策略 | 建立单飞、指数退避、jitter、最大窗口 |
-| Half-open connection detection | **Proposed** | 尚未完成应用层闭环 | Heartbeat timeout 后快速摘除并重连 |
+| PING / PONG | **Current** | 作为 `RpcFeature.HEARTBEAT` 经 HELLO/ACK 协商后启用 | 增加更长时间 soak 与异常帧测试 |
+| Idle detection | **Current** | Client/Server 对空闲连接发送 PING；任意有效入站帧可证明存活 | 增加网络黑洞级故障注入 |
+| Reconnect backoff + jitter | **Current** | Consumer 使用 request-driven single-flight、指数退避 + full jitter、最大窗口 | 后续接入标准 metrics/observer |
+| Half-open connection detection | **Current** | heartbeat timeout 后关闭 silent connection，后续请求重建连接 | 增加真实网络黑洞与 NAT 场景验证 |
 | Connection recovery observability | **Proposed** | RpcObserver 当前未覆盖完整连接生命周期 | 增加 connection active/reconnect/heartbeat failure metrics |
 
 ### 3.5 Registry / 控制面
@@ -242,22 +242,27 @@ flowchart LR
 
 ## 6. V2-C.2：连接与控制面 HA 闭环
 
-**状态：Proposed**
+**状态：Partial（当前开发分支）**
 
-### 6.1 范围
+### 6.1 已完成
 
 1. PING/PONG heartbeat；
 2. idle detection；
-3. connection reconnect exponential backoff + jitter；
+3. connection reconnect exponential backoff + full jitter；
 4. half-open connection 快速摘除；
 5. relative timeout budget；
-6. Etcd compaction/disconnect/restart/leader-change fault injection；
-7. Nacos server restart / re-registration / re-subscribe fault injection；
-8. Registry last-known-good 行为验证；
-9. 独立 JVM Provider/Consumer E2E；
-10. 连接/恢复生命周期 Observer 事件。
+6. Consumer 逻辑 Deadline 覆盖 connect、HELLO/ACK 与 request；
+7. Transport 测试覆盖 idle keepalive 与 Provider restart 后 Consumer reconnect。
 
-### 6.2 验收标准
+### 6.2 仍需完成
+
+1. Etcd compaction/disconnect/restart/leader-change fault injection；
+2. Nacos server restart / re-registration / re-subscribe fault injection；
+3. Registry last-known-good 行为验证；
+4. 独立 JVM Provider/Consumer E2E；
+5. 连接/恢复生命周期 Observer 事件与后续标准指标映射。
+
+### 6.3 验收标准
 
 - 静默断链能在明确时间界限内被 Heartbeat 检测；
 - 大量连接同时断开时不会同步重连形成 thundering herd；
@@ -413,9 +418,9 @@ Peach RPC 从 Preview 提升为 Production Ready 前，建议以下门禁全部�
 
 ### 10.1 High Availability
 
-- [ ] Heartbeat / idle detection；
-- [ ] reconnect backoff + jitter；
-- [ ] relative timeout budget；
+- [x] Heartbeat / idle detection；
+- [x] reconnect backoff + jitter；
+- [x] relative timeout budget；
 - [ ] Etcd compaction/disconnect/restart/leader change；
 - [ ] Nacos restart/re-registration/re-subscribe；
 - [ ] 独立进程滚动发布与恢复 E2E；
