@@ -36,6 +36,22 @@ peach:
 
 Provider 启用时，当前 Registry 必须暴露 `ServiceRegistrar`。如果配置的是 discovery-only Registry，自动配置会 fail-fast。
 
+Provider 方法默认执行在虚拟线程。CPU 密集方法可以显式声明：
+
+```java
+@PeachRpcExecution(RpcExecutionMode.CPU)
+Report buildReport();
+```
+
+极短且确定不阻塞的纯内存方法才可以使用 DIRECT：
+
+```java
+@PeachRpcExecution(RpcExecutionMode.DIRECT)
+int healthScore();
+```
+
+DIRECT 默认禁止。只有配置 `peach.rpc.server.execution.allow-direct=true` 后才能注册包含 DIRECT 方法的服务，避免业务代码意外阻塞 Vert.x Event Loop。
+
 ## 3. Consumer
 
 ```java
@@ -99,6 +115,9 @@ public interface OrderService {
 - `peach.rpc.client.load-balancer`：默认 `p2c-ewma`。
 - `peach.rpc.server.max-concurrent`：Provider 最大并发业务执行数。
 - `peach.rpc.server.drain-timeout`：Provider 关闭时等待 inflight 排空的最大时间，默认 30 秒。
+- `peach.rpc.server.execution.allow-direct`：是否允许 DIRECT 方法运行在 Transport Event Loop，默认 false。
+- `peach.rpc.server.execution.cpu-parallelism`：CPU 执行池线程数，默认当前 JVM 可用处理器数。
+- `peach.rpc.server.execution.cpu-queue-capacity`：CPU 执行池有界队列容量，默认 1024。
 - `peach.rpc.transport.max-inflight-per-connection`：单连接最大未完成请求数。
 - `peach.rpc.client.resilience.max-attempts`：单次逻辑调用最大尝试次数，默认 2，包含首次调用。
 - `peach.rpc.client.resilience.retry-budget-ratio`：每个原始请求补充的全局重试额度比例，默认 0.10。
@@ -109,6 +128,29 @@ public interface OrderService {
 - `peach.rpc.client.resilience.circuit-consecutive-failure-threshold`：方法级熔断连续失败阈值，默认 20。
 - `peach.rpc.client.resilience.circuit-open-duration`：Circuit OPEN 时间，默认 10 秒。
 
-## 6. Bean 覆盖
+## 6. 可观测性 Observer
+
+业务可以声明一个或多个 `RpcObserver` Bean。Starter 会在启动时组合这些 Observer，并同时注入 Consumer 与 Provider：
+
+```java
+@Bean
+RpcObserver rpcObserver() {
+    return new RpcObserver() {
+        @Override
+        public void onClientRetryScheduled(
+                ServiceKey serviceKey,
+                int methodId,
+                int nextAttempt,
+                long delayMillis,
+                Throwable cause) {
+            // Map to metrics / tracing / JFR.
+        }
+    };
+}
+```
+
+Core 不依赖 Micrometer/OpenTelemetry。业务或后续 Adapter 负责把事件映射到具体观测系统。
+
+## 7. Bean 覆盖
 
 自动配置对 Registry、Codec Registry、TransportFactory、LoadBalancer、ProxyFactory、Client、Server 均使用 `@ConditionalOnMissingBean`，业务项目可以通过声明同类型 Bean 覆盖默认装配。

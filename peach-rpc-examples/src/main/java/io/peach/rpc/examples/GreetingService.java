@@ -1,6 +1,7 @@
 package io.peach.rpc.examples;
 
 import io.peach.rpc.api.PeachRpcContract;
+import io.peach.rpc.api.PeachRpcIdempotent;
 
 /**
  * 示例问候服务。
@@ -14,5 +15,6 @@ public interface GreetingService {
      * @param request 问候请求
      * @return 问候响应
      */
+    @PeachRpcIdempotent
     GreetingReply hello(GreetingRequest request);
 }

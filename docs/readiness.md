@@ -12,14 +12,32 @@
 - 新增 Raw Vert.x 与完整 Peach RPC 的端到端延迟基线，用于观察 RPC Added Latency；
 - Cancellation、Drain、Retry Budget、Circuit Breaker、Outlier 路径已有自动化测试。
 
+## V2-B.1 第二批已完成
+
+- Provider execution policy：默认 BLOCKING_VIRTUAL，CPU 使用有界线程池，DIRECT 默认关闭并需要显式允许；
+- Core 增加无第三方观测依赖的 RpcObserver，并覆盖 Client attempt/retry 与 Provider invocation 生命周期；
+- Starter 自动组合 RpcObserver Bean，并暴露 Provider execution 配置；
+- Etcd Adapter 增加真实 Etcd 集成测试，覆盖注册/注销、Watch 快照、namespace 隔离和 Lease 过期。
+
+## V2-B.2 当前已完成
+
+- V2-B.1 第二批能力重新基于 main 纳入正确开发基线；
+- Etcd Lease keepalive 丢失后会重新申请 Lease，并重新发布当前活跃注册实例；
+- Etcd Watch 重订阅使用指数退避与 jitter，降低控制面恢复时的同步重连压力；
+- Provider Registry 注册、回滚和注销操作具有独立 control-plane timeout；
+- `@PeachRpcService` 本身成为 Spring stereotype，不再要求实现类重复声明 `@Component`；
+- examples 增加完整 Spring Boot 启动烟测，验证真实 Generated Stub / Vert.x TCP / Fory / Provider round-trip；
+- examples 构建为可执行 Spring Boot JAR。
+
 ## 仍需完成的生产门禁
 
 正式成为中型项目默认 RPC 层之前，至少还需要：
 
 - 更完整的协议兼容、畸形帧和故障注入测试；
-- Etcd 集成、Watch 恢复和 compaction 测试；
+- Etcd compaction、进程级断链/重启和多节点 leader change 等更强故障注入测试；
 - TLS/mTLS 与证书生命周期；
-- Micrometer、OpenTelemetry/Tracing、JFR；
+- 应用层 Heartbeat / idle detection 与连接重建退避；
+- Micrometer、OpenTelemetry/Tracing、JFR 具体 Adapter；
 - Buffer ownership / buffer-oriented Codec，是否进入默认路径必须由基准收益决定；
 - Fory 稳定 Type ID、Schema fingerprint、冲突检测与滚动升级兼容策略；
 - 多 payload、多并发、过载、慢 Consumer/Provider 的稳定端到端性能基线；

@@ -5,7 +5,9 @@ import io.peach.rpc.codec.RpcCodecRegistry;
 import io.peach.rpc.core.PeachRpcClient;
 import io.peach.rpc.core.PeachRpcServer;
 import io.peach.rpc.core.RpcClientResilienceOptions;
+import io.peach.rpc.core.RpcProviderExecutionOptions;
 import io.peach.rpc.loadbalance.LoadBalancer;
+import io.peach.rpc.observability.RpcObserver;
 import io.peach.rpc.proxy.ProxyFactory;
 import io.peach.rpc.registry.Registry;
 import io.peach.rpc.registry.RegistryFactory;
@@ -134,6 +136,24 @@ public class PeachRpcAutoConfiguration {
     }
 
     /**
+     * 创建 Provider 执行资源参数。
+     *
+     * @param properties Peach RPC 配置
+     * @return Provider 执行资源参数
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public RpcProviderExecutionOptions peachRpcProviderExecutionOptions(
+            PeachRpcProperties properties) {
+        PeachRpcProperties.Execution execution =
+                properties.getServer().getExecution();
+        return new RpcProviderExecutionOptions(
+                execution.isAllowDirect(),
+                execution.getCpuParallelism(),
+                execution.getCpuQueueCapacity());
+    }
+
+    /**
      * 创建 Consumer 负载均衡器。
      *
      * @param properties Peach RPC 配置
@@ -169,6 +189,7 @@ public class PeachRpcAutoConfiguration {
      * @param loadBalancer 负载均衡器
      * @param proxyFactory 代理工厂
      * @param resilienceOptions Consumer 容错参数
+     * @param observerProvider 可观测性 Observer 提供器
      * @param properties Peach RPC 配置
      * @return Consumer 运行时
      */
@@ -183,6 +204,7 @@ public class PeachRpcAutoConfiguration {
             LoadBalancer loadBalancer,
             ProxyFactory proxyFactory,
             RpcClientResilienceOptions resilienceOptions,
+            ObjectProvider<RpcObserver> observerProvider,
             PeachRpcProperties properties) {
         return PeachRpcClient.builder()
                 .serviceDiscovery(registry)
@@ -192,6 +214,8 @@ public class PeachRpcAutoConfiguration {
                 .proxyFactory(proxyFactory)
                 .timeout(properties.getClient().getTimeout())
                 .resilienceOptions(resilienceOptions)
+                .observer(RpcObserver.composite(
+                        observerProvider.orderedStream().toList()))
                 .build();
     }
 
@@ -216,6 +240,8 @@ public class PeachRpcAutoConfiguration {
      * @param codecRegistry Codec 注册表
      * @param transportFactory Transport 工厂
      * @param transportOptions Transport 配置
+     * @param executionOptions Provider 执行资源参数
+     * @param observerProvider 可观测性 Observer 提供器
      * @param properties Peach RPC 配置
      * @return Provider 运行时
      */
@@ -227,6 +253,8 @@ public class PeachRpcAutoConfiguration {
             RpcCodecRegistry codecRegistry,
             RpcTransportFactory transportFactory,
             RpcTransportOptions transportOptions,
+            RpcProviderExecutionOptions executionOptions,
+            ObjectProvider<RpcObserver> observerProvider,
             PeachRpcProperties properties) {
         PeachRpcProperties.Server server = properties.getServer();
         return PeachRpcServer.builder()
@@ -237,6 +265,10 @@ public class PeachRpcAutoConfiguration {
                 .bindEndpoint(new RpcEndpoint(server.getHost(), server.getPort()))
                 .maxConcurrent(server.getMaxConcurrent())
                 .drainTimeout(server.getDrainTimeout())
+                .controlPlaneTimeout(server.getControlPlaneTimeout())
+                .executionOptions(executionOptions)
+                .observer(RpcObserver.composite(
+                        observerProvider.orderedStream().toList()))
                 .build();
     }
 

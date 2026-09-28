@@ -72,6 +72,11 @@
                 <version>${jetcd.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.etcd</groupId>
+                <artifactId>jetcd-test</artifactId>
+                <version>${jetcd.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.fory</groupId>
                 <artifactId>fory-core</artifactId>
                 <version>${fory.version}</version>

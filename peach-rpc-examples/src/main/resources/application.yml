@@ -2,10 +2,18 @@ peach:
   rpc:
     registry:
       type: memory
+    transport:
+      connections-per-endpoint: 2
     server:
       enabled: true
       host: 127.0.0.1
       port: 19090
+      drain-timeout: 5s
+      control-plane-timeout: 3s
+      execution:
+        allow-direct: false
     client:
       enabled: true
       timeout: 3s
+      resilience:
+        max-attempts: 2

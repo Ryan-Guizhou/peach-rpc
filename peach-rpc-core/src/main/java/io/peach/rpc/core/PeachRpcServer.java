@@ -2,6 +2,7 @@ package io.peach.rpc.core;
 
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.RpcException;
+import io.peach.rpc.api.RpcExecutionMode;
 import io.peach.rpc.api.RpcIds;
 import io.peach.rpc.api.RpcRemoteError;
 import io.peach.rpc.api.RpcStatus;
@@ -10,6 +11,7 @@ import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.codec.RpcCodecRegistry;
 import io.peach.rpc.codec.RpcMethodCodec;
 import io.peach.rpc.codec.RpcCodecIds;
+import io.peach.rpc.observability.RpcObserver;
 import io.peach.rpc.protocol.RpcErrorCodec;
 import io.peach.rpc.protocol.RpcFrameView;
 import io.peach.rpc.protocol.RpcMessageType;
@@ -31,7 +33,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,8 +52,12 @@ public final class PeachRpcServer implements AutoCloseable {
     private final RpcEndpoint bindEndpoint;
     private final Semaphore admission;
     private final Duration drainTimeout;
-    private final ExecutorService executor =
+    private final Duration controlPlaneTimeout;
+    private final RpcProviderExecutionOptions executionOptions;
+    private final RpcObserver observer;
+    private final ExecutorService blockingExecutor =
             Executors.newVirtualThreadPerTaskExecutor();
+    private final ThreadPoolExecutor cpuExecutor;
     private final ConcurrentMap<Integer, ServiceBinding> bindings =
             new ConcurrentHashMap<>();
     private final List<ServiceInstance> configuredInstances =
@@ -74,6 +84,26 @@ public final class PeachRpcServer implements AutoCloseable {
         this.drainTimeout = Objects.requireNonNull(
                 builder.drainTimeout,
                 "drainTimeout");
+        this.controlPlaneTimeout = Objects.requireNonNull(
+                builder.controlPlaneTimeout,
+                "controlPlaneTimeout");
+        this.executionOptions = Objects.requireNonNull(
+                builder.executionOptions,
+                "executionOptions");
+        this.observer = Objects.requireNonNull(
+                builder.observer,
+                "observer");
+        this.cpuExecutor = new ThreadPoolExecutor(
+                executionOptions.cpuParallelism(),
+                executionOptions.cpuParallelism(),
+                0L,
+                TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(
+                        executionOptions.cpuQueueCapacity()),
+                Thread.ofPlatform()
+                        .name("peach-rpc-cpu-", 0)
+                        .factory(),
+                new ThreadPoolExecutor.AbortPolicy());
     }
 
     /**
@@ -112,9 +142,17 @@ public final class PeachRpcServer implements AutoCloseable {
 
         ServiceKey key = new ServiceKey(api.getName(), version, group);
         int serviceId = RpcIds.serviceId(key);
+        ServiceBinding binding =
+                new ServiceBinding(key, api, implementation, codecs);
+        if (binding.usesDirectExecution()
+                && !executionOptions.allowDirect()) {
+            throw new IllegalStateException(
+                    "DIRECT RPC execution is disabled; enable it explicitly before registering "
+                            + api.getName());
+        }
         ServiceBinding previous = bindings.putIfAbsent(
                 serviceId,
-                new ServiceBinding(key, api, implementation, codecs));
+                binding);
         if (previous != null) {
             throw new IllegalStateException(
                     "Service id collision: " + serviceId);
@@ -182,7 +220,10 @@ public final class PeachRpcServer implements AutoCloseable {
                     .toCompletableFuture());
         }
         return CompletableFuture.allOf(
-                registrations.toArray(CompletableFuture[]::new));
+                        registrations.toArray(CompletableFuture[]::new))
+                .orTimeout(
+                        controlPlaneTimeout.toMillis(),
+                        TimeUnit.MILLISECONDS);
     }
 
     private CompletionStage<Void> rollbackRegisteredServices(
@@ -202,7 +243,10 @@ public final class PeachRpcServer implements AutoCloseable {
             rollbacks.add(rollback);
         }
         return CompletableFuture.allOf(
-                rollbacks.toArray(CompletableFuture[]::new));
+                        rollbacks.toArray(CompletableFuture[]::new))
+                .orTimeout(
+                        controlPlaneTimeout.toMillis(),
+                        TimeUnit.MILLISECONDS);
     }
 
     private CompletionStage<byte[]> handle(
@@ -283,17 +327,86 @@ public final class PeachRpcServer implements AutoCloseable {
         }
 
         CompletableFuture<byte[]> result = new CompletableFuture<>();
-        Future<?> task = executor.submit(() -> execute(
-                request,
-                binding,
-                methodCodec,
-                result));
+        RpcExecutionMode executionMode;
+        try {
+            executionMode = binding.executionMode(request.methodId());
+        } catch (NoSuchMethodException error) {
+            admission.release();
+            return CompletableFuture.completedFuture(
+                    frameworkError(
+                            request,
+                            RpcStatus.METHOD_NOT_FOUND,
+                            "Method not found"));
+        }
+
+        long observationStartedAtNanos =
+                observer.enabled() ? System.nanoTime() : 0L;
+        if (observer.enabled()) {
+            result.whenComplete((responseBytes, error) ->
+                    observeServerInvocation(
+                            request,
+                            executionMode,
+                            observationStartedAtNanos,
+                            responseBytes,
+                            error));
+        }
+
+        if (executionMode == RpcExecutionMode.DIRECT) {
+            execute(request, binding, methodCodec, result);
+            return result;
+        }
+
+        ExecutorService selectedExecutor =
+                executionMode == RpcExecutionMode.CPU
+                        ? cpuExecutor
+                        : blockingExecutor;
+        Future<?> task;
+        try {
+            task = selectedExecutor.submit(() -> execute(
+                    request,
+                    binding,
+                    methodCodec,
+                    result));
+        } catch (RejectedExecutionException error) {
+            admission.release();
+            return CompletableFuture.completedFuture(
+                    errorResponse(
+                            request,
+                            RpcStatus.OVERLOADED,
+                            RpcException.class.getName(),
+                            "Provider execution queue is full"));
+        }
         result.whenComplete((ignoredValue, ignoredError) -> {
             if (result.isCancelled()) {
                 task.cancel(true);
             }
         });
         return result;
+    }
+
+    private void observeServerInvocation(
+            RpcFrameView request,
+            RpcExecutionMode executionMode,
+            long startedAtNanos,
+            byte[] responseBytes,
+            Throwable error) {
+        RpcStatus status = RpcStatus.INTERNAL_ERROR;
+        if (error == null && responseBytes != null) {
+            try {
+                status = RpcProtocolCodec.view(responseBytes).status();
+            } catch (RuntimeException ignored) {
+                status = RpcStatus.INTERNAL_ERROR;
+            }
+        } else if (error instanceof java.util.concurrent.CancellationException) {
+            status = RpcStatus.UNAVAILABLE;
+        }
+        observer.onServerInvocationCompleted(
+                request.serviceId(),
+                request.methodId(),
+                executionMode,
+                System.nanoTime() - startedAtNanos,
+                status,
+                error);
     }
 
     private void execute(
@@ -405,6 +518,9 @@ public final class PeachRpcServer implements AutoCloseable {
                     registrar.unregister(
                                     runtimeInstance(configured, endpoint))
                             .toCompletableFuture()
+                            .orTimeout(
+                                    controlPlaneTimeout.toMillis(),
+                                    TimeUnit.MILLISECONDS)
                             .join();
                 } catch (RuntimeException error) {
                     LOGGER.warn(
@@ -429,7 +545,8 @@ public final class PeachRpcServer implements AutoCloseable {
             }
         }
         transport.close();
-        executor.close();
+        blockingExecutor.close();
+        cpuExecutor.shutdownNow();
     }
 
     private enum State {
@@ -448,6 +565,10 @@ public final class PeachRpcServer implements AutoCloseable {
         private RpcEndpoint bind;
         private int maxConcurrent = 4096;
         private Duration drainTimeout = Duration.ofSeconds(30);
+        private Duration controlPlaneTimeout = Duration.ofSeconds(3);
+        private RpcProviderExecutionOptions executionOptions =
+                RpcProviderExecutionOptions.DEFAULT;
+        private RpcObserver observer = RpcObserver.noop();
 
         /** 创建 Provider Builder。 */
         public Builder() {
@@ -524,6 +645,45 @@ public final class PeachRpcServer implements AutoCloseable {
                         "drainTimeout must be positive");
             }
             this.drainTimeout = value;
+            return this;
+        }
+
+        /**
+         * 设置 Registry 等控制面操作的最大等待时间。
+         *
+         * @param value 控制面操作超时时间
+         * @return Provider Builder
+         */
+        public Builder controlPlaneTimeout(Duration value) {
+            if (value == null || value.isNegative() || value.isZero()) {
+                throw new IllegalArgumentException(
+                        "controlPlaneTimeout must be positive");
+            }
+            this.controlPlaneTimeout = value;
+            return this;
+        }
+
+        /**
+         * 设置 Provider 业务执行资源策略。
+         *
+         * @param value 执行资源配置
+         * @return Provider Builder
+         */
+        public Builder executionOptions(RpcProviderExecutionOptions value) {
+            this.executionOptions = Objects.requireNonNull(
+                    value,
+                    "executionOptions");
+            return this;
+        }
+
+        /**
+         * 设置 Provider 可观测性 Observer。
+         *
+         * @param value Observer
+         * @return Provider Builder
+         */
+        public Builder observer(RpcObserver value) {
+            this.observer = Objects.requireNonNull(value, "observer");
             return this;
         }
 
