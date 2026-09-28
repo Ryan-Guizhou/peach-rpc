@@ -1,11 +1,9 @@
-package io.peach.rpc.examples;
+package io.peach.rpc.examples.api;
 
 import io.peach.rpc.api.PeachRpcContract;
 import io.peach.rpc.api.PeachRpcIdempotent;
 
-/**
- * 示例问候服务。
- */
+/** 示例问候 RPC 契约。 */
 @PeachRpcContract
 public interface GreetingService {
 

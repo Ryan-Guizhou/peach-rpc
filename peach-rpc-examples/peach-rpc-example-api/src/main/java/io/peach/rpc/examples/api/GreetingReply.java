@@ -1,4 +1,4 @@
-package io.peach.rpc.examples;
+package io.peach.rpc.examples.api;
 
 import java.io.Serializable;
 
