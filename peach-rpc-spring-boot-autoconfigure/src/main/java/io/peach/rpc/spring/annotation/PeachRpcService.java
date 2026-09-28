@@ -5,13 +5,16 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.springframework.stereotype.Component;
 
 /**
  * 标记需要由 Peach RPC 暴露的 Spring Bean。
  *
- * <p>服务实现 Bean 会在 Spring 容器完成创建后注册到 Peach RPC Provider。
+ * <p>该注解同时是 Spring stereotype，服务实现类无需额外添加 {@code @Component}。
+ * Bean 完成创建后会自动注册到 Peach RPC Provider。
  */
 @Documented
+@Component
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PeachRpcService {
