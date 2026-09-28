@@ -14,6 +14,7 @@ import io.peach.rpc.registry.RegistryOptions;
 import io.peach.rpc.spi.ExtensionLoader;
 import io.peach.rpc.spring.lifecycle.PeachRpcServerLifecycle;
 import io.peach.rpc.spring.processor.PeachRpcReferenceBeanPostProcessor;
+import io.peach.rpc.spring.processor.PeachRpcServiceBeanDefinitionValidator;
 import io.peach.rpc.spring.processor.PeachRpcServiceBeanPostProcessor;
 import io.peach.rpc.spring.runtime.PeachRpcRuntimeCoordinator;
 import io.peach.rpc.transport.RpcTransportFactory;
@@ -243,6 +244,18 @@ public class PeachRpcAutoConfiguration {
     @ConditionalOnMissingBean
     public PeachRpcServer peachRpcServer(PeachRpcRuntimeCoordinator coordinator) {
         return coordinator.server();
+    }
+
+    /**
+     * 创建 Provider Bean 定义校验器。
+     *
+     * @return Provider Bean 定义校验器
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public static PeachRpcServiceBeanDefinitionValidator
+            peachRpcServiceBeanDefinitionValidator() {
+        return new PeachRpcServiceBeanDefinitionValidator();
     }
 
     /**

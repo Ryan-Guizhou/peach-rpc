@@ -8,6 +8,17 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      nacos:
+        image: nacos/nacos-server:v3.2.4
+        env:
+          MODE: standalone
+          NACOS_AUTH_ENABLE: "false"
+        ports:
+          - 8848:8848
+          - 9848:9848
+    env:
+      NACOS_TEST_ENDPOINT: 127.0.0.1:8848
     steps:
       - uses: actions/checkout@v7
 
@@ -16,6 +27,18 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+
+      - name: Wait for Nacos
+        shell: bash
+        run: |
+          for attempt in {1..60}; do
+            if timeout 1 bash -c '</dev/tcp/127.0.0.1/8848' 2>/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Nacos did not open port 8848 in time"
+          exit 1
 
       - name: Repository checks
         run: python3 scripts/check_project.py
