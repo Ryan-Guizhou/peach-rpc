@@ -3,6 +3,9 @@ package io.peach.rpc.registry.etcd;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.etcd.jetcd.ByteSequence;
+import io.etcd.jetcd.Client;
+import io.etcd.jetcd.options.GetOption;
 import io.etcd.jetcd.test.EtcdClusterExtension;
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.ServiceInstance;
@@ -103,6 +106,42 @@ class EtcdRegistryIntegrationTest {
     }
 
     @Test
+    void shouldRepublishActiveRegistrationAfterLeaseLoss()
+            throws Exception {
+        String namespace = uniqueNamespace("lease-recovery");
+        ServiceKey key =
+                new ServiceKey("demo.LeaseRecovery", "1.0.0", "default");
+        ServiceInstance instance =
+                instance(key, "node-recover", 19094);
+
+        try (EtcdRegistry registry = registry(namespace, 2);
+             Client rawClient = rawClient()) {
+            registry.register(instance)
+                    .toCompletableFuture()
+                    .join();
+
+            long originalLease = findLease(rawClient, instance.instanceId());
+            assertTrue(originalLease > 0L);
+
+            rawClient.getLeaseClient()
+                    .revoke(originalLease)
+                    .join();
+
+            assertTrue(await(
+                    Duration.ofSeconds(12),
+                    () -> registry.lookup(key)
+                            .toCompletableFuture()
+                            .join()
+                            .instances()
+                            .contains(instance)));
+            long recoveredLease =
+                    findLease(rawClient, instance.instanceId());
+            assertTrue(recoveredLease > 0L);
+            assertTrue(recoveredLease != originalLease);
+        }
+    }
+
+    @Test
     void shouldRemoveRegistrationAfterLeaseExpires()
             throws Exception {
         ServiceKey key =
@@ -134,13 +173,39 @@ class EtcdRegistryIntegrationTest {
     private static EtcdRegistry registry(
             String namespace,
             long leaseTtlSeconds) {
-        String[] endpoints = CLUSTER.clientEndpoints().stream()
-                .map(URI::toString)
-                .toArray(String[]::new);
         return new EtcdRegistry(
-                endpoints,
+                endpoints(),
                 leaseTtlSeconds,
                 namespace);
+    }
+
+    private static Client rawClient() {
+        return Client.builder().endpoints(endpoints()).build();
+    }
+
+    private static String[] endpoints() {
+        return CLUSTER.clientEndpoints().stream()
+                .map(URI::toString)
+                .toArray(String[]::new);
+    }
+
+    private static long findLease(
+            Client client,
+            String instanceId) {
+        var response = client.getKVClient()
+                .get(
+                        ByteSequence.from(
+                                "/peach-rpc/",
+                                java.nio.charset.StandardCharsets.UTF_8),
+                        GetOption.builder().isPrefix(true).build())
+                .join();
+        return response.getKvs().stream()
+                .filter(kv -> kv.getValue()
+                        .toString(java.nio.charset.StandardCharsets.UTF_8)
+                        .startsWith(instanceId + "|"))
+                .mapToLong(kv -> kv.getLease())
+                .findFirst()
+                .orElse(0L);
     }
 
     private static String uniqueNamespace(String prefix) {

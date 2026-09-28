@@ -29,7 +29,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
@@ -43,7 +46,8 @@ import org.slf4j.LoggerFactory;
 final class EtcdRegistry implements Registry, ServiceRegistrar {
     private static final Logger LOGGER = LoggerFactory.getLogger(EtcdRegistry.class);
     private static final String DEFAULT_ROOT = "/peach-rpc/";
-    private static final Duration RESUBSCRIBE_DELAY = Duration.ofSeconds(1);
+    private static final long RECOVERY_BASE_DELAY_MILLIS = 200L;
+    private static final long RECOVERY_MAX_DELAY_MILLIS = 30_000L;
     private static final RegistryCapabilities CAPABILITIES = RegistryCapabilities.of(
             RegistryCapability.REGISTRATION,
             RegistryCapability.SUBSCRIPTION,
@@ -56,6 +60,10 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
     private final long leaseTtlSeconds;
     private final String root;
     private final Object leaseMonitor = new Object();
+    private final ConcurrentMap<String, ServiceInstance> activeRegistrations =
+            new ConcurrentHashMap<>();
+    private final AtomicBoolean leaseRecoveryScheduled = new AtomicBoolean();
+    private final AtomicBoolean closed = new AtomicBoolean();
     private volatile CompletableFuture<Long> leaseFuture;
     private volatile CloseableClient keepAliveHandle;
 
@@ -77,17 +85,32 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
 
     @Override
     public CompletionStage<Void> register(ServiceInstance instance) {
+        Objects.requireNonNull(instance, "instance");
+        if (closed.get()) {
+            return CompletableFuture.failedFuture(
+                    new IllegalStateException("Etcd registry is closed"));
+        }
+        String registrationKey = key(instance);
         return ensureLease()
                 .thenCompose(leaseId -> client.getKVClient().put(
-                        bytes(key(instance)),
+                        bytes(registrationKey),
                         bytes(serialize(instance)),
                         PutOption.builder().withLeaseId(leaseId).build()))
-                .thenApply(ignored -> null);
+                .thenRun(() ->
+                        activeRegistrations.put(registrationKey, instance));
     }
 
     @Override
     public CompletionStage<Void> unregister(ServiceInstance instance) {
-        return client.getKVClient().delete(bytes(key(instance))).thenApply(ignored -> null);
+        Objects.requireNonNull(instance, "instance");
+        String registrationKey = key(instance);
+        activeRegistrations.remove(registrationKey);
+        if (closed.get()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        return client.getKVClient()
+                .delete(bytes(registrationKey))
+                .thenApply(ignored -> null);
     }
 
     @Override
@@ -143,14 +166,19 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
 
                     @Override
                     public void onError(Throwable error) {
-                        LOGGER.error("Etcd lease keepalive failed for leaseId={}", leaseId, error);
-                        invalidateLease();
+                        LOGGER.error(
+                                "Etcd lease keepalive failed for leaseId={}",
+                                leaseId,
+                                error);
+                        handleLeaseLoss();
                     }
 
                     @Override
                     public void onCompleted() {
-                        LOGGER.warn("Etcd lease keepalive completed for leaseId={}", leaseId);
-                        invalidateLease();
+                        LOGGER.warn(
+                                "Etcd lease keepalive completed for leaseId={}",
+                                leaseId);
+                        handleLeaseLoss();
                     }
                 });
                 created.complete(leaseId);
@@ -159,14 +187,86 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
         }
     }
 
+    private void handleLeaseLoss() {
+        invalidateLease();
+        scheduleLeaseRecovery(0);
+    }
+
     private void invalidateLease() {
         synchronized (leaseMonitor) {
             leaseFuture = null;
             if (keepAliveHandle != null) {
-                keepAliveHandle.close();
+                CloseableClient current = keepAliveHandle;
                 keepAliveHandle = null;
+                current.close();
             }
         }
+    }
+
+    private void scheduleLeaseRecovery(int attempt) {
+        if (closed.get()
+                || activeRegistrations.isEmpty()
+                || !leaseRecoveryScheduled.compareAndSet(false, true)) {
+            return;
+        }
+        long delayMillis = recoveryDelayMillis(attempt);
+        Executor executor = CompletableFuture.delayedExecutor(
+                delayMillis,
+                TimeUnit.MILLISECONDS);
+        CompletableFuture.runAsync(() ->
+                        recoverRegistrations(attempt),
+                executor);
+    }
+
+    private void recoverRegistrations(int attempt) {
+        if (closed.get() || activeRegistrations.isEmpty()) {
+            leaseRecoveryScheduled.set(false);
+            return;
+        }
+
+        List<ServiceInstance> snapshot =
+                List.copyOf(activeRegistrations.values());
+        ensureLease()
+                .thenCompose(leaseId -> {
+                    CompletableFuture<?>[] writes = snapshot.stream()
+                            .map(instance -> client.getKVClient().put(
+                                    bytes(key(instance)),
+                                    bytes(serialize(instance)),
+                                    PutOption.builder()
+                                            .withLeaseId(leaseId)
+                                            .build()))
+                            .map(CompletionStage::toCompletableFuture)
+                            .toArray(CompletableFuture[]::new);
+                    return CompletableFuture.allOf(writes);
+                })
+                .whenComplete((ignored, error) -> {
+                    leaseRecoveryScheduled.set(false);
+                    if (closed.get()) {
+                        return;
+                    }
+                    if (error != null) {
+                        LOGGER.warn(
+                                "Failed to recover Etcd registrations; retrying",
+                                error);
+                        invalidateLease();
+                        scheduleLeaseRecovery(attempt + 1);
+                    } else {
+                        LOGGER.info(
+                                "Recovered {} Etcd RPC registrations",
+                                snapshot.size());
+                    }
+                });
+    }
+
+    private static long recoveryDelayMillis(int attempt) {
+        int shift = Math.min(Math.max(attempt, 0), 7);
+        long ceiling = Math.min(
+                RECOVERY_MAX_DELAY_MILLIS,
+                RECOVERY_BASE_DELAY_MILLIS << shift);
+        long floor = Math.max(1L, ceiling / 2L);
+        return ThreadLocalRandom.current().nextLong(
+                floor,
+                ceiling + 1L);
     }
 
     private final class EtcdSubscription implements RegistrySubscription {
@@ -174,6 +274,7 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
         private final RegistryListener listener;
         private final AtomicBoolean closed = new AtomicBoolean();
         private volatile Watch.Watcher watcher;
+        private int restartAttempt;
 
         private EtcdSubscription(ServiceKey serviceKey, RegistryListener listener) {
             this.serviceKey = Objects.requireNonNull(serviceKey, "serviceKey");
@@ -194,6 +295,7 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                     return;
                 }
                 listener.onSnapshot(snapshot);
+                restartAttempt = 0;
                 openWatch(snapshot.revision() + 1);
             });
         }
@@ -227,8 +329,11 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
 
         private void scheduleRestart() {
             closeWatcher();
+            int attempt = restartAttempt++;
+            long delayMillis = recoveryDelayMillis(attempt);
             Executor executor = CompletableFuture.delayedExecutor(
-                    RESUBSCRIBE_DELAY.toMillis(), TimeUnit.MILLISECONDS);
+                    delayMillis,
+                    TimeUnit.MILLISECONDS);
             CompletableFuture.runAsync(this::start, executor);
         }
 
@@ -329,6 +434,10 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
 
     @Override
     public void close() {
+        if (!closed.compareAndSet(false, true)) {
+            return;
+        }
+        activeRegistrations.clear();
         invalidateLease();
         client.close();
     }
