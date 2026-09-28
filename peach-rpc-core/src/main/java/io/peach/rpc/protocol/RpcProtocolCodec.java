@@ -27,6 +27,7 @@ public final class RpcProtocolCodec {
             "deadlineEpochMillis=".getBytes(StandardCharsets.US_ASCII);
     private static final byte[] TIMEOUT_BUDGET_PREFIX =
             "timeoutBudgetMillis=".getBytes(StandardCharsets.US_ASCII);
+    private static final int TIMEOUT_BUDGET_DIGITS = 19;
 
     private RpcProtocolCodec() {
     }
@@ -133,7 +134,7 @@ public final class RpcProtocolCodec {
                 : 0;
         int budgetLength = timeoutBudgetMillis > 0
                 ? TIMEOUT_BUDGET_PREFIX.length
-                        + decimalLength(timeoutBudgetMillis)
+                        + TIMEOUT_BUDGET_DIGITS
                         + 1
                 : 0;
         int metadataLength = deadlineLength + budgetLength;
@@ -179,9 +180,10 @@ public final class RpcProtocolCodec {
                     TIMEOUT_BUDGET_PREFIX.length);
             int valueOffset =
                     metadataOffset + TIMEOUT_BUDGET_PREFIX.length;
-            writePositiveLong(
+            writePaddedPositiveLong(
                     bytes,
                     valueOffset,
+                    TIMEOUT_BUDGET_DIGITS,
                     timeoutBudgetMillis);
             metadataOffset += budgetLength;
             bytes[metadataOffset - 1] = '\n';
@@ -294,6 +296,60 @@ public final class RpcProtocolCodec {
      * @param bytes 已编码完整帧
      * @param requestId connection-local Request ID
      */
+    /**
+     * 在不改变帧长度的前提下刷新 REQUEST 中的相对 timeout budget。
+     *
+     * <p>V2-C.2 将该字段编码为固定 19 位十进制值，因此 Transport 可以在
+     * connect / handshake 完成后、真正写 Socket 前把预算更新为发送时剩余值。
+     *
+     * @param bytes 完整 REQUEST 帧
+     * @param timeoutBudgetMillis 发送时剩余预算，必须大于 0
+     * @return 找到并刷新字段时返回 true；旧请求未携带该字段时返回 false
+     */
+    public static boolean rewriteTimeoutBudgetMillis(
+            byte[] bytes,
+            long timeoutBudgetMillis) {
+        if (timeoutBudgetMillis <= 0L) {
+            throw new IllegalArgumentException(
+                    "timeoutBudgetMillis must be positive");
+        }
+        RpcFrameView frame = view(bytes);
+        if (frame.messageType() != RpcMessageType.REQUEST) {
+            return false;
+        }
+        int metadataLength =
+                ((bytes[METADATA_LENGTH_OFFSET] & 0xff) << 8)
+                        | (bytes[METADATA_LENGTH_OFFSET + 1] & 0xff);
+        int end = HEADER_LENGTH + metadataLength;
+        int lineStart = HEADER_LENGTH;
+        while (lineStart < end) {
+            int lineEnd = lineStart;
+            while (lineEnd < end && bytes[lineEnd] != '\n') {
+                lineEnd++;
+            }
+            if (matchesPrefix(
+                    bytes,
+                    lineStart,
+                    lineEnd,
+                    TIMEOUT_BUDGET_PREFIX)) {
+                int valueOffset =
+                        lineStart + TIMEOUT_BUDGET_PREFIX.length;
+                if (lineEnd - valueOffset != TIMEOUT_BUDGET_DIGITS) {
+                    throw new RpcProtocolException(
+                            "Invalid timeout budget metadata width");
+                }
+                writePaddedPositiveLong(
+                        bytes,
+                        valueOffset,
+                        TIMEOUT_BUDGET_DIGITS,
+                        timeoutBudgetMillis);
+                return true;
+            }
+            lineStart = lineEnd + 1;
+        }
+        return false;
+    }
+
     public static void writeRequestId(
             byte[] bytes,
             long requestId) {
@@ -576,6 +632,44 @@ public final class RpcProtocolCodec {
             throw new RpcProtocolException(
                     "Failed to decode metadata",
                     error);
+        }
+    }
+
+    private static boolean matchesPrefix(
+            byte[] bytes,
+            int start,
+            int end,
+            byte[] prefix) {
+        if (end - start <= prefix.length) {
+            return false;
+        }
+        for (int index = 0; index < prefix.length; index++) {
+            if (bytes[start + index] != prefix[index]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static void writePaddedPositiveLong(
+            byte[] target,
+            int offset,
+            int width,
+            long value) {
+        if (value < 0L) {
+            throw new IllegalArgumentException(
+                    "value must be non-negative");
+        }
+        int cursor = offset + width - 1;
+        long current = value;
+        while (cursor >= offset) {
+            target[cursor--] =
+                    (byte) ('0' + (current % 10L));
+            current /= 10L;
+        }
+        if (current != 0L) {
+            throw new IllegalArgumentException(
+                    "value exceeds fixed decimal width");
         }
     }
 
