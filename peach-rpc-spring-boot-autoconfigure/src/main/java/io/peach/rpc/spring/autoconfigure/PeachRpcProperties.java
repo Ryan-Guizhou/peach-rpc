@@ -86,9 +86,10 @@ public class PeachRpcProperties {
         public Registry() {
         }
         private String type = "memory";
-        private String endpoints = "http://127.0.0.1:2379";
-        private String namespace = "default";
+        private String endpoints = "";
+        private String namespace = "";
         private long leaseTtlSeconds = 30;
+        private final Nacos nacos = new Nacos();
 
         /**
          * 返回注册中心 SPI 名称。
@@ -160,6 +161,100 @@ public class PeachRpcProperties {
          */
         public void setLeaseTtlSeconds(long leaseTtlSeconds) {
             this.leaseTtlSeconds = leaseTtlSeconds;
+        }
+
+        /**
+         * 返回 Nacos Adapter 配置。
+         *
+         * @return Nacos Adapter 配置
+         */
+        public Nacos getNacos() {
+            return nacos;
+        }
+    }
+
+    /** Nacos Registry Adapter 配置。 */
+    public static class Nacos {
+
+        /** 创建 Nacos 配置。 */
+        public Nacos() {
+        }
+
+        private String group = "PEACH_RPC";
+        private String cluster = "DEFAULT";
+        private String username = "";
+        private String password = "";
+
+        /**
+         * 返回 Nacos 管理分组。
+         *
+         * @return Nacos Group
+         */
+        public String getGroup() {
+            return group;
+        }
+
+        /**
+         * 设置 Nacos 管理分组。
+         *
+         * @param group Nacos Group
+         */
+        public void setGroup(String group) {
+            this.group = group;
+        }
+
+        /**
+         * 返回 Nacos 集群名称。
+         *
+         * @return Nacos Cluster
+         */
+        public String getCluster() {
+            return cluster;
+        }
+
+        /**
+         * 设置 Nacos 集群名称。
+         *
+         * @param cluster Nacos Cluster
+         */
+        public void setCluster(String cluster) {
+            this.cluster = cluster;
+        }
+
+        /**
+         * 返回 Nacos 用户名。
+         *
+         * @return Nacos 用户名
+         */
+        public String getUsername() {
+            return username;
+        }
+
+        /**
+         * 设置 Nacos 用户名。
+         *
+         * @param username Nacos 用户名
+         */
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        /**
+         * 返回 Nacos 密码。
+         *
+         * @return Nacos 密码
+         */
+        public String getPassword() {
+            return password;
+        }
+
+        /**
+         * 设置 Nacos 密码。
+         *
+         * @param password Nacos 密码
+         */
+        public void setPassword(String password) {
+            this.password = password;
         }
     }
 
@@ -566,9 +661,11 @@ public class PeachRpcProperties {
          */
         public Server() {
         }
-        private boolean enabled;
+        private boolean enabled = true;
         private String host = "0.0.0.0";
         private int port = 19090;
+        private String advertisedHost = "";
+        private int advertisedPort;
         private int maxConcurrent = 4096;
         private Duration drainTimeout = Duration.ofSeconds(30);
         private Duration controlPlaneTimeout = Duration.ofSeconds(3);
@@ -626,6 +723,42 @@ public class PeachRpcProperties {
          */
         public void setPort(int port) {
             this.port = port;
+        }
+
+        /**
+         * 返回 Provider 对外发布主机地址。
+         *
+         * @return 对外发布主机地址
+         */
+        public String getAdvertisedHost() {
+            return advertisedHost;
+        }
+
+        /**
+         * 设置 Provider 对外发布主机地址。
+         *
+         * @param advertisedHost 对外发布主机地址
+         */
+        public void setAdvertisedHost(String advertisedHost) {
+            this.advertisedHost = advertisedHost;
+        }
+
+        /**
+         * 返回 Provider 对外发布端口。
+         *
+         * @return 对外发布端口，0 表示使用实际监听端口
+         */
+        public int getAdvertisedPort() {
+            return advertisedPort;
+        }
+
+        /**
+         * 设置 Provider 对外发布端口。
+         *
+         * @param advertisedPort 对外发布端口，0 表示使用实际监听端口
+         */
+        public void setAdvertisedPort(int advertisedPort) {
+            this.advertisedPort = advertisedPort;
         }
 
         /**

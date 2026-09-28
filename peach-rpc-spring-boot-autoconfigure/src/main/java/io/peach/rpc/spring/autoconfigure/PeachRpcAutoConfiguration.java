@@ -1,6 +1,5 @@
 package io.peach.rpc.spring.autoconfigure;
 
-import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.codec.RpcCodecRegistry;
 import io.peach.rpc.core.PeachRpcClient;
 import io.peach.rpc.core.PeachRpcServer;
@@ -15,18 +14,20 @@ import io.peach.rpc.registry.RegistryOptions;
 import io.peach.rpc.spi.ExtensionLoader;
 import io.peach.rpc.spring.lifecycle.PeachRpcServerLifecycle;
 import io.peach.rpc.spring.processor.PeachRpcReferenceBeanPostProcessor;
+import io.peach.rpc.spring.processor.PeachRpcServiceBeanDefinitionValidator;
 import io.peach.rpc.spring.processor.PeachRpcServiceBeanPostProcessor;
+import io.peach.rpc.spring.runtime.PeachRpcRuntimeCoordinator;
 import io.peach.rpc.transport.RpcTransportFactory;
 import io.peach.rpc.transport.RpcTransportOptions;
 import java.util.Map;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
 
 /**
  * Peach RPC Spring Boot 自动配置。
@@ -60,7 +61,15 @@ public class PeachRpcAutoConfiguration {
                 registry.getNamespace(),
                 Map.of(
                         "leaseTtlSeconds",
-                        Long.toString(registry.getLeaseTtlSeconds()))));
+                        Long.toString(registry.getLeaseTtlSeconds()),
+                        "nacosGroup",
+                        registry.getNacos().getGroup(),
+                        "nacosCluster",
+                        registry.getNacos().getCluster(),
+                        "nacosUsername",
+                        registry.getNacos().getUsername(),
+                        "nacosPassword",
+                        registry.getNacos().getPassword())));
     }
 
     /**
@@ -180,23 +189,23 @@ public class PeachRpcAutoConfiguration {
     }
 
     /**
-     * 创建 Peach RPC Consumer 运行时。
+     * 创建运行时协调器。
      *
      * @param registry 注册中心
      * @param codecRegistry Codec 注册表
      * @param transportFactory Transport 工厂
      * @param transportOptions Transport 配置
-     * @param loadBalancer 负载均衡器
-     * @param proxyFactory 代理工厂
+     * @param loadBalancer Consumer 负载均衡器
+     * @param proxyFactory Consumer 代理工厂
      * @param resilienceOptions Consumer 容错参数
+     * @param executionOptions Provider 执行资源参数
      * @param observerProvider 可观测性 Observer 提供器
      * @param properties Peach RPC 配置
-     * @return Consumer 运行时
+     * @return 运行时协调器
      */
     @Bean(destroyMethod = "close")
     @ConditionalOnMissingBean
-    @ConditionalOnProperty(prefix = "peach.rpc.client", name = "enabled", havingValue = "true", matchIfMissing = true)
-    public PeachRpcClient peachRpcClient(
+    public PeachRpcRuntimeCoordinator peachRpcRuntimeCoordinator(
             Registry registry,
             RpcCodecRegistry codecRegistry,
             RpcTransportFactory transportFactory,
@@ -204,98 +213,97 @@ public class PeachRpcAutoConfiguration {
             LoadBalancer loadBalancer,
             ProxyFactory proxyFactory,
             RpcClientResilienceOptions resilienceOptions,
+            RpcProviderExecutionOptions executionOptions,
             ObjectProvider<RpcObserver> observerProvider,
             PeachRpcProperties properties) {
-        return PeachRpcClient.builder()
-                .serviceDiscovery(registry)
-                .codecRegistry(codecRegistry)
-                .transportClient(transportFactory.createClient(transportOptions))
-                .loadBalancer(loadBalancer)
-                .proxyFactory(proxyFactory)
-                .timeout(properties.getClient().getTimeout())
-                .resilienceOptions(resilienceOptions)
-                .observer(RpcObserver.composite(
-                        observerProvider.orderedStream().toList()))
-                .build();
+        return new PeachRpcRuntimeCoordinator(
+                registry,
+                codecRegistry,
+                transportFactory,
+                transportOptions,
+                loadBalancer,
+                proxyFactory,
+                resilienceOptions,
+                executionOptions,
+                observerProvider,
+                properties);
+    }
+
+    /**
+     * 暴露可选的程序化 Consumer Bean；只有真实注入时才创建运行时。
+     *
+     * @param coordinator 运行时协调器
+     * @return Consumer
+     */
+    @Bean(destroyMethod = "")
+    @Lazy
+    @ConditionalOnMissingBean
+    public PeachRpcClient peachRpcClient(PeachRpcRuntimeCoordinator coordinator) {
+        return coordinator.client();
+    }
+
+    /**
+     * 暴露可选的程序化 Provider Bean；只有真实注入时才创建运行时。
+     *
+     * @param coordinator 运行时协调器
+     * @return Provider
+     */
+    @Bean(destroyMethod = "")
+    @Lazy
+    @ConditionalOnMissingBean
+    public PeachRpcServer peachRpcServer(PeachRpcRuntimeCoordinator coordinator) {
+        return coordinator.server();
+    }
+
+    /**
+     * 创建 Provider Bean 定义校验器。
+     *
+     * @return Provider Bean 定义校验器
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public static PeachRpcServiceBeanDefinitionValidator
+            peachRpcServiceBeanDefinitionValidator() {
+        return new PeachRpcServiceBeanDefinitionValidator();
     }
 
     /**
      * 创建 Consumer 引用注入处理器。
      *
-     * @param clientProvider Consumer 运行时延迟提供器
+     * @param coordinatorProvider 运行时协调器延迟提供器
      * @return Consumer 引用注入处理器
      */
     @Bean
-    @ConditionalOnBean(PeachRpcClient.class)
     @ConditionalOnMissingBean
     public static PeachRpcReferenceBeanPostProcessor peachRpcReferenceBeanPostProcessor(
-            ObjectProvider<PeachRpcClient> clientProvider) {
-        return new PeachRpcReferenceBeanPostProcessor(clientProvider);
-    }
-
-    /**
-     * 创建 Peach RPC Provider 运行时。
-     *
-     * @param registry 注册中心
-     * @param codecRegistry Codec 注册表
-     * @param transportFactory Transport 工厂
-     * @param transportOptions Transport 配置
-     * @param executionOptions Provider 执行资源参数
-     * @param observerProvider 可观测性 Observer 提供器
-     * @param properties Peach RPC 配置
-     * @return Provider 运行时
-     */
-    @Bean(destroyMethod = "close")
-    @ConditionalOnMissingBean
-    @ConditionalOnProperty(prefix = "peach.rpc.server", name = "enabled", havingValue = "true")
-    public PeachRpcServer peachRpcServer(
-            Registry registry,
-            RpcCodecRegistry codecRegistry,
-            RpcTransportFactory transportFactory,
-            RpcTransportOptions transportOptions,
-            RpcProviderExecutionOptions executionOptions,
-            ObjectProvider<RpcObserver> observerProvider,
-            PeachRpcProperties properties) {
-        PeachRpcProperties.Server server = properties.getServer();
-        return PeachRpcServer.builder()
-                .serviceRegistrar(registry.registrar().orElseThrow(() ->
-                        new IllegalStateException("Configured RPC registry does not support provider registration")))
-                .codecRegistry(codecRegistry)
-                .transportServer(transportFactory.createServer(transportOptions))
-                .bindEndpoint(new RpcEndpoint(server.getHost(), server.getPort()))
-                .maxConcurrent(server.getMaxConcurrent())
-                .drainTimeout(server.getDrainTimeout())
-                .controlPlaneTimeout(server.getControlPlaneTimeout())
-                .executionOptions(executionOptions)
-                .observer(RpcObserver.composite(
-                        observerProvider.orderedStream().toList()))
-                .build();
+            ObjectProvider<PeachRpcRuntimeCoordinator> coordinatorProvider) {
+        return new PeachRpcReferenceBeanPostProcessor(coordinatorProvider);
     }
 
     /**
      * 创建 Provider 服务导出处理器。
      *
-     * @param serverProvider Provider 运行时延迟提供器
+     * @param coordinatorProvider 运行时协调器延迟提供器
      * @return Provider 服务导出处理器
      */
     @Bean
-    @ConditionalOnBean(PeachRpcServer.class)
     @ConditionalOnMissingBean
     public static PeachRpcServiceBeanPostProcessor peachRpcServiceBeanPostProcessor(
-            ObjectProvider<PeachRpcServer> serverProvider) {
-        return new PeachRpcServiceBeanPostProcessor(serverProvider);
+            ObjectProvider<PeachRpcRuntimeCoordinator> coordinatorProvider) {
+        return new PeachRpcServiceBeanPostProcessor(coordinatorProvider);
     }
 
     /**
      * 创建 Provider 生命周期适配器。
      *
-     * @param server Provider 运行时
+     * @param coordinator 运行时协调器
      * @return Provider 生命周期适配器
      */
     @Bean
-    @ConditionalOnBean(PeachRpcServer.class)
     @ConditionalOnMissingBean
-    public PeachRpcServerLifecycle peachRpcServerLifecycle(PeachRpcServer server) {
-        return new PeachRpcServerLifecycle(server);
+    public PeachRpcServerLifecycle peachRpcServerLifecycle(
+            PeachRpcRuntimeCoordinator coordinator) {
+        return new PeachRpcServerLifecycle(coordinator);
     }
+
 }

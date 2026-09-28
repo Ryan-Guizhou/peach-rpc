@@ -1,29 +1,34 @@
 package io.peach.rpc.spring.lifecycle;
 
 import io.peach.rpc.core.PeachRpcServer;
+import io.peach.rpc.spring.runtime.PeachRpcRuntimeCoordinator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.context.SmartLifecycle;
 
 /**
- * 将 Peach RPC Provider 生命周期接入 Spring 容器生命周期。
+ * 将已经创建的 Peach RPC Provider 接入 Spring 生命周期。
  */
 public final class PeachRpcServerLifecycle implements SmartLifecycle {
 
-    private final PeachRpcServer server;
+    private final PeachRpcRuntimeCoordinator coordinator;
     private final AtomicBoolean running = new AtomicBoolean();
 
     /**
      * 创建 Provider 生命周期适配器。
      *
-     * @param server Provider 运行时
+     * @param coordinator 运行时协调器
      */
-    public PeachRpcServerLifecycle(PeachRpcServer server) {
-        this.server = Objects.requireNonNull(server, "server");
+    public PeachRpcServerLifecycle(PeachRpcRuntimeCoordinator coordinator) {
+        this.coordinator = Objects.requireNonNull(coordinator, "coordinator");
     }
 
     @Override
     public void start() {
+        coordinator.autoStartServerIfCreated().ifPresent(this::startServer);
+    }
+
+    private void startServer(PeachRpcServer server) {
         if (running.compareAndSet(false, true)) {
             try {
                 server.start().toCompletableFuture().join();
@@ -37,7 +42,7 @@ public final class PeachRpcServerLifecycle implements SmartLifecycle {
     @Override
     public void stop() {
         if (running.compareAndSet(true, false)) {
-            server.close();
+            coordinator.serverIfCreated().ifPresent(PeachRpcServer::close);
         }
     }
 

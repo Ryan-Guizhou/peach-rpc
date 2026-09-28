@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FORBIDDEN_CORE_IMPORTS = (
     "io.vertx.",
     "io.etcd.",
+    "com.alibaba.nacos.",
     "net.sf.cglib.",
     "org.apache.fory.",
     "org.springframework.",
@@ -22,6 +23,7 @@ EXPECTED_MODULES = (
     "peach-rpc-codec-fory",
     "peach-rpc-transport-vertx",
     "peach-rpc-registry-etcd",
+    "peach-rpc-registry-nacos",
     "peach-rpc-proxy-cglib",
     "peach-rpc-proxy-bytebuddy",
     "peach-rpc-spring-boot-autoconfigure",

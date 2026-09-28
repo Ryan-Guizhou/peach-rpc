@@ -1,109 +1,44 @@
 # Peach RPC Examples
 
-该模块是 Peach RPC 的可运行 Spring Boot 示例，同时也是 Reactor 中的启动烟测。
+本目录展示推荐的真实部署结构：**契约共享，Provider 与 Consumer 分进程运行**。
 
-## 覆盖能力
+## 模块
 
-示例会在同一个 Spring Boot 进程中启动：
+- `peach-rpc-example-api`：仅包含 RPC Contract、DTO 和编译期生成代码；
+- `peach-rpc-example-provider`：只发布 `@PeachRpcService`；
+- `peach-rpc-example-consumer`：只注入 `@PeachRpcReference` 并发起调用。
 
-```text
-GreetingRunner
-    |
-    | @PeachRpcReference
-    v
-Generated Consumer Stub
-    |
-    v
-PeachRpcClient
-    |
-    v
-Vert.x TCP
-    |
-    v
-PeachRpcServer
-    |
-    v
-Generated Provider Dispatcher
-    |
-    v
-GreetingServiceImpl
-```
+Provider 与 Consumer 都同时产出：
 
-默认使用 Memory Registry，因此不依赖外部 Etcd，可直接运行。
+- 普通 JAR：供 Reactor 内测试和其他模块作为依赖使用；
+- `*-exec.jar`：Spring Boot 可执行 JAR，供独立进程运行。
 
-`GreetingServiceImpl` 只需要 `@PeachRpcService`，该注解本身已经是 Spring stereotype，不需要额外添加 `@Component`。
-
-## 直接运行
+## 运行
 
 在仓库根目录执行：
 
 ```bash
+docker compose -f peach-rpc-examples/docker-compose.yml up -d
 mvn -B -ntp -pl peach-rpc-examples -am clean package
-java -jar peach-rpc-examples/target/peach-rpc-examples-0.1.0-SNAPSHOT.jar
+java -jar peach-rpc-examples/peach-rpc-example-provider/target/*-exec.jar
 ```
 
-启动成功后日志应包含类似：
+Provider 启动后，在另一个终端执行：
+
+```bash
+java -jar peach-rpc-examples/peach-rpc-example-consumer/target/*-exec.jar
+```
+
+Provider 应输出类似：
 
 ```text
-Peach RPC server started at 127.0.0.1:19090
+Peach RPC server started: bind=0.0.0.0:19090, advertised=127.0.0.1:19090
+```
+
+Consumer 应输出：
+
+```text
 RPC demo completed successfully: Hello, Peach RPC!
 ```
 
-如果希望通过 Maven Plugin 运行，可先构建依赖，再启动 example：
-
-```bash
-mvn -B -ntp -pl peach-rpc-examples -am package -DskipTests
-mvn -B -ntp -pl peach-rpc-examples spring-boot:run
-```
-
-## 配置说明
-
-默认配置位于 `src/main/resources/application.yml`：
-
-- Registry：Memory；
-- Provider：127.0.0.1:19090；
-- Consumer timeout：3s；
-- 每 Endpoint 连接数：2；
-- Provider drain timeout：5s；
-- Provider control-plane timeout：3s；
-- DIRECT execution 默认关闭；
-- 幂等调用最大 attempt：2。
-
-切换到 Etcd 时，将 Registry 改为：
-
-```yaml
-peach:
-  rpc:
-    registry:
-      type: etcd
-      endpoints: http://127.0.0.1:2379
-      namespace: example
-```
-
-## 自动化验证
-
-`ExampleApplicationSmokeTest` 不只是验证 Spring Context。
-
-测试会：
-
-1. 为 Provider 选择临时空闲端口；
-2. 启动完整 Spring Boot Context；
-3. 扫描并注册 `@PeachRpcService`；
-4. 注入 `@PeachRpcReference`；
-5. 使用 Generated Consumer Stub；
-6. 经 Vert.x TCP + Fory 发起真实 Unary RPC；
-7. 断言结果为 `Hello, Peach RPC!`；
-8. 关闭 Context 并验证 Provider 正常排空。
-
-执行：
-
-```bash
-mvn -B -ntp -pl peach-rpc-examples -am test
-```
-
-整个项目的最终门禁仍是：
-
-```bash
-python3 scripts/check_project.py
-mvn -B -ntp clean verify -Pquality
-```
+Consumer 在启动阶段允许等待短暂的注册中心传播时间，但真实业务调用仍遵循 Peach RPC 的超时、重试、熔断和端点剔除规则。
