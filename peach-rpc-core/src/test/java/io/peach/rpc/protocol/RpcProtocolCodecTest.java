@@ -3,6 +3,7 @@ package io.peach.rpc.protocol;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.codec.RpcCodecIds;
