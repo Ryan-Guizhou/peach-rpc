@@ -313,8 +313,10 @@ public final class PeachRpcServer implements AutoCloseable {
         }
 
         long deadline;
+        long timeoutBudgetMillis;
         try {
             deadline = request.deadlineEpochMillis();
+            timeoutBudgetMillis = request.timeoutBudgetMillis();
         } catch (RpcProtocolException error) {
             return CompletableFuture.completedFuture(
                     frameworkError(
@@ -322,7 +324,9 @@ public final class PeachRpcServer implements AutoCloseable {
                             RpcStatus.BAD_REQUEST,
                             "Invalid deadline"));
         }
-        if (deadline > 0 && System.currentTimeMillis() > deadline) {
+        if (timeoutBudgetMillis <= 0L
+                && deadline > 0L
+                && System.currentTimeMillis() > deadline) {
             return CompletableFuture.completedFuture(
                     frameworkError(
                             request,
