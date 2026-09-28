@@ -3,6 +3,7 @@ package io.peach.rpc.transport.vertx;
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.RpcRemoteError;
 import io.peach.rpc.api.RpcStatus;
+import io.peach.rpc.api.RpcTimeoutException;
 import io.peach.rpc.codec.RpcCodecIds;
 import io.peach.rpc.protocol.RpcErrorCodec;
 import io.peach.rpc.protocol.RpcFeature;
@@ -99,6 +100,9 @@ final class VertxRpcTransportServer implements RpcTransportServer {
         private boolean handshakeComplete;
         private boolean connectionDraining;
         private long handshakeTimerId = -1L;
+        private long heartbeatTimerId = -1L;
+        private long lastReadNanos = System.nanoTime();
+        private long pingSentAtNanos;
         private RpcNegotiatedCapabilities negotiated;
 
         private ServerConnection(
@@ -123,6 +127,7 @@ final class VertxRpcTransportServer implements RpcTransportServer {
             socket.exceptionHandler(this::closeWithError);
             socket.closeHandler(ignored -> {
                 cancelHandshakeTimer();
+                cancelHeartbeatTimer();
                 open = false;
                 inflight.values().forEach(future ->
                         future.cancel(true));
@@ -145,6 +150,8 @@ final class VertxRpcTransportServer implements RpcTransportServer {
         }
 
         private void onFrame(byte[] frame) {
+            lastReadNanos = System.nanoTime();
+            pingSentAtNanos = 0L;
             if (!handshakeComplete) {
                 handleHello(frame);
                 return;
@@ -155,6 +162,11 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                 return;
             }
             byte messageType = frame[MESSAGE_TYPE_OFFSET];
+            if (messageType == RpcMessageType.PING.code()
+                    || messageType == RpcMessageType.PONG.code()) {
+                handleHeartbeat(frame);
+                return;
+            }
             if (messageType == RpcMessageType.CANCEL.code()) {
                 handleCancel(frame);
                 return;
@@ -218,6 +230,7 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                 cancelHandshakeTimer();
                 socket.write(Buffer.buffer(encoded))
                         .onSuccess(ignored -> {
+                            startHeartbeat();
                             if (draining.get()) {
                                 beginDrain();
                             }
@@ -276,6 +289,75 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                     .onFailure(this::closeWithError);
         }
 
+        private void startHeartbeat() {
+            if (!negotiated.features().contains(RpcFeature.HEARTBEAT)) {
+                return;
+            }
+            long intervalMillis = options.heartbeatInterval().toMillis();
+            long timeoutMillis = options.heartbeatTimeout().toMillis();
+            long tickMillis = Math.max(
+                    1L,
+                    Math.min(intervalMillis, timeoutMillis));
+            heartbeatTimerId = vertx.setPeriodic(
+                    tickMillis,
+                    ignored -> heartbeatTick());
+        }
+
+        private void heartbeatTick() {
+            if (!open || connectionDraining || negotiated == null) {
+                return;
+            }
+            long now = System.nanoTime();
+            if (pingSentAtNanos > 0L) {
+                if (now - pingSentAtNanos
+                        >= options.heartbeatTimeout().toNanos()) {
+                    closeWithError(new RpcTimeoutException(
+                            "RPC heartbeat timed out for "
+                                    + remote.authority()));
+                }
+                return;
+            }
+            if (now - lastReadNanos
+                    < options.heartbeatInterval().toNanos()) {
+                return;
+            }
+            pingSentAtNanos = now;
+            socket.write(Buffer.buffer(
+                            RpcProtocolCodec.encodeHeartbeat(
+                                    RpcMessageType.PING)))
+                    .onFailure(this::closeWithError);
+        }
+
+        private void handleHeartbeat(byte[] bytes) {
+            try {
+                if (!negotiated.features().contains(RpcFeature.HEARTBEAT)) {
+                    throw new RpcProtocolException(
+                            "RPC heartbeat was not negotiated");
+                }
+                RpcFrame frame = RpcProtocolCodec.decode(bytes);
+                if (frame.requestId() != 0L
+                        || frame.codec() != RpcCodecIds.CONTROL
+                        || frame.status() != RpcStatus.OK
+                        || frame.payload().length != 0) {
+                    throw new RpcProtocolException(
+                            "Invalid RPC heartbeat frame");
+                }
+                if (frame.messageType() == RpcMessageType.PING) {
+                    socket.write(Buffer.buffer(
+                                    RpcProtocolCodec.encodeHeartbeat(
+                                            RpcMessageType.PONG)))
+                            .onFailure(this::closeWithError);
+                    return;
+                }
+                if (frame.messageType() != RpcMessageType.PONG) {
+                    throw new RpcProtocolException(
+                            "Unexpected RPC heartbeat frame");
+                }
+            } catch (Throwable error) {
+                closeMalformed(error);
+            }
+        }
+
         private void handleCancel(byte[] bytes) {
             if (!negotiated.features().contains(RpcFeature.CANCEL)) {
                 closeMalformed(new RpcProtocolException(
@@ -320,6 +402,7 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                 return;
             }
             connectionDraining = true;
+            cancelHeartbeatTimer();
             if (!handshakeComplete) {
                 socket.close();
                 return;
@@ -364,6 +447,14 @@ final class VertxRpcTransportServer implements RpcTransportServer {
             }
         }
 
+        private void cancelHeartbeatTimer() {
+            if (heartbeatTimerId >= 0L) {
+                vertx.cancelTimer(heartbeatTimerId);
+                heartbeatTimerId = -1L;
+            }
+            pingSentAtNanos = 0L;
+        }
+
         private void closeMalformed(Throwable error) {
             LOGGER.warn(
                     "Closing malformed RPC connection from {}",
@@ -386,6 +477,7 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                 return;
             }
             cancelHandshakeTimer();
+            cancelHeartbeatTimer();
             RpcFrame goAway = new RpcFrame(
                     RpcMessageType.GO_AWAY,
                     RpcCodecIds.CONTROL,
@@ -406,6 +498,7 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                 return;
             }
             cancelHandshakeTimer();
+            cancelHeartbeatTimer();
             LOGGER.debug(
                     "RPC connection failed for remote={}",
                     remote.authority(),
