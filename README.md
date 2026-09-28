@@ -7,13 +7,14 @@
 
 Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框架。当前 `0.1.x` 重点不是堆叠功能，而是先建立可长期演进的数据面与控制面边界：长连接多路复用、本地服务目录、有界并发、SPI 扩展、二进制协议、Spring Boot Starter 和可重复性能基准。
 
-> 当前状态：Preview。V2-B.2 正在继续收敛生产高可用能力：V2-B.1 第二批已重新基于 main 纳入正确开发基线；Etcd Lease 丢失后可自动申请新 Lease 并重新发布活跃实例；Provider 控制面操作增加超时边界；examples 已升级为完整 Spring Boot + TCP RPC 启动烟测。Heartbeat、TLS/mTLS、Micrometer/OpenTelemetry/JFR Adapter、端到端 Buffer ownership、Fory 稳定 Type ID、Etcd compaction 专项与流式 RPC 仍属于后续生产门禁。
+> 当前状态：Preview。V2-C.1 开始扩展生产控制面：Provider/Consumer 由 `@PeachRpcService` 与 `@PeachRpcReference` 按需激活，Examples 拆为独立 API/Provider/Consumer 应用，并新增 Nacos 3.2.4 Registry Adapter。Heartbeat、TLS/mTLS、Micrometer/OpenTelemetry/JFR Adapter、端到端 Buffer ownership、Fory 稳定 Type ID、Etcd compaction 专项与流式 RPC 仍属于后续生产门禁。
 
 核心能力：
 
 - Vert.x TCP 长连接，基于 connection-local Request ID 多路复用；支持每端点连接分片、握手超时和 GO_AWAY。
-- Consumer 本地服务目录，请求热路径不访问 Etcd。
+- Consumer 本地服务目录，请求热路径不访问 Etcd/Nacos 等注册中心。
 - Etcd Lease + Range/Watch + revision 感知重同步。
+- Nacos 临时实例注册、查询、订阅、健康/启用过滤、静态权重和元数据映射；Nacos 阻塞 SDK 与 Vert.x Event Loop 隔离。
 - P2C + EWMA + inflight + 静态权重负载均衡；默认热路径直接读取数组快照与实时指标，不构建候选 List。
 - Provider 默认使用 BLOCKING_VIRTUAL；可通过 `@PeachRpcExecution(CPU)` 使用有界 CPU 线程池，DIRECT 默认关闭且必须显式允许。
 - Fory 默认编解码；方法级 Codec 支持直接从 Frame payload slice 解码，框架错误继续使用 Core 独立线协议。
@@ -25,7 +26,7 @@ Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框�
 - Core 提供无 Micrometer/OpenTelemetry 依赖的 `RpcObserver`，支持 Client attempt/retry 与 Provider invocation 生命周期事件；默认 NOOP 不创建事件对象。
 - Etcd Adapter 增加真实 Etcd 集成测试，覆盖注册/注销、Watch 快照、namespace 隔离和 Lease 过期；Lease keepalive 丢失后会重新获取 Lease 并恢复活跃注册。
 - Provider 的 Registry 注册/回滚/注销操作具有独立控制面超时，避免停机流程无限阻塞。
-- `peach-rpc-examples` 会在 CI 中真实启动 Spring Boot、Provider 与 Consumer，并完成一次 Generated Stub -> Vert.x TCP -> Fory -> Provider 的 RPC round-trip。
+- `peach-rpc-examples` 拆为共享 API、独立 Provider 和独立 Consumer，并通过 Nacos 完成 Generated Stub -> Vert.x TCP -> Fory -> Provider 的真实 round-trip。
 
 <!-- doc-section:architecture -->
 ## 架构
@@ -43,19 +44,20 @@ flowchart LR
     Codec --> Fory[Fory Adapter]
     Registry --> Memory[Memory Registry]
     Registry --> Etcd[Etcd Adapter]
+    Registry --> Nacos[Nacos Adapter]
     Transport --> Vertx[Vert.x TCP Adapter]
     Proxy --> Jdk[JDK Proxy]
     Proxy --> Cglib[CGLIB Adapter]
 ```
 
-核心规则：**Spring、Vert.x、Jetcd、Fory、CGLIB 等第三方类型不得进入 Core 公共契约；注册中心访问、SPI 解析和配置解析不得进入单次 RPC 热路径。**
+核心规则：**Spring、Vert.x、Jetcd、Nacos、Fory、CGLIB 等第三方类型不得进入 Core 公共契约；注册中心访问、SPI 解析和配置解析不得进入单次 RPC 热路径。**
 
 详细说明见 [架构设计](docs/architecture.md) 与 [高性能内核 V2 计划](docs/high-performance-kernel-v2-plan.md)。
 
 <!-- doc-section:modules -->
 ## 模块
 
-当前 Reactor 从早期 17 个“概念粒度模块”收敛后，在高性能 V2 中保持 11 个有真实依赖隔离价值的模块：
+当前 Reactor 从早期 17 个“概念粒度模块”收敛后，在高性能 V2 中保持 12 个有真实依赖隔离价值的模块：
 
 | 模块 | 职责 |
 |---|---|
@@ -64,6 +66,7 @@ flowchart LR
 | `peach-rpc-codec-fory` | Apache Fory Codec |
 | `peach-rpc-transport-vertx` | Vert.x TCP Transport |
 | `peach-rpc-registry-etcd` | Etcd Registry |
+| `peach-rpc-registry-nacos` | Nacos Registry |
 | `peach-rpc-proxy-cglib` | 可选 CGLIB Proxy |
 | `peach-rpc-proxy-bytebuddy` | 可选 Byte Buddy Runtime Proxy fallback |
 | `peach-rpc-spring-boot-autoconfigure` | Spring Boot 自动装配 |
@@ -79,6 +82,7 @@ flowchart LR
 - Spring Boot 3.5.4
 - Vert.x 4.5.34
 - Jetcd 0.8.7
+- Nacos Client 3.2.4
 - Apache Fory 1.5.0
 
 Spring Boot 版本与 `peach-cloud` 当前基线保持一致，方便后续直接引入。
@@ -112,12 +116,16 @@ public class UserServiceImpl implements UserService {
 peach:
   rpc:
     registry:
-      type: etcd
-      endpoints: http://127.0.0.1:2379
+      type: nacos
+      endpoints: 127.0.0.1:8848
+      namespace: public
+      nacos:
+        group: PEACH_RPC
+        cluster: DEFAULT
     server:
-      enabled: true
       host: 0.0.0.0
       port: 19090
+      advertised-host: 10.0.0.15
 ```
 
 ### 3. Consumer
@@ -135,7 +143,7 @@ public class UserFacade {
 }
 ```
 
-如果未配置 Etcd，默认使用内存注册中心，适合单 JVM 示例和测试。
+未显式配置 Registry 时默认使用内存注册中心，适合单 JVM 测试。真实跨进程示例使用 Nacos。
 
 ### 4. 可选：启用编译期 Consumer Stub
 
@@ -157,18 +165,20 @@ public interface UserService {
 |---|---:|---|
 | `peach.rpc.enabled` | `true` | RPC 总开关 |
 | `peach.rpc.registry.type` | `memory` | Registry SPI 名称 |
-| `peach.rpc.registry.endpoints` | `http://127.0.0.1:2379` | 注册中心地址 |
-| `peach.rpc.registry.namespace` | `default` | 注册中心逻辑命名空间 |
+| `peach.rpc.registry.endpoints` | 空 | 注册中心地址；空值由具体 Adapter 决定默认端点 |
+| `peach.rpc.registry.namespace` | 空 | 公共命名空间；Etcd 默认 `default`，Nacos 默认 `public` |
 | `peach.rpc.registry.lease-ttl-seconds` | `30` | Etcd Lease TTL |
 | `peach.rpc.transport.type` | `vertx` | Transport SPI 名称 |
 | `peach.rpc.transport.handshake-timeout` | `3s` | TCP 建连后协议握手超时 |
 | `peach.rpc.transport.connections-per-endpoint` | `1` | 每个服务端点的连接分片数 |
-| `peach.rpc.client.enabled` | `true` | 是否创建 Consumer |
+| `peach.rpc.client.enabled` | `true` | 是否允许 Consumer；没有 Reference 时不会创建 Client |
 | `peach.rpc.client.timeout` | `3s` | 默认 RPC 超时 |
 | `peach.rpc.client.proxy` | `jdk` | Proxy SPI 名称 |
 | `peach.rpc.client.load-balancer` | `p2c-ewma` | LoadBalancer SPI 名称 |
-| `peach.rpc.server.enabled` | `false` | 是否启动 Provider |
-| `peach.rpc.server.port` | `19090` | Provider 端口 |
+| `peach.rpc.server.enabled` | `true` | 是否允许 Provider；没有 Service 时不会监听端口 |
+| `peach.rpc.server.port` | `19090` | Provider 监听端口 |
+| `peach.rpc.server.advertised-host` | 空 | Registry 对外发布地址；监听通配地址时必须显式配置 |
+| `peach.rpc.server.advertised-port` | `0` | 发布端口；0 表示使用实际监听端口 |
 | `peach.rpc.server.max-concurrent` | `4096` | Provider 最大并发业务请求数 |
 | `peach.rpc.server.execution.allow-direct` | `false` | 是否允许 DIRECT 方法进入 Transport Event Loop |
 | `peach.rpc.server.execution.cpu-parallelism` | CPU 核数 | CPU 执行池线程数 |
@@ -194,6 +204,7 @@ CI 使用 JDK 21 执行相同门禁。根 POM 使用 `${revision}` 和 flatten p
 - [Maven 结构与发布](docs/maven.md)
 - [协议说明](docs/protocol.md)
 - [SPI 扩展指南](docs/spi.md)
+- [Nacos Registry Adapter](docs/registry-nacos.md)
 - [性能基准](docs/performance.md)
 - [生产就绪门禁](docs/readiness.md)
 - [开发规范](docs/development.md)

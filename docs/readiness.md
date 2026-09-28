@@ -29,6 +29,15 @@
 - examples 增加完整 Spring Boot 启动烟测，验证真实 Generated Stub / Vert.x TCP / Fory / Provider round-trip；
 - examples 构建为可执行 Spring Boot JAR。
 
+## V2-C.1 控制面扩展
+
+- Provider/Consumer 改为注解驱动惰性运行时，空应用不创建具体 Client/Server；
+- Provider 与 Consumer 可在同一应用合法共存，基础 Examples 拆为独立进程；
+- 监听地址和 Registry 发布地址分离，通配 bind address 不再被直接发布；
+- 新增 Nacos 3.2.4 Registry Adapter，SDK 阻塞调用使用独立有界控制面执行器；
+- Nacos 实例进入 Core 前完成 healthy/enabled/endpoint/weight 过滤、稳定排序与重复视图抑制；
+- CI 增加真实 Nacos 服务，覆盖 Adapter 集成和双 Spring Context RPC round-trip。
+
 ## 仍需完成的生产门禁
 
 正式成为中型项目默认 RPC 层之前，至少还需要：

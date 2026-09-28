@@ -7,9 +7,9 @@
 
 Peach RPC is a high-performance and extensible Java RPC framework. The `0.1.x` line focuses on a durable data/control-plane foundation: long-lived multiplexed connections, local service directories, bounded concurrency, SPI extensions, a binary protocol, a Spring Boot Starter, and reproducible benchmarks.
 
-> Status: Preview. V2-B.2 continues the production HA closure. The second V2-B.1 batch has been rebased onto the correct main-line development baseline; Etcd can recover active registrations after Lease loss; Provider control-plane operations have bounded waits; and examples now execute a real Spring Boot + TCP RPC startup smoke test. Heartbeats, TLS/mTLS, Micrometer/OpenTelemetry/JFR adapters, end-to-end buffer ownership, stable Fory type IDs, dedicated Etcd compaction recovery tests, and streaming RPC remain production gates.
+> Status: Preview. V2-C.1 expands the production control plane: `@PeachRpcService` and `@PeachRpcReference` activate Provider/Consumer runtimes on demand, examples are split into API/Provider/Consumer applications, and Nacos 3.2.4 is available as a Registry Adapter. Heartbeats, TLS/mTLS, Micrometer/OpenTelemetry/JFR adapters, end-to-end buffer ownership, stable Fory type IDs, dedicated Etcd compaction recovery tests, and streaming RPC remain production gates.
 
-Current capabilities include Vert.x TCP multiplexing with connection-local request IDs, Etcd Lease + revision-aware Range/Watch discovery with active-registration recovery after Lease loss, immutable array service snapshots, allocation-light P2C+EWMA selection, BLOCKING_VIRTUAL/CPU/guarded DIRECT provider execution, method-bound Fory slice decoding, generated client/server paths, optional JDK/CGLIB/Byte Buddy fallbacks, bounded idempotent retries, outlier ejection, method-level circuit breaking, cancellation propagation, graceful provider draining, bounded control-plane shutdown waits, low-dependency observability hooks, and a runnable Spring Boot end-to-end example.
+Current capabilities include Vert.x TCP multiplexing with connection-local request IDs, Etcd Lease + revision-aware Range/Watch discovery, Nacos temporary-instance discovery, immutable array service snapshots, allocation-light P2C+EWMA selection, annotation-driven lazy runtimes, BLOCKING_VIRTUAL/CPU/guarded DIRECT provider execution, generated client/server paths, bounded retries, outlier ejection, circuit breaking, cancellation propagation, graceful draining, and split Spring Boot Provider/Consumer examples.
 
 <!-- doc-section:architecture -->
 ## Architecture
@@ -27,6 +27,7 @@ flowchart LR
     Codec --> Fory[Fory Adapter]
     Registry --> Memory[Memory Registry]
     Registry --> Etcd[Etcd Adapter]
+    Registry --> Nacos[Nacos Adapter]
     Transport --> Vertx[Vert.x TCP Adapter]
     Proxy --> Jdk[JDK Proxy]
     Proxy --> Cglib[CGLIB Adapter]
@@ -39,7 +40,7 @@ See the Chinese-first [architecture document](docs/architecture.md) and [V2 high
 <!-- doc-section:modules -->
 ## Modules
 
-The Reactor is reduced from the early concept-granularity layout and now contains 11 modules with real dependency-isolation value:
+The Reactor is reduced from the early concept-granularity layout and now contains 12 modules with real dependency-isolation value:
 
 | Module | Responsibility |
 |---|---|
@@ -48,6 +49,7 @@ The Reactor is reduced from the early concept-granularity layout and now contain
 | `peach-rpc-codec-fory` | Apache Fory codec |
 | `peach-rpc-transport-vertx` | Vert.x TCP transport |
 | `peach-rpc-registry-etcd` | Etcd registry |
+| `peach-rpc-registry-nacos` | Nacos registry |
 | `peach-rpc-proxy-cglib` | Optional CGLIB proxy |
 | `peach-rpc-proxy-bytebuddy` | Optional Byte Buddy runtime proxy fallback |
 | `peach-rpc-spring-boot-autoconfigure` | Spring Boot auto-configuration |
@@ -63,6 +65,7 @@ The Reactor is reduced from the early concept-granularity layout and now contain
 - Spring Boot 3.5.4
 - Vert.x 4.5.34
 - Jetcd 0.8.7
+- Nacos Client 3.2.4
 - Apache Fory 1.5.0
 
 <!-- doc-section:quick-start -->
@@ -98,7 +101,7 @@ private UserService userService;
 <!-- doc-section:configuration -->
 ## Configuration
 
-The default setup uses the in-memory registry, Vert.x transport, Fory codec, JDK proxy, and P2C+EWMA load balancing. Configure `peach.rpc.registry.type=etcd` for Etcd discovery, `peach.rpc.registry.namespace` for logical registry isolation, and `peach.rpc.server.enabled=true` for providers.
+The default setup uses the in-memory registry, Vert.x transport, Fory codec, JDK proxy, and P2C+EWMA load balancing. Use `peach.rpc.registry.type=etcd` or `nacos` for distributed discovery. Provider and Consumer runtimes are created only when a service/reference annotation or explicit programmatic use requires them; `client.enabled` and `server.enabled` are capability guards rather than role declarations.
 
 See [Starter configuration](docs/starter.md). Retry is opt-in per method through `@PeachRpcIdempotent`; non-idempotent methods are never retried automatically.
 
@@ -117,4 +120,4 @@ mvn -B -ntp clean verify -Pquality
 <!-- doc-section:docs -->
 ## Documentation
 
-Repository documentation is maintained primarily in Simplified Chinese. Start with [Architecture](docs/architecture.md), [Starter](docs/starter.md), [Maven](docs/maven.md), and [Production readiness](docs/readiness.md).
+Repository documentation is maintained primarily in Simplified Chinese. Start with [Architecture](docs/architecture.md), [Starter](docs/starter.md), [Nacos Registry](docs/registry-nacos.md), [Maven](docs/maven.md), and [Production readiness](docs/readiness.md).

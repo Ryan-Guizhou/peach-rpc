@@ -10,7 +10,7 @@ Peach RPC 的长期目标是高吞吐、低尾延迟、高并发和可控资源�
 
 ## 2. 当前模块边界
 
-当前 Reactor 保留 11 个具有真实依赖隔离价值的模块。编译期 Codegen、Vert.x、Etcd、Fory、CGLIB、Byte Buddy 与 Spring 均不把第三方类型泄漏到 Core 公共契约。
+当前 Reactor 保留 12 个具有真实依赖隔离价值的顶层模块。编译期 Codegen、Vert.x、Etcd、Nacos、Fory、CGLIB、Byte Buddy 与 Spring 均不把第三方类型泄漏到 Core 公共契约。
 
 ```mermaid
 flowchart TB
@@ -27,6 +27,8 @@ flowchart TB
     Codec --> Fory[Fory Adapter]
     Discovery --> Etcd[Etcd Adapter]
     Registrar --> Etcd
+    Discovery --> Nacos[Nacos Adapter]
+    Registrar --> Nacos
     Transport --> Vertx[Vert.x TCP]
     Core -. fallback .-> JDK[JDK Proxy]
     Core -. optional fallback .-> Cglib[CGLIB]
@@ -146,9 +148,9 @@ Core 提供 `RpcObserver`，不依赖 Micrometer、OpenTelemetry 或 JFR。当�
 
 ## 9. 控制面
 
-Registry 仍然只位于控制面。Consumer 热路径不访问 Etcd。
+Registry 仍然只位于控制面。Consumer 热路径不访问 Etcd 或 Nacos。Nacos Java SDK 的阻塞调用运行在 Adapter 私有有界控制面执行器中，回调被归一化为有序 `RegistrySnapshot` 后再发布给 Core。
 
-`ServiceDirectory` 在 Registry snapshot 更新时转换为数组快照，旧 revision 被忽略。
+`ServiceDirectory` 在 Registry snapshot 更新时转换为数组快照，旧 revision 被忽略。Nacos Adapter 对相同视图去重并生成进程内单调 revision。
 
 ## 10. V2-B.1 已补齐的生产行为
 
@@ -173,3 +175,10 @@ Registry 仍然只位于控制面。Consumer 热路径不访问 Etcd。
 - Fory 稳定 Type ID / Schema fingerprint 未实现。
 
 详细热路径说明见 [V2-B 实现说明](high-performance-kernel-v2b.md) 与 [V2-B.1 生产内核第一批](production-kernel-v2b1.md)。
+
+
+## 12. 注解驱动运行时
+
+Spring 侧不再把整个进程固定为 Provider 或 Consumer。第一次发现 `@PeachRpcReference` 时才创建 Client；第一次发现 `@PeachRpcService` 时创建 Server 并注册服务，随后由 `SmartLifecycle` 在所有 singleton 服务完成初始化后统一启动。
+
+Provider 的监听端点与 Registry 发布端点分离。绑定通配地址时必须配置 `advertised-host`，动态监听端口则在 Transport 启动后解析实际端口再进行注册。

@@ -73,7 +73,7 @@ RegistryOptions(
 )
 ```
 
-其中 endpoints 与 namespace 是跨注册中心公共语义；只有 Etcd Lease TTL、Consul Datacenter 等厂商特有参数才进入 `providerOptions`。这样新增 Nacos/Kubernetes Adapter 时不需要继续向 Core Factory 接口堆字符串键。
+其中 endpoints 与 namespace 是跨注册中心公共语义，并允许保持空值，由具体 Adapter 决定默认值。Etcd Lease TTL、Nacos Group/Cluster/凭据等厂商特有参数进入 `providerOptions`，Core 不引入厂商 SDK 类型。
 
 ## 5. Proxy 与 Generated Stub
 
@@ -82,3 +82,12 @@ RegistryOptions(
 标注 `@PeachRpcContract` 并启用 `peach-rpc-codegen` 后，编译期生成 Consumer Stub；运行时优先发现生成类，缺失时才回退 ProxyFactory。
 
 后续 V2-B 会加入 Byte Buddy fallback。CGLIB 保留兼容定位，不作为高性能主线。
+
+
+## 6. Nacos Adapter 能力
+
+`peach-rpc-registry-nacos` 声明 REGISTRATION、SUBSCRIPTION、LEASE、HEALTH、WEIGHT、CLUSTER、METADATA，不声明 REVISION。Nacos SDK 不提供适合直接映射到当前 SPI 的全局单调 revision，因此 Adapter 为 `RegistrySnapshot` 生成进程内单调 revision。
+
+Nacos NamingService 的阻塞注册、注销和查询操作由 Adapter 自有有界控制面执行器隔离，不进入 Vert.x Event Loop；Consumer 单次请求仍只读取 Core 的 `ServiceDirectory` 数组快照。
+
+详细映射见 [Nacos Registry Adapter](registry-nacos.md)。
