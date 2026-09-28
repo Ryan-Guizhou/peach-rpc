@@ -142,6 +142,56 @@ class EtcdRegistryIntegrationTest {
     }
 
     @Test
+    void shouldRecoverRegistrationAndSubscriptionAfterClusterRestart()
+            throws Exception {
+        String namespace = uniqueNamespace("cluster-restart");
+        ServiceKey key =
+                new ServiceKey("demo.ClusterRestart", "1.0.0", "default");
+        ServiceInstance first =
+                instance(key, "node-restart-a", 19095);
+        ServiceInstance second =
+                instance(key, "node-restart-b", 19096);
+        AtomicReference<RegistrySnapshot> latest =
+                new AtomicReference<>();
+
+        try (EtcdRegistry registry = registry(namespace, 2);
+             RegistrySubscription ignored =
+                     registry.subscribe(key, latest::set)) {
+            registry.register(first)
+                    .toCompletableFuture()
+                    .join();
+
+            assertTrue(await(
+                    Duration.ofSeconds(10),
+                    () -> contains(latest.get(), first)));
+
+            CLUSTER.restart(2, TimeUnit.SECONDS);
+
+            assertTrue(await(
+                    Duration.ofSeconds(20),
+                    () -> lookupContains(
+                            registry,
+                            key,
+                            first)));
+
+            assertTrue(await(
+                    Duration.ofSeconds(20),
+                    () -> registerEventually(
+                            registry,
+                            second)));
+
+            assertTrue(await(
+                    Duration.ofSeconds(20),
+                    () -> contains(
+                            latest.get(),
+                            first)
+                            && contains(
+                                    latest.get(),
+                                    second)));
+        }
+    }
+
+    @Test
     void shouldRemoveRegistrationAfterLeaseExpires()
             throws Exception {
         ServiceKey key =
@@ -222,6 +272,41 @@ class EtcdRegistryIntegrationTest {
                 new RpcEndpoint("127.0.0.1", port),
                 100,
                 Map.of("zone", "test"));
+    }
+
+    private static boolean lookupContains(
+            EtcdRegistry registry,
+            ServiceKey key,
+            ServiceInstance instance) {
+        try {
+            return registry.lookup(key)
+                    .toCompletableFuture()
+                    .join()
+                    .instances()
+                    .contains(instance);
+        } catch (RuntimeException ignored) {
+            return false;
+        }
+    }
+
+    private static boolean registerEventually(
+            EtcdRegistry registry,
+            ServiceInstance instance) {
+        try {
+            registry.register(instance)
+                    .toCompletableFuture()
+                    .join();
+            return true;
+        } catch (RuntimeException ignored) {
+            return false;
+        }
+    }
+
+    private static boolean contains(
+            RegistrySnapshot snapshot,
+            ServiceInstance instance) {
+        return snapshot != null
+                && snapshot.instances().contains(instance);
     }
 
     private static boolean await(
