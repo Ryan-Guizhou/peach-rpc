@@ -1,14 +1,16 @@
 # 实施路线
 
-## Phase 1：当前 PR
+> 本文保留阶段实施历史。当前生产能力状态、未完成项和后续优先级统一见 [Production Roadmap / Capability Matrix](production-roadmap.md)。
 
-- 模块从 17 个收敛到 9 个。
+## Phase 1：早期工程收敛
+
+- 模块从早期 17 个概念粒度模块收敛；当前 Reactor 已演进为 12 个具备真实依赖隔离价值的顶层模块。
 - 完成 Spring Boot Starter/AutoConfiguration。
 - 文档改为中文主导，README 中英文切换。
 - Maven 版本和插件统一管理。
 - CI 执行 JDK 21、项目检查、`clean verify -Pquality`。
 
-## Phase 2：热路径继续优化
+## Phase 2：热路径优化
 
 - APT 生成 Client Stub 与 Server Dispatcher。
 - Event Loop 亲和连接组与多连接策略。
@@ -38,7 +40,7 @@
 - Etcd compaction、断链恢复专项故障测试。
 
 
-## Phase 3.2：V2-B.2 高可用收口
+## Phase 3.2：V2-B.2 高可用收口（已完成）
 
 已完成：
 
@@ -57,3 +59,8 @@
 3. Micrometer/OpenTelemetry/JFR Adapter；
 4. Etcd compaction / disconnect / restart / leader-change 故障注入；
 5. TLS/mTLS。
+
+
+## 下一阶段
+
+后续不再在本文件重复维护详细状态。V2-C.1、V2-C.2、V2-C.3、V2-D、V2-E 与 Production GA Gate 统一见 [Production Roadmap / Capability Matrix](production-roadmap.md)。
