@@ -16,6 +16,7 @@ import io.peach.rpc.generated.RpcGeneratedClients;
 import io.peach.rpc.generated.RpcGeneratedInvocation;
 import io.peach.rpc.loadbalance.LoadBalanceMetrics;
 import io.peach.rpc.loadbalance.LoadBalancer;
+import io.peach.rpc.observability.RpcObserver;
 import io.peach.rpc.protocol.RpcErrorCodec;
 import io.peach.rpc.protocol.RpcFrameView;
 import io.peach.rpc.protocol.RpcProtocolCodec;
@@ -48,6 +49,7 @@ public final class PeachRpcClient implements AutoCloseable {
     private final Duration timeout;
     private final RpcClientResilienceOptions resilienceOptions;
     private final RetryBudget retryBudget;
+    private final RpcObserver observer;
     private final ConcurrentMap<ServiceKey, ServiceDirectory> directories =
             new ConcurrentHashMap<>();
     private final ConcurrentMap<RpcEndpoint, EndpointStats> stats =
@@ -89,6 +91,9 @@ public final class PeachRpcClient implements AutoCloseable {
                 builder.resilienceOptions,
                 "resilienceOptions");
         this.retryBudget = new RetryBudget(resilienceOptions);
+        this.observer = Objects.requireNonNull(
+                builder.observer,
+                "observer");
     }
 
     /**
@@ -253,9 +258,17 @@ public final class PeachRpcClient implements AutoCloseable {
         long remainingNanos = deadlineNanos - System.nanoTime();
         if (remainingNanos <= 0L) {
             method.circuitBreaker().onFailure();
-            result.completeExceptionally(
-                    new io.peach.rpc.api.RpcTimeoutException(
-                            "RPC request deadline exceeded"));
+            var timeoutError = new io.peach.rpc.api.RpcTimeoutException(
+                    "RPC request deadline exceeded");
+            observeClientAttempt(
+                    reference,
+                    method,
+                    null,
+                    attempt,
+                    0L,
+                    RpcStatus.DEADLINE_EXCEEDED,
+                    timeoutError);
+            result.completeExceptionally(timeoutError);
             return;
         }
 
@@ -264,6 +277,18 @@ public final class PeachRpcClient implements AutoCloseable {
                 ? null
                 : loadBalancer.select(instances, loadMetrics);
         if (selected == null) {
+            RpcUnavailableException unavailable =
+                    new RpcUnavailableException(
+                            "No available instance for "
+                                    + reference.key().canonicalName());
+            observeClientAttempt(
+                    reference,
+                    method,
+                    null,
+                    attempt,
+                    0L,
+                    RpcStatus.UNAVAILABLE,
+                    unavailable);
             retryOrComplete(
                     reference,
                     method,
@@ -271,9 +296,7 @@ public final class PeachRpcClient implements AutoCloseable {
                     deadlineNanos,
                     attempt,
                     result,
-                    new RpcUnavailableException(
-                            "No available instance for "
-                                    + reference.key().canonicalName()));
+                    unavailable);
             return;
         }
 
@@ -317,6 +340,14 @@ public final class PeachRpcClient implements AutoCloseable {
                     return;
                 }
                 endpointStats.endFailure(elapsed, resilienceOptions);
+                observeClientAttempt(
+                        reference,
+                        method,
+                        selected.endpoint(),
+                        attempt,
+                        elapsed,
+                        statusOf(failure),
+                        failure);
                 retryOrComplete(
                         reference,
                         method,
@@ -332,10 +363,26 @@ public final class PeachRpcClient implements AutoCloseable {
                 Object value = decodeResponse(method, rawResponse);
                 endpointStats.endSuccess(elapsed);
                 method.circuitBreaker().onSuccess();
+                observeClientAttempt(
+                        reference,
+                        method,
+                        selected.endpoint(),
+                        attempt,
+                        elapsed,
+                        RpcStatus.OK,
+                        null);
                 result.complete(value);
             } catch (RpcRemoteException remoteError) {
                 if (isRetryable(remoteError)) {
                     endpointStats.endFailure(elapsed, resilienceOptions);
+                    observeClientAttempt(
+                            reference,
+                            method,
+                            selected.endpoint(),
+                            attempt,
+                            elapsed,
+                            remoteError.status(),
+                            remoteError);
                     retryOrComplete(
                             reference,
                             method,
@@ -347,10 +394,26 @@ public final class PeachRpcClient implements AutoCloseable {
                 } else {
                     endpointStats.endSuccess(elapsed);
                     method.circuitBreaker().onSuccess();
+                    observeClientAttempt(
+                            reference,
+                            method,
+                            selected.endpoint(),
+                            attempt,
+                            elapsed,
+                            remoteError.status(),
+                            remoteError);
                     result.completeExceptionally(remoteError);
                 }
             } catch (Throwable error) {
                 endpointStats.endFailure(elapsed, resilienceOptions);
+                observeClientAttempt(
+                        reference,
+                        method,
+                        selected.endpoint(),
+                        attempt,
+                        elapsed,
+                        statusOf(error),
+                        error);
                 retryOrComplete(
                         reference,
                         method,
@@ -392,6 +455,14 @@ public final class PeachRpcClient implements AutoCloseable {
             result.completeExceptionally(failure);
             return;
         }
+        if (observer.enabled()) {
+            observer.onClientRetryScheduled(
+                    reference.key(),
+                    method.methodId(),
+                    attempt + 1,
+                    delayMillis,
+                    failure);
+        }
         CompletableFuture.delayedExecutor(
                         delayMillis,
                         TimeUnit.MILLISECONDS)
@@ -402,6 +473,42 @@ public final class PeachRpcClient implements AutoCloseable {
                         deadlineNanos,
                         attempt + 1,
                         result));
+    }
+
+    private void observeClientAttempt(
+            ClientReference reference,
+            ClientMethodBinding method,
+            RpcEndpoint endpoint,
+            int attempt,
+            long durationNanos,
+            RpcStatus status,
+            Throwable error) {
+        if (observer.enabled()) {
+            observer.onClientAttemptCompleted(
+                    reference.key(),
+                    method.methodId(),
+                    endpoint,
+                    attempt,
+                    durationNanos,
+                    status,
+                    error);
+        }
+    }
+
+    private static RpcStatus statusOf(Throwable error) {
+        if (error instanceof RpcRemoteException remote) {
+            return remote.status();
+        }
+        if (error instanceof RpcOverloadedException) {
+            return RpcStatus.OVERLOADED;
+        }
+        if (error instanceof io.peach.rpc.api.RpcTimeoutException) {
+            return RpcStatus.DEADLINE_EXCEEDED;
+        }
+        if (error instanceof RpcUnavailableException) {
+            return RpcStatus.UNAVAILABLE;
+        }
+        return RpcStatus.INTERNAL_ERROR;
     }
 
     private long retryDelayMillis(int attempt) {
@@ -635,6 +742,7 @@ public final class PeachRpcClient implements AutoCloseable {
         private Duration timeout = Duration.ofSeconds(3);
         private RpcClientResilienceOptions resilienceOptions =
                 RpcClientResilienceOptions.DEFAULT;
+        private RpcObserver observer = RpcObserver.noop();
 
         /** 创建 Consumer Builder。 */
         public Builder() {
@@ -719,6 +827,17 @@ public final class PeachRpcClient implements AutoCloseable {
             this.resilienceOptions = Objects.requireNonNull(
                     value,
                     "resilienceOptions");
+            return this;
+        }
+
+        /**
+         * 设置 Consumer 可观测性 Observer。
+         *
+         * @param value Observer
+         * @return Consumer Builder
+         */
+        public Builder observer(RpcObserver value) {
+            this.observer = Objects.requireNonNull(value, "observer");
             return this;
         }
 

@@ -11,6 +11,7 @@ import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.codec.RpcCodecRegistry;
 import io.peach.rpc.codec.RpcMethodCodec;
 import io.peach.rpc.codec.RpcCodecIds;
+import io.peach.rpc.observability.RpcObserver;
 import io.peach.rpc.protocol.RpcErrorCodec;
 import io.peach.rpc.protocol.RpcFrameView;
 import io.peach.rpc.protocol.RpcMessageType;
@@ -52,6 +53,7 @@ public final class PeachRpcServer implements AutoCloseable {
     private final Semaphore admission;
     private final Duration drainTimeout;
     private final RpcProviderExecutionOptions executionOptions;
+    private final RpcObserver observer;
     private final ExecutorService blockingExecutor =
             Executors.newVirtualThreadPerTaskExecutor();
     private final ThreadPoolExecutor cpuExecutor;
@@ -84,6 +86,9 @@ public final class PeachRpcServer implements AutoCloseable {
         this.executionOptions = Objects.requireNonNull(
                 builder.executionOptions,
                 "executionOptions");
+        this.observer = Objects.requireNonNull(
+                builder.observer,
+                "observer");
         this.cpuExecutor = new ThreadPoolExecutor(
                 executionOptions.cpuParallelism(),
                 executionOptions.cpuParallelism(),
@@ -324,6 +329,18 @@ public final class PeachRpcServer implements AutoCloseable {
                             "Method not found"));
         }
 
+        long observationStartedAtNanos =
+                observer.enabled() ? System.nanoTime() : 0L;
+        if (observer.enabled()) {
+            result.whenComplete((responseBytes, error) ->
+                    observeServerInvocation(
+                            request,
+                            executionMode,
+                            observationStartedAtNanos,
+                            responseBytes,
+                            error));
+        }
+
         if (executionMode == RpcExecutionMode.DIRECT) {
             execute(request, binding, methodCodec, result);
             return result;
@@ -355,6 +372,31 @@ public final class PeachRpcServer implements AutoCloseable {
             }
         });
         return result;
+    }
+
+    private void observeServerInvocation(
+            RpcFrameView request,
+            RpcExecutionMode executionMode,
+            long startedAtNanos,
+            byte[] responseBytes,
+            Throwable error) {
+        RpcStatus status = RpcStatus.INTERNAL_ERROR;
+        if (error == null && responseBytes != null) {
+            try {
+                status = RpcProtocolCodec.view(responseBytes).status();
+            } catch (RuntimeException ignored) {
+                status = RpcStatus.INTERNAL_ERROR;
+            }
+        } else if (error instanceof java.util.concurrent.CancellationException) {
+            status = RpcStatus.UNAVAILABLE;
+        }
+        observer.onServerInvocationCompleted(
+                request.serviceId(),
+                request.methodId(),
+                executionMode,
+                System.nanoTime() - startedAtNanos,
+                status,
+                error);
     }
 
     private void execute(
@@ -512,6 +554,7 @@ public final class PeachRpcServer implements AutoCloseable {
         private Duration drainTimeout = Duration.ofSeconds(30);
         private RpcProviderExecutionOptions executionOptions =
                 RpcProviderExecutionOptions.DEFAULT;
+        private RpcObserver observer = RpcObserver.noop();
 
         /** 创建 Provider Builder。 */
         public Builder() {
@@ -601,6 +644,17 @@ public final class PeachRpcServer implements AutoCloseable {
             this.executionOptions = Objects.requireNonNull(
                     value,
                     "executionOptions");
+            return this;
+        }
+
+        /**
+         * 设置 Provider 可观测性 Observer。
+         *
+         * @param value Observer
+         * @return Provider Builder
+         */
+        public Builder observer(RpcObserver value) {
+            this.observer = Objects.requireNonNull(value, "observer");
             return this;
         }
 
