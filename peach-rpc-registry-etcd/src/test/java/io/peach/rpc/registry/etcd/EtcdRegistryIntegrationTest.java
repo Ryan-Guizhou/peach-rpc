@@ -32,7 +32,7 @@ class EtcdRegistryIntegrationTest {
 
     @Test
     void shouldRegisterLookupAndUnregisterAgainstRealEtcd() {
-        try (EtcdRegistry registry = registry("roundtrip", 5)) {
+        try (EtcdRegistry registry = registry(uniqueNamespace("roundtrip"), 5)) {
             ServiceKey key =
                     new ServiceKey("demo.RoundTrip", "1.0.0", "default");
             ServiceInstance instance = instance(key, "node-1", 19090);
@@ -56,7 +56,7 @@ class EtcdRegistryIntegrationTest {
     @Test
     void shouldPublishWatchSnapshotsWithIncreasingRevision()
             throws Exception {
-        try (EtcdRegistry registry = registry("watch", 5)) {
+        try (EtcdRegistry registry = registry(uniqueNamespace("watch"), 5)) {
             ServiceKey key =
                     new ServiceKey("demo.Watch", "1.0.0", "default");
             ServiceInstance instance = instance(key, "node-1", 19091);
@@ -86,8 +86,8 @@ class EtcdRegistryIntegrationTest {
 
     @Test
     void shouldIsolateRegistryNamespaces() {
-        try (EtcdRegistry left = registry("namespace-a", 5);
-             EtcdRegistry right = registry("namespace-b", 5)) {
+        try (EtcdRegistry left = registry(uniqueNamespace("namespace-a"), 5);
+             EtcdRegistry right = registry(uniqueNamespace("namespace-b"), 5)) {
             ServiceKey key =
                     new ServiceKey("demo.Namespace", "1.0.0", "default");
             ServiceInstance instance = instance(key, "node-1", 19092);
@@ -108,9 +108,10 @@ class EtcdRegistryIntegrationTest {
         ServiceKey key =
                 new ServiceKey("demo.Lease", "1.0.0", "default");
         ServiceInstance instance = instance(key, "node-lease", 19093);
-        EtcdRegistry writer = registry("lease", 1);
+        String namespace = uniqueNamespace("lease");
+        EtcdRegistry writer = registry(namespace, 1);
 
-        try (EtcdRegistry observer = registry("lease", 5)) {
+        try (EtcdRegistry observer = registry(namespace, 5)) {
             writer.register(instance).toCompletableFuture().join();
             assertEquals(
                     List.of(instance),
@@ -131,10 +132,8 @@ class EtcdRegistryIntegrationTest {
     }
 
     private static EtcdRegistry registry(
-            String namespaceSuffix,
+            String namespace,
             long leaseTtlSeconds) {
-        String namespace =
-                "it-" + namespaceSuffix + '-' + UUID.randomUUID();
         String[] endpoints = CLUSTER.clientEndpoints().stream()
                 .map(URI::toString)
                 .toArray(String[]::new);
@@ -142,6 +141,10 @@ class EtcdRegistryIntegrationTest {
                 endpoints,
                 leaseTtlSeconds,
                 namespace);
+    }
+
+    private static String uniqueNamespace(String prefix) {
+        return "it-" + prefix + '-' + UUID.randomUUID();
     }
 
     private static ServiceInstance instance(
