@@ -171,6 +171,8 @@ Heartbeat failure 与正常 drain 必须区分：
 
 这避免部署排空被错误统计为故障，并减少不必要的 reconnect backoff。
 
+需要注意：Transport 连接重新建立成功并不等于业务流量立即恢复。Consumer 还会受到方法级 Circuit Breaker 和 Endpoint Outlier Ejection 的恢复窗口保护。默认 `circuit-open-duration=10s`、`outlier-ejection-duration=30s`，因此故障实例恢复后，业务流量可能在保护窗口结束后才重新进入。独立进程 HA E2E 为缩短 CI 时间会显式使用较短的恢复窗口，但生产默认值保持不变。
+
 ## 8. 当前自动化测试
 
 当前分支已经增加：
