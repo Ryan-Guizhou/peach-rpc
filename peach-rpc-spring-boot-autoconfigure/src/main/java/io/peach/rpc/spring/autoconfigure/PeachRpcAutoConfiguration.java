@@ -116,7 +116,11 @@ public class PeachRpcAutoConfiguration {
                 transport.getConnectTimeout(),
                 transport.getHandshakeTimeout(),
                 codecRegistry.supportedCodecIds(),
-                transport.getConnectionsPerEndpoint());
+                transport.getConnectionsPerEndpoint(),
+                transport.getHeartbeatInterval(),
+                transport.getHeartbeatTimeout(),
+                transport.getReconnectBaseBackoff(),
+                transport.getReconnectMaxBackoff());
     }
 
     /**
