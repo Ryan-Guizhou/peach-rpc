@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.peach.rpc.api.RpcStatus;
+import io.peach.rpc.codec.RpcCodecIds;
 import java.util.Arrays;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -94,6 +95,30 @@ class RpcProtocolCodecTest {
         assertEquals(RpcMessageType.CANCEL, decoded.messageType());
         assertEquals(77L, decoded.requestId());
         assertEquals(0, decoded.payload().length);
+    }
+
+    @Test
+    void shouldEncodeHeartbeatFrames() {
+        for (RpcMessageType type : new RpcMessageType[]{
+                RpcMessageType.PING,
+                RpcMessageType.PONG}) {
+            RpcFrame decoded = RpcProtocolCodec.decode(
+                    RpcProtocolCodec.encodeHeartbeat(type));
+
+            assertEquals(type, decoded.messageType());
+            assertEquals(RpcCodecIds.CONTROL, decoded.codec());
+            assertEquals(RpcStatus.OK, decoded.status());
+            assertEquals(0L, decoded.requestId());
+            assertEquals(0, decoded.payload().length);
+        }
+    }
+
+    @Test
+    void shouldRejectNonHeartbeatControlType() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> RpcProtocolCodec.encodeHeartbeat(
+                        RpcMessageType.CANCEL));
     }
 
     @Test
