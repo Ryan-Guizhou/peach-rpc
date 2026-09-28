@@ -1,9 +1,12 @@
 package io.peach.rpc.core;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import io.peach.rpc.api.PeachRpcExecution;
 import io.peach.rpc.api.RpcEndpoint;
+import io.peach.rpc.api.RpcExecutionMode;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.codec.RpcCodec;
 import io.peach.rpc.codec.RpcCodecRegistry;
@@ -17,6 +20,53 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 public class PeachRpcServerStartTest {
+
+    @Test
+    void shouldRejectDirectExecutionUnlessExplicitlyEnabled() {
+        ServiceRegistrar registry = new NoopRegistry();
+        RpcTransportServer transport = new TestTransportServer();
+        RpcCodecRegistry codecs =
+                RpcCodecRegistry.of(new NoopCodec());
+
+        PeachRpcServer safeDefault = PeachRpcServer.builder()
+                .serviceRegistrar(registry)
+                .transportServer(transport)
+                .codecRegistry(codecs)
+                .bindEndpoint(new RpcEndpoint("127.0.0.1", 19090))
+                .build();
+        try {
+            assertThrows(
+                    IllegalStateException.class,
+                    () -> safeDefault.registerService(
+                            DirectService.class,
+                            new DirectServiceImpl(),
+                            "1.0.0",
+                            "default"));
+        } finally {
+            safeDefault.close();
+        }
+
+        PeachRpcServer explicitlyEnabled = PeachRpcServer.builder()
+                .serviceRegistrar(registry)
+                .transportServer(new TestTransportServer())
+                .codecRegistry(codecs)
+                .bindEndpoint(new RpcEndpoint("127.0.0.1", 19091))
+                .executionOptions(new RpcProviderExecutionOptions(
+                        true,
+                        1,
+                        16))
+                .build();
+        try {
+            assertDoesNotThrow(() ->
+                    explicitlyEnabled.registerService(
+                            DirectService.class,
+                            new DirectServiceImpl(),
+                            "1.0.0",
+                            "default"));
+        } finally {
+            explicitlyEnabled.close();
+        }
+    }
 
     @Test
     void shouldRollbackRegistrationsWhenRegistryStartupFails() {
@@ -40,6 +90,19 @@ public class PeachRpcServerStartTest {
             assertEquals(1, transport.closeCount.get());
         } finally {
             server.close();
+        }
+    }
+
+    public interface DirectService {
+
+        @PeachRpcExecution(RpcExecutionMode.DIRECT)
+        String call();
+    }
+
+    public static final class DirectServiceImpl implements DirectService {
+        @Override
+        public String call() {
+            return "direct";
         }
     }
 
@@ -79,6 +142,18 @@ public class PeachRpcServerStartTest {
         @Override
         public <T> T decode(byte[] bytes, Class<T> type) {
             throw new UnsupportedOperationException("Not used by this test");
+        }
+    }
+
+    private static final class NoopRegistry implements ServiceRegistrar {
+        @Override
+        public CompletionStage<Void> register(ServiceInstance instance) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<Void> unregister(ServiceInstance instance) {
+            return CompletableFuture.completedFuture(null);
         }
     }
 

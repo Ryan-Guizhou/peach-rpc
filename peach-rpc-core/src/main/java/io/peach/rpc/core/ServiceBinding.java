@@ -1,5 +1,7 @@
 package io.peach.rpc.core;
 
+import io.peach.rpc.api.PeachRpcExecution;
+import io.peach.rpc.api.RpcExecutionMode;
 import io.peach.rpc.api.RpcIds;
 import io.peach.rpc.api.RpcMethodDescriptor;
 import io.peach.rpc.api.ServiceKey;
@@ -46,7 +48,8 @@ final class ServiceBinding {
                         methodId,
                         new Invoker(
                                 handle,
-                                Map.copyOf(methodCodecs)));
+                                Map.copyOf(methodCodecs),
+                                executionMode(method)));
                 if (previous != null) {
                     throw new IllegalStateException(
                             "Method id collision in "
@@ -79,6 +82,17 @@ final class ServiceBinding {
         return codec;
     }
 
+    RpcExecutionMode executionMode(
+            int methodId) throws NoSuchMethodException {
+        return require(methodId).executionMode();
+    }
+
+    boolean usesDirectExecution() {
+        return methods.values().stream()
+                .anyMatch(invoker ->
+                        invoker.executionMode() == RpcExecutionMode.DIRECT);
+    }
+
     Object invoke(
             int methodId,
             Object[] arguments) throws Throwable {
@@ -87,6 +101,14 @@ final class ServiceBinding {
             return generatedDispatcher.invoke(methodId, arguments);
         }
         return invoker.handle().invokeWithArguments(arguments);
+    }
+
+    private static RpcExecutionMode executionMode(Method method) {
+        PeachRpcExecution annotation =
+                method.getAnnotation(PeachRpcExecution.class);
+        return annotation == null
+                ? RpcExecutionMode.BLOCKING_VIRTUAL
+                : annotation.value();
     }
 
     private static MethodHandle resolveHandle(
@@ -113,6 +135,7 @@ final class ServiceBinding {
 
     private record Invoker(
             MethodHandle handle,
-            Map<Byte, RpcMethodCodec> codecs) {
+            Map<Byte, RpcMethodCodec> codecs,
+            RpcExecutionMode executionMode) {
     }
 }

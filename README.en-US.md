@@ -7,9 +7,9 @@
 
 Peach RPC is a high-performance and extensible Java RPC framework. The `0.1.x` line focuses on a durable data/control-plane foundation: long-lived multiplexed connections, local service directories, bounded concurrency, SPI extensions, a binary protocol, a Spring Boot Starter, and reproducible benchmarks.
 
-> Status: Preview. The first V2-B.1 production-kernel batch now includes cancellation propagation, retry budgets restricted to explicitly idempotent methods, endpoint outlier ejection, method-level circuit breaking, provider graceful drain, and a Raw Vert.x vs full-RPC end-to-end latency baseline. TLS/mTLS, Micrometer/OpenTelemetry/JFR, end-to-end buffer ownership, stable Fory type IDs, and streaming RPC remain production gates.
+> Status: Preview. V2-B.1 now contains two production-kernel batches. The first delivered cancellation, bounded idempotent retries, outlier ejection, circuit breaking, graceful drain, and an end-to-end latency baseline. The second adds provider execution policies, a dependency-light RpcObserver contract, and real-Etcd integration coverage. TLS/mTLS, Micrometer/OpenTelemetry/JFR adapters, end-to-end buffer ownership, stable Fory type IDs, dedicated Etcd compaction recovery tests, and streaming RPC remain production gates.
 
-Current capabilities include Vert.x TCP multiplexing with connection-local request IDs, Etcd Lease + revision-aware Range/Watch discovery, immutable array service snapshots, allocation-light P2C+EWMA selection, bounded virtual-thread provider execution, method-bound Fory slice decoding, generated client/server paths, optional JDK/CGLIB/Byte Buddy fallbacks, bounded idempotent retries, outlier ejection, method-level circuit breaking, cancellation propagation, and graceful provider draining.
+Current capabilities include Vert.x TCP multiplexing with connection-local request IDs, Etcd Lease + revision-aware Range/Watch discovery, immutable array service snapshots, allocation-light P2C+EWMA selection, BLOCKING_VIRTUAL/CPU/guarded DIRECT provider execution, method-bound Fory slice decoding, generated client/server paths, optional JDK/CGLIB/Byte Buddy fallbacks, bounded idempotent retries, outlier ejection, method-level circuit breaking, cancellation propagation, graceful provider draining, and low-dependency observability hooks.
 
 <!-- doc-section:architecture -->
 ## Architecture
