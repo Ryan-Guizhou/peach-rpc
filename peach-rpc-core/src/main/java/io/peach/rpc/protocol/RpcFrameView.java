@@ -13,6 +13,8 @@ import java.util.Objects;
 public final class RpcFrameView {
     private static final byte[] DEADLINE_KEY =
             "deadlineEpochMillis=".getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] TIMEOUT_BUDGET_KEY =
+            "timeoutBudgetMillis=".getBytes(StandardCharsets.US_ASCII);
 
     private final byte[] bytes;
     private final RpcMessageType messageType;
@@ -152,6 +154,19 @@ public final class RpcFrameView {
      * @return 未携带 Deadline 时返回 0
      */
     public long deadlineEpochMillis() {
+        return metadataPositiveLong(DEADLINE_KEY);
+    }
+
+    /**
+     * 返回 Consumer 在发送该请求时剩余的相对超时预算。
+     *
+     * @return 未携带相对预算时返回 0
+     */
+    public long timeoutBudgetMillis() {
+        return metadataPositiveLong(TIMEOUT_BUDGET_KEY);
+    }
+
+    private long metadataPositiveLong(byte[] key) {
         int end = metadataOffset + metadataLength;
         int lineStart = metadataOffset;
         while (lineStart < end) {
@@ -159,9 +174,9 @@ public final class RpcFrameView {
             while (lineEnd < end && bytes[lineEnd] != '\n') {
                 lineEnd++;
             }
-            if (matchesDeadlineKey(lineStart, lineEnd)) {
+            if (matchesKey(key, lineStart, lineEnd)) {
                 return parsePositiveLong(
-                        lineStart + DEADLINE_KEY.length,
+                        lineStart + key.length,
                         lineEnd);
             }
             lineStart = lineEnd + 1;
@@ -169,14 +184,15 @@ public final class RpcFrameView {
         return 0L;
     }
 
-    private boolean matchesDeadlineKey(
+    private boolean matchesKey(
+            byte[] key,
             int start,
             int end) {
-        if (end - start <= DEADLINE_KEY.length) {
+        if (end - start <= key.length) {
             return false;
         }
-        for (int index = 0; index < DEADLINE_KEY.length; index++) {
-            if (bytes[start + index] != DEADLINE_KEY[index]) {
+        for (int index = 0; index < key.length; index++) {
+            if (bytes[start + index] != key[index]) {
                 return false;
             }
         }
