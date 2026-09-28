@@ -52,6 +52,7 @@ public final class PeachRpcServer implements AutoCloseable {
     private final RpcEndpoint bindEndpoint;
     private final Semaphore admission;
     private final Duration drainTimeout;
+    private final Duration controlPlaneTimeout;
     private final RpcProviderExecutionOptions executionOptions;
     private final RpcObserver observer;
     private final ExecutorService blockingExecutor =
@@ -83,6 +84,9 @@ public final class PeachRpcServer implements AutoCloseable {
         this.drainTimeout = Objects.requireNonNull(
                 builder.drainTimeout,
                 "drainTimeout");
+        this.controlPlaneTimeout = Objects.requireNonNull(
+                builder.controlPlaneTimeout,
+                "controlPlaneTimeout");
         this.executionOptions = Objects.requireNonNull(
                 builder.executionOptions,
                 "executionOptions");
@@ -216,7 +220,10 @@ public final class PeachRpcServer implements AutoCloseable {
                     .toCompletableFuture());
         }
         return CompletableFuture.allOf(
-                registrations.toArray(CompletableFuture[]::new));
+                        registrations.toArray(CompletableFuture[]::new))
+                .orTimeout(
+                        controlPlaneTimeout.toMillis(),
+                        TimeUnit.MILLISECONDS);
     }
 
     private CompletionStage<Void> rollbackRegisteredServices(
@@ -236,7 +243,10 @@ public final class PeachRpcServer implements AutoCloseable {
             rollbacks.add(rollback);
         }
         return CompletableFuture.allOf(
-                rollbacks.toArray(CompletableFuture[]::new));
+                        rollbacks.toArray(CompletableFuture[]::new))
+                .orTimeout(
+                        controlPlaneTimeout.toMillis(),
+                        TimeUnit.MILLISECONDS);
     }
 
     private CompletionStage<byte[]> handle(
@@ -508,6 +518,9 @@ public final class PeachRpcServer implements AutoCloseable {
                     registrar.unregister(
                                     runtimeInstance(configured, endpoint))
                             .toCompletableFuture()
+                            .orTimeout(
+                                    controlPlaneTimeout.toMillis(),
+                                    TimeUnit.MILLISECONDS)
                             .join();
                 } catch (RuntimeException error) {
                     LOGGER.warn(
@@ -552,6 +565,7 @@ public final class PeachRpcServer implements AutoCloseable {
         private RpcEndpoint bind;
         private int maxConcurrent = 4096;
         private Duration drainTimeout = Duration.ofSeconds(30);
+        private Duration controlPlaneTimeout = Duration.ofSeconds(3);
         private RpcProviderExecutionOptions executionOptions =
                 RpcProviderExecutionOptions.DEFAULT;
         private RpcObserver observer = RpcObserver.noop();
@@ -631,6 +645,21 @@ public final class PeachRpcServer implements AutoCloseable {
                         "drainTimeout must be positive");
             }
             this.drainTimeout = value;
+            return this;
+        }
+
+        /**
+         * 设置 Registry 等控制面操作的最大等待时间。
+         *
+         * @param value 控制面操作超时时间
+         * @return Provider Builder
+         */
+        public Builder controlPlaneTimeout(Duration value) {
+            if (value == null || value.isNegative() || value.isZero()) {
+                throw new IllegalArgumentException(
+                        "controlPlaneTimeout must be positive");
+            }
+            this.controlPlaneTimeout = value;
             return this;
         }
 

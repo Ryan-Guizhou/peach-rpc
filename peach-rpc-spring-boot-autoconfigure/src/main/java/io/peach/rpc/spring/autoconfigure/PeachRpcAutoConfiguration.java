@@ -265,6 +265,7 @@ public class PeachRpcAutoConfiguration {
                 .bindEndpoint(new RpcEndpoint(server.getHost(), server.getPort()))
                 .maxConcurrent(server.getMaxConcurrent())
                 .drainTimeout(server.getDrainTimeout())
+                .controlPlaneTimeout(server.getControlPlaneTimeout())
                 .executionOptions(executionOptions)
                 .observer(RpcObserver.composite(
                         observerProvider.orderedStream().toList()))

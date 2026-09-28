@@ -13,6 +13,7 @@ import io.peach.rpc.codec.RpcCodecRegistry;
 import io.peach.rpc.registry.ServiceRegistrar;
 import io.peach.rpc.transport.RpcRequestHandler;
 import io.peach.rpc.transport.RpcTransportServer;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -66,6 +67,34 @@ public class PeachRpcServerStartTest {
         } finally {
             explicitlyEnabled.close();
         }
+    }
+
+    @Test
+    void closeShouldNotBlockForeverWhenRegistryUnregisterHangs() {
+        HangingUnregisterRegistry registry =
+                new HangingUnregisterRegistry();
+        PeachRpcServer server = PeachRpcServer.builder()
+                .serviceRegistrar(registry)
+                .transportServer(new TestTransportServer())
+                .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
+                .bindEndpoint(new RpcEndpoint("127.0.0.1", 19092))
+                .controlPlaneTimeout(Duration.ofMillis(50))
+                .build()
+                .registerService(
+                        ServiceOne.class,
+                        new ServiceOneImpl(),
+                        "1.0.0",
+                        "default");
+
+        server.start().toCompletableFuture().join();
+        long startedAt = System.nanoTime();
+        server.close();
+        long elapsedMillis =
+                Duration.ofNanos(System.nanoTime() - startedAt)
+                        .toMillis();
+
+        org.junit.jupiter.api.Assertions.assertTrue(
+                elapsedMillis < 1_000L);
     }
 
     @Test
@@ -154,6 +183,20 @@ public class PeachRpcServerStartTest {
         @Override
         public CompletionStage<Void> unregister(ServiceInstance instance) {
             return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    private static final class HangingUnregisterRegistry
+            implements ServiceRegistrar {
+
+        @Override
+        public CompletionStage<Void> register(ServiceInstance instance) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<Void> unregister(ServiceInstance instance) {
+            return new CompletableFuture<>();
         }
     }
 

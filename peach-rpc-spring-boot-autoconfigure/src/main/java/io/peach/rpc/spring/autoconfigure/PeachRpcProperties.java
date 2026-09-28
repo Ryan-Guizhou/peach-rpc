@@ -571,6 +571,7 @@ public class PeachRpcProperties {
         private int port = 19090;
         private int maxConcurrent = 4096;
         private Duration drainTimeout = Duration.ofSeconds(30);
+        private Duration controlPlaneTimeout = Duration.ofSeconds(3);
         private final Execution execution = new Execution();
 
         /**
@@ -661,6 +662,24 @@ public class PeachRpcProperties {
          */
         public void setDrainTimeout(Duration drainTimeout) {
             this.drainTimeout = drainTimeout;
+        }
+
+        /**
+         * 返回 Registry 等控制面操作最大等待时间。
+         *
+         * @return 控制面操作超时时间
+         */
+        public Duration getControlPlaneTimeout() {
+            return controlPlaneTimeout;
+        }
+
+        /**
+         * 设置 Registry 等控制面操作最大等待时间。
+         *
+         * @param controlPlaneTimeout 控制面操作超时时间
+         */
+        public void setControlPlaneTimeout(Duration controlPlaneTimeout) {
+            this.controlPlaneTimeout = controlPlaneTimeout;
         }
 
         /**

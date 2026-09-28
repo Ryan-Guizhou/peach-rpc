@@ -9,6 +9,7 @@ peach:
       host: 127.0.0.1
       port: 19090
       drain-timeout: 5s
+      control-plane-timeout: 3s
       execution:
         allow-direct: false
     client:
