@@ -44,6 +44,21 @@ class NacosRegistryFactoryTest {
     }
 
     @Test
+    void shouldRejectInvalidClusterName() {
+        RegistryOptions options = new RegistryOptions(
+                List.of("127.0.0.1:8848"),
+                "public",
+                Map.of(
+                        "nacosCluster",
+                        "INVALID_CLUSTER"));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new NacosRegistryFactory()
+                        .create(options));
+    }
+
+    @Test
     void shouldDeclareExpectedCapabilities() {
         assertTrue(
                 NacosRegistry.CAPABILITIES_FOR_TEST

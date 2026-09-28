@@ -39,6 +39,7 @@ public final class NacosRegistryFactory implements RegistryFactory {
         String cluster = defaultIfBlank(
                 options.providerOption("nacosCluster", ""),
                 DEFAULT_CLUSTER);
+        validateCluster(cluster);
         String username = options.providerOption("nacosUsername", "");
         String password = options.providerOption("nacosPassword", "");
 
@@ -72,6 +73,13 @@ public final class NacosRegistryFactory implements RegistryFactory {
                             + ", cluster="
                             + cluster,
                     error);
+        }
+    }
+
+    private static void validateCluster(String cluster) {
+        if (!cluster.matches("[0-9A-Za-z.-]+")) {
+            throw new IllegalArgumentException(
+                    "Nacos cluster must contain only 0-9, a-z, A-Z, '-' or '.'");
         }
     }
 

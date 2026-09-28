@@ -155,11 +155,11 @@ class NacosRegistryIntegrationTest {
         Registry left = registry(
                 endpoint,
                 group,
-                "CLUSTER_A");
+                "CLUSTER-A");
         Registry right = registry(
                 endpoint,
                 group,
-                "CLUSTER_B");
+                "CLUSTER-B");
         ServiceKey key = new ServiceKey(
                 "demo.ClusterIsolation",
                 "1.0.0",
