@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROVIDER_JAR="$(find "$ROOT_DIR/peach-rpc-examples/peach-rpc-example-provider/target" -maxdepth 1 -name '*-exec.jar' -print -quit)"
 CONSUMER_JAR="$(find "$ROOT_DIR/peach-rpc-examples/peach-rpc-example-consumer/target" -maxdepth 1 -name '*-exec.jar' -print -quit)"
 NACOS_ENDPOINT="${NACOS_TEST_ENDPOINT:-127.0.0.1:8848}"
-RESTART_NACOS="${PEACH_RPC_E2E_RESTART_NACOS:-false}"
+RESTART_NACOS="${PEACH_RPC_E2E_RESTART_NACOS:-${CI:-false}}"
 
 if [[ -z "$PROVIDER_JAR" || -z "$CONSUMER_JAR" ]]; then
   echo "Executable example JARs were not found. Build the reactor first." >&2
