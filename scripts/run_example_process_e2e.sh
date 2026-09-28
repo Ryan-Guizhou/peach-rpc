@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROVIDER_JAR="$(find "$ROOT_DIR/peach-rpc-examples/peach-rpc-example-provider/target" -maxdepth 1 -name '*-exec.jar' -print -quit)"
 CONSUMER_JAR="$(find "$ROOT_DIR/peach-rpc-examples/peach-rpc-example-consumer/target" -maxdepth 1 -name '*-exec.jar' -print -quit)"
 NACOS_ENDPOINT="${NACOS_TEST_ENDPOINT:-127.0.0.1:8848}"
+RESTART_NACOS="${PEACH_RPC_E2E_RESTART_NACOS:-false}"
 
 if [[ -z "$PROVIDER_JAR" || -z "$CONSUMER_JAR" ]]; then
   echo "Executable example JARs were not found. Build the reactor first." >&2
@@ -30,32 +31,50 @@ cleanup() {
 trap cleanup EXIT
 
 start_provider() {
+  local port="$1"
   : >"$PROVIDER_LOG"
-  java -jar "$PROVIDER_JAR"     --peach.rpc.registry.endpoints="$NACOS_ENDPOINT"     >"$PROVIDER_LOG" 2>&1 &
+  java -jar "$PROVIDER_JAR" \
+    --peach.rpc.registry.endpoints="$NACOS_ENDPOINT" \
+    --peach.rpc.server.port="$port" \
+    --peach.rpc.server.advertised-port="$port" \
+    >"$PROVIDER_LOG" 2>&1 &
   PROVIDER_PID=$!
 
-  for _ in {1..100}; do
+  for _ in {1..150}; do
     if ! kill -0 "$PROVIDER_PID" 2>/dev/null; then
       echo "Provider process exited before becoming ready." >&2
       cat "$PROVIDER_LOG" >&2
       exit 1
     fi
-    if timeout 1 bash -c '</dev/tcp/127.0.0.1/19090' 2>/dev/null; then
+    if timeout 1 bash -c "</dev/tcp/127.0.0.1/$port" 2>/dev/null; then
       return
     fi
     sleep 0.1
   done
 
-  echo "Provider did not open port 19090 in time." >&2
+  echo "Provider did not open port $port in time." >&2
   cat "$PROVIDER_LOG" >&2
   exit 1
 }
 
+stop_provider() {
+  if [[ -z "$PROVIDER_PID" ]]; then
+    return
+  fi
+  kill "$PROVIDER_PID"
+  wait "$PROVIDER_PID" 2>/dev/null || true
+  PROVIDER_PID=""
+}
+
+success_count() {
+  grep -c "RPC demo completed successfully: Hello, Peach RPC!" "$CONSUMER_LOG" || true
+}
+
 wait_for_success_count() {
   local expected="$1"
-  for _ in {1..250}; do
+  for _ in {1..300}; do
     local current
-    current="$(grep -c "RPC demo completed successfully: Hello, Peach RPC!" "$CONSUMER_LOG" || true)"
+    current="$(success_count)"
     if (( current >= expected )); then
       return
     fi
@@ -74,21 +93,95 @@ wait_for_success_count() {
   exit 1
 }
 
-start_provider
+wait_for_nacos_ports() {
+  for _ in {1..180}; do
+    if timeout 1 bash -c '</dev/tcp/127.0.0.1/8848' 2>/dev/null \
+        && timeout 1 bash -c '</dev/tcp/127.0.0.1/9848' 2>/dev/null; then
+      return
+    fi
+    sleep 0.2
+  done
+  echo "Nacos did not reopen ports 8848/9848 in time." >&2
+  exit 1
+}
 
-java -jar "$CONSUMER_JAR"   --peach.rpc.registry.endpoints="$NACOS_ENDPOINT"   --peach.rpc.example.repeat-interval-millis=200   --peach.rpc.client.resilience.circuit-open-duration=500ms   --peach.rpc.client.resilience.outlier-ejection-duration=500ms   >"$CONSUMER_LOG" 2>&1 &
+probe_fresh_consumer() {
+  local probe_log
+  probe_log="$(mktemp)"
+  local probe_pid=""
+
+  for _ in {1..3}; do
+    : >"$probe_log"
+    java -jar "$CONSUMER_JAR" \
+      --peach.rpc.registry.endpoints="$NACOS_ENDPOINT" \
+      >"$probe_log" 2>&1 &
+    probe_pid=$!
+
+    for _ in {1..150}; do
+      if grep -q "RPC demo completed successfully: Hello, Peach RPC!" "$probe_log"; then
+        kill "$probe_pid" 2>/dev/null || true
+        wait "$probe_pid" 2>/dev/null || true
+        rm -f "$probe_log"
+        return
+      fi
+      if ! kill -0 "$probe_pid" 2>/dev/null; then
+        break
+      fi
+      sleep 0.1
+    done
+
+    kill "$probe_pid" 2>/dev/null || true
+    wait "$probe_pid" 2>/dev/null || true
+    sleep 1
+  done
+
+  echo "A fresh Consumer could not discover the running Provider after Nacos restart." >&2
+  cat "$probe_log" >&2
+  rm -f "$probe_log"
+  exit 1
+}
+
+start_provider 19090
+
+java -jar "$CONSUMER_JAR" \
+  --peach.rpc.registry.endpoints="$NACOS_ENDPOINT" \
+  --peach.rpc.example.repeat-interval-millis=200 \
+  --peach.rpc.client.resilience.circuit-open-duration=500ms \
+  --peach.rpc.client.resilience.outlier-ejection-duration=500ms \
+  >"$CONSUMER_LOG" 2>&1 &
 CONSUMER_PID=$!
 
 wait_for_success_count 1
 
-kill "$PROVIDER_PID"
-wait "$PROVIDER_PID" 2>/dev/null || true
-PROVIDER_PID=""
+# Verify transport recovery with the same Consumer JVM.
+stop_provider
+successes_before_provider_restart="$(success_count)"
+start_provider 19090
+wait_for_success_count "$((successes_before_provider_restart + 1))"
 
-# Capture all successes produced before the replacement Provider is started.
-successes_before_restart="$(grep -c "RPC demo completed successfully: Hello, Peach RPC!" "$CONSUMER_LOG" || true)"
+if [[ "$RESTART_NACOS" == "true" ]]; then
+  nacos_container="$(docker ps --filter 'ancestor=nacos/nacos-server:v3.2.4' --format '{{.ID}}' | head -n 1)"
+  if [[ -z "$nacos_container" ]]; then
+    echo "Nacos container was not found for the recovery E2E." >&2
+    exit 1
+  fi
 
-start_provider
-wait_for_success_count "$((successes_before_restart + 1))"
+  # The existing data-plane connection must remain usable while the control plane restarts.
+  successes_before_nacos_restart="$(success_count)"
+  docker restart "$nacos_container" >/dev/null
+  wait_for_nacos_ports
+  wait_for_success_count "$((successes_before_nacos_restart + 1))"
 
-echo "Independent JVM RPC recovery succeeded without restarting the Consumer."
+  # A brand-new Consumer can only succeed if the still-running Provider has restored
+  # its ephemeral Nacos registration after the server restart.
+  probe_fresh_consumer
+
+  # Move the Provider to a different port. The existing Consumer JVM must receive
+  # the recovered Nacos subscription snapshot; a stale 19090 directory cannot pass.
+  stop_provider
+  successes_before_endpoint_change="$(success_count)"
+  start_provider 19091
+  wait_for_success_count "$((successes_before_endpoint_change + 1))"
+fi
+
+echo "Independent JVM RPC recovery succeeded without restarting the long-lived Consumer."
