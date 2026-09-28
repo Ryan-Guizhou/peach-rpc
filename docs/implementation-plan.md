@@ -23,11 +23,16 @@
 - Graceful Drain。
 - Raw Vert.x / 完整 RPC 端到端延迟基线。
 
+第二批已完成：
+
+- Provider execution policy：BLOCKING_VIRTUAL / CPU / guarded DIRECT。
+- RpcObserver 低依赖可观测性基础契约。
+- 真实 Etcd 注册、Watch、namespace、Lease 集成测试。
+
 后续：
 
 - TLS/mTLS。
-- Micrometer/OpenTelemetry/JFR。
+- Micrometer/OpenTelemetry/JFR Adapter。
 - Buffer ownership / Buffer-oriented Codec。
-- Provider execution policy。
 - Fory 稳定 Type ID / Schema fingerprint。
-- Etcd compaction/recovery 专项测试。
+- Etcd compaction、断链恢复专项故障测试。

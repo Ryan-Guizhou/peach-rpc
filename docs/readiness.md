@@ -12,14 +12,21 @@
 - 新增 Raw Vert.x 与完整 Peach RPC 的端到端延迟基线，用于观察 RPC Added Latency；
 - Cancellation、Drain、Retry Budget、Circuit Breaker、Outlier 路径已有自动化测试。
 
+## V2-B.1 第二批已完成
+
+- Provider execution policy：默认 BLOCKING_VIRTUAL，CPU 使用有界线程池，DIRECT 默认关闭并需要显式允许；
+- Core 增加无第三方观测依赖的 RpcObserver，并覆盖 Client attempt/retry 与 Provider invocation 生命周期；
+- Starter 自动组合 RpcObserver Bean，并暴露 Provider execution 配置；
+- Etcd Adapter 增加真实 Etcd 集成测试，覆盖注册/注销、Watch 快照、namespace 隔离和 Lease 过期。
+
 ## 仍需完成的生产门禁
 
 正式成为中型项目默认 RPC 层之前，至少还需要：
 
 - 更完整的协议兼容、畸形帧和故障注入测试；
-- Etcd 集成、Watch 恢复和 compaction 测试；
+- Etcd compaction、断链重连等更强故障注入测试；
 - TLS/mTLS 与证书生命周期；
-- Micrometer、OpenTelemetry/Tracing、JFR；
+- Micrometer、OpenTelemetry/Tracing、JFR 具体 Adapter；
 - Buffer ownership / buffer-oriented Codec，是否进入默认路径必须由基准收益决定；
 - Fory 稳定 Type ID、Schema fingerprint、冲突检测与滚动升级兼容策略；
 - 多 payload、多并发、过载、慢 Consumer/Provider 的稳定端到端性能基线；
