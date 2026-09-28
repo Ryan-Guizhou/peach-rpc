@@ -1,12 +1,19 @@
 package io.peach.rpc.examples.consumer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.peach.rpc.api.RpcUnavailableException;
+import io.peach.rpc.core.PeachRpcClient;
+import io.peach.rpc.examples.api.GreetingReply;
+import io.peach.rpc.examples.api.GreetingRequest;
 import io.peach.rpc.examples.api.GreetingService;
 import io.peach.rpc.examples.provider.ProviderApplication;
 import io.peach.rpc.generated.RpcGeneratedClients;
+import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.CompletionException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -16,7 +23,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 class NacosRoundTripTest {
 
     @Test
-    void providerAndConsumerShouldCommunicateThroughNacos() {
+    void providerLifecycleShouldPropagateThroughNacos()
+            throws Exception {
         String endpoint = System.getenv(
                 "NACOS_TEST_ENDPOINT");
         assumeTrue(
@@ -27,36 +35,99 @@ class NacosRoundTripTest {
                 + UUID.randomUUID()
                         .toString()
                         .replace("-", "");
-        try (ConfigurableApplicationContext provider =
-                     new SpringApplicationBuilder(
-                             ProviderApplication.class)
-                             .web(WebApplicationType.NONE)
-                             .properties(
-                                     registryProperties(
-                                             endpoint,
-                                             group))
-                             .properties(
-                                     "peach.rpc.server.host=127.0.0.1",
-                                     "peach.rpc.server.port=0",
-                                     "peach.rpc.server.advertised-host=127.0.0.1",
-                                     "peach.rpc.server.advertised-port=0")
-                             .run();
-             ConfigurableApplicationContext consumer =
-                     new SpringApplicationBuilder(
-                             ConsumerApplication.class)
-                             .web(WebApplicationType.NONE)
-                             .properties(
-                                     registryProperties(
-                                             endpoint,
-                                             group))
-                             .run()) {
+        ConfigurableApplicationContext provider = null;
+        ConfigurableApplicationContext consumer = null;
+        try {
+            provider = new SpringApplicationBuilder(
+                    ProviderApplication.class)
+                    .web(WebApplicationType.NONE)
+                    .properties(
+                            registryProperties(
+                                    endpoint,
+                                    group))
+                    .properties(
+                            "peach.rpc.server.host=127.0.0.1",
+                            "peach.rpc.server.port=0",
+                            "peach.rpc.server.advertised-host=127.0.0.1",
+                            "peach.rpc.server.advertised-port=0")
+                    .run();
+            consumer = new SpringApplicationBuilder(
+                    ConsumerApplication.class)
+                    .web(WebApplicationType.NONE)
+                    .properties(
+                            registryProperties(
+                                    endpoint,
+                                    group))
+                    .run();
+
             assertTrue(
                     RpcGeneratedClients.find(
                                     GreetingService.class)
                             .isPresent());
-            assertTrue(provider.isActive());
-            assertTrue(consumer.isActive());
+            PeachRpcClient client =
+                    consumer.getBean(PeachRpcClient.class);
+            GreetingService service = client.refer(
+                    GreetingService.class,
+                    "1.0.0",
+                    "default");
+            GreetingReply reply = service.hello(
+                    new GreetingRequest("Peach RPC"));
+            assertEquals(
+                    "Hello, Peach RPC!",
+                    reply.message());
+
+            provider.close();
+            provider = null;
+
+            assertTrue(await(
+                    Duration.ofSeconds(15),
+                    () -> unavailable(service)));
+        } finally {
+            if (consumer != null) {
+                consumer.close();
+            }
+            if (provider != null) {
+                provider.close();
+            }
         }
+    }
+
+    private static boolean unavailable(
+            GreetingService service) {
+        try {
+            service.hello(
+                    new GreetingRequest("after-stop"));
+            return false;
+        } catch (RuntimeException error) {
+            return unwrapUnavailable(error) != null;
+        }
+    }
+
+    private static RpcUnavailableException unwrapUnavailable(
+            RuntimeException error) {
+        if (error instanceof RpcUnavailableException unavailable) {
+            return unavailable;
+        }
+        if (error instanceof CompletionException
+                && error.getCause()
+                        instanceof RpcUnavailableException unavailable) {
+            return unavailable;
+        }
+        return null;
+    }
+
+    private static boolean await(
+            Duration timeout,
+            CheckedBoolean condition) throws Exception {
+        long deadline =
+                System.nanoTime() + timeout.toNanos();
+        while (System.nanoTime() < deadline) {
+            if (condition.get()) {
+                return true;
+            }
+            Thread.sleep(100L);
+        }
+        return condition.get();
     }
 
     private static String[] registryProperties(
@@ -69,5 +140,10 @@ class NacosRoundTripTest {
                 "peach.rpc.registry.nacos.group=" + group,
                 "peach.rpc.registry.nacos.cluster=DEFAULT"
         };
+    }
+
+    @FunctionalInterface
+    private interface CheckedBoolean {
+        boolean get() throws Exception;
     }
 }
