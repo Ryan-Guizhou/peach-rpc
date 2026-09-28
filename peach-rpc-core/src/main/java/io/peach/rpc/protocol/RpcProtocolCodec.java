@@ -25,6 +25,8 @@ public final class RpcProtocolCodec {
     private static final int PAYLOAD_LENGTH_OFFSET = 28;
     private static final byte[] DEADLINE_PREFIX =
             "deadlineEpochMillis=".getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] TIMEOUT_BUDGET_PREFIX =
+            "timeoutBudgetMillis=".getBytes(StandardCharsets.US_ASCII);
 
     private RpcProtocolCodec() {
     }
@@ -92,13 +94,49 @@ public final class RpcProtocolCodec {
             int methodId,
             long deadlineEpochMillis,
             byte[] payload) {
+        return encodeRequest(
+                codec,
+                serviceId,
+                methodId,
+                deadlineEpochMillis,
+                0L,
+                payload);
+    }
+
+    /**
+     * 编码同时携带绝对 Deadline 与相对剩余预算的 Unary REQUEST。
+     *
+     * <p>相对预算用于新版本 Provider 避免跨节点 wall-clock 偏差；
+     * 绝对 Deadline 保留给旧版本 Provider，支持滚动升级。
+     *
+     * @param codec Codec 编号
+     * @param serviceId 服务 ID
+     * @param methodId 方法 ID
+     * @param deadlineEpochMillis 绝对截止时间；小于等于 0 表示不携带
+     * @param timeoutBudgetMillis 剩余超时预算；小于等于 0 表示不携带
+     * @param payload 已编码参数
+     * @return 完整线协议字节
+     */
+    public static byte[] encodeRequest(
+            byte codec,
+            int serviceId,
+            int methodId,
+            long deadlineEpochMillis,
+            long timeoutBudgetMillis,
+            byte[] payload) {
         byte[] actualPayload =
                 payload == null ? new byte[0] : payload;
-        int metadataLength = deadlineEpochMillis > 0
+        int deadlineLength = deadlineEpochMillis > 0
                 ? DEADLINE_PREFIX.length
                         + decimalLength(deadlineEpochMillis)
                         + 1
                 : 0;
+        int budgetLength = timeoutBudgetMillis > 0
+                ? TIMEOUT_BUDGET_PREFIX.length
+                        + decimalLength(timeoutBudgetMillis)
+                        + 1
+                : 0;
+        int metadataLength = deadlineLength + budgetLength;
         int bodyLength = checkedBodyLength(
                 metadataLength,
                 actualPayload.length);
@@ -115,28 +153,44 @@ public final class RpcProtocolCodec {
                 metadataLength,
                 actualPayload.length);
 
-        int payloadOffset = HEADER_LENGTH;
-        if (metadataLength > 0) {
+        int metadataOffset = HEADER_LENGTH;
+        if (deadlineLength > 0) {
             System.arraycopy(
                     DEADLINE_PREFIX,
                     0,
                     bytes,
-                    payloadOffset,
+                    metadataOffset,
                     DEADLINE_PREFIX.length);
-            int deadlineOffset =
-                    payloadOffset + DEADLINE_PREFIX.length;
+            int valueOffset =
+                    metadataOffset + DEADLINE_PREFIX.length;
             writePositiveLong(
                     bytes,
-                    deadlineOffset,
+                    valueOffset,
                     deadlineEpochMillis);
-            bytes[HEADER_LENGTH + metadataLength - 1] = '\n';
-            payloadOffset += metadataLength;
+            metadataOffset += deadlineLength;
+            bytes[metadataOffset - 1] = '\n';
+        }
+        if (budgetLength > 0) {
+            System.arraycopy(
+                    TIMEOUT_BUDGET_PREFIX,
+                    0,
+                    bytes,
+                    metadataOffset,
+                    TIMEOUT_BUDGET_PREFIX.length);
+            int valueOffset =
+                    metadataOffset + TIMEOUT_BUDGET_PREFIX.length;
+            writePositiveLong(
+                    bytes,
+                    valueOffset,
+                    timeoutBudgetMillis);
+            metadataOffset += budgetLength;
+            bytes[metadataOffset - 1] = '\n';
         }
         System.arraycopy(
                 actualPayload,
                 0,
                 bytes,
-                payloadOffset,
+                HEADER_LENGTH + metadataLength,
                 actualPayload.length);
         return bytes;
     }
