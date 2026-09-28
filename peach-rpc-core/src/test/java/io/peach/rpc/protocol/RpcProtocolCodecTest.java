@@ -67,6 +67,26 @@ class RpcProtocolCodecTest {
     }
 
     @Test
+    void shouldEncodeRelativeTimeoutBudgetAlongsideLegacyDeadline() {
+        long deadline = 2_000_000_000_123L;
+        long timeoutBudgetMillis = 1500L;
+
+        byte[] encoded = RpcProtocolCodec.encodeRequest(
+                (byte) 1,
+                11,
+                22,
+                deadline,
+                timeoutBudgetMillis,
+                new byte[] {1});
+        RpcFrameView view = RpcProtocolCodec.view(encoded);
+
+        assertEquals(deadline, view.deadlineEpochMillis());
+        assertEquals(
+                timeoutBudgetMillis,
+                view.timeoutBudgetMillis());
+    }
+
+    @Test
     void shouldEncodeUnaryResponseWithoutMetadata() {
         byte[] payload = new byte[] {7, 8};
 
