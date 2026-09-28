@@ -16,6 +16,10 @@ final class NacosInstanceMapper {
     }
 
     static Instance toNacos(ServiceInstance source, String cluster) {
+        if (!routableHost(source.endpoint().host())) {
+            throw new IllegalArgumentException(
+                    "Nacos registration endpoint host must be routable");
+        }
         if (source.endpoint().port() <= 0) {
             throw new IllegalArgumentException(
                     "Nacos registration endpoint port must be positive");
@@ -63,8 +67,7 @@ final class NacosInstanceMapper {
                 || !source.isHealthy()
                 || !source.isEnabled()
                 || source.getWeight() <= 0D
-                || source.getIp() == null
-                || source.getIp().isBlank()
+                || !routableHost(source.getIp())
                 || source.getPort() <= 0
                 || source.getPort() > 65_535) {
             return null;
@@ -87,6 +90,14 @@ final class NacosInstanceMapper {
                 new RpcEndpoint(source.getIp(), source.getPort()),
                 weight,
                 Map.copyOf(metadata));
+    }
+
+    private static boolean routableHost(String host) {
+        return host != null
+                && !host.isBlank()
+                && !"0.0.0.0".equals(host)
+                && !"::".equals(host)
+                && !"[::]".equals(host);
     }
 
     private static String fallbackInstanceId(

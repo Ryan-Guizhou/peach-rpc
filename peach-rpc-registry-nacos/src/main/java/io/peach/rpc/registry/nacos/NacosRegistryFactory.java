@@ -29,6 +29,7 @@ public final class NacosRegistryFactory implements RegistryFactory {
         List<String> endpoints = options.endpoints().isEmpty()
                 ? List.of(DEFAULT_ENDPOINT)
                 : options.endpoints();
+        validateEndpoints(endpoints);
         String namespace = defaultIfBlank(
                 options.namespace(),
                 DEFAULT_NAMESPACE);
@@ -71,6 +72,15 @@ public final class NacosRegistryFactory implements RegistryFactory {
                             + ", cluster="
                             + cluster,
                     error);
+        }
+    }
+
+    private static void validateEndpoints(List<String> endpoints) {
+        for (String endpoint : endpoints) {
+            if (endpoint.indexOf('@') >= 0) {
+                throw new IllegalArgumentException(
+                        "Nacos endpoint must not embed credentials");
+            }
         }
     }
 

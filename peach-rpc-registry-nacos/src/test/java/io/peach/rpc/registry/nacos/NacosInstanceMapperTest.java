@@ -115,6 +115,33 @@ class NacosInstanceMapperTest {
     }
 
     @Test
+    void shouldRejectWildcardOutboundHost() {
+        ServiceInstance source = new ServiceInstance(
+                "node-1",
+                KEY,
+                new RpcEndpoint("0.0.0.0", 19090),
+                100,
+                Map.of());
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> NacosInstanceMapper.toNacos(
+                        source,
+                        "DEFAULT"));
+    }
+
+    @Test
+    void shouldFilterWildcardInboundHost() {
+        Instance instance = healthyInstance();
+        instance.setIp("0.0.0.0");
+
+        assertNull(
+                NacosInstanceMapper.fromNacos(
+                        KEY,
+                        instance));
+    }
+
+    @Test
     void shouldRejectInvalidOutboundPort() {
         ServiceInstance source = new ServiceInstance(
                 "node-1",
