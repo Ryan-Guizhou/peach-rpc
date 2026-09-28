@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
+import io.etcd.jetcd.launcher.EtcdContainer;
 import io.etcd.jetcd.options.GetOption;
 import io.etcd.jetcd.test.EtcdClusterExtension;
 import io.peach.rpc.api.RpcEndpoint;
@@ -29,7 +30,7 @@ class EtcdRegistryIntegrationTest {
     static final EtcdClusterExtension CLUSTER =
             EtcdClusterExtension.builder()
                     .withClusterName("peach-rpc-etcd-it")
-                    .withNodes(1)
+                    .withNodes(3)
                     .withSsl(false)
                     .build();
 
@@ -138,6 +139,56 @@ class EtcdRegistryIntegrationTest {
                     findLease(rawClient, instance.instanceId());
             assertTrue(recoveredLease > 0L);
             assertTrue(recoveredLease != originalLease);
+        }
+    }
+
+    @Test
+    void shouldRecoverAfterLeaderFailure()
+            throws Exception {
+        String namespace = uniqueNamespace("leader-failure");
+        ServiceKey key =
+                new ServiceKey("demo.LeaderFailure", "1.0.0", "default");
+        ServiceInstance first =
+                instance(key, "node-leader-a", 19097);
+        ServiceInstance second =
+                instance(key, "node-leader-b", 19098);
+        AtomicReference<RegistrySnapshot> latest =
+                new AtomicReference<>();
+
+        try (EtcdRegistry registry = registry(namespace, 5);
+             Client client = rawClient();
+             RegistrySubscription ignored =
+                     registry.subscribe(key, latest::set)) {
+            registry.register(first)
+                    .toCompletableFuture()
+                    .join();
+            assertTrue(await(
+                    Duration.ofSeconds(10),
+                    () -> contains(latest.get(), first)));
+
+            int leaderIndex = leaderIndex(client);
+            EtcdContainer leader =
+                    CLUSTER.cluster()
+                            .containers()
+                            .get(leaderIndex);
+            leader.stop();
+            try {
+                assertTrue(await(
+                        Duration.ofSeconds(20),
+                        () -> registerEventually(
+                                registry,
+                                second)));
+                assertTrue(await(
+                        Duration.ofSeconds(20),
+                        () -> contains(
+                                latest.get(),
+                                first)
+                                && contains(
+                                        latest.get(),
+                                        second)));
+            } finally {
+                leader.start();
+            }
         }
     }
 
@@ -272,6 +323,21 @@ class EtcdRegistryIntegrationTest {
                 new RpcEndpoint("127.0.0.1", port),
                 100,
                 Map.of("zone", "test"));
+    }
+
+    private static int leaderIndex(Client client) {
+        var endpoints = CLUSTER.clientEndpoints();
+        for (int index = 0; index < endpoints.size(); index++) {
+            var status = client.getMaintenanceClient()
+                    .statusMember(endpoints.get(index).toString())
+                    .join();
+            if (status.getHeader().getMemberId()
+                    == status.getLeader()) {
+                return index;
+            }
+        }
+        throw new IllegalStateException(
+                "Etcd leader was not found");
     }
 
     private static boolean lookupContains(
