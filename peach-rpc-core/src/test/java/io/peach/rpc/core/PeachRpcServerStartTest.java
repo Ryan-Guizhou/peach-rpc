@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 public class PeachRpcServerStartTest {
@@ -95,6 +96,55 @@ public class PeachRpcServerStartTest {
 
         org.junit.jupiter.api.Assertions.assertTrue(
                 elapsedMillis < 1_000L);
+    }
+
+    @Test
+    void wildcardBindShouldRequireAdvertisedHost() {
+        PeachRpcServer server = PeachRpcServer.builder()
+                .serviceRegistrar(new NoopRegistry())
+                .transportServer(new TestTransportServer())
+                .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
+                .bindEndpoint(new RpcEndpoint("0.0.0.0", 19090))
+                .build();
+
+        try {
+            CompletionException error = assertThrows(
+                    CompletionException.class,
+                    () -> server.start()
+                            .toCompletableFuture()
+                            .join());
+            assertEquals(
+                    "RPC advertised host is required when bind host is 0.0.0.0",
+                    error.getCause().getMessage());
+        } finally {
+            server.close();
+        }
+    }
+
+    @Test
+    void dynamicPortShouldPublishActualTransportPort() {
+        CapturingRegistry registry = new CapturingRegistry();
+        PeachRpcServer server = PeachRpcServer.builder()
+                .serviceRegistrar(registry)
+                .transportServer(new DynamicPortTransportServer(24567))
+                .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
+                .bindEndpoint(new RpcEndpoint("127.0.0.1", 0))
+                .build()
+                .registerService(
+                        ServiceOne.class,
+                        new ServiceOneImpl(),
+                        "1.0.0",
+                        "default");
+
+        try {
+            server.start().toCompletableFuture().join();
+
+            assertEquals(
+                    new RpcEndpoint("127.0.0.1", 24567),
+                    registry.registered.get().endpoint());
+        } finally {
+            server.close();
+        }
     }
 
     @Test
@@ -197,6 +247,44 @@ public class PeachRpcServerStartTest {
         @Override
         public CompletionStage<Void> unregister(ServiceInstance instance) {
             return new CompletableFuture<>();
+        }
+    }
+
+    private static final class CapturingRegistry
+            implements ServiceRegistrar {
+        private final AtomicReference<ServiceInstance> registered =
+                new AtomicReference<>();
+
+        @Override
+        public CompletionStage<Void> register(ServiceInstance instance) {
+            registered.set(instance);
+            return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<Void> unregister(ServiceInstance instance) {
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    private static final class DynamicPortTransportServer
+            implements RpcTransportServer {
+        private final int port;
+
+        private DynamicPortTransportServer(int port) {
+            this.port = port;
+        }
+
+        @Override
+        public CompletionStage<RpcEndpoint> start(
+                RpcEndpoint bind,
+                RpcRequestHandler handler) {
+            return CompletableFuture.completedFuture(
+                    new RpcEndpoint(bind.host(), port));
+        }
+
+        @Override
+        public void close() {
         }
     }
 
