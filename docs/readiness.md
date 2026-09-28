@@ -40,6 +40,19 @@
 - Nacos 实例进入 Core 前完成 healthy/enabled/endpoint/weight 过滤、稳定排序与重复视图抑制；
 - CI 增加真实 Nacos 服务，覆盖 Adapter 集成和双 Spring Context RPC round-trip。
 
+## V2-C.2 当前开发分支
+
+已实现的连接 HA 能力：
+
+- PING/PONG 作为 HELLO/ACK 协商能力，旧节点未协商时不会接收心跳帧；
+- Client/Server 都会对空闲连接执行 idle detection，并在 heartbeat timeout 后摘除 silent/half-open connection；
+- Consumer 连接恢复使用 request-driven single-flight、指数退避和 full jitter，并限制最大退避窗口；
+- Consumer 逻辑 Deadline 现在覆盖 connect、handshake 和 request，而不是只覆盖连接建立后的请求阶段；
+- Unary Request 双写 `deadlineEpochMillis` 与 `timeoutBudgetMillis`，新 Provider 避免依赖远端 wall clock，旧 Provider 保持兼容；
+- Transport 自动化测试覆盖空闲连接持续存活和 Provider 重启后的 Consumer 恢复。
+
+仍需完成 Registry Chaos、独立进程 E2E 与连接/恢复可观测性后，V2-C.2 才能整体标记为 Current。
+
 ## 仍需完成的生产门禁
 
 正式成为中型项目默认 RPC 层之前，至少还需要。详细状态以 [Production Roadmap / Capability Matrix](production-roadmap.md) 为准：
@@ -47,7 +60,6 @@
 - 更完整的协议兼容、畸形帧和故障注入测试；
 - Etcd compaction、进程级断链/重启和多节点 leader change 等更强故障注入测试；
 - TLS/mTLS 与证书生命周期；
-- 应用层 Heartbeat / idle detection 与连接重建退避；
 - Micrometer、OpenTelemetry/Tracing、JFR 具体 Adapter；
 - Buffer ownership / buffer-oriented Codec，是否进入默认路径必须由基准收益决定；
 - Fory 稳定 Type ID、Schema fingerprint、冲突检测与滚动升级兼容策略；
