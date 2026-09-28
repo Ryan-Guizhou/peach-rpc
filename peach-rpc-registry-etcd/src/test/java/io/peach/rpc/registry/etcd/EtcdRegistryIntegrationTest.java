@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
-import io.etcd.jetcd.launcher.EtcdContainer;
 import io.etcd.jetcd.options.GetOption;
 import io.etcd.jetcd.test.EtcdClusterExtension;
 import io.peach.rpc.api.RpcEndpoint;
@@ -166,29 +165,33 @@ class EtcdRegistryIntegrationTest {
                     Duration.ofSeconds(10),
                     () -> contains(latest.get(), first)));
 
-            int leaderIndex = leaderIndex(client);
-            EtcdContainer leader =
-                    CLUSTER.cluster()
-                            .containers()
-                            .get(leaderIndex);
-            leader.stop();
-            try {
-                assertTrue(await(
-                        Duration.ofSeconds(20),
-                        () -> registerEventually(
-                                registry,
-                                second)));
-                assertTrue(await(
-                        Duration.ofSeconds(20),
-                        () -> contains(
-                                latest.get(),
-                                first)
-                                && contains(
-                                        latest.get(),
-                                        second)));
-            } finally {
-                leader.start();
+            LeaderTransfer transfer =
+                    leaderTransfer(client);
+            try (Client leaderClient = Client.builder()
+                    .endpoints(transfer.leaderEndpoint())
+                    .build()) {
+                leaderClient.getMaintenanceClient()
+                        .moveLeader(transfer.transfereeId())
+                        .join();
             }
+
+            assertTrue(await(
+                    Duration.ofSeconds(10),
+                    () -> currentLeader(client)
+                            != transfer.originalLeaderId()));
+            assertTrue(await(
+                    Duration.ofSeconds(20),
+                    () -> registerEventually(
+                            registry,
+                            second)));
+            assertTrue(await(
+                    Duration.ofSeconds(20),
+                    () -> contains(
+                            latest.get(),
+                            first)
+                            && contains(
+                                    latest.get(),
+                                    second)));
         }
     }
 
@@ -325,19 +328,40 @@ class EtcdRegistryIntegrationTest {
                 Map.of("zone", "test"));
     }
 
-    private static int leaderIndex(Client client) {
+    private static LeaderTransfer leaderTransfer(
+            Client client) {
         var endpoints = CLUSTER.clientEndpoints();
-        for (int index = 0; index < endpoints.size(); index++) {
+        long leaderId = currentLeader(client);
+        Long transfereeId = null;
+        java.net.URI leaderEndpoint = null;
+        for (var endpoint : endpoints) {
             var status = client.getMaintenanceClient()
-                    .statusMember(endpoints.get(index).toString())
+                    .statusMember(endpoint.toString())
                     .join();
-            if (status.getHeader().getMemberId()
-                    == status.getLeader()) {
-                return index;
+            long memberId =
+                    status.getHeader().getMemberId();
+            if (memberId == leaderId) {
+                leaderEndpoint = endpoint;
+            } else if (transfereeId == null) {
+                transfereeId = memberId;
             }
         }
-        throw new IllegalStateException(
-                "Etcd leader was not found");
+        if (leaderEndpoint == null || transfereeId == null) {
+            throw new IllegalStateException(
+                    "Etcd leader transfer target was not found");
+        }
+        return new LeaderTransfer(
+                leaderId,
+                transfereeId,
+                leaderEndpoint);
+    }
+
+    private static long currentLeader(Client client) {
+        var endpoint = CLUSTER.clientEndpoints().getFirst();
+        return client.getMaintenanceClient()
+                .statusMember(endpoint.toString())
+                .join()
+                .getLeader();
     }
 
     private static boolean lookupContains(
@@ -386,6 +410,12 @@ class EtcdRegistryIntegrationTest {
             Thread.sleep(100);
         }
         return condition.get();
+    }
+
+    private record LeaderTransfer(
+            long originalLeaderId,
+            long transfereeId,
+            java.net.URI leaderEndpoint) {
     }
 
     @FunctionalInterface
