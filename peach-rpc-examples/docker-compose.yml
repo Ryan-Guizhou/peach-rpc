@@ -4,6 +4,9 @@ services:
     environment:
       MODE: standalone
       NACOS_AUTH_ENABLE: "false"
+      NACOS_AUTH_TOKEN: "UGVhY2hScGNDb250cm9sUGxhbmVTZWNyZXRLZXkxMjM0NTY3ODkwMTIzNDU2Nzg5MA=="
+      NACOS_AUTH_IDENTITY_KEY: peach-rpc-local
+      NACOS_AUTH_IDENTITY_VALUE: peach-rpc-local-secret
     ports:
       - "8848:8848"
       - "9848:9848"
