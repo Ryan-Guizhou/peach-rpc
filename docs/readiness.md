@@ -2,6 +2,8 @@
 
 当前版本定位为 Preview，可用于内部验证和中型项目集成试点，但不直接宣称生产就绪。
 
+> 当前能力状态、未完成项和阶段优先级统一维护在 [Production Roadmap / Capability Matrix](production-roadmap.md)。本文只解释 Production Ready 所需门禁，不再作为阶段状态的唯一来源。
+
 ## V2-B.1 第一批已完成
 
 - Consumer timeout 与主动 Future cancel 可传播为 CANCEL，Provider 会取消 connection-local 请求并中断对应虚拟线程任务；
@@ -40,7 +42,7 @@
 
 ## 仍需完成的生产门禁
 
-正式成为中型项目默认 RPC 层之前，至少还需要：
+正式成为中型项目默认 RPC 层之前，至少还需要。详细状态以 [Production Roadmap / Capability Matrix](production-roadmap.md) 为准：
 
 - 更完整的协议兼容、畸形帧和故障注入测试；
 - Etcd compaction、进程级断链/重启和多节点 leader change 等更强故障注入测试；
