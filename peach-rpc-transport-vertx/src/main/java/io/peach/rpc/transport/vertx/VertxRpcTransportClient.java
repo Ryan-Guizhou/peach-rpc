@@ -110,6 +110,7 @@ final class VertxRpcTransportClient implements RpcTransportClient {
         private CompletionStage<byte[]> request(
                 byte[] frame,
                 Duration timeout) {
+            long deadlineNanos = System.nanoTime() + timeout.toNanos();
             int current = cursor.get();
             int index = current % slots.length();
             cursor.set(current == Integer.MAX_VALUE ? 0 : current + 1);
@@ -123,9 +124,20 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                 if (result.isCancelled()) {
                     return;
                 }
+                long remainingNanos =
+                        deadlineNanos - System.nanoTime();
+                if (remainingNanos <= 0L) {
+                    result.completeExceptionally(
+                            new RpcTimeoutException(
+                                    "RPC request timed out while connecting to "
+                                            + endpoint.authority()));
+                    return;
+                }
 
                 CompletableFuture<byte[]> request = connection
-                        .request(frame, timeout)
+                        .request(
+                                frame,
+                                Duration.ofNanos(remainingNanos))
                         .toCompletableFuture();
                 result.whenComplete((ignoredValue, ignoredError) -> {
                     if (result.isCancelled()) {
