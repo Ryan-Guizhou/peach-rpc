@@ -275,6 +275,10 @@ public class PeachRpcProperties {
         private Duration connectTimeout = Duration.ofSeconds(3);
         private Duration handshakeTimeout = Duration.ofSeconds(3);
         private int connectionsPerEndpoint = 1;
+        private Duration heartbeatInterval = Duration.ofSeconds(30);
+        private Duration heartbeatTimeout = Duration.ofSeconds(10);
+        private Duration reconnectBaseBackoff = Duration.ofMillis(50);
+        private Duration reconnectMaxBackoff = Duration.ofSeconds(3);
 
         /**
          * 返回Transport SPI 名称。
@@ -400,6 +404,78 @@ public class PeachRpcProperties {
          */
         public void setConnectTimeout(Duration connectTimeout) {
             this.connectTimeout = connectTimeout;
+        }
+
+        /**
+         * 返回空闲连接发送心跳前的间隔。
+         *
+         * @return 心跳间隔
+         */
+        public Duration getHeartbeatInterval() {
+            return heartbeatInterval;
+        }
+
+        /**
+         * 设置空闲连接发送心跳前的间隔。
+         *
+         * @param heartbeatInterval 心跳间隔
+         */
+        public void setHeartbeatInterval(Duration heartbeatInterval) {
+            this.heartbeatInterval = heartbeatInterval;
+        }
+
+        /**
+         * 返回心跳响应最大等待时间。
+         *
+         * @return 心跳超时
+         */
+        public Duration getHeartbeatTimeout() {
+            return heartbeatTimeout;
+        }
+
+        /**
+         * 设置心跳响应最大等待时间。
+         *
+         * @param heartbeatTimeout 心跳超时
+         */
+        public void setHeartbeatTimeout(Duration heartbeatTimeout) {
+            this.heartbeatTimeout = heartbeatTimeout;
+        }
+
+        /**
+         * 返回连接异常后的基础重连退避。
+         *
+         * @return 基础重连退避
+         */
+        public Duration getReconnectBaseBackoff() {
+            return reconnectBaseBackoff;
+        }
+
+        /**
+         * 设置连接异常后的基础重连退避。
+         *
+         * @param reconnectBaseBackoff 基础重连退避
+         */
+        public void setReconnectBaseBackoff(Duration reconnectBaseBackoff) {
+            this.reconnectBaseBackoff = reconnectBaseBackoff;
+        }
+
+        /**
+         * 返回连接异常后的最大重连退避窗口。
+         *
+         * @return 最大重连退避
+         */
+        public Duration getReconnectMaxBackoff() {
+            return reconnectMaxBackoff;
+        }
+
+        /**
+         * 设置连接异常后的最大重连退避窗口。
+         *
+         * @param reconnectMaxBackoff 最大重连退避
+         */
+        public void setReconnectMaxBackoff(Duration reconnectMaxBackoff) {
+            this.reconnectMaxBackoff = reconnectMaxBackoff;
         }
     }
 
