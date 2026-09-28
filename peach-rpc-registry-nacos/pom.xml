@@ -8,27 +8,26 @@
         <artifactId>peach-rpc-parent</artifactId>
         <version>${revision}</version>
     </parent>
-
-    <artifactId>peach-rpc-spring-boot-starter</artifactId>
-    <name>peach-rpc-spring-boot-starter</name>
-    <description>Peach RPC Spring Boot starter.</description>
-
+    <artifactId>peach-rpc-registry-nacos</artifactId>
+    <name>peach-rpc-registry-nacos</name>
+    <description>Nacos registry adapter for Peach RPC.</description>
     <dependencies>
         <dependency>
             <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-spring-boot-autoconfigure</artifactId>
+            <artifactId>peach-rpc-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-registry-etcd</artifactId>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-registry-nacos</artifactId>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
