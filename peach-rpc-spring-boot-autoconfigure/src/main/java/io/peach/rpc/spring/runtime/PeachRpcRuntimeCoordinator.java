@@ -38,6 +38,17 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
 
     /**
      * 创建运行时协调器。
+     *
+     * @param registry 注册中心
+     * @param codecRegistry Codec 注册表
+     * @param transportFactory Transport 工厂
+     * @param transportOptions Transport 配置
+     * @param loadBalancer Consumer 负载均衡器
+     * @param proxyFactory Consumer 代理工厂
+     * @param resilienceOptions Consumer 容错参数
+     * @param executionOptions Provider 执行资源参数
+     * @param observerProvider 可观测性 Observer 提供器
+     * @param properties Peach RPC 配置
      */
     public PeachRpcRuntimeCoordinator(
             Registry registry,

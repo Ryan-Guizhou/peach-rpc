@@ -185,34 +185,74 @@ public class PeachRpcProperties {
         private String username = "";
         private String password = "";
 
+        /**
+         * 返回 Nacos 管理分组。
+         *
+         * @return Nacos Group
+         */
         public String getGroup() {
             return group;
         }
 
+        /**
+         * 设置 Nacos 管理分组。
+         *
+         * @param group Nacos Group
+         */
         public void setGroup(String group) {
             this.group = group;
         }
 
+        /**
+         * 返回 Nacos 集群名称。
+         *
+         * @return Nacos Cluster
+         */
         public String getCluster() {
             return cluster;
         }
 
+        /**
+         * 设置 Nacos 集群名称。
+         *
+         * @param cluster Nacos Cluster
+         */
         public void setCluster(String cluster) {
             this.cluster = cluster;
         }
 
+        /**
+         * 返回 Nacos 用户名。
+         *
+         * @return Nacos 用户名
+         */
         public String getUsername() {
             return username;
         }
 
+        /**
+         * 设置 Nacos 用户名。
+         *
+         * @param username Nacos 用户名
+         */
         public void setUsername(String username) {
             this.username = username;
         }
 
+        /**
+         * 返回 Nacos 密码。
+         *
+         * @return Nacos 密码
+         */
         public String getPassword() {
             return password;
         }
 
+        /**
+         * 设置 Nacos 密码。
+         *
+         * @param password Nacos 密码
+         */
         public void setPassword(String password) {
             this.password = password;
         }
@@ -685,18 +725,38 @@ public class PeachRpcProperties {
             this.port = port;
         }
 
+        /**
+         * 返回 Provider 对外发布主机地址。
+         *
+         * @return 对外发布主机地址
+         */
         public String getAdvertisedHost() {
             return advertisedHost;
         }
 
+        /**
+         * 设置 Provider 对外发布主机地址。
+         *
+         * @param advertisedHost 对外发布主机地址
+         */
         public void setAdvertisedHost(String advertisedHost) {
             this.advertisedHost = advertisedHost;
         }
 
+        /**
+         * 返回 Provider 对外发布端口。
+         *
+         * @return 对外发布端口，0 表示使用实际监听端口
+         */
         public int getAdvertisedPort() {
             return advertisedPort;
         }
 
+        /**
+         * 设置 Provider 对外发布端口。
+         *
+         * @param advertisedPort 对外发布端口，0 表示使用实际监听端口
+         */
         public void setAdvertisedPort(int advertisedPort) {
             this.advertisedPort = advertisedPort;
         }
