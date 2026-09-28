@@ -7,7 +7,7 @@
 
 Peach RPC is a high-performance and extensible Java RPC framework. The `0.1.x` line focuses on a durable data/control-plane foundation: long-lived multiplexed connections, local service directories, bounded concurrency, SPI extensions, a binary protocol, a Spring Boot Starter, and reproducible benchmarks.
 
-> Status: Preview. V2-C.1 expands the production control plane: `@PeachRpcService` and `@PeachRpcReference` activate Provider/Consumer runtimes on demand, examples are split into API/Provider/Consumer applications, and Nacos 3.2.4 is available as a Registry Adapter. Heartbeats, TLS/mTLS, Micrometer/OpenTelemetry/JFR adapters, end-to-end buffer ownership, stable Fory type IDs, dedicated Etcd compaction recovery tests, and streaming RPC remain production gates.
+> Status: Preview. The current V2-C.1 development branch already includes annotation-driven runtimes, split API/Provider/Consumer examples, and the Nacos 3.2.4 Registry Adapter. The next production priorities are connection-level heartbeat/idle/reconnect handling, Registry recovery fault injection, TLS/mTLS, concrete observability adapters, wire compatibility, and the full performance matrix. See the [Production Roadmap / Capability Matrix](docs/production-roadmap.md) for the single authoritative status view.
 
 Current capabilities include Vert.x TCP multiplexing with connection-local request IDs, Etcd Lease + revision-aware Range/Watch discovery, Nacos temporary-instance discovery, immutable array service snapshots, allocation-light P2C+EWMA selection, annotation-driven lazy runtimes, BLOCKING_VIRTUAL/CPU/guarded DIRECT provider execution, generated client/server paths, bounded retries, outlier ejection, circuit breaking, cancellation propagation, graceful draining, and split Spring Boot Provider/Consumer examples.
 
@@ -35,7 +35,7 @@ flowchart LR
 
 Third-party framework types do not belong in Core contracts, and control-plane work must not enter the per-request hot path.
 
-See the Chinese-first [architecture document](docs/architecture.md) and [V2 high-performance kernel plan](docs/high-performance-kernel-v2-plan.md).
+See the Chinese-first [architecture document](docs/architecture.md), [Production Roadmap / Capability Matrix](docs/production-roadmap.md), and [V2 high-performance kernel plan](docs/high-performance-kernel-v2-plan.md).
 
 <!-- doc-section:modules -->
 ## Modules
@@ -120,4 +120,4 @@ mvn -B -ntp clean verify -Pquality
 <!-- doc-section:docs -->
 ## Documentation
 
-Repository documentation is maintained primarily in Simplified Chinese. Start with [Architecture](docs/architecture.md), [Starter](docs/starter.md), [Nacos Registry](docs/registry-nacos.md), [Maven](docs/maven.md), and [Production readiness](docs/readiness.md).
+Repository documentation is maintained primarily in Simplified Chinese. Start with [Production Roadmap / Capability Matrix](docs/production-roadmap.md), [Architecture](docs/architecture.md), [Starter](docs/starter.md), [Nacos Registry](docs/registry-nacos.md), [Maven](docs/maven.md), and [Production readiness](docs/readiness.md).
