@@ -11,7 +11,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Lazy;
 
 /** Peach RPC 注解驱动自动配置测试。 */
-class PeachRpcAutoConfigurationTest {
+public class PeachRpcAutoConfigurationTest {
 
     private final ApplicationContextRunner contextRunner =
             new ApplicationContextRunner()
@@ -111,14 +111,14 @@ class PeachRpcAutoConfigurationTest {
                                 .hasFailed());
     }
 
-    interface DemoService {
+    public interface DemoService {
         String call();
     }
 
     @PeachRpcService(
             interfaceClass = DemoService.class,
             version = "1.0.0")
-    static class ServiceBean implements DemoService {
+    public static class ServiceBean implements DemoService {
         @Override
         public String call() {
             return "ok";
@@ -129,14 +129,14 @@ class PeachRpcAutoConfigurationTest {
     @PeachRpcService(
             interfaceClass = DemoService.class,
             version = "1.0.0")
-    static class LazyServiceBean implements DemoService {
+    public static class LazyServiceBean implements DemoService {
         @Override
         public String call() {
             return "ok";
         }
     }
 
-    static class ConsumerBean {
+    public static class ConsumerBean {
         @PeachRpcReference(version = "1.0.0")
         private DemoService service;
     }

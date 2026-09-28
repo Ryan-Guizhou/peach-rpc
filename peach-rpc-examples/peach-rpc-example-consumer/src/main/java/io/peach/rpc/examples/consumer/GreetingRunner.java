@@ -6,6 +6,7 @@ import io.peach.rpc.examples.api.GreetingRequest;
 import io.peach.rpc.examples.api.GreetingService;
 import io.peach.rpc.spring.annotation.PeachRpcReference;
 import java.time.Duration;
+import java.util.concurrent.CompletionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -41,8 +42,13 @@ public class GreetingRunner implements ApplicationRunner {
                         "RPC demo completed successfully: {}",
                         reply.message());
                 return;
-            } catch (RpcUnavailableException error) {
-                lastFailure = error;
+            } catch (RuntimeException error) {
+                RpcUnavailableException unavailable =
+                        unavailableFailure(error);
+                if (unavailable == null) {
+                    throw error;
+                }
+                lastFailure = unavailable;
                 sleepBeforeRetry();
             }
         }
@@ -50,6 +56,19 @@ public class GreetingRunner implements ApplicationRunner {
                 "RPC demo could not discover a provider within "
                         + DISCOVERY_TIMEOUT,
                 lastFailure);
+    }
+
+    private static RpcUnavailableException unavailableFailure(
+            RuntimeException error) {
+        if (error instanceof RpcUnavailableException unavailable) {
+            return unavailable;
+        }
+        if (error instanceof CompletionException
+                && error.getCause()
+                        instanceof RpcUnavailableException unavailable) {
+            return unavailable;
+        }
+        return null;
     }
 
     private static void sleepBeforeRetry() {
