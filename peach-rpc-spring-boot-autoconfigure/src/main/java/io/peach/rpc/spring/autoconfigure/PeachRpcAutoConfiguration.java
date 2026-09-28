@@ -21,7 +21,6 @@ import io.peach.rpc.transport.RpcTransportFactory;
 import io.peach.rpc.transport.RpcTransportOptions;
 import java.util.Map;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -226,7 +225,7 @@ public class PeachRpcAutoConfiguration {
      * @param coordinator 运行时协调器
      * @return Consumer
      */
-    @Bean
+    @Bean(destroyMethod = "")
     @Lazy
     @ConditionalOnMissingBean
     public PeachRpcClient peachRpcClient(PeachRpcRuntimeCoordinator coordinator) {
@@ -239,7 +238,7 @@ public class PeachRpcAutoConfiguration {
      * @param coordinator 运行时协调器
      * @return Provider
      */
-    @Bean
+    @Bean(destroyMethod = "")
     @Lazy
     @ConditionalOnMissingBean
     public PeachRpcServer peachRpcServer(PeachRpcRuntimeCoordinator coordinator) {

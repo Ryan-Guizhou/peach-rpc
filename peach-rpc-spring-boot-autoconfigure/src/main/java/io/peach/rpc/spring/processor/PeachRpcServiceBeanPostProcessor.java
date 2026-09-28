@@ -42,7 +42,7 @@ public final class PeachRpcServiceBeanPostProcessor implements BeanPostProcessor
         Class<?> serviceInterface = resolveServiceInterface(targetClass, annotation);
         PeachRpcServer server;
         try {
-            server = coordinatorProvider.getObject().server();
+            server = coordinatorProvider.getObject().serverForServiceExport();
         } catch (IllegalStateException error) {
             throw new IllegalStateException(
                     "Failed to initialize @PeachRpcService: bean="

@@ -16,6 +16,17 @@ final class NacosInstanceMapper {
     }
 
     static Instance toNacos(ServiceInstance source, String cluster) {
+        if (source.endpoint().port() <= 0) {
+            throw new IllegalArgumentException(
+                    "Nacos registration endpoint port must be positive");
+        }
+        double nacosWeight =
+                source.weight() / (double) CORE_WEIGHT_SCALE;
+        if (!Double.isFinite(nacosWeight)
+                || nacosWeight <= 0D) {
+            throw new IllegalArgumentException(
+                    "Nacos registration weight must be positive and finite");
+        }
         Map<String, String> metadata = new HashMap<>(source.metadata());
         for (String key : metadata.keySet()) {
             if (NacosReservedMetadata.reserved(key)) {
@@ -39,7 +50,7 @@ final class NacosInstanceMapper {
         Instance target = new Instance();
         target.setIp(source.endpoint().host());
         target.setPort(source.endpoint().port());
-        target.setWeight(source.weight() / (double) CORE_WEIGHT_SCALE);
+        target.setWeight(nacosWeight);
         target.setClusterName(cluster);
         target.setEphemeral(true);
         target.setEnabled(true);

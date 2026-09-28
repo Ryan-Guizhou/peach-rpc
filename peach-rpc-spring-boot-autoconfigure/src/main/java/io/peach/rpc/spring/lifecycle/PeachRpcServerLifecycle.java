@@ -25,7 +25,7 @@ public final class PeachRpcServerLifecycle implements SmartLifecycle {
 
     @Override
     public void start() {
-        coordinator.serverIfCreated().ifPresent(this::startServer);
+        coordinator.autoStartServerIfCreated().ifPresent(this::startServer);
     }
 
     private void startServer(PeachRpcServer server) {

@@ -34,6 +34,7 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
     private final PeachRpcProperties properties;
     private volatile PeachRpcClient client;
     private volatile PeachRpcServer server;
+    private volatile boolean providerAutoStart;
 
     /**
      * 创建运行时协调器。
@@ -112,6 +113,16 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
     }
 
     /**
+     * 为注解服务获取 Provider，并标记为 Spring 生命周期自动启动。
+     *
+     * @return Provider 运行时
+     */
+    public PeachRpcServer serverForServiceExport() {
+        providerAutoStart = true;
+        return server();
+    }
+
+    /**
      * 返回已经创建的 Consumer。
      *
      * @return Consumer
@@ -127,6 +138,17 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
      */
     public Optional<PeachRpcServer> serverIfCreated() {
         return Optional.ofNullable(server);
+    }
+
+    /**
+     * 返回需要由 Spring 生命周期自动启动的 Provider。
+     *
+     * @return 自动启动 Provider
+     */
+    public Optional<PeachRpcServer> autoStartServerIfCreated() {
+        return providerAutoStart
+                ? Optional.ofNullable(server)
+                : Optional.empty();
     }
 
     private PeachRpcClient createClient() {

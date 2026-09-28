@@ -92,6 +92,7 @@ final class NacosRegistrySubscription implements RegistrySubscription {
                                 "Nacos subscription initialization failed: service={}",
                                 serviceKey.canonicalName(),
                                 error);
+                        closeAsync();
                     }
                 });
     }
