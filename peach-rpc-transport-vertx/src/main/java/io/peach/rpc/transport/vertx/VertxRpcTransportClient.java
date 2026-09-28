@@ -446,6 +446,9 @@ final class VertxRpcTransportClient implements RpcTransportClient {
             }
             long requestId = nextRequestId();
             RpcProtocolCodec.writeRequestId(bytes, requestId);
+            RpcProtocolCodec.rewriteTimeoutBudgetMillis(
+                    bytes,
+                    Math.max(1L, timeout.toMillis()));
 
             inflight++;
             long timerId = vertx.setTimer(
