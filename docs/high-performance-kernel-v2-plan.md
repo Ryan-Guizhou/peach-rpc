@@ -1,5 +1,7 @@
 # Peach RPC 高性能内核 V2 实施计划
 
+> 本文记录 V2 内核设计与阶段历史。当前生产能力状态与下一阶段优先级统一见 [Production Roadmap / Capability Matrix](production-roadmap.md)。
+
 ## 1. 背景
 
 当前版本已经具备 SPI、长连接多路复用、本地服务目录、P2C/EWMA、Etcd 控制面和 Spring Boot Starter，但热路径仍然保留通用动态调用与通用 Codec 形态。V2 的目标不是立即堆满生态适配器，而是先稳定未来支持 Fory、Protobuf、Nacos、Etcd、ZooKeeper、Kubernetes、Generated Stub、Byte Buddy 等能力所依赖的 Core 契约。
@@ -28,7 +30,7 @@
 - 保留 JDK Proxy 作为未生成 Stub 时的兼容 fallback。
 - 保持现有 Vert.x / Etcd / Fory / Starter 可编译可运行。
 
-### V2-B：热路径替换（当前 PR）
+### V2-B：热路径替换（已完成主路径）
 
 已完成：
 
@@ -51,7 +53,7 @@
 - Fory 固定 Type ID 与强制显式注册。必须先定义稳定 ID、冲突检测和滚动升级策略。
 - 端到端 Buffer ownership / Buffer-oriented Codec。
 - Generated Provider 参数链完全消除 Object[]。
-- Provider execution policy 分层。
+- Provider execution policy 分层（后续已在 V2-B.1 第二批完成）。
 
 ### V2-B.1：生产内核第一批（已实现）
 
@@ -72,12 +74,22 @@
 - Fory 稳定 Type ID / Schema fingerprint；
 - Etcd compaction/recovery 专项集成测试。
 
-### V2-C：生态扩展
+### V2-C：控制面与生态扩展
 
-- Codec：Protobuf、Kryo、Hessian2、JSON。
-- Registry：Nacos、ZooKeeper、Consul、Kubernetes EndpointSlice、Eureka。
-- Protobuf/IDL 模式与跨语言兼容性测试。
+当前演进状态：
+
+- Nacos 3.2.4 Registry Adapter 已在 V2-C.1 当前开发分支实现；
+- 注解驱动惰性 Provider/Consumer、advertised endpoint 与拆分 Examples 已在 V2-C.1 实现；
+- 下一优先级不是继续堆叠 Registry/Codec，而是先完成连接与控制面 HA、安全、可观测和 Wire Compatibility。
+
+后续生态候选仍包括：
+
+- Codec：Protobuf、Kryo、Hessian2、JSON；
+- Registry：ZooKeeper、Consul、Kubernetes EndpointSlice、Eureka；
+- Protobuf/IDL 模式与跨语言兼容性测试；
 - Registry Capability 契约测试矩阵。
+
+具体优先级见 [Production Roadmap / Capability Matrix](production-roadmap.md)。
 
 ## 4. 兼容性边界
 
