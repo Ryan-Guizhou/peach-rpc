@@ -208,6 +208,31 @@ public final class RpcProtocolCodec {
     }
 
     /**
+     * 编码连接级 PING/PONG 控制帧。
+     *
+     * @param type PING 或 PONG
+     * @return 完整心跳控制帧
+     */
+    public static byte[] encodeHeartbeat(RpcMessageType type) {
+        if (type != RpcMessageType.PING && type != RpcMessageType.PONG) {
+            throw new IllegalArgumentException(
+                    "Heartbeat type must be PING or PONG");
+        }
+        byte[] bytes = new byte[HEADER_LENGTH];
+        writeHeader(
+                bytes,
+                type,
+                RpcCodecIds.CONTROL,
+                RpcStatus.OK,
+                0L,
+                0,
+                0,
+                0,
+                0);
+        return bytes;
+    }
+
+    /**
      * 将 Transport 分配的 Request ID 写入已编码帧。
      *
      * <p>该方法只修改固定 Header，不重新编码 Metadata 与 Payload。
