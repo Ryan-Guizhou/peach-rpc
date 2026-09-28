@@ -7,11 +7,11 @@
 
 Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框架。当前 `0.1.x` 重点不是堆叠功能，而是先建立可长期演进的数据面与控制面边界：长连接多路复用、本地服务目录、有界并发、SPI 扩展、二进制协议、Spring Boot Starter 和可重复性能基准。
 
-> 当前状态：Preview。V2-C.1 已在当前开发分支完成注解驱动运行时、Examples 拆分与 Nacos 3.2.4 Registry Adapter。下一阶段生产主线优先补齐连接级 Heartbeat/idle/reconnect、Registry 故障恢复验证、TLS/mTLS、可观测 Adapter、Wire Compatibility 与完整性能矩阵。统一能力状态与优先级见 [Production Roadmap / Capability Matrix](docs/production-roadmap.md)。
+> 当前状态：Preview。V2-C.1 已完成注解驱动运行时、Examples 拆分与 Nacos 3.2.4 Registry Adapter；V2-C.2 当前开发分支已补齐协商式 Heartbeat/idle detection、异常连接摘除、带 full jitter 的有界重连退避，以及兼容旧节点的 relative timeout budget。Registry Chaos、TLS/mTLS、可观测 Adapter、Wire Compatibility 与完整性能矩阵仍属于后续生产门禁。统一能力状态与优先级见 [Production Roadmap / Capability Matrix](docs/production-roadmap.md)。
 
 核心能力：
 
-- Vert.x TCP 长连接，基于 connection-local Request ID 多路复用；支持每端点连接分片、握手超时和 GO_AWAY。
+- Vert.x TCP 长连接，基于 connection-local Request ID 多路复用；支持每端点连接分片、握手超时、协商式 PING/PONG Heartbeat、idle detection、异常重连退避和 GO_AWAY。
 - Consumer 本地服务目录，请求热路径不访问 Etcd/Nacos 等注册中心。
 - Etcd Lease + Range/Watch + revision 感知重同步。
 - Nacos 临时实例注册、查询、订阅、健康/启用过滤、静态权重和元数据映射；Nacos 阻塞 SDK 与 Vert.x Event Loop 隔离。
@@ -171,6 +171,10 @@ public interface UserService {
 | `peach.rpc.transport.type` | `vertx` | Transport SPI 名称 |
 | `peach.rpc.transport.handshake-timeout` | `3s` | TCP 建连后协议握手超时 |
 | `peach.rpc.transport.connections-per-endpoint` | `1` | 每个服务端点的连接分片数 |
+| `peach.rpc.transport.heartbeat-interval` | `30s` | 空闲连接发送 PING 前的间隔 |
+| `peach.rpc.transport.heartbeat-timeout` | `10s` | PING 后等待活跃流量/PONG 的最大时间 |
+| `peach.rpc.transport.reconnect-base-backoff` | `50ms` | 异常重连基础退避 |
+| `peach.rpc.transport.reconnect-max-backoff` | `3s` | 异常重连最大 full-jitter 窗口 |
 | `peach.rpc.client.enabled` | `true` | 是否允许 Consumer；没有 Reference 时不会创建 Client |
 | `peach.rpc.client.timeout` | `3s` | 默认 RPC 超时 |
 | `peach.rpc.client.proxy` | `jdk` | Proxy SPI 名称 |
@@ -215,5 +219,6 @@ CI 使用 JDK 21 执行相同门禁。根 POM 使用 `${revision}` 和 flatten p
 - [V2-B.1 生产内核第一批](docs/production-kernel-v2b1.md)
 - [V2-B.1 生产内核第二批](docs/production-kernel-v2b1-phase2.md)
 - [V2-B.2 高可用收口](docs/production-kernel-v2b2.md)
+- [V2-C.2 连接高可用](docs/production-kernel-v2c2.md)
 - [可运行 Examples](peach-rpc-examples/README.md)
 
