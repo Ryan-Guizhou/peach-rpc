@@ -19,13 +19,24 @@
 - Starter 自动组合 RpcObserver Bean，并暴露 Provider execution 配置；
 - Etcd Adapter 增加真实 Etcd 集成测试，覆盖注册/注销、Watch 快照、namespace 隔离和 Lease 过期。
 
+## V2-B.2 当前已完成
+
+- V2-B.1 第二批能力重新基于 main 纳入正确开发基线；
+- Etcd Lease keepalive 丢失后会重新申请 Lease，并重新发布当前活跃注册实例；
+- Etcd Watch 重订阅使用指数退避与 jitter，降低控制面恢复时的同步重连压力；
+- Provider Registry 注册、回滚和注销操作具有独立 control-plane timeout；
+- `@PeachRpcService` 本身成为 Spring stereotype，不再要求实现类重复声明 `@Component`；
+- examples 增加完整 Spring Boot 启动烟测，验证真实 Generated Stub / Vert.x TCP / Fory / Provider round-trip；
+- examples 构建为可执行 Spring Boot JAR。
+
 ## 仍需完成的生产门禁
 
 正式成为中型项目默认 RPC 层之前，至少还需要：
 
 - 更完整的协议兼容、畸形帧和故障注入测试；
-- Etcd compaction、断链重连等更强故障注入测试；
+- Etcd compaction、进程级断链/重启和多节点 leader change 等更强故障注入测试；
 - TLS/mTLS 与证书生命周期；
+- 应用层 Heartbeat / idle detection 与连接重建退避；
 - Micrometer、OpenTelemetry/Tracing、JFR 具体 Adapter；
 - Buffer ownership / buffer-oriented Codec，是否进入默认路径必须由基准收益决定；
 - Fory 稳定 Type ID、Schema fingerprint、冲突检测与滚动升级兼容策略；

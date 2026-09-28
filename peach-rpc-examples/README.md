@@ -49,10 +49,11 @@ Peach RPC server started at 127.0.0.1:19090
 RPC demo completed successfully: Hello, Peach RPC!
 ```
 
-也可以使用：
+如果希望通过 Maven Plugin 运行，可先构建依赖，再启动 example：
 
 ```bash
-mvn -B -ntp -pl peach-rpc-examples -am spring-boot:run
+mvn -B -ntp -pl peach-rpc-examples -am package -DskipTests
+mvn -B -ntp -pl peach-rpc-examples spring-boot:run
 ```
 
 ## 配置说明

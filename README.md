@@ -7,7 +7,7 @@
 
 Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框架。当前 `0.1.x` 重点不是堆叠功能，而是先建立可长期演进的数据面与控制面边界：长连接多路复用、本地服务目录、有界并发、SPI 扩展、二进制协议、Spring Boot Starter 和可重复性能基准。
 
-> 当前状态：Preview。V2-B.1 已完成两批生产内核收尾：第一批包含 Cancellation、Retry Budget、Outlier Ejection、Circuit Breaker、Graceful Drain 与端到端延迟基线；第二批增加 Provider Execution Policy、低依赖 RpcObserver 可观测性契约，以及基于真实 Etcd 的 Registry 集成测试。TLS/mTLS、Micrometer/OpenTelemetry/JFR Adapter、端到端 Buffer ownership、Fory 稳定 Type ID、Etcd compaction 专项与流式 RPC 仍属于后续生产门禁。
+> 当前状态：Preview。V2-B.2 正在继续收敛生产高可用能力：V2-B.1 第二批已重新基于 main 纳入正确开发基线；Etcd Lease 丢失后可自动申请新 Lease 并重新发布活跃实例；Provider 控制面操作增加超时边界；examples 已升级为完整 Spring Boot + TCP RPC 启动烟测。Heartbeat、TLS/mTLS、Micrometer/OpenTelemetry/JFR Adapter、端到端 Buffer ownership、Fory 稳定 Type ID、Etcd compaction 专项与流式 RPC 仍属于后续生产门禁。
 
 核心能力：
 
@@ -23,7 +23,9 @@ Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框�
 - Endpoint 连续基础设施失败会被临时剔除，方法级连续失败会触发 Circuit Breaker，避免故障实例和依赖持续放大尾延迟。
 - Consumer timeout/主动取消会通过 `CANCEL` 控制帧传播到 Provider；Provider 关闭时先注销服务、发送 GO_AWAY 并等待 inflight 排空。
 - Core 提供无 Micrometer/OpenTelemetry 依赖的 `RpcObserver`，支持 Client attempt/retry 与 Provider invocation 生命周期事件；默认 NOOP 不创建事件对象。
-- Etcd Adapter 增加真实 Etcd 集成测试，覆盖注册/注销、Watch 快照、namespace 隔离和 Lease 过期。
+- Etcd Adapter 增加真实 Etcd 集成测试，覆盖注册/注销、Watch 快照、namespace 隔离和 Lease 过期；Lease keepalive 丢失后会重新获取 Lease 并恢复活跃注册。
+- Provider 的 Registry 注册/回滚/注销操作具有独立控制面超时，避免停机流程无限阻塞。
+- `peach-rpc-examples` 会在 CI 中真实启动 Spring Boot、Provider 与 Consumer，并完成一次 Generated Stub -> Vert.x TCP -> Fory -> Provider 的 RPC round-trip。
 
 <!-- doc-section:architecture -->
 ## 架构
@@ -200,4 +202,6 @@ CI 使用 JDK 21 执行相同门禁。根 POM 使用 `${revision}` 和 flatten p
 - [高性能内核 V2-B 实现](docs/high-performance-kernel-v2b.md)
 - [V2-B.1 生产内核第一批](docs/production-kernel-v2b1.md)
 - [V2-B.1 生产内核第二批](docs/production-kernel-v2b1-phase2.md)
+- [V2-B.2 高可用收口](docs/production-kernel-v2b2.md)
+- [可运行 Examples](peach-rpc-examples/README.md)
 
