@@ -7,6 +7,7 @@ import io.etcd.jetcd.Watch;
 import io.etcd.jetcd.kv.GetResponse;
 import io.etcd.jetcd.lease.LeaseKeepAliveResponse;
 import io.etcd.jetcd.options.GetOption;
+import io.etcd.jetcd.options.LeaseOption;
 import io.etcd.jetcd.options.PutOption;
 import io.etcd.jetcd.options.WatchOption;
 import io.grpc.stub.StreamObserver;
@@ -66,6 +67,7 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
     private final AtomicBoolean closed = new AtomicBoolean();
     private volatile CompletableFuture<Long> leaseFuture;
     private volatile CloseableClient keepAliveHandle;
+    private volatile long activeLeaseId;
 
     EtcdRegistry(
             String[] endpoints,
@@ -187,6 +189,7 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                     return;
                 }
                 long leaseId = response.getID();
+                activeLeaseId = leaseId;
                 keepAliveHandle = client.getLeaseClient().keepAlive(leaseId, new StreamObserver<>() {
                     @Override
                     public void onNext(LeaseKeepAliveResponse value) {
@@ -211,6 +214,7 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                     }
                 });
                 created.complete(leaseId);
+                scheduleLeaseHealthProbe(leaseId);
             });
             return created;
         }
@@ -224,12 +228,64 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
     private void invalidateLease() {
         synchronized (leaseMonitor) {
             leaseFuture = null;
+            activeLeaseId = 0L;
             if (keepAliveHandle != null) {
                 CloseableClient current = keepAliveHandle;
                 keepAliveHandle = null;
                 current.close();
             }
         }
+    }
+
+    private void scheduleLeaseHealthProbe(long leaseId) {
+        if (closed.get() || leaseId <= 0L) {
+            return;
+        }
+        long delaySeconds = Math.max(
+                1L,
+                leaseTtlSeconds / 2L);
+        Executor executor = CompletableFuture.delayedExecutor(
+                delaySeconds,
+                TimeUnit.SECONDS);
+        CompletableFuture.runAsync(
+                () -> probeLeaseHealth(leaseId),
+                executor);
+    }
+
+    private void probeLeaseHealth(long leaseId) {
+        if (closed.get() || activeLeaseId != leaseId) {
+            return;
+        }
+        client.getLeaseClient()
+                .timeToLive(leaseId, LeaseOption.DEFAULT)
+                .orTimeout(
+                        Math.max(1L, leaseTtlSeconds),
+                        TimeUnit.SECONDS)
+                .whenComplete((response, error) -> {
+                    if (closed.get()
+                            || activeLeaseId != leaseId) {
+                        return;
+                    }
+                    if (error != null) {
+                        LOGGER.debug(
+                                "Etcd lease health probe failed; "
+                                        + "keeping current lease until the next probe: "
+                                        + "leaseId={}",
+                                leaseId,
+                                error);
+                        scheduleLeaseHealthProbe(leaseId);
+                        return;
+                    }
+                    if (response.getTTL() <= 0L) {
+                        LOGGER.warn(
+                                "Etcd lease expired; recovering active registrations: "
+                                        + "leaseId={}",
+                                leaseId);
+                        handleLeaseLoss();
+                        return;
+                    }
+                    scheduleLeaseHealthProbe(leaseId);
+                });
     }
 
     private void scheduleLeaseRecovery(int attempt) {
