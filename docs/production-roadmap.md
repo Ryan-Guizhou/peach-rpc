@@ -21,7 +21,7 @@
 | **Future** | 属于长期生态或能力扩展，不应阻塞近期高可用/高性能主线 |
 | **Optional** | 是否实现取决于项目范围，不作为当前 Production GA 的必选门禁 |
 
-> V2-C.1 已进入 `main`。当前 V2-C.2 开发分支正在补齐 Connection & Control-plane HA；本文中的 **Current** 表示当前文档所在分支已经具备该能力。
+> V2-C.1 已进入 `main`。V2-C.2 在当前分支已完成 Connection & Control-plane HA 闭环；本文中的 **Current** 表示当前文档所在分支已有实现，并已通过对应自动化门禁。
 
 ---
 
@@ -41,14 +41,12 @@ Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 
 但项目仍定位为 **Preview**。距离“可作为中型项目默认 RPC 层”的主要缺口集中在：
 
-1. Registry 控制面真实故障注入与恢复证明；
-2. 独立进程恢复 E2E 与连接/恢复可观测性；
-3. TLS/mTLS 与证书生命周期；
-4. Micrometer / OpenTelemetry / JFR 具体 Adapter；
-5. Fory Stable Type ID / Schema fingerprint / 滚动升级兼容；
-6. byte[] / Object[] 等剩余热路径分配与完整性能矩阵；
-7. 协议 fuzz / malformed frame / 长时间稳定性与 Chaos 验证；
-8. 容量规划、升级、回滚和兼容矩阵。
+1. TLS/mTLS 与证书生命周期；
+2. Micrometer / OpenTelemetry / JFR 具体 Adapter；
+3. Fory Stable Type ID / Schema fingerprint / 滚动升级兼容；
+4. byte[] / Object[] 等剩余热路径分配与完整性能矩阵；
+5. 网络黑洞/分区、协议 fuzz / malformed frame 与长时间 soak；
+6. 容量规划、升级、回滚和兼容矩阵。
 
 ---
 
@@ -87,7 +85,7 @@ Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 | Outlier Ejection | **Current** | Endpoint 连续基础设施失败临时剔除 | 增加恢复和大规模 endpoint fault matrix |
 | Circuit Breaker | **Current** | 方法级 CLOSED/OPEN/HALF_OPEN | 增加长时间 half-open / concurrent probe 验证 |
 | P2C/EWMA 与故障状态融合 | **Current** | 被剔除实例不进入默认候选 | 增加大量实例/部分故障基准 |
-| Last-known-good Directory | **Partial** | 数据面读取本地快照，短期控制面故障不会让热路径直接依赖 Registry | 需要通过 Nacos/Etcd 断链与重启故障测试证明行为 |
+| Last-known-good Directory | **Current** | 数据面持续读取本地快照；Nacos restart 的独立 JVM E2E 已验证控制面重启期间既有数据连接继续可用，恢复后再更新目录 | 继续补网络黑洞/分区与长时间 soak |
 | Relative timeout budget | **Current** | 新 Request 同时携带 `timeoutBudgetMillis` 与旧 `deadlineEpochMillis`，新 Provider 优先相对预算语义 | Provider 运行中硬超时仍主要依赖 Consumer CANCEL；后续可评估服务端执行计时器 |
 
 ### 3.3 Provider 稳定性
@@ -110,19 +108,19 @@ Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 | GO_AWAY | **Current** | graceful 与 fatal 语义分离 | 增加更多 race / reconnect 测试 |
 | PING / PONG | **Current** | 作为 `RpcFeature.HEARTBEAT` 经 HELLO/ACK 协商后启用 | 增加更长时间 soak 与异常帧测试 |
 | Idle detection | **Current** | Client/Server 对空闲连接发送 PING；任意有效入站帧可证明存活 | 增加网络黑洞级故障注入 |
-| Reconnect backoff + jitter | **Current** | Consumer 使用 request-driven single-flight、指数退避 + full jitter、最大窗口 | 后续接入标准 metrics/observer |
+| Reconnect backoff + jitter | **Current** | Consumer 使用 request-driven single-flight、指数退避 + full jitter、最大窗口 | V2-C.3 将当前 Core Observer 映射为标准 metrics/tracing |
 | Half-open connection detection | **Current** | heartbeat timeout 后关闭 silent connection，后续请求重建连接 | 增加真实网络黑洞与 NAT 场景验证 |
-| Connection recovery observability | **Proposed** | RpcObserver 当前未覆盖完整连接生命周期 | 增加 connection active/reconnect/heartbeat failure metrics |
+| Connection recovery observability | **Current** | `RpcObserver` 已覆盖 connection established、reconnect scheduled、heartbeat timeout、closed，并携带 CLIENT/SERVER 角色与归一化关闭原因 | V2-C.3 增加 Micrometer/OpenTelemetry/JFR Adapter |
 
 ### 3.5 Registry / 控制面
 
 | 能力 | 状态 | 当前实现 | 生产缺口 / 下一步 |
 |---|---|---|---|
 | Memory Registry | **Current** | 单 JVM 测试/开发 | 非分布式生产 Registry |
-| Etcd register/discovery/watch | **Current** | Lease + Range/Watch | 补 compaction / disconnect / restart / leader change Chaos |
-| Etcd Lease recovery | **Current** | keepalive 丢失后重新 grant 并发布 active registrations | 增加网络黑洞/进程级恢复验证 |
-| Etcd Watch backoff | **Current** | 指数退避 + jitter | 补 compaction 专项 |
-| Nacos register/lookup/subscribe | **Current** | Nacos 3.2.4，临时实例、Group/Cluster/metadata/weight | 补 server restart / subscription redo / provider re-registration 验证 |
+| Etcd register/discovery/watch | **Current** | Lease + Range/Watch；真实 compaction 后 Range+Watch 恢复、稳定逻辑目标 restart、独立 3 节点 leader transfer Chaos 均已验证 | 继续补网络黑洞/分区与长时间 soak |
+| Etcd Lease recovery | **Current** | keepalive error/completed 为主信号；TTL watchdog 兜底识别 Lease 静默失效，grant 有界，stale lease callback 不会误伤新 Lease；restart 测试验证 active registrations 恢复 | 继续补长时间断链/黑洞 soak |
+| Etcd Watch backoff | **Current** | 指数退避 + jitter；真实 stale revision + compaction 路径验证 error 后重新 Range 并从新 revision 建 Watch | 继续补网络分区与慢控制面场景 |
+| Nacos register/lookup/subscribe | **Current** | Nacos 3.2.4，临时实例、Group/Cluster/metadata/weight；独立 JVM E2E 重启 Nacos 后验证既有数据面、Provider 临时实例重注册和 Consumer 重订阅/Endpoint 更新 | 继续补 auth-enabled、网络分区与 soak |
 | Nacos SDK 隔离 | **Current** | 私有有界控制面线程池，不占用 Vert.x Event Loop | 增加 queue saturation 与 Registry 慢调用指标 |
 | Registry Capability | **Current** | REGISTRATION/SUBSCRIPTION/... 能力模型 | 建立跨 Adapter Contract TestKit |
 | Registry Contract TestKit | **Partial** | Core 有基础 Capability 契约，各 Adapter 有独立测试 | 抽出 Memory/Etcd/Nacos 通用行为矩阵 |
@@ -142,7 +140,7 @@ Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 
 | 能力 | 状态 | 当前实现 | 生产缺口 / 下一步 |
 |---|---|---|---|
-| Core `RpcObserver` | **Current** | Client attempt/retry、Provider invocation；NOOP 低开销 | 扩展连接/Registry 生命周期事件 |
+| Core `RpcObserver` | **Current** | Client attempt/retry、Provider invocation，以及 connection established/reconnect scheduled/heartbeat timeout/closed；NOOP 低开销 | V2-C.3 增加 Registry 生命周期观测与具体 Adapter |
 | Micrometer Adapter | **Proposed** | 尚未实现 | 标准请求、耗时、retry、timeout、inflight、overload、connection 指标 |
 | OpenTelemetry Adapter | **Proposed** | 尚未实现 | Consumer/Provider Span、上下文传播与错误语义 |
 | JFR Adapter | **Proposed** | 尚未实现 | 低开销线上事件分析 |
@@ -167,19 +165,19 @@ Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 |---|---|---|---|
 | Header/length/handshake 基础校验 | **Current** | 已有正常与部分异常路径测试 | 增加系统性 malformed/fuzz matrix |
 | CANCEL/Drain/Retry/Circuit 单元与 Transport 测试 | **Current** | 已覆盖核心行为 | 增加并发竞态与长时间稳定性 |
-| Etcd 真实集成测试 | **Current** | register/watch/namespace/lease/recovery | 增加 compaction、disconnect、restart、leader change |
-| Nacos 真实集成测试 | **Current** | register/query/subscribe/unregister + RPC round-trip | 增加 restart/reconnect/re-registration/re-subscribe |
-| 独立进程 RPC E2E | **Partial** | Provider/Consumer 已拆分；当前 CI 主要使用双 Spring Context round-trip | 增加独立 JVM/process profile |
+| Etcd 真实集成测试 | **Current** | register/watch/namespace/lease/recovery/compaction/restart；3 节点 leader transfer 在独立 Chaos workflow 验证 | 继续补网络黑洞/partition 与 soak |
+| Nacos 真实集成测试 | **Current** | register/query/subscribe/unregister + RPC round-trip；独立 JVM E2E 覆盖 Nacos restart、Provider re-registration、Consumer re-subscribe | 继续补 auth-enabled 与网络分区 |
+| 独立进程 RPC E2E | **Current** | CI 真正启动 Provider/Consumer executable JAR；覆盖 Provider restart、同一 Consumer 恢复、Nacos restart、新 Consumer 发现恢复、Provider 迁移端口后的 subscription redo | 增加滚动多实例与长时间 soak |
 | Fuzz / property testing | **Proposed** | 尚未系统建立 | 覆盖长度溢出、截断、未知类型、重复帧、慢帧等 |
 | Soak test | **Proposed** | 尚未形成固定门禁 | 长时间运行、内存泄漏、连接恢复、GC 稳定性 |
-| Chaos test | **Proposed** | 部分 Registry 恢复单测/集成测试 | 网络黑洞、进程重启、Registry leader change 等 |
+| Chaos test | **Partial** | 已有 Etcd 3 节点 leader-transfer Chaos workflow 与 Nacos restart process E2E | 仍缺网络黑洞/分区、长时间 soak 与更大规模并发故障矩阵 |
 
 ### 3.10 运维与发布
 
 | 能力 | 状态 | 当前实现 | 生产缺口 / 下一步 |
 |---|---|---|---|
 | Maven Reactor / CI | **Current** | JDK 21 + `check_project.py` + `clean verify -Pquality` | 继续作为所有 PR 基础门禁 |
-| Examples | **Current** | API/Provider/Consumer 分模块，Nacos round-trip | 增加 process-level 自动化 profile |
+| Examples | **Current** | API/Provider/Consumer 分模块；CI 运行独立 executable JAR recovery E2E 与 Nacos restart | 继续补多实例滚动发布示例 |
 | Capacity Planning | **Proposed** | 尚未形成正式指南 | connections/maxInflight/maxConcurrent/CPU pool/timeout/retry 参数容量模型 |
 | Upgrade Guide | **Proposed** | 尚未完成 | 协议、Codec、Registry、Starter 升级步骤 |
 | Rollback Guide | **Proposed** | 尚未完成 | N/N+1 回滚与 Registry/Codec 兼容边界 |
@@ -242,25 +240,27 @@ flowchart LR
 
 ## 6. V2-C.2：连接与控制面 HA 闭环
 
-**状态：Partial（当前开发分支）**
+**状态：Current（当前分支）**
 
 ### 6.1 已完成
 
-1. PING/PONG heartbeat；
-2. idle detection；
-3. connection reconnect exponential backoff + full jitter；
-4. half-open connection 快速摘除；
-5. relative timeout budget；
-6. Consumer 逻辑 Deadline 覆盖 connect、HELLO/ACK 与 request；
-7. Transport 测试覆盖 idle keepalive 与 Provider restart 后 Consumer reconnect。
+1. PING/PONG heartbeat 与 Client/Server idle detection；
+2. heartbeat timeout 后 half-open/silent connection 摘除；
+3. request-driven single-flight reconnect + exponential backoff + full jitter；
+4. Consumer 逻辑 Deadline 覆盖 reconnect/connect/HELLO/ACK/request；
+5. absolute deadline + relative timeout budget 滚动兼容，并在真实 Socket write 前刷新相对预算；
+6. connection lifecycle RpcObserver；
+7. Etcd compaction、restart 与 3 节点 leader transfer；
+8. Nacos restart、Provider re-registration、Consumer re-subscribe；
+9. last-known-good 数据面与独立 JVM recovery E2E；
+10. 完整 Reactor、质量门禁与独立 Chaos workflow。
 
-### 6.2 仍需完成
+### 6.2 后续增强（不再阻塞 V2-C.2 Current）
 
-1. Etcd compaction/disconnect/restart/leader-change fault injection；
-2. Nacos server restart / re-registration / re-subscribe fault injection；
-3. Registry last-known-good 行为验证；
-4. 独立 JVM Provider/Consumer E2E；
-5. 连接/恢复生命周期 Observer 事件与后续标准指标映射。
+1. Etcd/Nacos 网络黑洞、partition 与更长时间 soak；
+2. 多 Provider 滚动发布/恢复矩阵；
+3. Registry 专属恢复 Observer 与标准指标映射放入 V2-C.3；
+4. auth-enabled Nacos 与凭据错误脱敏放入 V2-C.3。
 
 ### 6.3 验收标准
 
@@ -269,7 +269,7 @@ flowchart LR
 - Provider/Consumer 在 Registry 短暂不可用期间数据面不因为一次控制面错误立即清空可用目录；
 - Etcd compaction 后能够重新 Range 并从有效 revision 继续 Watch；
 - Nacos 重启后 Provider 能恢复注册，Consumer 能恢复订阅；
-- reconnect/recovery 全部具有有界退避和可观测指标；
+- reconnect/recovery 具有有界退避，并通过 Core `RpcObserver` 暴露连接生命周期事件；标准 metrics/tracing Adapter 属于 V2-C.3；
 - 独立进程 E2E 覆盖启动、调用、Provider 停止、Consumer 失效感知、Provider 恢复。
 
 ---
@@ -421,10 +421,10 @@ Peach RPC 从 Preview 提升为 Production Ready 前，建议以下门禁全部�
 - [x] Heartbeat / idle detection；
 - [x] reconnect backoff + jitter；
 - [x] relative timeout budget；
-- [ ] Etcd compaction/disconnect/restart/leader change；
-- [ ] Nacos restart/re-registration/re-subscribe；
-- [ ] 独立进程滚动发布与恢复 E2E；
-- [ ] 长时间 Registry/Transport 恢复 soak test。
+- [x] Etcd compaction/restart/leader change；
+- [x] Nacos restart/re-registration/re-subscribe；
+- [x] 独立进程 Provider restart 与恢复 E2E；
+- [ ] Etcd/Nacos 网络黑洞/partition 与长时间 Registry/Transport 恢复 soak test。
 
 ### 10.2 Security
 
