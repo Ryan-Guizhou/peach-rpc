@@ -206,7 +206,8 @@ class EtcdRegistryIntegrationTest {
         AtomicReference<RegistrySnapshot> latest =
                 new AtomicReference<>();
 
-        try (EtcdRegistry registry = registry(namespace, 2);
+        try (EtcdRegistry registry =
+                     restartAwareRegistry(namespace, 2);
              RegistrySubscription ignored =
                      registry.subscribe(key, latest::set)) {
             registry.register(first)
@@ -270,6 +271,18 @@ class EtcdRegistryIntegrationTest {
         } finally {
             writer.close();
         }
+    }
+
+    private static EtcdRegistry restartAwareRegistry(
+            String namespace,
+            long leaseTtlSeconds) {
+        Client client = Client.builder()
+                .target("cluster://" + CLUSTER.clusterName())
+                .build();
+        return new EtcdRegistry(
+                client,
+                leaseTtlSeconds,
+                namespace);
     }
 
     private static EtcdRegistry registry(
