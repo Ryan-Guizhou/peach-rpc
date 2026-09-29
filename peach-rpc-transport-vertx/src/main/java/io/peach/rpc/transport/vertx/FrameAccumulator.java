@@ -8,13 +8,16 @@ import java.util.function.Consumer;
 /**
  * TCP 字节流帧重组器，仅在 Vert.x Adapter 内使用。
  *
- * <p>累积 Buffer 始终保持可增长。消费完整帧时仅移动读取偏移；
+ * <p>累积 Buffer 始终保持可增长。固定 32B Header 复用预分配数组解析，
+ * 避免每个 Frame 额外创建 Header 副本。消费完整帧时仅移动读取偏移；
  * 只有存在未完成尾帧时才压缩剩余字节，避免把 Netty slice
  * 作为下一轮可写 Buffer 使用。
  */
 final class FrameAccumulator {
 
     private final int maxFrameBytes;
+    private final byte[] header =
+            new byte[RpcProtocolCodec.HEADER_LENGTH];
     private Buffer pending = Buffer.buffer();
 
     FrameAccumulator(int maxFrameBytes) {
@@ -31,9 +34,11 @@ final class FrameAccumulator {
                 >= RpcProtocolCodec.HEADER_LENGTH) {
             int headerEnd =
                     readOffset + RpcProtocolCodec.HEADER_LENGTH;
-            byte[] header = pending.getBytes(
+            pending.getBytes(
                     readOffset,
-                    headerEnd);
+                    headerEnd,
+                    header,
+                    0);
             int frameLength =
                     RpcProtocolCodec.expectedFrameLength(header);
             if (frameLength > maxFrameBytes) {
