@@ -2,6 +2,8 @@ package io.peach.rpc.protocol;
 
 import io.peach.rpc.api.RpcStatus;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -146,6 +148,50 @@ public final class RpcFrameView {
                 bytes,
                 payloadOffset,
                 payloadOffset + payloadLength);
+    }
+
+    /**
+     * 按需复制并解析完整 Metadata。
+     *
+     * <p>该方法只供 Trace/Baggage 等启用后的扩展路径使用；默认 Unary
+     * 数据面继续通过专用 deadline/timeout budget 读取器避免 Map 分配。
+     *
+     * @return 不可变 Metadata
+     */
+    public Map<String, String> metadataCopy() {
+        if (metadataLength == 0) {
+            return Map.of();
+        }
+        try {
+            String raw = new String(
+                    bytes,
+                    metadataOffset,
+                    metadataLength,
+                    StandardCharsets.UTF_8);
+            Map<String, String> metadata =
+                    new LinkedHashMap<>();
+            for (String line : raw.split("\n")) {
+                if (line.isEmpty()) {
+                    continue;
+                }
+                int separator = line.indexOf('=');
+                if (separator <= 0) {
+                    throw new RpcProtocolException(
+                            "Malformed metadata");
+                }
+                metadata.put(
+                        line.substring(0, separator),
+                        line.substring(separator + 1));
+            }
+            return Map.copyOf(metadata);
+        } catch (RuntimeException error) {
+            if (error instanceof RpcProtocolException) {
+                throw error;
+            }
+            throw new RpcProtocolException(
+                    "Failed to decode metadata",
+                    error);
+        }
     }
 
     /**
