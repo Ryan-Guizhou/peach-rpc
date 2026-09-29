@@ -158,8 +158,8 @@ notes:
 
 当前已提供：
 
-- `scripts/run_v2d2_benchmark_matrix.sh`：smoke / standard / full Matrix；
-- `scripts/summarize_v2d2_results.py`：JMH JSON 聚合为 CSV/Markdown；
+- `scripts/run_v2d2_benchmark_matrix.sh`：smoke / standard / full Matrix，包含 Payload 与 NOOP/CPU/BLOCKING/SLOW_PROVIDER/OVERLOAD 场景；
+- `scripts/summarize_v2d2_results.py`：Payload/Scenario JMH JSON 聚合为 CSV/Markdown，并保留 success/error AuxCounters；
 - `scripts/run_v2d2_soak.sh`：Virtual Thread soak；
 - `PerformanceSoakRunner`：默认 10000 logical concurrency；
 - `.github/workflows/performance-evidence.yml`：可保存长期证据 Artifact；
