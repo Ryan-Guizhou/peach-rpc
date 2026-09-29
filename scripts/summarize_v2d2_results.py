@@ -9,8 +9,11 @@ import re
 import sys
 from pathlib import Path
 
-NAME = re.compile(
+PAYLOAD_NAME = re.compile(
     r"(?P<mode>sample|thrpt)-p(?P<payload>\d+)-c(?P<connections>\d+)-t(?P<threads>\d+)\.json"
+)
+SCENARIO_NAME = re.compile(
+    r"scenario-(?P<scenario>[A-Z_]+)-(?P<mode>sample|thrpt)-c(?P<connections>\d+)-t(?P<threads>\d+)\.json"
 )
 
 
@@ -37,7 +40,9 @@ def percentile(primary: dict, key: str) -> float | None:
 def load_rows(root: Path) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     for path in sorted(root.glob("*.json")):
-        match = NAME.fullmatch(path.name)
+        payload_match = PAYLOAD_NAME.fullmatch(path.name)
+        scenario_match = SCENARIO_NAME.fullmatch(path.name)
+        match = payload_match or scenario_match
         if not match:
             continue
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -47,8 +52,14 @@ def load_rows(root: Path) -> list[dict[str, object]]:
         primary = result["primaryMetric"]
         rows.append(
             {
+                "family": "payload" if payload_match else "scenario",
+                "scenario": "-" if payload_match else match.group("scenario"),
                 "mode": match.group("mode"),
-                "payload_bytes": int(match.group("payload")),
+                "payload_bytes": (
+                    int(payload_match.group("payload"))
+                    if payload_match
+                    else 0
+                ),
                 "connections": int(match.group("connections")),
                 "threads": int(match.group("threads")),
                 "score": primary.get("score"),
@@ -60,6 +71,8 @@ def load_rows(root: Path) -> list[dict[str, object]]:
                 "alloc_mb_s": metric(result, "gc.alloc.rate"),
                 "gc_count": metric(result, "gc.count"),
                 "gc_time_ms": metric(result, "gc.time"),
+                "successes": metric(result, "successes"),
+                "errors": metric(result, "errors"),
             }
         )
     return rows
@@ -68,6 +81,8 @@ def load_rows(root: Path) -> list[dict[str, object]]:
 def write_csv(root: Path, rows: list[dict[str, object]]) -> None:
     output = root / "summary.csv"
     fields = [
+        "family",
+        "scenario",
         "mode",
         "payload_bytes",
         "connections",
@@ -81,6 +96,8 @@ def write_csv(root: Path, rows: list[dict[str, object]]) -> None:
         "alloc_mb_s",
         "gc_count",
         "gc_time_ms",
+        "successes",
+        "errors",
     ]
     with output.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
@@ -101,13 +118,13 @@ def write_markdown(root: Path, rows: list[dict[str, object]]) -> None:
     lines = [
         "# V2-D.2 Benchmark Summary",
         "",
-        "| Mode | Payload | Connections | Threads | Score | Unit | p50 | p99 | p99.9 | B/op |",
-        "|---|---:|---:|---:|---:|---|---:|---:|---:|---:|",
+        "| Family | Scenario | Mode | Payload | Connections | Threads | Score | Unit | p50 | p99 | p99.9 | B/op | Successes | Errors |",
+        "|---|---|---|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|",
     ]
     for row in rows:
         lines.append(
-            "| {mode} | {payload_bytes} | {connections} | {threads} | {score} | "
-            "{score_unit} | {p50} | {p99} | {p999} | {alloc_b_op} |".format(
+            "| {family} | {scenario} | {mode} | {payload_bytes} | {connections} | {threads} | {score} | "
+            "{score_unit} | {p50} | {p99} | {p999} | {alloc_b_op} | {successes} | {errors} |".format(
                 **{key: value(item) for key, item in row.items()}
             )
         )
