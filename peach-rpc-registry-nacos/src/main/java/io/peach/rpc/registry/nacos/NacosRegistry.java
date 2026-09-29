@@ -198,7 +198,8 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
                         group,
                         cluster,
                         listener,
-                        revision);
+                        revision,
+                        observer);
         subscriptions.add(subscription);
         subscription.start();
         return () -> {
