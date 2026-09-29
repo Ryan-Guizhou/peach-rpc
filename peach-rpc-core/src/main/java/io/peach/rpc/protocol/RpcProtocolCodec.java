@@ -101,6 +101,7 @@ public final class RpcProtocolCodec {
                 methodId,
                 deadlineEpochMillis,
                 0L,
+                Map.of(),
                 payload);
     }
 
@@ -125,6 +126,47 @@ public final class RpcProtocolCodec {
             long deadlineEpochMillis,
             long timeoutBudgetMillis,
             byte[] payload) {
+        return encodeRequest(
+                codec,
+                serviceId,
+                methodId,
+                deadlineEpochMillis,
+                timeoutBudgetMillis,
+                Map.of(),
+                payload);
+    }
+
+    /**
+     * 编码携带额外 Metadata 的 Unary REQUEST。
+     *
+     * <p>额外 Metadata 仅在上下文传播等扩展启用时使用；默认空 Map 保持
+     * deadline/timeout budget 快路径。保留字段不能由扩展覆盖。
+     *
+     * @param codec Codec 编号
+     * @param serviceId 服务 ID
+     * @param methodId 方法 ID
+     * @param deadlineEpochMillis 绝对截止时间
+     * @param timeoutBudgetMillis 相对剩余预算
+     * @param metadata 额外 Metadata
+     * @param payload 已编码参数
+     * @return 完整线协议字节
+     */
+    public static byte[] encodeRequest(
+            byte codec,
+            int serviceId,
+            int methodId,
+            long deadlineEpochMillis,
+            long timeoutBudgetMillis,
+            Map<String, String> metadata,
+            byte[] payload) {
+        Map<String, String> extraMetadata =
+                metadata == null ? Map.of() : metadata;
+        if (extraMetadata.containsKey("deadlineEpochMillis")
+                || extraMetadata.containsKey("timeoutBudgetMillis")) {
+            throw new RpcProtocolException(
+                    "Reserved deadline metadata cannot be overridden");
+        }
+        byte[] encodedMetadata = encodeMetadata(extraMetadata);
         byte[] actualPayload =
                 payload == null ? new byte[0] : payload;
         int deadlineLength = deadlineEpochMillis > 0
@@ -137,7 +179,10 @@ public final class RpcProtocolCodec {
                         + TIMEOUT_BUDGET_DIGITS
                         + 1
                 : 0;
-        int metadataLength = deadlineLength + budgetLength;
+        int metadataLength =
+                deadlineLength
+                        + budgetLength
+                        + encodedMetadata.length;
         int bodyLength = checkedBodyLength(
                 metadataLength,
                 actualPayload.length);
@@ -187,6 +232,14 @@ public final class RpcProtocolCodec {
                     timeoutBudgetMillis);
             metadataOffset += budgetLength;
             bytes[metadataOffset - 1] = '\n';
+        }
+        if (encodedMetadata.length > 0) {
+            System.arraycopy(
+                    encodedMetadata,
+                    0,
+                    bytes,
+                    metadataOffset,
+                    encodedMetadata.length);
         }
         System.arraycopy(
                 actualPayload,
