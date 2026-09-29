@@ -6,7 +6,9 @@ import io.peach.rpc.core.PeachRpcServer;
 import io.peach.rpc.core.RpcClientResilienceOptions;
 import io.peach.rpc.core.RpcProviderExecutionOptions;
 import io.peach.rpc.loadbalance.LoadBalancer;
+import io.peach.rpc.observability.RpcMetadataPropagator;
 import io.peach.rpc.observability.RpcObserver;
+import io.peach.rpc.observability.RpcTracingBridge;
 import io.peach.rpc.proxy.ProxyFactory;
 import io.peach.rpc.registry.Registry;
 import io.peach.rpc.registry.RegistryFactory;
@@ -52,7 +54,9 @@ public class PeachRpcAutoConfiguration {
      */
     @Bean(destroyMethod = "close")
     @ConditionalOnMissingBean
-    public Registry peachRpcRegistry(PeachRpcProperties properties) {
+    public Registry peachRpcRegistry(
+            PeachRpcProperties properties,
+            ObjectProvider<RpcObserver> observerProvider) {
         PeachRpcProperties.Registry registry = properties.getRegistry();
         RegistryFactory factory = ExtensionLoader.getLoader(RegistryFactory.class)
                 .getExtension(registry.getType());
@@ -69,7 +73,9 @@ public class PeachRpcAutoConfiguration {
                         "nacosUsername",
                         registry.getNacos().getUsername(),
                         "nacosPassword",
-                        registry.getNacos().getPassword())));
+                        registry.getNacos().getPassword()),
+                RpcObserver.composite(
+                        observerProvider.orderedStream().toList())));
     }
 
     /**
@@ -219,6 +225,8 @@ public class PeachRpcAutoConfiguration {
             RpcClientResilienceOptions resilienceOptions,
             RpcProviderExecutionOptions executionOptions,
             ObjectProvider<RpcObserver> observerProvider,
+            ObjectProvider<RpcMetadataPropagator> metadataPropagatorProvider,
+            ObjectProvider<RpcTracingBridge> tracingBridgeProvider,
             PeachRpcProperties properties) {
         return new PeachRpcRuntimeCoordinator(
                 registry,
@@ -230,6 +238,8 @@ public class PeachRpcAutoConfiguration {
                 resilienceOptions,
                 executionOptions,
                 observerProvider,
+                metadataPropagatorProvider,
+                tracingBridgeProvider,
                 properties);
     }
 
