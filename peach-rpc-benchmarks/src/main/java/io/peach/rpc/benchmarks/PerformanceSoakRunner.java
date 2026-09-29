@@ -1,7 +1,6 @@
 package io.peach.rpc.benchmarks;
 
 import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.codec.RpcCodecIds;
 import io.peach.rpc.codec.RpcCodecRegistry;
 import io.peach.rpc.core.PeachRpcClient;
