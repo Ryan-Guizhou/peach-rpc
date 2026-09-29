@@ -28,6 +28,8 @@ public final class RpcProtocolCodec {
     private static final byte[] TIMEOUT_BUDGET_PREFIX =
             "timeoutBudgetMillis=".getBytes(StandardCharsets.US_ASCII);
     private static final int TIMEOUT_BUDGET_DIGITS = 19;
+    private static final int MAX_METADATA_KEY_CHARS = 256;
+    private static final int MAX_METADATA_VALUE_CHARS = 16 * 1024;
 
     private RpcProtocolCodec() {
     }
@@ -652,6 +654,24 @@ public final class RpcProtocolCodec {
     private static void validateMetadata(
             String key,
             String value) {
+        if (key == null
+                || key.isEmpty()
+                || value == null) {
+            throw new RpcProtocolException(
+                    "Metadata key/value must not be null or empty");
+        }
+        if (key.length() > MAX_METADATA_KEY_CHARS) {
+            throw new RpcProtocolException(
+                    "Metadata key exceeds "
+                            + MAX_METADATA_KEY_CHARS
+                            + " characters");
+        }
+        if (value.length() > MAX_METADATA_VALUE_CHARS) {
+            throw new RpcProtocolException(
+                    "Metadata value exceeds "
+                            + MAX_METADATA_VALUE_CHARS
+                            + " characters");
+        }
         if (key.indexOf('=') >= 0
                 || key.indexOf('\n') >= 0
                 || value.indexOf('\n') >= 0) {
