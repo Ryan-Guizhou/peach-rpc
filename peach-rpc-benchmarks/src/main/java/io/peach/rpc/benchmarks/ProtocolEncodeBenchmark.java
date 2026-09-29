@@ -11,6 +11,7 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -22,16 +23,21 @@ import org.openjdk.jmh.annotations.State;
 public class ProtocolEncodeBenchmark {
 
     private static final long DEADLINE = 2_000_000_000_123L;
+
+    /** Payload 字节数。 */
+    @Param({"64", "256", "1024", "16384", "1048576"})
+    public int payloadSize;
+
     private byte[] payload;
 
     /** 创建协议编码基准。 */
     public ProtocolEncodeBenchmark() {
     }
 
-    /** 准备固定 256B Payload。 */
+    /** 按参数准备 Payload。 */
     @Setup
     public void setup() {
-        payload = new byte[256];
+        payload = new byte[payloadSize];
     }
 
     /**
