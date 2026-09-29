@@ -202,7 +202,7 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                                 "Etcd lease keepalive failed for leaseId={}",
                                 leaseId,
                                 error);
-                        handleLeaseLoss();
+                        handleLeaseLoss(leaseId);
                     }
 
                     @Override
@@ -210,7 +210,7 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                         LOGGER.warn(
                                 "Etcd lease keepalive completed for leaseId={}",
                                 leaseId);
-                        handleLeaseLoss();
+                        handleLeaseLoss(leaseId);
                     }
                 });
                 created.complete(leaseId);
@@ -220,8 +220,20 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
         }
     }
 
-    private void handleLeaseLoss() {
-        invalidateLease();
+    private void handleLeaseLoss(long leaseId) {
+        synchronized (leaseMonitor) {
+            if (closed.get()
+                    || activeLeaseId != leaseId) {
+                return;
+            }
+            leaseFuture = null;
+            activeLeaseId = 0L;
+            if (keepAliveHandle != null) {
+                CloseableClient current = keepAliveHandle;
+                keepAliveHandle = null;
+                current.close();
+            }
+        }
         scheduleLeaseRecovery(0);
     }
 
@@ -281,7 +293,7 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                                 "Etcd lease expired; recovering active registrations: "
                                         + "leaseId={}",
                                 leaseId);
-                        handleLeaseLoss();
+                        handleLeaseLoss(leaseId);
                         return;
                     }
                     scheduleLeaseHealthProbe(leaseId);
