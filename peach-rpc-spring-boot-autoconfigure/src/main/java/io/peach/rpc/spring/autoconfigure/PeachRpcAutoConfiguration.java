@@ -51,6 +51,7 @@ public class PeachRpcAutoConfiguration {
      * 创建注册中心实例。
      *
      * @param properties Peach RPC 配置
+     * @param observerProvider Registry 控制面 Observer 提供器
      * @return 注册中心实例
      */
     @Bean(destroyMethod = "close")
@@ -224,6 +225,8 @@ public class PeachRpcAutoConfiguration {
      * @param resilienceOptions Consumer 容错参数
      * @param executionOptions Provider 执行资源参数
      * @param observerProvider 可观测性 Observer 提供器
+     * @param metadataPropagatorProvider Metadata 传播器提供器
+     * @param tracingBridgeProvider 分布式 Trace Bridge 提供器
      * @param properties Peach RPC 配置
      * @return 运行时协调器
      */
