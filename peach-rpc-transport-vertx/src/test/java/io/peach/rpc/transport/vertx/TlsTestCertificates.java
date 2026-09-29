@@ -2,7 +2,6 @@ package io.peach.rpc.transport.vertx;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -327,16 +326,9 @@ final class TlsTestCertificates implements AutoCloseable {
                     Extension.subjectAlternativeName,
                     false,
                     new GeneralNames(
-                            new GeneralName[] {
-                                    new GeneralName(
-                                            GeneralName.dNSName,
-                                            "localhost"),
-                                    new GeneralName(
-                                            GeneralName.iPAddress,
-                                            InetAddress
-                                                    .getLoopbackAddress()
-                                                    .getHostAddress())
-                            }));
+                            new GeneralName(
+                                    GeneralName.dNSName,
+                                    "localhost")));
         }
         ContentSigner signer =
                 new JcaContentSignerBuilder(
