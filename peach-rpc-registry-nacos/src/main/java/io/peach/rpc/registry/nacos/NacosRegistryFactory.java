@@ -61,7 +61,8 @@ public final class NacosRegistryFactory implements RegistryFactory {
                     namingService,
                     namespace,
                     group,
-                    cluster);
+                    cluster,
+                    options.observer());
         } catch (NacosException error) {
             throw new IllegalStateException(
                     "Failed to create Nacos registry client: endpoints="
