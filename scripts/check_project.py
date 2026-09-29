@@ -16,6 +16,9 @@ FORBIDDEN_CORE_IMPORTS = (
     "net.sf.cglib.",
     "org.apache.fory.",
     "org.springframework.",
+    "io.micrometer.",
+    "io.opentelemetry.",
+    "jdk.jfr.",
 )
 EXPECTED_MODULES = (
     "peach-rpc-core",
@@ -26,6 +29,9 @@ EXPECTED_MODULES = (
     "peach-rpc-registry-nacos",
     "peach-rpc-proxy-cglib",
     "peach-rpc-proxy-bytebuddy",
+    "peach-rpc-observability-micrometer",
+    "peach-rpc-observability-opentelemetry",
+    "peach-rpc-observability-jfr",
     "peach-rpc-spring-boot-autoconfigure",
     "peach-rpc-spring-boot-starter",
     "peach-rpc-examples",
