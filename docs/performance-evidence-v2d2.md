@@ -67,6 +67,8 @@ bash scripts/run_v2d2_benchmark_matrix.sh <profile> <output-directory>
 -rf json
 ~~~
 
+容量点发生 RPC/进程级失败时，standard/full profile 会把组合记录到 `failures.csv` 并继续执行；smoke profile 仍立即失败，避免工具链故障被吞掉。
+
 因此可以同时获得：
 
 - latency distribution；
@@ -178,7 +180,7 @@ Soak Runner 使用 JDK 21 Virtual Threads 驱动同步 Generated Stub，使 Driv
 - connections per endpoint；
 - successes / errors / error rate；
 - throughput；
-- p50 / p99 / p99.9 / max；
+- 成功 RPC 的 p50 / p99 / p99.9 / max；
 - max logical inflight；
 - max observed connections；
 - reconnect count；
