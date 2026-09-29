@@ -124,7 +124,7 @@ public record RegistryOptions(
                 .toList();
         return "RegistryOptions[endpoints="
                 + safeEndpoints
-                + ", namespace=
+                + ", namespace="
                 + namespace
                 + ", providerOptions="
                 + safeOptions
