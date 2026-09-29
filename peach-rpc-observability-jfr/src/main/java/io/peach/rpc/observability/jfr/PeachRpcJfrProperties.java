@@ -15,22 +15,38 @@ public class PeachRpcJfrProperties {
     public PeachRpcJfrProperties() {
     }
 
-    /** @return 是否启用 JFR Adapter */
+    /**
+     * 返回是否启用 JFR Adapter。
+     *
+     * @return 是否启用 JFR Adapter
+     */
     public boolean isEnabled() {
         return enabled;
     }
 
-    /** @param enabled 是否启用 */
+    /**
+     * 设置是否启用 JFR Adapter。
+     *
+     * @param enabled 是否启用
+     */
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
 
-    /** @return 慢调用阈值 */
+    /**
+     * 返回慢调用 JFR Event 记录阈值。
+     *
+     * @return 慢调用阈值
+     */
     public Duration getSlowThreshold() {
         return slowThreshold;
     }
 
-    /** @param slowThreshold 慢调用阈值 */
+    /**
+     * 设置慢调用 JFR Event 记录阈值。
+     *
+     * @param slowThreshold 慢调用阈值
+     */
     public void setSlowThreshold(
             Duration slowThreshold) {
         this.slowThreshold = slowThreshold;
