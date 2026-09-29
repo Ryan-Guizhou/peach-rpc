@@ -355,13 +355,14 @@ V2-D 第一批已经进入主线：
 当前 V2-D.2 已实现：
 
 1. 完整 payload × connection shard × concurrency JMH Matrix Runner；
-2. sample + throughput 双模式；
-3. `-prof gc` allocation / GC profiling；
-4. JMH JSON -> CSV / Markdown 聚合；
-5. JDK 21 Virtual Thread 10k logical-concurrency soak；
-6. Soak 输出吞吐、p50/p99/p99.9、错误率、Heap、GC、CPU、inflight、连接与错误类型；
-7. 普通 CI 增加 Matrix smoke 与 10k short soak smoke；
-8. 独立 Performance Evidence workflow 支持 full matrix 与长时间 10k soak Artifact。
+2. NOOP / CPU / BLOCKING / SLOW_PROVIDER / OVERLOAD execution/fault Matrix；
+3. sample + throughput 双模式；
+4. `-prof gc` allocation / GC profiling；
+5. JMH JSON -> CSV / Markdown 聚合，并保留 overload success/error AuxCounters；
+6. JDK 21 Virtual Thread 10k logical-concurrency soak；
+7. Soak 输出吞吐、p50/p99/p99.9、错误率、Heap、GC、CPU、inflight、连接与错误类型；
+8. 普通 CI 增加 Matrix smoke 与 10k short soak smoke；
+9. 独立 Performance Evidence workflow 支持 full matrix 与长时间 10k soak Artifact。
 
 当前仍未把共享 CI Runner 上的数值写成 Production SLO。固定硬件 full matrix、至少 30 分钟 10k soak、TLS 对比和故障性能矩阵仍属于 V2-D.2 未完成证据。
 
