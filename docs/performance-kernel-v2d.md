@@ -224,18 +224,18 @@ REQUEST/RESPONSE byte[]
 
 ### D1
 
-- [ ] payload 参数化 Protocol benchmarks；
-- [ ] end-to-end byte[] payload benchmark；
-- [ ] connection shard 参数化；
-- [ ] allocation profiler command documented；
-- [ ] benchmark result metadata template。
+- [x] payload 参数化 Protocol benchmarks；
+- [x] end-to-end byte[] payload benchmark；
+- [x] connection shard 参数化；
+- [x] allocation profiler command documented；
+- [x] benchmark result metadata template。
 
 ### D2
 
-- [ ] header requestId fast accessor；
-- [ ] Client routing 移除 `ByteBuffer.wrap`；
-- [ ] Server normal request routing 移除 full `RpcFrame.decode`；
-- [ ] compatibility tests；
+- [x] header requestId fast accessor；
+- [x] Client routing 移除 `ByteBuffer.wrap`；
+- [x] Server normal request routing 移除 full `RpcFrame.decode`；
+- [x] compatibility tests；
 - [ ] Transport tests；
 - [ ] `mvn -B -ntp clean verify -Pquality`。
 
