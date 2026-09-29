@@ -21,9 +21,10 @@ import io.peach.rpc.registry.memory.MemoryRegistryFactory;
 import io.peach.rpc.spi.ExtensionLoader;
 import io.peach.rpc.transport.RpcTransportFactory;
 import io.peach.rpc.transport.RpcTransportOptions;
-import java.util.ArrayList;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.jupiter.api.Test;
 
 /** OpenTelemetry 真实 RPC Trace 穿透测试。 */
@@ -102,7 +103,9 @@ class OpenTelemetryRpcEndToEndTest {
                     "hello peach",
                     service.hello("peach"));
 
-            List<SpanData> spans = exporter.spans();
+            List<SpanData> spans = exporter.awaitSpans(
+                    2,
+                    Duration.ofSeconds(2));
             SpanData clientSpan = spans.stream()
                     .filter(span ->
                             span.getKind()
@@ -157,7 +160,7 @@ class OpenTelemetryRpcEndToEndTest {
             implements SpanExporter {
 
         private final List<SpanData> spans =
-                new ArrayList<>();
+                new CopyOnWriteArrayList<>();
 
         @Override
         public CompletableResultCode export(
@@ -176,7 +179,22 @@ class OpenTelemetryRpcEndToEndTest {
             return CompletableResultCode.ofSuccess();
         }
 
-        private List<SpanData> spans() {
+        private List<SpanData> awaitSpans(
+                int expected,
+                Duration timeout) {
+            long deadline =
+                    System.nanoTime() + timeout.toNanos();
+            while (spans.size() < expected
+                    && System.nanoTime() < deadline) {
+                try {
+                    Thread.sleep(10L);
+                } catch (InterruptedException error) {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError(
+                            "Interrupted while waiting for spans",
+                            error);
+                }
+            }
             return List.copyOf(spans);
         }
     }
