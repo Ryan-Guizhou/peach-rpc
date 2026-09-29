@@ -6,7 +6,9 @@ import io.peach.rpc.core.PeachRpcServer;
 import io.peach.rpc.core.RpcClientResilienceOptions;
 import io.peach.rpc.core.RpcProviderExecutionOptions;
 import io.peach.rpc.loadbalance.LoadBalancer;
+import io.peach.rpc.observability.RpcMetadataPropagator;
 import io.peach.rpc.observability.RpcObserver;
+import io.peach.rpc.observability.RpcTracingBridge;
 import io.peach.rpc.proxy.ProxyFactory;
 import io.peach.rpc.registry.Registry;
 import io.peach.rpc.registry.RegistryFactory;
@@ -19,6 +21,7 @@ import io.peach.rpc.spring.processor.PeachRpcServiceBeanPostProcessor;
 import io.peach.rpc.spring.runtime.PeachRpcRuntimeCoordinator;
 import io.peach.rpc.transport.RpcTransportFactory;
 import io.peach.rpc.transport.RpcTransportOptions;
+import io.peach.rpc.transport.RpcTransportSecurityOptions;
 import java.util.Map;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -48,11 +51,14 @@ public class PeachRpcAutoConfiguration {
      * 创建注册中心实例。
      *
      * @param properties Peach RPC 配置
+     * @param observerProvider Registry 控制面 Observer 提供器
      * @return 注册中心实例
      */
     @Bean(destroyMethod = "close")
     @ConditionalOnMissingBean
-    public Registry peachRpcRegistry(PeachRpcProperties properties) {
+    public Registry peachRpcRegistry(
+            PeachRpcProperties properties,
+            ObjectProvider<RpcObserver> observerProvider) {
         PeachRpcProperties.Registry registry = properties.getRegistry();
         RegistryFactory factory = ExtensionLoader.getLoader(RegistryFactory.class)
                 .getExtension(registry.getType());
@@ -69,7 +75,9 @@ public class PeachRpcAutoConfiguration {
                         "nacosUsername",
                         registry.getNacos().getUsername(),
                         "nacosPassword",
-                        registry.getNacos().getPassword())));
+                        registry.getNacos().getPassword()),
+                RpcObserver.composite(
+                        observerProvider.orderedStream().toList())));
     }
 
     /**
@@ -109,6 +117,18 @@ public class PeachRpcAutoConfiguration {
             PeachRpcProperties properties,
             RpcCodecRegistry codecRegistry) {
         PeachRpcProperties.Transport transport = properties.getTransport();
+        PeachRpcProperties.Security security =
+                transport.getSecurity();
+        RpcTransportSecurityOptions securityOptions =
+                new RpcTransportSecurityOptions(
+                        security.getMode(),
+                        security.getCertificatePath(),
+                        security.getPrivateKeyPath(),
+                        security.getTrustCertificatePath(),
+                        security.isHostnameVerification(),
+                        security.getHandshakeTimeout(),
+                        security.getReloadInterval(),
+                        security.getExpiryWarningThreshold());
         return new RpcTransportOptions(
                 transport.getMaxInflightPerConnection(),
                 transport.getMaxFrameBytes(),
@@ -120,7 +140,8 @@ public class PeachRpcAutoConfiguration {
                 transport.getHeartbeatInterval(),
                 transport.getHeartbeatTimeout(),
                 transport.getReconnectBaseBackoff(),
-                transport.getReconnectMaxBackoff());
+                transport.getReconnectMaxBackoff())
+                .withSecurity(securityOptions);
     }
 
     /**
@@ -204,6 +225,8 @@ public class PeachRpcAutoConfiguration {
      * @param resilienceOptions Consumer 容错参数
      * @param executionOptions Provider 执行资源参数
      * @param observerProvider 可观测性 Observer 提供器
+     * @param metadataPropagatorProvider Metadata 传播器提供器
+     * @param tracingBridgeProvider 分布式 Trace Bridge 提供器
      * @param properties Peach RPC 配置
      * @return 运行时协调器
      */
@@ -219,6 +242,8 @@ public class PeachRpcAutoConfiguration {
             RpcClientResilienceOptions resilienceOptions,
             RpcProviderExecutionOptions executionOptions,
             ObjectProvider<RpcObserver> observerProvider,
+            ObjectProvider<RpcMetadataPropagator> metadataPropagatorProvider,
+            ObjectProvider<RpcTracingBridge> tracingBridgeProvider,
             PeachRpcProperties properties) {
         return new PeachRpcRuntimeCoordinator(
                 registry,
@@ -230,6 +255,8 @@ public class PeachRpcAutoConfiguration {
                 resilienceOptions,
                 executionOptions,
                 observerProvider,
+                metadataPropagatorProvider,
+                tracingBridgeProvider,
                 properties);
     }
 

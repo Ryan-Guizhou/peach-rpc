@@ -1,5 +1,6 @@
 package io.peach.rpc.spring.autoconfigure;
 
+import io.peach.rpc.observability.RpcSecurityMode;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -279,6 +280,7 @@ public class PeachRpcProperties {
         private Duration heartbeatTimeout = Duration.ofSeconds(10);
         private Duration reconnectBaseBackoff = Duration.ofMillis(50);
         private Duration reconnectMaxBackoff = Duration.ofSeconds(3);
+        private final Security security = new Security();
 
         /**
          * 返回Transport SPI 名称。
@@ -476,6 +478,190 @@ public class PeachRpcProperties {
          */
         public void setReconnectMaxBackoff(Duration reconnectMaxBackoff) {
             this.reconnectMaxBackoff = reconnectMaxBackoff;
+        }
+
+        /**
+         * 返回 Transport 安全配置。
+         *
+         * @return TLS/mTLS 配置
+         */
+        public Security getSecurity() {
+            return security;
+        }
+    }
+
+    /** Transport TLS/mTLS 配置。 */
+    public static class Security {
+
+        /** 创建安全配置。 */
+        public Security() {
+        }
+
+        private RpcSecurityMode mode =
+                RpcSecurityMode.PLAINTEXT;
+        private String certificatePath = "";
+        private String privateKeyPath = "";
+        private String trustCertificatePath = "";
+        private boolean hostnameVerification = true;
+        private Duration handshakeTimeout =
+                Duration.ofSeconds(3);
+        private Duration reloadInterval =
+                Duration.ofSeconds(30);
+        private Duration expiryWarningThreshold =
+                Duration.ofDays(7);
+
+        /**
+         * 返回 Transport 安全模式。
+         *
+         * @return 安全模式
+         */
+        public RpcSecurityMode getMode() {
+            return mode;
+        }
+
+        /**
+         * 设置 Transport 安全模式。
+         *
+         * @param mode 安全模式
+         */
+        public void setMode(RpcSecurityMode mode) {
+            this.mode = mode;
+        }
+
+        /**
+         * 返回 PEM 证书路径。
+         *
+         * @return PEM 证书路径
+         */
+        public String getCertificatePath() {
+            return certificatePath;
+        }
+
+        /**
+         * 设置 PEM 证书路径。
+         *
+         * @param certificatePath PEM 证书路径
+         */
+        public void setCertificatePath(
+                String certificatePath) {
+            this.certificatePath = certificatePath;
+        }
+
+        /**
+         * 返回 PEM 私钥路径。
+         *
+         * @return PEM 私钥路径
+         */
+        public String getPrivateKeyPath() {
+            return privateKeyPath;
+        }
+
+        /**
+         * 设置 PEM 私钥路径。
+         *
+         * @param privateKeyPath PEM 私钥路径
+         */
+        public void setPrivateKeyPath(
+                String privateKeyPath) {
+            this.privateKeyPath = privateKeyPath;
+        }
+
+        /**
+         * 返回 PEM CA/信任证书路径。
+         *
+         * @return PEM CA/信任证书路径
+         */
+        public String getTrustCertificatePath() {
+            return trustCertificatePath;
+        }
+
+        /**
+         * 设置 PEM CA/信任证书路径。
+         *
+         * @param trustCertificatePath PEM CA/信任证书路径
+         */
+        public void setTrustCertificatePath(
+                String trustCertificatePath) {
+            this.trustCertificatePath =
+                    trustCertificatePath;
+        }
+
+        /**
+         * 返回是否启用 Hostname Verification。
+         *
+         * @return 是否启用 Hostname Verification
+         */
+        public boolean isHostnameVerification() {
+            return hostnameVerification;
+        }
+
+        /**
+         * 设置是否启用 Hostname Verification。
+         *
+         * @param hostnameVerification 是否校验主机名
+         */
+        public void setHostnameVerification(
+                boolean hostnameVerification) {
+            this.hostnameVerification =
+                    hostnameVerification;
+        }
+
+        /**
+         * 返回 TLS 握手超时。
+         *
+         * @return TLS 握手超时
+         */
+        public Duration getHandshakeTimeout() {
+            return handshakeTimeout;
+        }
+
+        /**
+         * 设置 TLS 握手超时。
+         *
+         * @param handshakeTimeout TLS 握手超时
+         */
+        public void setHandshakeTimeout(
+                Duration handshakeTimeout) {
+            this.handshakeTimeout = handshakeTimeout;
+        }
+
+        /**
+         * 返回证书 Reload 检查周期。
+         *
+         * @return 证书 Reload 检查周期
+         */
+        public Duration getReloadInterval() {
+            return reloadInterval;
+        }
+
+        /**
+         * 设置证书 Reload 检查周期。
+         *
+         * @param reloadInterval Reload 检查周期
+         */
+        public void setReloadInterval(
+                Duration reloadInterval) {
+            this.reloadInterval = reloadInterval;
+        }
+
+        /**
+         * 返回证书过期前告警窗口。
+         *
+         * @return 证书过期前告警窗口
+         */
+        public Duration getExpiryWarningThreshold() {
+            return expiryWarningThreshold;
+        }
+
+        /**
+         * 设置证书过期前告警窗口。
+         *
+         * @param expiryWarningThreshold 过期告警窗口
+         */
+        public void setExpiryWarningThreshold(
+                Duration expiryWarningThreshold) {
+            this.expiryWarningThreshold =
+                    expiryWarningThreshold;
         }
     }
 

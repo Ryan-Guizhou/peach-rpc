@@ -54,14 +54,29 @@ V2-C.2 已形成连接与控制面 HA 闭环：
 - 同一进程级 E2E 会重启 Nacos，证明 last-known-good 数据面继续可用、Provider 临时实例重新注册、Consumer 恢复订阅并发现新的 Provider Endpoint；
 - Repository checks、完整 Maven Reactor、独立 JVM/Nacos recovery 和 Etcd Chaos 均形成自动化门禁。
 
+## V2-C.3 当前开发分支
+
+V2-C.3 已完成主要 Security & Observability 实现，正在执行最终质量门禁：
+
+- Vert.x Transport 支持 PLAINTEXT / TLS / MTLS；
+- TLS handshake 位于 Peach HELLO 之前，不允许失败后静默降级 plaintext；
+- 支持 CA Trust、Hostname Verification、mTLS ClientAuth、证书有效期 fail-fast；
+- PEM material 支持在线 Reload；新 material 无效时继续使用旧 material；
+- TLS 与 Heartbeat/Reconnect 共存测试覆盖 Provider restart 后同一 Consumer 恢复；
+- Core Observer 已扩展 Registry/TLS/证书生命周期事件；
+- Micrometer Adapter 提供 Client/Server/Connection/Registry/TLS 标准指标；
+- OpenTelemetry Adapter 通过现有 RPC Metadata 传播 W3C Trace Context，真实 RPC E2E 验证 CLIENT/SERVER Span 父子关系；
+- JFR Adapter 记录慢/失败调用和恢复类低频事件；
+- Registry Credential 的 toString 与 Nacos password 配置边界已增加脱敏测试。
+
+详细配置见 [TLS / mTLS 安全指南](security.md) 与 [可观测性指南](observability.md)。
+
 ## 仍需完成的生产门禁
 
 正式成为中型项目默认 RPC 层之前，至少还需要。详细状态以 [Production Roadmap / Capability Matrix](production-roadmap.md) 为准：
 
 - 更完整的协议兼容、畸形帧和故障注入测试；
 - Etcd/Nacos 网络黑洞、partition、长时间 Registry/Transport 恢复 soak 与更大规模故障矩阵；
-- TLS/mTLS 与证书生命周期；
-- Micrometer、OpenTelemetry/Tracing、JFR 具体 Adapter；
 - Buffer ownership / buffer-oriented Codec，是否进入默认路径必须由基准收益决定；
 - Fory 稳定 Type ID、Schema fingerprint、冲突检测与滚动升级兼容策略；
 - 多 payload、多并发、过载、慢 Consumer/Provider 的稳定端到端性能基线；

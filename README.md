@@ -7,7 +7,7 @@
 
 Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框架。当前 `0.1.x` 重点不是堆叠功能，而是先建立可长期演进的数据面与控制面边界：长连接多路复用、本地服务目录、有界并发、SPI 扩展、二进制协议、Spring Boot Starter 和可重复性能基准。
 
-> 当前状态：Preview。V2-C.1 已完成注解驱动运行时、Examples 拆分与 Nacos 3.2.4 Registry Adapter；V2-C.2 当前分支已完成连接与控制面 HA 闭环，包括协商式 Heartbeat/idle detection、异常连接摘除、带 full jitter 的有界重连、relative timeout budget、Etcd compaction/restart/3 节点 leader-transfer 恢复验证、Nacos restart/re-registration/re-subscribe、独立 JVM 恢复 E2E，以及连接生命周期 RpcObserver。项目仍保持 Preview：TLS/mTLS、Micrometer/OpenTelemetry/JFR Adapter、Wire Compatibility、完整性能矩阵、网络黑洞/长时间 soak、容量与升级回滚仍是后续生产门禁。统一能力状态与优先级见 [Production Roadmap / Capability Matrix](docs/production-roadmap.md)。
+> 当前状态：Preview。V2-C.1 已完成注解驱动运行时、Examples 拆分与 Nacos 3.2.4 Registry Adapter；V2-C.2 已完成连接与控制面 HA 闭环；V2-C.3 当前分支已实现 TLS/mTLS、Hostname Verification、PEM 证书有效期校验与在线 Reload、Registry/TLS 生命周期 Observer，以及 Micrometer、OpenTelemetry、JFR 三类可选 Adapter。OpenTelemetry 通过现有 RPC Metadata 传播 W3C Trace Context，真实 RPC E2E 验证 CLIENT/SERVER Span 父子关系；TLS 真实网络测试覆盖错误 CA、主机名不匹配、缺失客户端证书、过期证书、Reload 和 Heartbeat/Reconnect 共存。项目仍保持 Preview：完整性能矩阵、Wire Compatibility、网络黑洞/长时间 soak、容量规划与升级回滚仍是 Production GA 门禁。统一能力状态与优先级见 [Production Roadmap / Capability Matrix](docs/production-roadmap.md)。
 
 核心能力：
 
@@ -23,7 +23,7 @@ Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框�
 - Consumer 可使用 `@PeachRpcIdempotent` 显式声明允许自动重试的方法；重试受全局 Budget、整体 Deadline 与抖动退避共同约束。
 - Endpoint 连续基础设施失败会被临时剔除，方法级连续失败会触发 Circuit Breaker，避免故障实例和依赖持续放大尾延迟。
 - Consumer timeout/主动取消会通过 `CANCEL` 控制帧传播到 Provider；Provider 关闭时先注销服务、发送 GO_AWAY 并等待 inflight 排空。
-- Core 提供无 Micrometer/OpenTelemetry 依赖的 `RpcObserver`，支持 Client attempt/retry、Provider invocation，以及 connection established/reconnect scheduled/heartbeat timeout/closed 生命周期事件；连接事件带 CLIENT/SERVER 角色与归一化关闭原因，默认 NOOP 不创建事件对象。
+- Core 提供无 Micrometer/OpenTelemetry/JFR 依赖的 `RpcObserver`、`RpcTracingBridge` 与 `RpcMetadataPropagator`；覆盖 Client/Provider、Connection、Registry、TLS 和证书生命周期事件。可选 Micrometer Adapter 提供标准指标，OpenTelemetry Adapter 传播 W3C Trace Context，JFR Adapter 提供低频高价值运行诊断；未安装 Adapter 时保持 NOOP 路径。
 - Etcd Adapter 具备真实 Etcd 集成与 Chaos 门禁：覆盖注册/注销、Watch、namespace、Lease 过期、compaction 后 Range+Watch 恢复、单节点 restart 后 Lease/注册恢复，以及独立 3 节点 leader transfer；Lease 恢复同时使用 keepalive 信号、低频 TTL watchdog、stale lease callback 保护和有界 grant。
 - Provider 的 Registry 注册/回滚/注销操作具有独立控制面超时，避免停机流程无限阻塞。
 - `peach-rpc-examples` 拆为共享 API、独立 Provider 和独立 Consumer；CI 会真正启动两个可执行 JAR，验证 Provider restart、Nacos restart、Provider 临时实例重注册、Consumer 重订阅以及 Endpoint 迁移后的恢复。
@@ -57,7 +57,7 @@ flowchart LR
 <!-- doc-section:modules -->
 ## 模块
 
-当前 Reactor 从早期 17 个“概念粒度模块”收敛后，在高性能 V2 中保持 12 个有真实依赖隔离价值的模块：
+当前 Reactor 从早期 17 个“概念粒度模块”收敛后，保持 15 个有真实依赖隔离价值的顶层模块；V2-C.3 新增的三个 Observability 模块仅用于隔离第三方观测依赖：
 
 | 模块 | 职责 |
 |---|---|
@@ -69,6 +69,9 @@ flowchart LR
 | `peach-rpc-registry-nacos` | Nacos Registry |
 | `peach-rpc-proxy-cglib` | 可选 CGLIB Proxy |
 | `peach-rpc-proxy-bytebuddy` | 可选 Byte Buddy Runtime Proxy fallback |
+| `peach-rpc-observability-micrometer` | Micrometer 指标 Adapter；不进入 Core |
+| `peach-rpc-observability-opentelemetry` | OpenTelemetry Trace/W3C Context Adapter |
+| `peach-rpc-observability-jfr` | JFR 低开销运行诊断 Adapter |
 | `peach-rpc-spring-boot-autoconfigure` | Spring Boot 自动装配 |
 | `peach-rpc-spring-boot-starter` | 业务项目推荐依赖入口 |
 | `peach-rpc-examples` | Spring Boot 使用示例 |
@@ -175,6 +178,10 @@ public interface UserService {
 | `peach.rpc.transport.heartbeat-timeout` | `10s` | PING 后等待活跃流量/PONG 的最大时间 |
 | `peach.rpc.transport.reconnect-base-backoff` | `50ms` | 异常重连基础退避 |
 | `peach.rpc.transport.reconnect-max-backoff` | `3s` | 异常重连最大 full-jitter 窗口 |
+| `peach.rpc.transport.security.mode` | `PLAINTEXT` | `PLAINTEXT` / `TLS` / `MTLS` |
+| `peach.rpc.transport.security.hostname-verification` | `true` | Consumer 是否校验证书主机名 |
+| `peach.rpc.transport.security.handshake-timeout` | `3s` | TLS/mTLS 握手超时 |
+| `peach.rpc.transport.security.reload-interval` | `30s` | PEM 证书文件 Reload 检查周期 |
 | `peach.rpc.client.enabled` | `true` | 是否允许 Consumer；没有 Reference 时不会创建 Client |
 | `peach.rpc.client.timeout` | `3s` | 默认 RPC 超时 |
 | `peach.rpc.client.proxy` | `jdk` | Proxy SPI 名称 |
@@ -220,5 +227,8 @@ CI 使用 JDK 21 执行相同门禁，并额外运行独立 JVM + Nacos restart 
 - [V2-B.1 生产内核第二批](docs/production-kernel-v2b1-phase2.md)
 - [V2-B.2 高可用收口](docs/production-kernel-v2b2.md)
 - [V2-C.2 连接高可用](docs/production-kernel-v2c2.md)
+- [V2-C.3 Security & Observability 计划](docs/production-kernel-v2c3-plan.md)
+- [TLS / mTLS 安全指南](docs/security.md)
+- [可观测性指南](docs/observability.md)
 - [可运行 Examples](peach-rpc-examples/README.md)
 

@@ -1,6 +1,6 @@
 # Peach RPC 协议 v1
 
-Peach RPC v1 使用 32 字节固定大端 Header，后接 Metadata 与 Payload。
+Peach RPC v1 使用 32 字节固定大端 Header，后接 Metadata 与 Payload。TLS/mTLS 位于该协议之下的 Transport 层，因此启用安全通道不会改变 v1 Header 或 Message Type。
 
 ## 1. 固定 Header
 
@@ -125,7 +125,22 @@ V2-C.2 将 PING/PONG 从“预留 Message Type”接入真实连接生命周期�
 
 因此旧版本节点不理解 HEARTBEAT feature 时，新节点不会向它主动发送 PING/PONG，支持滚动升级。
 
-## 10. 当前限制
+## 10. Trace Metadata 与兼容性
+
+V2-C.3 的分布式 Trace 复用现有 Metadata 区域，不改变 Protocol Version。
+
+约束：
+
+- 保留键 `deadlineEpochMillis` / `timeoutBudgetMillis` 不允许扩展覆盖；
+- Metadata key/value 有长度限制；
+- key 不允许 `=` 或换行；
+- value 不允许换行；
+- Metadata 总长度受 16-bit Metadata Length 限制；
+- 旧 Provider 会忽略未知 Trace Metadata，因此可以滚动升级。
+
+OpenTelemetry Adapter 已通过真实 Peach RPC Transport E2E 验证 CLIENT/SERVER Span 的 Trace ID 与 parent relationship。
+
+## 11. 当前限制
 
 - Streaming 未实现；
 - Compression 尚未进入数据面；

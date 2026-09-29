@@ -4,6 +4,8 @@ import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
+import io.peach.rpc.observability.RpcObserver;
+import io.peach.rpc.observability.RpcRegistryOperation;
 import io.peach.rpc.registry.Registry;
 import io.peach.rpc.registry.RegistryCapabilities;
 import io.peach.rpc.registry.RegistryCapability;
@@ -45,6 +47,7 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
     static final RegistryCapabilities CAPABILITIES_FOR_TEST = CAPABILITIES;
 
     private final NamingService namingService;
+    private final RpcObserver observer;
     private final String namespace;
     private final String group;
     private final String cluster;
@@ -60,9 +63,26 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
             String namespace,
             String group,
             String cluster) {
+        this(
+                namingService,
+                namespace,
+                group,
+                cluster,
+                RpcObserver.noop());
+    }
+
+    NacosRegistry(
+            NamingService namingService,
+            String namespace,
+            String group,
+            String cluster,
+            RpcObserver observer) {
         this.namingService = Objects.requireNonNull(
                 namingService,
                 "namingService");
+        this.observer = observer == null
+                ? RpcObserver.noop()
+                : observer;
         this.namespace = Objects.requireNonNull(
                 namespace,
                 "namespace");
@@ -86,7 +106,9 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
         Objects.requireNonNull(instance, "instance");
         Instance nacos =
                 NacosInstanceMapper.toNacos(instance, cluster);
-        return executor.submit(
+        long startedAtNanos =
+                observer.enabled() ? System.nanoTime() : 0L;
+        CompletionStage<Void> stage = executor.submit(
                 "register",
                 instance.serviceKey(),
                 () -> {
@@ -100,6 +122,11 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
                             instance.serviceKey().canonicalName(),
                             instance.endpoint().authority());
                 });
+        observeOperation(
+                stage,
+                RpcRegistryOperation.REGISTER,
+                startedAtNanos);
+        return stage;
     }
 
     @Override
@@ -110,7 +137,9 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
         Objects.requireNonNull(instance, "instance");
         Instance nacos =
                 NacosInstanceMapper.toNacos(instance, cluster);
-        return executor.submit(
+        long startedAtNanos =
+                observer.enabled() ? System.nanoTime() : 0L;
+        CompletionStage<Void> stage = executor.submit(
                 "unregister",
                 instance.serviceKey(),
                 () -> {
@@ -124,13 +153,20 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
                             instance.serviceKey().canonicalName(),
                             instance.endpoint().authority());
                 });
+        observeOperation(
+                stage,
+                RpcRegistryOperation.UNREGISTER,
+                startedAtNanos);
+        return stage;
     }
 
     @Override
     public CompletionStage<RegistrySnapshot> lookup(ServiceKey key) {
         requireOpen();
         Objects.requireNonNull(key, "key");
-        return executor.submit(
+        long startedAtNanos =
+                observer.enabled() ? System.nanoTime() : 0L;
+        CompletionStage<RegistrySnapshot> stage = executor.submit(
                 "lookup",
                 key,
                 () -> new RegistrySnapshot(
@@ -142,6 +178,11 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
                                         List.of(cluster),
                                         false)),
                         revision.incrementAndGet()));
+        observeOperation(
+                stage,
+                RpcRegistryOperation.LOOKUP,
+                startedAtNanos);
+        return stage;
     }
 
     @Override
@@ -157,13 +198,29 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
                         group,
                         cluster,
                         listener,
-                        revision);
+                        revision,
+                        observer);
         subscriptions.add(subscription);
         subscription.start();
         return () -> {
             subscriptions.remove(subscription);
             subscription.close();
         };
+    }
+
+    private <T> void observeOperation(
+            CompletionStage<T> stage,
+            RpcRegistryOperation operation,
+            long startedAtNanos) {
+        if (!observer.enabled()) {
+            return;
+        }
+        stage.whenComplete((ignored, error) ->
+                observer.onRegistryOperationCompleted(
+                        "nacos",
+                        operation,
+                        System.nanoTime() - startedAtNanos,
+                        error));
     }
 
     private static List<ServiceInstance> normalize(

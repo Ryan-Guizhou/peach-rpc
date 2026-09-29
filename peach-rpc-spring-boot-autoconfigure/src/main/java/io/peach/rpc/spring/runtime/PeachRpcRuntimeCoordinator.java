@@ -7,7 +7,9 @@ import io.peach.rpc.core.PeachRpcServer;
 import io.peach.rpc.core.RpcClientResilienceOptions;
 import io.peach.rpc.core.RpcProviderExecutionOptions;
 import io.peach.rpc.loadbalance.LoadBalancer;
+import io.peach.rpc.observability.RpcMetadataPropagator;
 import io.peach.rpc.observability.RpcObserver;
+import io.peach.rpc.observability.RpcTracingBridge;
 import io.peach.rpc.proxy.ProxyFactory;
 import io.peach.rpc.registry.Registry;
 import io.peach.rpc.spring.autoconfigure.PeachRpcProperties;
@@ -31,6 +33,10 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
     private final RpcClientResilienceOptions resilienceOptions;
     private final RpcProviderExecutionOptions executionOptions;
     private final ObjectProvider<RpcObserver> observerProvider;
+    private final ObjectProvider<RpcMetadataPropagator>
+            metadataPropagatorProvider;
+    private final ObjectProvider<RpcTracingBridge>
+            tracingBridgeProvider;
     private final PeachRpcProperties properties;
     private volatile PeachRpcClient client;
     private volatile PeachRpcServer server;
@@ -48,6 +54,8 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
      * @param resilienceOptions Consumer 容错参数
      * @param executionOptions Provider 执行资源参数
      * @param observerProvider 可观测性 Observer 提供器
+     * @param metadataPropagatorProvider Metadata 传播器提供器
+     * @param tracingBridgeProvider 分布式 Trace Bridge 提供器
      * @param properties Peach RPC 配置
      */
     public PeachRpcRuntimeCoordinator(
@@ -60,6 +68,8 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
             RpcClientResilienceOptions resilienceOptions,
             RpcProviderExecutionOptions executionOptions,
             ObjectProvider<RpcObserver> observerProvider,
+            ObjectProvider<RpcMetadataPropagator> metadataPropagatorProvider,
+            ObjectProvider<RpcTracingBridge> tracingBridgeProvider,
             PeachRpcProperties properties) {
         this.registry = Objects.requireNonNull(registry, "registry");
         this.codecRegistry = Objects.requireNonNull(codecRegistry, "codecRegistry");
@@ -76,7 +86,17 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
         this.observerProvider = Objects.requireNonNull(
                 observerProvider,
                 "observerProvider");
-        this.properties = Objects.requireNonNull(properties, "properties");
+        this.metadataPropagatorProvider =
+                Objects.requireNonNull(
+                        metadataPropagatorProvider,
+                        "metadataPropagatorProvider");
+        this.tracingBridgeProvider =
+                Objects.requireNonNull(
+                        tracingBridgeProvider,
+                        "tracingBridgeProvider");
+        this.properties = Objects.requireNonNull(
+                properties,
+                "properties");
     }
 
     /**
@@ -174,6 +194,8 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
                 .timeout(clientProperties.getTimeout())
                 .resilienceOptions(resilienceOptions)
                 .observer(observer())
+                .metadataPropagator(metadataPropagator())
+                .tracingBridge(tracingBridge())
                 .build();
     }
 
@@ -196,12 +218,28 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
                 .controlPlaneTimeout(serverProperties.getControlPlaneTimeout())
                 .executionOptions(executionOptions)
                 .observer(observer())
+                .metadataPropagator(metadataPropagator())
+                .tracingBridge(tracingBridge())
                 .build();
     }
 
     private RpcObserver observer() {
         return RpcObserver.composite(
                 observerProvider.orderedStream().toList());
+    }
+
+    private RpcMetadataPropagator metadataPropagator() {
+        return RpcMetadataPropagator.composite(
+                metadataPropagatorProvider
+                        .orderedStream()
+                        .toList());
+    }
+
+    private RpcTracingBridge tracingBridge() {
+        return tracingBridgeProvider
+                .orderedStream()
+                .findFirst()
+                .orElseGet(RpcTracingBridge::noop);
     }
 
     @Override

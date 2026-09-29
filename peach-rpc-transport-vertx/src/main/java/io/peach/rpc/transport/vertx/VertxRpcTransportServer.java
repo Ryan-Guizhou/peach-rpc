@@ -5,6 +5,7 @@ import io.peach.rpc.api.RpcRemoteError;
 import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.api.RpcTimeoutException;
 import io.peach.rpc.codec.RpcCodecIds;
+import io.peach.rpc.observability.RpcCertificateReloadOutcome;
 import io.peach.rpc.observability.RpcConnectionCloseReason;
 import io.peach.rpc.observability.RpcConnectionRole;
 import io.peach.rpc.protocol.RpcErrorCodec;
@@ -51,13 +52,20 @@ final class VertxRpcTransportServer implements RpcTransportServer {
     private final AtomicBoolean closingServer = new AtomicBoolean();
     private volatile CompletableFuture<Void> drainFuture;
     private volatile long drainTimerId = -1L;
+    private volatile long tlsReloadTimerId = -1L;
+    private volatile VertxTlsSupport.FileState tlsFileState;
 
     VertxRpcTransportServer(RpcTransportOptions options) {
         this.options = options;
-        this.server = vertx.createNetServer(
+        NetServerOptions serverOptions =
                 new NetServerOptions()
                         .setTcpKeepAlive(true)
-                        .setTcpNoDelay(true));
+                        .setTcpNoDelay(true);
+        VertxTlsSupport.configureServer(
+                serverOptions,
+                options.security(),
+                options.observer());
+        this.server = vertx.createNetServer(serverOptions);
     }
 
     @Override
@@ -71,6 +79,21 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                         socket.close();
                         return;
                     }
+                    if (options.security().enabled()
+                            && options.observer().enabled()) {
+                        RpcEndpoint remote = new RpcEndpoint(
+                                socket.remoteAddress().host(),
+                                Math.max(
+                                        socket.remoteAddress().port(),
+                                        1));
+                        options.observer()
+                                .onTlsHandshakeCompleted(
+                                        RpcConnectionRole.SERVER,
+                                        remote,
+                                        options.security().mode(),
+                                        0L,
+                                        null);
+                    }
                     ServerConnection connection =
                             new ServerConnection(socket, handler);
                     connections.add(connection);
@@ -80,6 +103,7 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                     if (result.failed()) {
                         started.completeExceptionally(result.cause());
                     } else {
+                        startTlsReload();
                         started.complete(new RpcEndpoint(
                                 bind.host(),
                                 result.result().actualPort()));
@@ -582,6 +606,77 @@ final class VertxRpcTransportServer implements RpcTransportServer {
         }
     }
 
+    private void startTlsReload() {
+        if (!options.security().enabled()) {
+            return;
+        }
+        tlsFileState = VertxTlsSupport.fileState(
+                options.security());
+        tlsReloadTimerId = vertx.setPeriodic(
+                options.security()
+                        .reloadInterval()
+                        .toMillis(),
+                ignored -> reloadTlsIfChanged());
+    }
+
+    private void reloadTlsIfChanged() {
+        VertxTlsSupport.FileState current =
+                VertxTlsSupport.fileState(
+                        options.security());
+        if (current.equals(tlsFileState)) {
+            return;
+        }
+        long startedAtNanos = System.nanoTime();
+        try {
+            var sslOptions = VertxTlsSupport.reloadOptions(
+                    options.security(),
+                    false,
+                    options.observer());
+            server.updateSSLOptions(
+                            sslOptions,
+                            true)
+                    .onComplete(result -> {
+                        Throwable error =
+                                result.failed()
+                                        ? result.cause()
+                                        : null;
+                        if (error == null) {
+                            tlsFileState = current;
+                        }
+                        observeCertificateReload(
+                                startedAtNanos,
+                                error);
+                    });
+        } catch (RuntimeException error) {
+            observeCertificateReload(
+                    startedAtNanos,
+                    error);
+        }
+    }
+
+    private void observeCertificateReload(
+            long startedAtNanos,
+            Throwable error) {
+        if (!options.observer().enabled()) {
+            return;
+        }
+        options.observer()
+                .onCertificateReloadCompleted(
+                        options.security().mode(),
+                        error == null
+                                ? RpcCertificateReloadOutcome.SUCCESS
+                                : RpcCertificateReloadOutcome.FAILURE,
+                        System.nanoTime() - startedAtNanos,
+                        error);
+    }
+
+    private void cancelTlsReload() {
+        if (tlsReloadTimerId >= 0L) {
+            vertx.cancelTimer(tlsReloadTimerId);
+            tlsReloadTimerId = -1L;
+        }
+    }
+
     @Override
     public CompletionStage<Void> drain(Duration timeout) {
         if (timeout == null || timeout.isNegative() || timeout.isZero()) {
@@ -623,6 +718,7 @@ final class VertxRpcTransportServer implements RpcTransportServer {
             vertx.cancelTimer(drainTimerId);
             drainTimerId = -1L;
         }
+        cancelTlsReload();
         server.close().onComplete(result -> {
             CompletableFuture<Void> future = drainFuture;
             if (future == null) {
@@ -639,6 +735,7 @@ final class VertxRpcTransportServer implements RpcTransportServer {
     @Override
     public void close() {
         draining.set(true);
+        cancelTlsReload();
         connections.forEach(ServerConnection::closeLocally);
         server.close();
         vertx.close();

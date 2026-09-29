@@ -5,7 +5,7 @@
 - JDK 21。
 - 注释使用中文标准 Javadoc。
 - 运行日志使用英文 SLF4J 参数化消息。
-- Core 禁止依赖 Spring、Vert.x、Jetcd、Fory、CGLIB。
+- Core 禁止依赖 Spring、Vert.x、Jetcd、Nacos、Fory、CGLIB、Micrometer、OpenTelemetry、JFR Adapter。
 - Adapter 不得向 Core API 泄漏第三方类型。
 - 单行不超过 120 字符，不使用 wildcard import、Tab、行尾空格。
 

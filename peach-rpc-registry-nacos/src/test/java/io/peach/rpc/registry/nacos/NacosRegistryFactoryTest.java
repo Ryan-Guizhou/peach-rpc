@@ -8,8 +8,10 @@ import io.peach.rpc.registry.RegistryCapability;
 import io.peach.rpc.registry.RegistryFactory;
 import io.peach.rpc.registry.RegistryOptions;
 import io.peach.rpc.spi.ExtensionLoader;
+import com.alibaba.nacos.api.PropertyKeyConst;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
 class NacosRegistryFactoryTest {
@@ -41,6 +43,46 @@ class NacosRegistryFactoryTest {
 
         assertTrue(
                 !error.getMessage().contains("secret"));
+        assertTrue(
+                !options.toString().contains("secret"));
+    }
+
+    @Test
+    void credentialsShouldOnlyEnterSdkProperties() {
+        String secret = "NacosSecret@123";
+        RegistryOptions options = new RegistryOptions(
+                List.of("127.0.0.1:8848"),
+                "public",
+                Map.of(
+                        "nacosUsername",
+                        "peach-rpc",
+                        "nacosPassword",
+                        secret));
+
+        Properties properties =
+                NacosRegistryFactory.clientProperties(
+                        options,
+                        options.endpoints(),
+                        options.namespace());
+
+        assertEquals(
+                "127.0.0.1:8848",
+                properties.getProperty(
+                        PropertyKeyConst.SERVER_ADDR));
+        assertEquals(
+                "peach-rpc",
+                properties.getProperty(
+                        PropertyKeyConst.USERNAME));
+        assertEquals(
+                secret,
+                properties.getProperty(
+                        PropertyKeyConst.PASSWORD));
+        assertTrue(
+                !properties.getProperty(
+                                PropertyKeyConst.SERVER_ADDR)
+                        .contains(secret));
+        assertTrue(
+                !options.toString().contains(secret));
     }
 
     @Test

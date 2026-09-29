@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.peach.rpc.core.PeachRpcClient;
 import io.peach.rpc.core.PeachRpcServer;
+import io.peach.rpc.observability.RpcSecurityMode;
+import io.peach.rpc.transport.RpcTransportOptions;
 import io.peach.rpc.spring.annotation.PeachRpcReference;
 import io.peach.rpc.spring.annotation.PeachRpcService;
 import io.peach.rpc.spring.runtime.PeachRpcRuntimeCoordinator;
@@ -174,6 +176,63 @@ public class PeachRpcAutoConfigurationTest {
                             PeachRpcClient.class);
                     assertThat(context).doesNotHaveBean(
                             PeachRpcServer.class);
+                });
+    }
+
+    @Test
+    void tlsPropertiesShouldBindToTransportSecurityOptions() {
+        contextRunner
+                .withPropertyValues(
+                        "peach.rpc.transport.security.mode=MTLS",
+                        "peach.rpc.transport.security.certificate-path=/tmp/server.crt",
+                        "peach.rpc.transport.security.private-key-path=/tmp/server.key",
+                        "peach.rpc.transport.security.trust-certificate-path=/tmp/ca.crt",
+                        "peach.rpc.transport.security.hostname-verification=false",
+                        "peach.rpc.transport.security.handshake-timeout=5s",
+                        "peach.rpc.transport.security.reload-interval=45s",
+                        "peach.rpc.transport.security.expiry-warning-threshold=10d")
+                .run(context -> {
+                    RpcTransportOptions options =
+                            context.getBean(
+                                    RpcTransportOptions.class);
+
+                    assertThat(options.security().mode())
+                            .isEqualTo(
+                                    RpcSecurityMode.MTLS);
+                    assertThat(
+                            options.security()
+                                    .certificatePath())
+                            .isEqualTo("/tmp/server.crt");
+                    assertThat(
+                            options.security()
+                                    .privateKeyPath())
+                            .isEqualTo("/tmp/server.key");
+                    assertThat(
+                            options.security()
+                                    .trustCertificatePath())
+                            .isEqualTo("/tmp/ca.crt");
+                    assertThat(
+                            options.security()
+                                    .hostnameVerification())
+                            .isFalse();
+                    assertThat(
+                            options.security()
+                                    .handshakeTimeout())
+                            .isEqualTo(
+                                    java.time.Duration
+                                            .ofSeconds(5));
+                    assertThat(
+                            options.security()
+                                    .reloadInterval())
+                            .isEqualTo(
+                                    java.time.Duration
+                                            .ofSeconds(45));
+                    assertThat(
+                            options.security()
+                                    .expiryWarningThreshold())
+                            .isEqualTo(
+                                    java.time.Duration
+                                            .ofDays(10));
                 });
     }
 

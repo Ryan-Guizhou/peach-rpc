@@ -6,6 +6,7 @@ import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.api.RpcTimeoutException;
 import io.peach.rpc.api.RpcUnavailableException;
 import io.peach.rpc.codec.RpcCodecIds;
+import io.peach.rpc.observability.RpcCertificateReloadOutcome;
 import io.peach.rpc.observability.RpcConnectionCloseReason;
 import io.peach.rpc.observability.RpcConnectionRole;
 import io.peach.rpc.protocol.RpcErrorCodec;
@@ -58,15 +59,23 @@ final class VertxRpcTransportClient implements RpcTransportClient {
     private final ConcurrentMap<RpcEndpoint, ConnectionGroup> groups =
             new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private volatile long tlsReloadTimerId = -1L;
+    private volatile VertxTlsSupport.FileState tlsFileState;
 
     VertxRpcTransportClient(RpcTransportOptions options) {
         this.options = options;
-        this.client = vertx.createNetClient(
+        NetClientOptions clientOptions =
                 new NetClientOptions()
                         .setConnectTimeout(
                                 (int) options.connectTimeout().toMillis())
                         .setTcpKeepAlive(true)
-                        .setTcpNoDelay(true));
+                        .setTcpNoDelay(true);
+        VertxTlsSupport.configureClient(
+                clientOptions,
+                options.security(),
+                options.observer());
+        this.client = vertx.createNetClient(clientOptions);
+        startTlsReload();
     }
 
     @Override
@@ -185,17 +194,20 @@ final class VertxRpcTransportClient implements RpcTransportClient {
         private void connect(
                 int index,
                 CompletableFuture<Connection> created) {
-            long delayMillis = reconnectDelayMillis(
-                    reconnectAttempts.get(index));
+            int reconnectAttempt =
+                    reconnectAttempts.get(index);
+            long delayMillis =
+                    reconnectDelayMillis(reconnectAttempt);
+            if (reconnectAttempt > 0
+                    && options.observer().enabled()) {
+                options.observer().onConnectionReconnectScheduled(
+                        endpoint,
+                        reconnectAttempt,
+                        delayMillis);
+            }
             if (delayMillis <= 0L) {
                 doConnect(index, created);
                 return;
-            }
-            if (options.observer().enabled()) {
-                options.observer().onConnectionReconnectScheduled(
-                        endpoint,
-                        reconnectAttempts.get(index),
-                        delayMillis);
             }
             vertx.setTimer(delayMillis, ignored -> {
                 if (closed.get() || slots.get(index) != created) {
@@ -217,6 +229,19 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                     endpoint.port(),
                     endpoint.host())
                     .onComplete(result -> {
+                        if (options.security().enabled()
+                                && options.observer().enabled()) {
+                            options.observer()
+                                    .onTlsHandshakeCompleted(
+                                            RpcConnectionRole.CLIENT,
+                                            endpoint,
+                                            options.security().mode(),
+                                            System.nanoTime()
+                                                    - connectStartedNanos,
+                                            result.failed()
+                                                    ? result.cause()
+                                                    : null);
+                        }
                         if (result.failed()) {
                             recordFailure(index);
                             slots.compareAndSet(index, created, null);
@@ -849,11 +874,86 @@ final class VertxRpcTransportClient implements RpcTransportClient {
             long timerId) {
     }
 
+    private void startTlsReload() {
+        if (!options.security().enabled()) {
+            return;
+        }
+        tlsFileState = VertxTlsSupport.fileState(
+                options.security());
+        tlsReloadTimerId = vertx.setPeriodic(
+                options.security()
+                        .reloadInterval()
+                        .toMillis(),
+                ignored -> reloadTlsIfChanged());
+    }
+
+    private void reloadTlsIfChanged() {
+        if (closed.get()) {
+            return;
+        }
+        VertxTlsSupport.FileState current =
+                VertxTlsSupport.fileState(
+                        options.security());
+        if (current.equals(tlsFileState)) {
+            return;
+        }
+        long startedAtNanos = System.nanoTime();
+        try {
+            var sslOptions = VertxTlsSupport.reloadOptions(
+                    options.security(),
+                    true,
+                    options.observer());
+            client.updateSSLOptions(
+                            sslOptions,
+                            true)
+                    .onComplete(result -> {
+                        Throwable error =
+                                result.failed()
+                                        ? result.cause()
+                                        : null;
+                        if (error == null) {
+                            tlsFileState = current;
+                        }
+                        observeCertificateReload(
+                                startedAtNanos,
+                                error);
+                    });
+        } catch (RuntimeException error) {
+            observeCertificateReload(
+                    startedAtNanos,
+                    error);
+        }
+    }
+
+    private void observeCertificateReload(
+            long startedAtNanos,
+            Throwable error) {
+        if (!options.observer().enabled()) {
+            return;
+        }
+        options.observer()
+                .onCertificateReloadCompleted(
+                        options.security().mode(),
+                        error == null
+                                ? RpcCertificateReloadOutcome.SUCCESS
+                                : RpcCertificateReloadOutcome.FAILURE,
+                        System.nanoTime() - startedAtNanos,
+                        error);
+    }
+
+    private void cancelTlsReload() {
+        if (tlsReloadTimerId >= 0L) {
+            vertx.cancelTimer(tlsReloadTimerId);
+            tlsReloadTimerId = -1L;
+        }
+    }
+
     @Override
     public void close() {
         if (!closed.compareAndSet(false, true)) {
             return;
         }
+        cancelTlsReload();
         groups.values().forEach(ConnectionGroup::close);
         groups.clear();
         client.close();

@@ -28,6 +28,8 @@ public final class RpcProtocolCodec {
     private static final byte[] TIMEOUT_BUDGET_PREFIX =
             "timeoutBudgetMillis=".getBytes(StandardCharsets.US_ASCII);
     private static final int TIMEOUT_BUDGET_DIGITS = 19;
+    private static final int MAX_METADATA_KEY_CHARS = 256;
+    private static final int MAX_METADATA_VALUE_CHARS = 16 * 1024;
 
     private RpcProtocolCodec() {
     }
@@ -101,6 +103,7 @@ public final class RpcProtocolCodec {
                 methodId,
                 deadlineEpochMillis,
                 0L,
+                Map.of(),
                 payload);
     }
 
@@ -125,6 +128,47 @@ public final class RpcProtocolCodec {
             long deadlineEpochMillis,
             long timeoutBudgetMillis,
             byte[] payload) {
+        return encodeRequest(
+                codec,
+                serviceId,
+                methodId,
+                deadlineEpochMillis,
+                timeoutBudgetMillis,
+                Map.of(),
+                payload);
+    }
+
+    /**
+     * 编码携带额外 Metadata 的 Unary REQUEST。
+     *
+     * <p>额外 Metadata 仅在上下文传播等扩展启用时使用；默认空 Map 保持
+     * deadline/timeout budget 快路径。保留字段不能由扩展覆盖。
+     *
+     * @param codec Codec 编号
+     * @param serviceId 服务 ID
+     * @param methodId 方法 ID
+     * @param deadlineEpochMillis 绝对截止时间
+     * @param timeoutBudgetMillis 相对剩余预算
+     * @param metadata 额外 Metadata
+     * @param payload 已编码参数
+     * @return 完整线协议字节
+     */
+    public static byte[] encodeRequest(
+            byte codec,
+            int serviceId,
+            int methodId,
+            long deadlineEpochMillis,
+            long timeoutBudgetMillis,
+            Map<String, String> metadata,
+            byte[] payload) {
+        Map<String, String> extraMetadata =
+                metadata == null ? Map.of() : metadata;
+        if (extraMetadata.containsKey("deadlineEpochMillis")
+                || extraMetadata.containsKey("timeoutBudgetMillis")) {
+            throw new RpcProtocolException(
+                    "Reserved deadline metadata cannot be overridden");
+        }
+        byte[] encodedMetadata = encodeMetadata(extraMetadata);
         byte[] actualPayload =
                 payload == null ? new byte[0] : payload;
         int deadlineLength = deadlineEpochMillis > 0
@@ -137,7 +181,10 @@ public final class RpcProtocolCodec {
                         + TIMEOUT_BUDGET_DIGITS
                         + 1
                 : 0;
-        int metadataLength = deadlineLength + budgetLength;
+        int metadataLength =
+                deadlineLength
+                        + budgetLength
+                        + encodedMetadata.length;
         int bodyLength = checkedBodyLength(
                 metadataLength,
                 actualPayload.length);
@@ -187,6 +234,14 @@ public final class RpcProtocolCodec {
                     timeoutBudgetMillis);
             metadataOffset += budgetLength;
             bytes[metadataOffset - 1] = '\n';
+        }
+        if (encodedMetadata.length > 0) {
+            System.arraycopy(
+                    encodedMetadata,
+                    0,
+                    bytes,
+                    metadataOffset,
+                    encodedMetadata.length);
         }
         System.arraycopy(
                 actualPayload,
@@ -288,14 +343,6 @@ public final class RpcProtocolCodec {
         return bytes;
     }
 
-    /**
-     * 将 Transport 分配的 Request ID 写入已编码帧。
-     *
-     * <p>该方法只修改固定 Header，不重新编码 Metadata 与 Payload。
-     *
-     * @param bytes 已编码完整帧
-     * @param requestId connection-local Request ID
-     */
     /**
      * 在不改变帧长度的前提下刷新 REQUEST 中的相对 timeout budget。
      *
@@ -599,6 +646,24 @@ public final class RpcProtocolCodec {
     private static void validateMetadata(
             String key,
             String value) {
+        if (key == null
+                || key.isEmpty()
+                || value == null) {
+            throw new RpcProtocolException(
+                    "Metadata key/value must not be null or empty");
+        }
+        if (key.length() > MAX_METADATA_KEY_CHARS) {
+            throw new RpcProtocolException(
+                    "Metadata key exceeds "
+                            + MAX_METADATA_KEY_CHARS
+                            + " characters");
+        }
+        if (value.length() > MAX_METADATA_VALUE_CHARS) {
+            throw new RpcProtocolException(
+                    "Metadata value exceeds "
+                            + MAX_METADATA_VALUE_CHARS
+                            + " characters");
+        }
         if (key.indexOf('=') >= 0
                 || key.indexOf('\n') >= 0
                 || value.indexOf('\n') >= 0) {

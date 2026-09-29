@@ -81,6 +81,79 @@ public interface RpcObserver {
     }
 
     /**
+     * Registry 控制面操作完成。
+     *
+     * @param registryType Registry SPI 类型
+     * @param operation 操作类型
+     * @param durationNanos 操作耗时
+     * @param error 失败原因；成功时为 null
+     */
+    default void onRegistryOperationCompleted(
+            String registryType,
+            RpcRegistryOperation operation,
+            long durationNanos,
+            Throwable error) {
+    }
+
+    /**
+     * Registry 自动恢复动作完成。
+     *
+     * @param registryType Registry SPI 类型
+     * @param action 恢复动作
+     * @param durationNanos 恢复耗时
+     * @param error 失败原因；成功时为 null
+     */
+    default void onRegistryRecoveryCompleted(
+            String registryType,
+            RpcRegistryRecoveryAction action,
+            long durationNanos,
+            Throwable error) {
+    }
+
+    /**
+     * TLS/mTLS 握手完成。
+     *
+     * @param role 本地连接角色
+     * @param endpoint 对端端点
+     * @param mode Transport 安全模式
+     * @param durationNanos TLS handshake 耗时
+     * @param error 握手失败原因；成功时为 null
+     */
+    default void onTlsHandshakeCompleted(
+            RpcConnectionRole role,
+            RpcEndpoint endpoint,
+            RpcSecurityMode mode,
+            long durationNanos,
+            Throwable error) {
+    }
+
+    /**
+     * TLS 证书热更新完成。
+     *
+     * @param mode Transport 安全模式
+     * @param outcome 更新结果
+     * @param durationNanos reload 耗时
+     * @param error 失败原因；成功时为 null
+     */
+    default void onCertificateReloadCompleted(
+            RpcSecurityMode mode,
+            RpcCertificateReloadOutcome outcome,
+            long durationNanos,
+            Throwable error) {
+    }
+
+    /**
+     * 证书进入过期告警窗口。
+     *
+     * @param mode Transport 安全模式
+     * @param remainingMillis 距证书过期的剩余毫秒数
+     */
+    default void onCertificateExpiryWarning(
+            RpcSecurityMode mode,
+            long remainingMillis) {
+    }
+
+    /**
      * Consumer 单次网络 attempt 完成。
      *
      * @param serviceKey 服务键
@@ -214,6 +287,74 @@ public interface RpcObserver {
                                 endpoint,
                                 reason,
                                 error)));
+            }
+
+            @Override
+            public void onRegistryOperationCompleted(
+                    String registryType,
+                    RpcRegistryOperation operation,
+                    long durationNanos,
+                    Throwable error) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onRegistryOperationCompleted(
+                                registryType,
+                                operation,
+                                durationNanos,
+                                error)));
+            }
+
+            @Override
+            public void onRegistryRecoveryCompleted(
+                    String registryType,
+                    RpcRegistryRecoveryAction action,
+                    long durationNanos,
+                    Throwable error) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onRegistryRecoveryCompleted(
+                                registryType,
+                                action,
+                                durationNanos,
+                                error)));
+            }
+
+            @Override
+            public void onTlsHandshakeCompleted(
+                    RpcConnectionRole role,
+                    RpcEndpoint endpoint,
+                    RpcSecurityMode mode,
+                    long durationNanos,
+                    Throwable error) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onTlsHandshakeCompleted(
+                                role,
+                                endpoint,
+                                mode,
+                                durationNanos,
+                                error)));
+            }
+
+            @Override
+            public void onCertificateReloadCompleted(
+                    RpcSecurityMode mode,
+                    RpcCertificateReloadOutcome outcome,
+                    long durationNanos,
+                    Throwable error) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onCertificateReloadCompleted(
+                                mode,
+                                outcome,
+                                durationNanos,
+                                error)));
+            }
+
+            @Override
+            public void onCertificateExpiryWarning(
+                    RpcSecurityMode mode,
+                    long remainingMillis) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onCertificateExpiryWarning(
+                                mode,
+                                remainingMillis)));
             }
 
             @Override
