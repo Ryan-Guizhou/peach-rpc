@@ -360,13 +360,21 @@ public final class RpcProtocolCodec {
             throw new IllegalArgumentException(
                     "timeoutBudgetMillis must be positive");
         }
-        RpcFrameView frame = view(bytes);
-        if (frame.messageType() != RpcMessageType.REQUEST) {
+        requireHeader(bytes);
+        validatePreamble(bytes);
+        if (bytes[6] != RpcMessageType.REQUEST.code()) {
             return false;
         }
-        int metadataLength =
-                ((bytes[METADATA_LENGTH_OFFSET] & 0xff) << 8)
-                        | (bytes[METADATA_LENGTH_OFFSET + 1] & 0xff);
+        int metadataLength = readUnsignedShort(
+                bytes,
+                METADATA_LENGTH_OFFSET);
+        int payloadLength = readInt(
+                bytes,
+                PAYLOAD_LENGTH_OFFSET);
+        validateLengths(
+                bytes.length,
+                metadataLength,
+                payloadLength);
         int end = HEADER_LENGTH + metadataLength;
         int lineStart = HEADER_LENGTH;
         while (lineStart < end) {
