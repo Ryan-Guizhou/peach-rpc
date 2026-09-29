@@ -71,6 +71,7 @@ java -jar peach-rpc-benchmarks/target/benchmarks.jar
 - Protocol decode payload 参数：64B / 256B / 1KiB / 16KiB / 1MiB；
 - `requestIdHeaderFastPath`：固定 Header Request ID 无对象读取；
 - `EndToEndPayloadBenchmark`：完整 Generated Stub / Fory / Protocol / Vert.x / Provider Dispatcher byte[] echo；
+- `FrameAccumulatorBenchmark`：完整帧与 TCP 分片帧重组；
 - `connectionsPerEndpoint` 参数：1 / 2 / 4 / 8；
 - 并发通过 JMH `-t` 控制。
 
@@ -105,7 +106,9 @@ java -jar peach-rpc-benchmarks/target/benchmarks.jar EndToEndPayloadBenchmark \
 当前第一批已将 Transport 正常路由中的两个确定性分配移除：
 
 1. Client response routing 不再通过 `ByteBuffer.wrap(...).getLong()` 读取 Request ID；
-2. Server 正常 REQUEST tracking 不再执行完整 `RpcProtocolCodec.decode()` 创建 `RpcFrame`、Metadata Map 与 Payload copy。
+2. Server 正常 REQUEST tracking 不再执行完整 `RpcProtocolCodec.decode()` 创建 `RpcFrame`、Metadata Map 与 Payload copy；
+3. `rewriteTimeoutBudgetMillis()` 不再创建 `RpcFrameView`，直接校验固定 Header/length 后原地刷新；
+4. `FrameAccumulator` 复用固定 32B Header 数组，不再为每个 Frame 创建 Header byte[]。
 
 统一改为：
 
