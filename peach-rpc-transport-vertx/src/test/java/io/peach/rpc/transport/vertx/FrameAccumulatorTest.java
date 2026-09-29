@@ -31,6 +31,41 @@ class FrameAccumulatorTest {
     }
 
     @Test
+    void shouldReassembleFragmentedHeaderAndPayload() {
+        byte[] frame = frame(
+                21L,
+                new byte[1024]);
+        FrameAccumulator accumulator =
+                new FrameAccumulator(frame.length);
+        List<byte[]> decoded =
+                new ArrayList<>();
+
+        int split =
+                RpcProtocolCodec.HEADER_LENGTH / 2;
+        accumulator.accept(
+                Buffer.buffer(
+                        java.util.Arrays.copyOfRange(
+                                frame,
+                                0,
+                                split)),
+                decoded::add);
+        assertEquals(0, decoded.size());
+
+        accumulator.accept(
+                Buffer.buffer(
+                        java.util.Arrays.copyOfRange(
+                                frame,
+                                split,
+                                frame.length)),
+                decoded::add);
+
+        assertEquals(1, decoded.size());
+        assertArrayEquals(
+                frame,
+                decoded.get(0));
+    }
+
+    @Test
     void shouldRemainWritableAfterExactlyConsumedFrame() {
         byte[] first = frame(11L, new byte[] {1, 2});
         byte[] second = frame(12L, new byte[] {3, 4});
