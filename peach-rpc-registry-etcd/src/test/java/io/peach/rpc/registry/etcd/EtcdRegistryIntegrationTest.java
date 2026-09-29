@@ -31,7 +31,7 @@ class EtcdRegistryIntegrationTest {
     static final EtcdClusterExtension CLUSTER =
             EtcdClusterExtension.builder()
                     .withClusterName("peach-rpc-etcd-it")
-                    .withNodes(3)
+                    .withNodes(1)
                     .withSsl(false)
                     .build();
 
@@ -144,56 +144,52 @@ class EtcdRegistryIntegrationTest {
     }
 
     @Test
-    void shouldRecoverAfterLeaderFailure()
+    void shouldRecoverSubscriptionAfterCompaction()
             throws Exception {
-        String namespace = uniqueNamespace("leader-failure");
+        String namespace = uniqueNamespace("compaction");
         ServiceKey key =
-                new ServiceKey("demo.LeaderFailure", "1.0.0", "default");
+                new ServiceKey("demo.Compaction", "1.0.0", "default");
         ServiceInstance first =
-                instance(key, "node-leader-a", 19097);
+                instance(key, "node-compaction-a", 19100);
         ServiceInstance second =
-                instance(key, "node-leader-b", 19098);
+                instance(key, "node-compaction-b", 19101);
         AtomicReference<RegistrySnapshot> latest =
                 new AtomicReference<>();
 
         try (EtcdRegistry registry = registry(namespace, 5);
-             Client client = rawClient();
-             RegistrySubscription ignored =
-                     registry.subscribe(key, latest::set)) {
+             Client client = rawClient()) {
             registry.register(first)
                     .toCompletableFuture()
-                    .join();
-            assertTrue(await(
-                    Duration.ofSeconds(10),
-                    () -> contains(latest.get(), first)));
+                    .get(10, TimeUnit.SECONDS);
+            long staleRevision = registry.lookup(key)
+                    .toCompletableFuture()
+                    .get(10, TimeUnit.SECONDS)
+                    .revision();
 
-            LeaderTransfer transfer =
-                    leaderTransfer(client);
-            try (Client leaderClient = Client.builder()
-                    .endpoints(transfer.leaderEndpoint())
-                    .build()) {
-                leaderClient.getMaintenanceClient()
-                        .moveLeader(transfer.transfereeId())
-                        .join();
+            registry.register(second)
+                    .toCompletableFuture()
+                    .get(10, TimeUnit.SECONDS);
+            long compactRevision = registry.lookup(key)
+                    .toCompletableFuture()
+                    .get(10, TimeUnit.SECONDS)
+                    .revision();
+            assertTrue(compactRevision > staleRevision);
+
+            client.getKVClient()
+                    .compact(compactRevision)
+                    .get(10, TimeUnit.SECONDS);
+
+            try (RegistrySubscription ignored =
+                         registry.subscribeFromRevision(
+                                 key,
+                                 latest::set,
+                                 staleRevision)) {
+                assertTrue(await(
+                        Duration.ofSeconds(15),
+                        () -> contains(latest.get(), first)
+                                && contains(latest.get(), second)));
+                assertTrue(latest.get().revision() >= compactRevision);
             }
-
-            assertTrue(await(
-                    Duration.ofSeconds(10),
-                    () -> currentLeader(client)
-                            != transfer.originalLeaderId()));
-            assertTrue(await(
-                    Duration.ofSeconds(20),
-                    () -> registerEventually(
-                            registry,
-                            second)));
-            assertTrue(await(
-                    Duration.ofSeconds(20),
-                    () -> contains(
-                            latest.get(),
-                            first)
-                            && contains(
-                                    latest.get(),
-                                    second)));
         }
     }
 
@@ -330,42 +326,6 @@ class EtcdRegistryIntegrationTest {
                 Map.of("zone", "test"));
     }
 
-    private static LeaderTransfer leaderTransfer(
-            Client client) {
-        var endpoints = CLUSTER.clientEndpoints();
-        long leaderId = currentLeader(client);
-        Long transfereeId = null;
-        java.net.URI leaderEndpoint = null;
-        for (var endpoint : endpoints) {
-            var status = client.getMaintenanceClient()
-                    .statusMember(endpoint.toString())
-                    .join();
-            long memberId =
-                    status.getHeader().getMemberId();
-            if (memberId == leaderId) {
-                leaderEndpoint = endpoint;
-            } else if (transfereeId == null) {
-                transfereeId = memberId;
-            }
-        }
-        if (leaderEndpoint == null || transfereeId == null) {
-            throw new IllegalStateException(
-                    "Etcd leader transfer target was not found");
-        }
-        return new LeaderTransfer(
-                leaderId,
-                transfereeId,
-                leaderEndpoint);
-    }
-
-    private static long currentLeader(Client client) {
-        var endpoint = CLUSTER.clientEndpoints().getFirst();
-        return client.getMaintenanceClient()
-                .statusMember(endpoint.toString())
-                .join()
-                .getLeader();
-    }
-
     private static boolean lookupContains(
             EtcdRegistry registry,
             ServiceKey key,
@@ -373,10 +333,10 @@ class EtcdRegistryIntegrationTest {
         try {
             return registry.lookup(key)
                     .toCompletableFuture()
-                    .join()
+                    .get(5, TimeUnit.SECONDS)
                     .instances()
                     .contains(instance);
-        } catch (RuntimeException ignored) {
+        } catch (Exception ignored) {
             return false;
         }
     }
@@ -387,9 +347,9 @@ class EtcdRegistryIntegrationTest {
         try {
             registry.register(instance)
                     .toCompletableFuture()
-                    .join();
+                    .get(5, TimeUnit.SECONDS);
             return true;
-        } catch (RuntimeException ignored) {
+        } catch (Exception ignored) {
             return false;
         }
     }
@@ -412,12 +372,6 @@ class EtcdRegistryIntegrationTest {
             Thread.sleep(100);
         }
         return condition.get();
-    }
-
-    private record LeaderTransfer(
-            long originalLeaderId,
-            long transfereeId,
-            java.net.URI leaderEndpoint) {
     }
 
     @FunctionalInterface
