@@ -54,6 +54,8 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
      * @param resilienceOptions Consumer 容错参数
      * @param executionOptions Provider 执行资源参数
      * @param observerProvider 可观测性 Observer 提供器
+     * @param metadataPropagatorProvider Metadata 传播器提供器
+     * @param tracingBridgeProvider 分布式 Trace Bridge 提供器
      * @param properties Peach RPC 配置
      */
     public PeachRpcRuntimeCoordinator(
