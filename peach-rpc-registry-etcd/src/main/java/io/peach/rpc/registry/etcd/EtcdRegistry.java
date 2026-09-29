@@ -119,9 +119,38 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
     }
 
     @Override
-    public RegistrySubscription subscribe(ServiceKey key, RegistryListener listener) {
-        EtcdSubscription subscription = new EtcdSubscription(key, listener);
+    public RegistrySubscription subscribe(
+            ServiceKey key,
+            RegistryListener listener) {
+        EtcdSubscription subscription =
+                new EtcdSubscription(key, listener);
         subscription.start();
+        return subscription;
+    }
+
+    /**
+     * 从指定历史 Revision 建立 Watch。
+     *
+     * <p>该包级入口仅用于确定性验证 Etcd compaction 恢复路径：
+     * 当历史 Revision 已被压缩时，Watch 会先收到 CompactedException，
+     * 随后复用正常恢复逻辑执行 Range + 新 Watch。
+     *
+     * @param key 服务键
+     * @param listener 快照监听器
+     * @param revision Watch 起始 Revision，必须大于 0
+     * @return 可关闭订阅
+     */
+    RegistrySubscription subscribeFromRevision(
+            ServiceKey key,
+            RegistryListener listener,
+            long revision) {
+        if (revision <= 0L) {
+            throw new IllegalArgumentException(
+                    "revision must be positive");
+        }
+        EtcdSubscription subscription =
+                new EtcdSubscription(key, listener);
+        subscription.openWatch(revision);
         return subscription;
     }
 
