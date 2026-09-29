@@ -10,6 +10,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.codec.RpcCodecIds;
+import io.peach.rpc.observability.RpcConnectionCloseReason;
+import io.peach.rpc.observability.RpcConnectionRole;
+import io.peach.rpc.observability.RpcObserver;
 import io.peach.rpc.protocol.RpcFrame;
 import io.peach.rpc.protocol.RpcMessageType;
 import io.peach.rpc.protocol.RpcProtocolCodec;
@@ -326,7 +329,44 @@ class VertxRpcTransportTest {
     void clientShouldReconnectAfterServerRestart()
             throws Exception {
         int port = findFreePort();
-        RpcTransportOptions options = haOptions();
+        AtomicInteger reconnectScheduled =
+                new AtomicInteger();
+        AtomicInteger clientEstablished =
+                new AtomicInteger();
+        AtomicReference<RpcConnectionCloseReason> clientClose =
+                new AtomicReference<>();
+        RpcObserver observer = new RpcObserver() {
+            @Override
+            public void onConnectionEstablished(
+                    RpcConnectionRole role,
+                    RpcEndpoint endpoint,
+                    long durationNanos) {
+                if (role == RpcConnectionRole.CLIENT) {
+                    clientEstablished.incrementAndGet();
+                }
+            }
+
+            @Override
+            public void onConnectionReconnectScheduled(
+                    RpcEndpoint endpoint,
+                    int attempt,
+                    long delayMillis) {
+                reconnectScheduled.incrementAndGet();
+            }
+
+            @Override
+            public void onConnectionClosed(
+                    RpcConnectionRole role,
+                    RpcEndpoint endpoint,
+                    RpcConnectionCloseReason reason,
+                    Throwable error) {
+                if (role == RpcConnectionRole.CLIENT) {
+                    clientClose.set(reason);
+                }
+            }
+        };
+        RpcTransportOptions options =
+                haOptions().withObserver(observer);
         VertxRpcTransportClient client =
                 new VertxRpcTransportClient(options);
         RpcEndpoint endpoint =
@@ -374,6 +414,8 @@ class VertxRpcTransportTest {
                 assertArrayEquals(
                         new byte[] {2},
                         RpcProtocolCodec.decode(recovered).payload());
+                assertTrue(clientEstablished.get() >= 2);
+                assertTrue(reconnectScheduled.get() >= 1);
             } finally {
                 replacement.close();
             }
@@ -381,6 +423,16 @@ class VertxRpcTransportTest {
             client.close();
             first.close();
         }
+
+        long closeDeadline =
+                System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        while (clientClose.get() == null
+                && System.nanoTime() < closeDeadline) {
+            Thread.sleep(10L);
+        }
+        assertEquals(
+                RpcConnectionCloseReason.LOCAL_CLOSE,
+                clientClose.get());
     }
 
     @Test
