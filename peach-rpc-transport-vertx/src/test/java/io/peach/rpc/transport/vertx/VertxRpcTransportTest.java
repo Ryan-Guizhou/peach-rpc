@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -333,8 +334,8 @@ class VertxRpcTransportTest {
                 new AtomicInteger();
         AtomicInteger clientEstablished =
                 new AtomicInteger();
-        AtomicReference<RpcConnectionCloseReason> clientClose =
-                new AtomicReference<>();
+        ConcurrentLinkedQueue<RpcConnectionCloseReason> clientCloses =
+                new ConcurrentLinkedQueue<>();
         RpcObserver observer = new RpcObserver() {
             @Override
             public void onConnectionEstablished(
@@ -361,7 +362,7 @@ class VertxRpcTransportTest {
                     RpcConnectionCloseReason reason,
                     Throwable error) {
                 if (role == RpcConnectionRole.CLIENT) {
-                    clientClose.set(reason);
+                    clientCloses.add(reason);
                 }
             }
         };
@@ -416,6 +417,11 @@ class VertxRpcTransportTest {
                         RpcProtocolCodec.decode(recovered).payload());
                 assertTrue(clientEstablished.get() >= 2);
                 assertTrue(reconnectScheduled.get() >= 1);
+                assertTrue(clientCloses.stream().anyMatch(
+                        reason -> reason
+                                        == RpcConnectionCloseReason.REMOTE_CLOSE
+                                || reason
+                                        == RpcConnectionCloseReason.TRANSPORT_ERROR));
             } finally {
                 replacement.close();
             }
@@ -426,13 +432,13 @@ class VertxRpcTransportTest {
 
         long closeDeadline =
                 System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
-        while (clientClose.get() == null
+        while (!clientCloses.contains(
+                        RpcConnectionCloseReason.LOCAL_CLOSE)
                 && System.nanoTime() < closeDeadline) {
             Thread.sleep(10L);
         }
-        assertEquals(
-                RpcConnectionCloseReason.LOCAL_CLOSE,
-                clientClose.get());
+        assertTrue(clientCloses.contains(
+                RpcConnectionCloseReason.LOCAL_CLOSE));
     }
 
     @Test
