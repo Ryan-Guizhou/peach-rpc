@@ -122,6 +122,14 @@ public interface OrderService {
 - `peach.rpc.transport.heartbeat-timeout`：PING 后等待任意有效入站流量/PONG 的最大时间，默认 10 秒。
 - `peach.rpc.transport.reconnect-base-backoff`：异常连接下一次 request-driven 重连的基础 full-jitter 窗口，默认 50ms。
 - `peach.rpc.transport.reconnect-max-backoff`：重连 full-jitter 最大窗口，默认 3 秒。
+- `peach.rpc.transport.security.mode`：`PLAINTEXT` / `TLS` / `MTLS`，默认 `PLAINTEXT`。
+- `peach.rpc.transport.security.certificate-path`：本端 PEM 证书路径；Provider TLS/MTLS 与 Consumer MTLS 需要。
+- `peach.rpc.transport.security.private-key-path`：本端 PEM 私钥路径。
+- `peach.rpc.transport.security.trust-certificate-path`：信任 CA PEM 路径；Consumer TLS/MTLS 与 Provider MTLS 需要。
+- `peach.rpc.transport.security.hostname-verification`：Consumer Hostname Verification，默认 true。
+- `peach.rpc.transport.security.handshake-timeout`：TLS handshake timeout，默认 3 秒。
+- `peach.rpc.transport.security.reload-interval`：证书文件变化检查周期，默认 30 秒。
+- `peach.rpc.transport.security.expiry-warning-threshold`：证书过期前告警窗口，默认 7 天。
 - `peach.rpc.client.enabled`：默认 true，表示允许 Consumer；没有 `@PeachRpcReference` 时不会创建连接。
 - `peach.rpc.server.enabled`：默认 true，表示允许 Provider；没有 `@PeachRpcService` 时不会监听端口。
 - `peach.rpc.client.proxy`：Generated Stub 缺失时的 fallback，默认 `jdk`；可显式选择 `cglib` 或可选 Byte Buddy 模块提供的 `bytebuddy`。
@@ -143,35 +151,58 @@ public interface OrderService {
 - `peach.rpc.client.resilience.circuit-consecutive-failure-threshold`：方法级熔断连续失败阈值，默认 20。
 - `peach.rpc.client.resilience.circuit-open-duration`：Circuit OPEN 时间，默认 10 秒。
 
-## 6. 可观测性 Observer
+## 6. TLS / mTLS
 
-业务可以声明一个或多个 `RpcObserver` Bean。Starter 会在启动时组合这些 Observer，并同时注入 Consumer 与 Provider：
+TLS/mTLS 配置属于 Transport，不修改 Peach RPC v1 Header。启用后顺序为：
 
-```java
-@Bean
-RpcObserver rpcObserver() {
-    return new RpcObserver() {
-        @Override
-        public void onClientRetryScheduled(
-                ServiceKey serviceKey,
-                int methodId,
-                int nextAttempt,
-                long delayMillis,
-                Throwable cause) {
-            // Map to metrics / tracing / JFR.
-        }
-    };
-}
-```
+~~~text
+TCP connect
+ -> TLS/mTLS handshake
+ -> certificate verification
+ -> HELLO / HELLO_ACK
+ -> ACTIVE
+~~~
 
-Core 不依赖 Micrometer/OpenTelemetry。业务或后续 Adapter 负责把事件映射到具体观测系统。
+完整证书校验、在线 Reload、迁移与测试说明见 [TLS / mTLS 安全指南](security.md)。
 
-## 7. 注解驱动运行时
+## 7. 可观测性
+
+Core 的 `RpcObserver`、`RpcTracingBridge`、`RpcMetadataPropagator` 不依赖具体观测框架。业务可按需添加 Adapter：
+
+~~~xml
+<dependency>
+    <groupId>io.peach.rpc</groupId>
+    <artifactId>peach-rpc-observability-micrometer</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+</dependency>
+~~~
+
+~~~xml
+<dependency>
+    <groupId>io.peach.rpc</groupId>
+    <artifactId>peach-rpc-observability-opentelemetry</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+</dependency>
+~~~
+
+~~~xml
+<dependency>
+    <groupId>io.peach.rpc</groupId>
+    <artifactId>peach-rpc-observability-jfr</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+</dependency>
+~~~
+
+三个 Adapter 都不是 Starter 强制依赖。Micrometer/OpenTelemetry 在对应 Bean 存在时自动装配；JFR 通过 `peach.rpc.observability.jfr.enabled=true` 启用。
+
+完整指标、Trace 和 JFR 说明见 [可观测性指南](observability.md)。
+
+## 8. 注解驱动运行时
 
 `@PeachRpcReference` 首次出现时惰性创建 Consumer；`@PeachRpcService` 首次出现时创建 Provider，但 Server 只在所有服务 Bean 完成注册后启动。同一应用同时包含两类注解是合法的上下游组合服务。
 
 程序化注入 `PeachRpcClient` 会按需创建 Consumer。程序化注入 `PeachRpcServer` 只创建运行时，不由注解生命周期自动启动；调用方应显式完成服务注册和 `start()`。
 
-## 8. Bean 覆盖
+## 9. Bean 覆盖
 
 自动配置对 Registry、Codec Registry、TransportFactory、LoadBalancer、ProxyFactory、Client、Server 均使用 `@ConditionalOnMissingBean`，业务项目可以通过声明同类型 Bean 覆盖默认装配。
