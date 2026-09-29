@@ -76,7 +76,17 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
             String[] endpoints,
             long leaseTtlSeconds,
             String namespace) {
-        this.client = Client.builder().endpoints(endpoints).build();
+        this(
+                Client.builder().endpoints(endpoints).build(),
+                leaseTtlSeconds,
+                namespace);
+    }
+
+    EtcdRegistry(
+            Client client,
+            long leaseTtlSeconds,
+            String namespace) {
+        this.client = Objects.requireNonNull(client, "client");
         this.leaseTtlSeconds = leaseTtlSeconds;
         this.root = "default".equals(namespace)
                 ? DEFAULT_ROOT
