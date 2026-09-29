@@ -63,5 +63,16 @@ jobs:
           PEACH_RPC_SOAK_OUTPUT: "target/v2d2-soak-smoke.json"
         run: bash scripts/run_v2d2_soak.sh
 
+      - name: Upload V2-D.2 smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2d2-smoke-evidence-${{ github.run_id }}
+          path: |
+            target/v2d2-matrix-smoke
+            target/v2d2-soak-smoke.json
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Verify independent JVM examples
         run: bash scripts/run_example_process_e2e.sh
