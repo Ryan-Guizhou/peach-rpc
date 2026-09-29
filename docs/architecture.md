@@ -10,7 +10,7 @@ Peach RPC 的长期目标是高吞吐、低尾延迟、高并发和可控资源�
 
 ## 2. 当前模块边界
 
-当前 Reactor 保留 12 个具有真实依赖隔离价值的顶层模块。编译期 Codegen、Vert.x、Etcd、Nacos、Fory、CGLIB、Byte Buddy 与 Spring 均不把第三方类型泄漏到 Core 公共契约。
+当前 Reactor 保留 15 个具有真实依赖隔离价值的顶层模块。V2-C.3 新增 Micrometer、OpenTelemetry、JFR 三个 Adapter 模块，只用于隔离第三方观测依赖；编译期 Codegen、Vert.x、Etcd、Nacos、Fory、CGLIB、Byte Buddy、观测框架与 Spring 均不把第三方类型泄漏到 Core 公共契约。
 
 ```mermaid
 flowchart TB
@@ -29,7 +29,11 @@ flowchart TB
     Registrar --> Etcd
     Discovery --> Nacos[Nacos Adapter]
     Registrar --> Nacos
-    Transport --> Vertx[Vert.x TCP]
+    Transport --> Vertx[Vert.x TCP / TLS / mTLS]
+    Core --> Obs[RpcObserver / Tracing Bridge]
+    Obs --> Metrics[Micrometer Adapter]
+    Obs --> Tracing[OpenTelemetry Adapter]
+    Obs --> Jfr[JFR Adapter]
     Core -. fallback .-> JDK[JDK Proxy]
     Core -. optional fallback .-> Cglib[CGLIB]
     Core -. optional fallback .-> ByteBuddy[Byte Buddy]
@@ -100,12 +104,15 @@ Vert.x Client 为每个 Endpoint 维护可配置数量的连接分片。
 - FrameAccumulator；
 - negotiated capabilities。
 
-连接建立后必须完成 HELLO / HELLO_ACK。Client/Server 均设置独立 handshake timeout。V2-C.2 起 HEARTBEAT 作为握手 Feature 协商：双方都支持时，空闲连接使用 PING/PONG 主动检测 silent/half-open connection；异常连接由 Consumer 在下一次业务请求时通过单飞连接槽重建，并使用 exponential backoff + full jitter。
+启用 TLS/mTLS 时，TLS handshake 和证书校验先于 Peach RPC HELLO；明文模式则直接进入 HELLO / HELLO_ACK。Client/Server 均设置协议 handshake timeout，TLS 还有独立 SSL handshake timeout。V2-C.2 起 HEARTBEAT 作为握手 Feature 协商：双方都支持时，空闲连接使用 PING/PONG 主动检测 silent/half-open connection；异常连接由 Consumer 在下一次业务请求时通过单飞连接槽重建，并使用 exponential backoff + full jitter。
 
 ```mermaid
 stateDiagram-v2
     [*] --> Connecting
-    Connecting --> Handshaking: TCP connected
+    Connecting --> TLSHandshake: TLS/mTLS enabled
+    Connecting --> Handshaking: PLAINTEXT
+    TLSHandshake --> Handshaking: certificate verified
+    TLSHandshake --> Closed: TLS rejected/timeout
     Handshaking --> Active: HELLO/ACK negotiated
     Handshaking --> Closed: timeout/rejected
     Active --> HeartbeatWait: idle / PING
@@ -143,17 +150,23 @@ Request deadline 直接写 ASCII metadata，不创建 Map/Long String/StringBuil
 
 ## 8. 可观测性边界
 
-Core 提供 `RpcObserver`，不依赖 Micrometer、OpenTelemetry 或 JFR。当前暴露：
+Core 提供低依赖 `RpcObserver`、`RpcTracingBridge` 与 `RpcMetadataPropagator`，不依赖 Micrometer、OpenTelemetry 或 JFR。当前覆盖：
 
-- Consumer attempt 完成；
-- Consumer retry 调度；
-- Provider invocation 完成；
-- connection established；
-- reconnect scheduled；
-- heartbeat timeout；
-- connection closed。
+- Consumer attempt/retry；
+- Provider invocation；
+- connection established/reconnect/heartbeat timeout/closed；
+- Registry register/unregister/lookup/subscribe 与 Etcd recovery；
+- TLS handshake；
+- certificate reload/expiry warning；
+- W3C Trace Context/Baggage metadata 传播。
 
-连接事件带 CLIENT/SERVER 角色以及 LOCAL_CLOSE / GO_AWAY / HEARTBEAT_TIMEOUT / TRANSPORT_ERROR / PROTOCOL_ERROR / REMOTE_CLOSE 等归一化关闭原因。默认 NOOP Observer 不创建事件对象；多个 Observer 可以组合，且单个 Observer 的运行时异常不会反向破坏 RPC 主链。V2-C.3 的 Micrometer、OpenTelemetry 和 JFR Adapter 将直接映射这些现有事件，而不再修改 Transport API。
+V2-C.3 的三个独立 Adapter：
+
+- `peach-rpc-observability-micrometer`：标准 metrics；
+- `peach-rpc-observability-opentelemetry`：CLIENT/SERVER Span 与 W3C propagation；
+- `peach-rpc-observability-jfr`：慢调用、恢复、TLS/Registry 等低频运行诊断。
+
+默认 NOOP 路径不创建 Trace Metadata。Observer/Propagator 的运行时异常被隔离，不能反向破坏 RPC 主链。
 
 ## 9. 控制面
 
@@ -180,8 +193,8 @@ Etcd Adapter 的 Watch 出错后会重新 Range 当前快照，再从有效 revi
 - Transport/Core 仍以 byte[] frame 为边界；
 - FrameAccumulator 仍需产出完整 byte[]；
 - Fory 参数仍存在 Object[]；
-- TLS/mTLS 未实现；
-- Micrometer/OpenTelemetry/JFR 具体 Adapter 仍待接入；
+- TLS/mTLS 已接入 Vert.x Transport，并支持 PEM 有效期校验、Hostname Verification、mTLS ClientAuth 和在线 SSL material Reload；
+- Micrometer/OpenTelemetry/JFR Adapter 已独立接入，真实 RPC Trace E2E 验证跨 wire 父子 Span；
 - Etcd/Nacos 网络黑洞、partition 与长时间恢复 soak 仍需补强；
 - Fory 稳定 Type ID / Schema fingerprint 未实现。
 
