@@ -1,5 +1,6 @@
 package io.peach.rpc.spring.autoconfigure;
 
+import io.peach.rpc.observability.RpcSecurityMode;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -279,6 +280,7 @@ public class PeachRpcProperties {
         private Duration heartbeatTimeout = Duration.ofSeconds(10);
         private Duration reconnectBaseBackoff = Duration.ofMillis(50);
         private Duration reconnectMaxBackoff = Duration.ofSeconds(3);
+        private final Security security = new Security();
 
         /**
          * 返回Transport SPI 名称。
@@ -476,6 +478,126 @@ public class PeachRpcProperties {
          */
         public void setReconnectMaxBackoff(Duration reconnectMaxBackoff) {
             this.reconnectMaxBackoff = reconnectMaxBackoff;
+        }
+
+        /**
+         * 返回 Transport 安全配置。
+         *
+         * @return TLS/mTLS 配置
+         */
+        public Security getSecurity() {
+            return security;
+        }
+    }
+
+    /** Transport TLS/mTLS 配置。 */
+    public static class Security {
+
+        /** 创建安全配置。 */
+        public Security() {
+        }
+
+        private RpcSecurityMode mode =
+                RpcSecurityMode.PLAINTEXT;
+        private String certificatePath = "";
+        private String privateKeyPath = "";
+        private String trustCertificatePath = "";
+        private boolean hostnameVerification = true;
+        private Duration handshakeTimeout =
+                Duration.ofSeconds(3);
+        private Duration reloadInterval =
+                Duration.ofSeconds(30);
+        private Duration expiryWarningThreshold =
+                Duration.ofDays(7);
+
+        /** @return 安全模式 */
+        public RpcSecurityMode getMode() {
+            return mode;
+        }
+
+        /** @param mode 安全模式 */
+        public void setMode(RpcSecurityMode mode) {
+            this.mode = mode;
+        }
+
+        /** @return PEM 证书路径 */
+        public String getCertificatePath() {
+            return certificatePath;
+        }
+
+        /** @param certificatePath PEM 证书路径 */
+        public void setCertificatePath(
+                String certificatePath) {
+            this.certificatePath = certificatePath;
+        }
+
+        /** @return PEM 私钥路径 */
+        public String getPrivateKeyPath() {
+            return privateKeyPath;
+        }
+
+        /** @param privateKeyPath PEM 私钥路径 */
+        public void setPrivateKeyPath(
+                String privateKeyPath) {
+            this.privateKeyPath = privateKeyPath;
+        }
+
+        /** @return PEM CA/信任证书路径 */
+        public String getTrustCertificatePath() {
+            return trustCertificatePath;
+        }
+
+        /** @param trustCertificatePath PEM CA/信任证书路径 */
+        public void setTrustCertificatePath(
+                String trustCertificatePath) {
+            this.trustCertificatePath =
+                    trustCertificatePath;
+        }
+
+        /** @return 是否启用 hostname verification */
+        public boolean isHostnameVerification() {
+            return hostnameVerification;
+        }
+
+        /** @param hostnameVerification 是否校验主机名 */
+        public void setHostnameVerification(
+                boolean hostnameVerification) {
+            this.hostnameVerification =
+                    hostnameVerification;
+        }
+
+        /** @return TLS 握手超时 */
+        public Duration getHandshakeTimeout() {
+            return handshakeTimeout;
+        }
+
+        /** @param handshakeTimeout TLS 握手超时 */
+        public void setHandshakeTimeout(
+                Duration handshakeTimeout) {
+            this.handshakeTimeout = handshakeTimeout;
+        }
+
+        /** @return 证书 reload 检查周期 */
+        public Duration getReloadInterval() {
+            return reloadInterval;
+        }
+
+        /** @param reloadInterval reload 检查周期 */
+        public void setReloadInterval(
+                Duration reloadInterval) {
+            this.reloadInterval = reloadInterval;
+        }
+
+        /** @return 证书过期前告警窗口 */
+        public Duration getExpiryWarningThreshold() {
+            return expiryWarningThreshold;
+        }
+
+        /** @param expiryWarningThreshold 过期告警窗口 */
+        public void setExpiryWarningThreshold(
+                Duration expiryWarningThreshold) {
+            this.expiryWarningThreshold =
+                    expiryWarningThreshold;
         }
     }
 
