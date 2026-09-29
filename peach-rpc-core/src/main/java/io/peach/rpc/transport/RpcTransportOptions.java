@@ -241,6 +241,28 @@ public record RpcTransportOptions(
     }
 
     /**
+     * 使用指定 Observer 创建等价传输配置。
+     *
+     * @param value 连接生命周期 Observer
+     * @return 带 Observer 的新配置
+     */
+    public RpcTransportOptions withObserver(RpcObserver value) {
+        return new RpcTransportOptions(
+                maxInflightPerConnection,
+                maxFrameBytes,
+                maxWriteQueueBytes,
+                connectTimeout,
+                handshakeTimeout,
+                codecIds,
+                connectionsPerEndpoint,
+                heartbeatInterval,
+                heartbeatTimeout,
+                reconnectBaseBackoff,
+                reconnectMaxBackoff,
+                value);
+    }
+
+    /**
      * 创建本端连接握手能力。
      *
      * @return 连接能力
