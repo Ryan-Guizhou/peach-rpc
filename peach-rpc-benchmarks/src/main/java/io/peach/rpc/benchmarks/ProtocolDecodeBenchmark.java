@@ -11,6 +11,7 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -23,13 +24,17 @@ import org.openjdk.jmh.annotations.State;
 @State(Scope.Thread)
 public class ProtocolDecodeBenchmark {
 
+    /** Payload 字节数。 */
+    @Param({"64", "256", "1024", "16384", "1048576"})
+    public int payloadSize;
+
     private byte[] encoded;
 
     /** 创建协议解析基准。 */
     public ProtocolDecodeBenchmark() {
     }
 
-    /** 准备 1 KiB Payload 的固定测试帧。 */
+    /** 按参数准备固定测试帧。 */
     @Setup
     public void setup() {
         encoded = RpcProtocolCodec.encode(new RpcFrame(
@@ -42,7 +47,7 @@ public class ProtocolDecodeBenchmark {
                 Map.of(
                         "deadlineEpochMillis",
                         "2000000000000"),
-                new byte[1024]));
+                new byte[payloadSize]));
     }
 
     /**
@@ -58,6 +63,16 @@ public class ProtocolDecodeBenchmark {
                 + Long.parseLong(
                         frame.metadata().get(
                                 "deadlineEpochMillis"));
+    }
+
+    /**
+     * 测量只读取 Request ID 的固定 Header 快路径。
+     *
+     * @return Request ID
+     */
+    @Benchmark
+    public long requestIdHeaderFastPath() {
+        return RpcProtocolCodec.readRequestId(encoded);
     }
 
     /**
