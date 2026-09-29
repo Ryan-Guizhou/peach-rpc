@@ -5,6 +5,8 @@ import io.peach.rpc.api.RpcRemoteError;
 import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.api.RpcTimeoutException;
 import io.peach.rpc.codec.RpcCodecIds;
+import io.peach.rpc.observability.RpcConnectionCloseReason;
+import io.peach.rpc.observability.RpcConnectionRole;
 import io.peach.rpc.protocol.RpcErrorCodec;
 import io.peach.rpc.protocol.RpcFeature;
 import io.peach.rpc.protocol.RpcFrame;
@@ -101,8 +103,13 @@ final class VertxRpcTransportServer implements RpcTransportServer {
         private boolean connectionDraining;
         private long handshakeTimerId = -1L;
         private long heartbeatTimerId = -1L;
-        private long lastReadNanos = System.nanoTime();
+        private final long createdAtNanos = System.nanoTime();
+        private long lastReadNanos = createdAtNanos;
         private long pingSentAtNanos;
+        private RpcConnectionCloseReason closeReason =
+                RpcConnectionCloseReason.REMOTE_CLOSE;
+        private Throwable closeError;
+        private boolean closeObserved;
         private RpcNegotiatedCapabilities negotiated;
 
         private ServerConnection(
@@ -133,6 +140,7 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                         future.cancel(true));
                 inflight.clear();
                 connections.remove(this);
+                observeClosed();
                 checkDrainComplete();
             });
             handshakeTimerId = vertx.setTimer(
@@ -230,6 +238,14 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                 cancelHandshakeTimer();
                 socket.write(Buffer.buffer(encoded))
                         .onSuccess(ignored -> {
+                            if (options.observer().enabled()) {
+                                options.observer()
+                                        .onConnectionEstablished(
+                                                RpcConnectionRole.SERVER,
+                                                remote,
+                                                System.nanoTime()
+                                                        - createdAtNanos);
+                            }
                             startHeartbeat();
                             if (draining.get()) {
                                 beginDrain();
@@ -311,9 +327,21 @@ final class VertxRpcTransportServer implements RpcTransportServer {
             if (pingSentAtNanos > 0L) {
                 if (now - pingSentAtNanos
                         >= options.heartbeatTimeout().toNanos()) {
-                    closeWithError(new RpcTimeoutException(
-                            "RPC heartbeat timed out for "
-                                    + remote.authority()));
+                    RpcTimeoutException error =
+                            new RpcTimeoutException(
+                                    "RPC heartbeat timed out for "
+                                            + remote.authority());
+                    if (options.observer().enabled()) {
+                        options.observer()
+                                .onConnectionHeartbeatTimeout(
+                                        RpcConnectionRole.SERVER,
+                                        remote,
+                                        now - pingSentAtNanos);
+                    }
+                    markClose(
+                            RpcConnectionCloseReason.HEARTBEAT_TIMEOUT,
+                            error);
+                    closeWithError(error);
                 }
                 return;
             }
@@ -402,6 +430,9 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                 return;
             }
             connectionDraining = true;
+            markClose(
+                    RpcConnectionCloseReason.GO_AWAY,
+                    null);
             cancelHeartbeatTimer();
             if (!handshakeComplete) {
                 socket.close();
@@ -463,6 +494,9 @@ final class VertxRpcTransportServer implements RpcTransportServer {
             if (!open) {
                 return;
             }
+            markClose(
+                    RpcConnectionCloseReason.PROTOCOL_ERROR,
+                    error);
             goAwayAndClose(
                     RpcStatus.BAD_REQUEST,
                     error.getMessage() == null
@@ -475,6 +509,11 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                 String message) {
             if (!open) {
                 return;
+            }
+            if (closeReason == RpcConnectionCloseReason.REMOTE_CLOSE) {
+                markClose(
+                        RpcConnectionCloseReason.GO_AWAY,
+                        null);
             }
             cancelHandshakeTimer();
             cancelHeartbeatTimer();
@@ -497,6 +536,13 @@ final class VertxRpcTransportServer implements RpcTransportServer {
             if (!open) {
                 return;
             }
+            if (closeReason == RpcConnectionCloseReason.REMOTE_CLOSE) {
+                markClose(
+                        error instanceof RpcProtocolException
+                                ? RpcConnectionCloseReason.PROTOCOL_ERROR
+                                : RpcConnectionCloseReason.TRANSPORT_ERROR,
+                        error);
+            }
             cancelHandshakeTimer();
             cancelHeartbeatTimer();
             LOGGER.debug(
@@ -504,6 +550,35 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                     remote.authority(),
                     error);
             socket.close();
+        }
+
+        private void closeLocally() {
+            if (!open) {
+                return;
+            }
+            markClose(
+                    RpcConnectionCloseReason.LOCAL_CLOSE,
+                    null);
+            socket.close();
+        }
+
+        private void markClose(
+                RpcConnectionCloseReason reason,
+                Throwable error) {
+            closeReason = reason;
+            closeError = error;
+        }
+
+        private void observeClosed() {
+            if (closeObserved || !options.observer().enabled()) {
+                return;
+            }
+            closeObserved = true;
+            options.observer().onConnectionClosed(
+                    RpcConnectionRole.SERVER,
+                    remote,
+                    closeReason,
+                    closeError);
         }
     }
 
@@ -564,7 +639,7 @@ final class VertxRpcTransportServer implements RpcTransportServer {
     @Override
     public void close() {
         draining.set(true);
-        connections.forEach(connection -> connection.socket.close());
+        connections.forEach(ServerConnection::closeLocally);
         server.close();
         vertx.close();
     }
