@@ -341,7 +341,9 @@ flowchart LR
 4. 新增固定 Header Request ID 无对象 accessor；
 5. Client response routing 移除临时 `ByteBuffer`；
 6. Server 正常 REQUEST tracking 移除完整 `RpcFrame.decode` 及其 Metadata/Payload copy；
-7. v1 wire、Fory Codec ID 1 payload、TLS/Trace/Registry 语义保持不变。
+7. timeout budget 原地刷新不再创建 `RpcFrameView`；
+8. FrameAccumulator 增加 complete/fragmented benchmark，并复用固定 32B Header 数组；
+9. v1 wire、Fory Codec ID 1 payload、TLS/Trace/Registry 语义保持不变。
 
 ### 8.2 继续补完整基准矩阵
 
