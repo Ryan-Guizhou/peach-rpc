@@ -37,9 +37,9 @@ EXPECTED_MODULES = (
     "peach-rpc-examples",
     "peach-rpc-benchmarks",
 )
-SECTION = re.compile(r"<!--\\s*doc-section:([a-zA-Z0-9_.-]+)\\s*-->")
+SECTION = re.compile(r"<!--\s*doc-section:([a-zA-Z0-9_.-]+)\s*-->")
 CAPABILITY_STATUS = re.compile(
-    r"<!--\\s*capability-status:([a-zA-Z0-9_.-]+)=([a-zA-Z0-9_.-]+)\\s*-->"
+    r"<!--\s*capability-status:([a-zA-Z0-9_.-]+)=([a-zA-Z0-9_.-]+)\s*-->"
 )
 MARKDOWN_LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 CHINESE = re.compile(r"[\u4e00-\u9fff]")
