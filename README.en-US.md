@@ -7,9 +7,9 @@
 
 Peach RPC is a high-performance and extensible Java RPC framework. The `0.1.x` line focuses on a durable data/control-plane foundation: long-lived multiplexed connections, local service directories, bounded concurrency, SPI extensions, a binary protocol, a Spring Boot Starter, and reproducible benchmarks.
 
-> Status: Preview. V2-C.1 delivers annotation-driven runtimes, split API/Provider/Consumer examples, and the Nacos 3.2.4 Registry Adapter. The current V2-C.2 development branch adds negotiated heartbeat/idle detection, half-open connection eviction, bounded full-jitter reconnect backoff, and a rolling-upgrade-compatible relative timeout budget. Registry chaos testing, TLS/mTLS, concrete observability adapters, wire compatibility, and the full performance matrix remain production gates. See the [Production Roadmap / Capability Matrix](docs/production-roadmap.md) for the single authoritative status view.
+> Status: Preview. V2-C.1 delivers annotation-driven runtimes, split API/Provider/Consumer examples, and the Nacos 3.2.4 Registry Adapter. V2-C.2 is Current on this branch: negotiated heartbeat/idle detection, bounded full-jitter reconnect, relative timeout budgets, Etcd compaction/restart/three-node leader-transfer recovery, Nacos restart/re-registration/re-subscription, independent-JVM recovery E2E, and connection lifecycle observation are implemented and verified. The project remains Preview because TLS/mTLS, Micrometer/OpenTelemetry/JFR adapters, wire compatibility, the full performance matrix, network-blackhole/long soak tests, and capacity/upgrade/rollback guidance are still production gates. See the [Production Roadmap / Capability Matrix](docs/production-roadmap.md) for the authoritative status view.
 
-Current capabilities include Vert.x TCP multiplexing with connection-local request IDs, negotiated heartbeat/idle detection and reconnect backoff, Etcd Lease + revision-aware Range/Watch discovery, Nacos temporary-instance discovery, immutable array service snapshots, allocation-light P2C+EWMA selection, annotation-driven lazy runtimes, BLOCKING_VIRTUAL/CPU/guarded DIRECT provider execution, generated client/server paths, bounded retries, outlier ejection, circuit breaking, cancellation propagation, graceful draining, and split Spring Boot Provider/Consumer examples.
+Current capabilities include Vert.x TCP multiplexing with connection-local request IDs, negotiated heartbeat/idle detection and reconnect backoff, Etcd Lease + revision-aware Range/Watch discovery with compaction/restart/leader-transfer recovery coverage, Nacos temporary-instance discovery with restart/re-registration/re-subscription E2E, immutable array service snapshots, allocation-light P2C+EWMA selection, annotation-driven lazy runtimes, BLOCKING_VIRTUAL/CPU/guarded DIRECT provider execution, generated client/server paths, bounded retries, outlier ejection, circuit breaking, cancellation propagation, graceful draining, independent-JVM examples, and connection lifecycle events through the low-dependency RpcObserver contract.
 
 <!-- doc-section:architecture -->
 ## Architecture
@@ -115,6 +115,12 @@ For the high-performance path, annotate service interfaces with `@PeachRpcContra
 ```bash
 python3 scripts/check_project.py
 mvn -B -ntp clean verify -Pquality
+```
+
+CI also runs the independent-JVM Nacos recovery E2E. The bounded three-node Etcd leader-transfer chaos gate can be run locally with:
+
+```bash
+mvn -B -ntp -pl peach-rpc-registry-etcd -am test -Petcd-chaos
 ```
 
 <!-- doc-section:docs -->
