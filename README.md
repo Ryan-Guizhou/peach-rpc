@@ -7,7 +7,7 @@
 
 Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框架。当前 `0.1.x` 重点不是堆叠功能，而是先建立可长期演进的数据面与控制面边界：长连接多路复用、本地服务目录、有界并发、SPI 扩展、二进制协议、Spring Boot Starter 和可重复性能基准。
 
-> 当前状态：Preview。V2-C.1 已完成注解驱动运行时、Examples 拆分与 Nacos 3.2.4 Registry Adapter；V2-C.2 当前开发分支已补齐协商式 Heartbeat/idle detection、异常连接摘除、带 full jitter 的有界重连退避，以及兼容旧节点的 relative timeout budget。Registry Chaos、TLS/mTLS、可观测 Adapter、Wire Compatibility 与完整性能矩阵仍属于后续生产门禁。统一能力状态与优先级见 [Production Roadmap / Capability Matrix](docs/production-roadmap.md)。
+> 当前状态：Preview。V2-C.1 已完成注解驱动运行时、Examples 拆分与 Nacos 3.2.4 Registry Adapter；V2-C.2 当前分支已完成连接与控制面 HA 闭环，包括协商式 Heartbeat/idle detection、异常连接摘除、带 full jitter 的有界重连、relative timeout budget、Etcd compaction/restart/3 节点 leader-transfer 恢复验证、Nacos restart/re-registration/re-subscribe、独立 JVM 恢复 E2E，以及连接生命周期 RpcObserver。项目仍保持 Preview：TLS/mTLS、Micrometer/OpenTelemetry/JFR Adapter、Wire Compatibility、完整性能矩阵、网络黑洞/长时间 soak、容量与升级回滚仍是后续生产门禁。统一能力状态与优先级见 [Production Roadmap / Capability Matrix](docs/production-roadmap.md)。
 
 核心能力：
 
@@ -23,10 +23,10 @@ Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框�
 - Consumer 可使用 `@PeachRpcIdempotent` 显式声明允许自动重试的方法；重试受全局 Budget、整体 Deadline 与抖动退避共同约束。
 - Endpoint 连续基础设施失败会被临时剔除，方法级连续失败会触发 Circuit Breaker，避免故障实例和依赖持续放大尾延迟。
 - Consumer timeout/主动取消会通过 `CANCEL` 控制帧传播到 Provider；Provider 关闭时先注销服务、发送 GO_AWAY 并等待 inflight 排空。
-- Core 提供无 Micrometer/OpenTelemetry 依赖的 `RpcObserver`，支持 Client attempt/retry 与 Provider invocation 生命周期事件；默认 NOOP 不创建事件对象。
-- Etcd Adapter 增加真实 Etcd 集成测试，覆盖注册/注销、Watch 快照、namespace 隔离和 Lease 过期；Lease keepalive 丢失后会重新获取 Lease 并恢复活跃注册。
+- Core 提供无 Micrometer/OpenTelemetry 依赖的 `RpcObserver`，支持 Client attempt/retry、Provider invocation，以及 connection established/reconnect scheduled/heartbeat timeout/closed 生命周期事件；连接事件带 CLIENT/SERVER 角色与归一化关闭原因，默认 NOOP 不创建事件对象。
+- Etcd Adapter 具备真实 Etcd 集成与 Chaos 门禁：覆盖注册/注销、Watch、namespace、Lease 过期、compaction 后 Range+Watch 恢复、单节点 restart 后 Lease/注册恢复，以及独立 3 节点 leader transfer；Lease 恢复同时使用 keepalive 信号、低频 TTL watchdog、stale lease callback 保护和有界 grant。
 - Provider 的 Registry 注册/回滚/注销操作具有独立控制面超时，避免停机流程无限阻塞。
-- `peach-rpc-examples` 拆为共享 API、独立 Provider 和独立 Consumer，并通过 Nacos 完成 Generated Stub -> Vert.x TCP -> Fory -> Provider 的真实 round-trip。
+- `peach-rpc-examples` 拆为共享 API、独立 Provider 和独立 Consumer；CI 会真正启动两个可执行 JAR，验证 Provider restart、Nacos restart、Provider 临时实例重注册、Consumer 重订阅以及 Endpoint 迁移后的恢复。
 
 <!-- doc-section:architecture -->
 ## 架构
@@ -198,7 +198,7 @@ python3 scripts/check_project.py
 mvn -B -ntp clean verify -Pquality
 ```
 
-CI 使用 JDK 21 执行相同门禁。根 POM 使用 `${revision}` 和 flatten plugin，后续可通过 Maven `deploy` 发布到 Nexus，再由 `peach-cloud` 直接引入 Starter。
+CI 使用 JDK 21 执行相同门禁，并额外运行独立 JVM + Nacos restart 恢复 E2E。Etcd 3 节点 leader-transfer Chaos 通过独立、10 分钟有界的 workflow 执行；本地可使用 `mvn -B -ntp -pl peach-rpc-registry-etcd -am test -Petcd-chaos`。根 POM 使用 `${revision}` 和 flatten plugin，后续可通过 Maven `deploy` 发布到 Nexus，再由 `peach-cloud` 直接引入 Starter。
 
 <!-- doc-section:docs -->
 ## 文档
