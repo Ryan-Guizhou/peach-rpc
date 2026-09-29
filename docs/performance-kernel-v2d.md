@@ -235,13 +235,15 @@ REQUEST/RESPONSE byte[]
 - [x] header requestId fast accessor；
 - [x] Client routing 移除 `ByteBuffer.wrap`；
 - [x] Server normal request routing 移除 full `RpcFrame.decode`；
+- [x] timeout budget rewrite 移除每请求 `RpcFrameView`；
 - [x] compatibility tests；
 - [ ] Transport tests；
 - [ ] `mvn -B -ntp clean verify -Pquality`。
 
 ### D3
 
-- [ ] FrameAccumulator benchmark；
+- [x] FrameAccumulator complete/fragmented benchmark；
+- [x] FrameAccumulator 固定 Header 复用 32B 数组，移除每 Frame Header 临时副本；
 - [ ] Buffer ownership 是否进入默认路径有数据结论；
 - [ ] CompletableFuture/PendingRequest 是否重构有 allocation 证据；
 - [ ] Object[] 是否值得以 wire/API 复杂度交换有数据结论。
