@@ -5,6 +5,7 @@ import io.peach.rpc.protocol.RpcCompressionIds;
 import io.peach.rpc.protocol.RpcConnectionCapabilities;
 import io.peach.rpc.protocol.RpcFeature;
 import io.peach.rpc.protocol.RpcProtocolCodec;
+import io.peach.rpc.observability.RpcObserver;
 import java.time.Duration;
 import java.util.Set;
 
@@ -22,6 +23,7 @@ import java.util.Set;
  * @param heartbeatTimeout PING 发出后等待活跃流量/PONG 的最长时间
  * @param reconnectBaseBackoff 异常建连/断链后的基础重连退避
  * @param reconnectMaxBackoff 重连退避最大窗口
+ * @param observer 连接生命周期 Observer
  */
 public record RpcTransportOptions(
         int maxInflightPerConnection,
@@ -34,7 +36,8 @@ public record RpcTransportOptions(
         Duration heartbeatInterval,
         Duration heartbeatTimeout,
         Duration reconnectBaseBackoff,
-        Duration reconnectMaxBackoff) {
+        Duration reconnectMaxBackoff,
+        RpcObserver observer) {
 
     private static final Duration DEFAULT_HEARTBEAT_INTERVAL =
             Duration.ofSeconds(30);
@@ -57,7 +60,8 @@ public record RpcTransportOptions(
             DEFAULT_HEARTBEAT_INTERVAL,
             DEFAULT_HEARTBEAT_TIMEOUT,
             DEFAULT_RECONNECT_BASE_BACKOFF,
-            DEFAULT_RECONNECT_MAX_BACKOFF);
+            DEFAULT_RECONNECT_MAX_BACKOFF,
+            RpcObserver.noop());
 
     /**
      * 保留 V2-A 四参数构造方式。
@@ -167,6 +171,48 @@ public record RpcTransportOptions(
                 DEFAULT_RECONNECT_MAX_BACKOFF);
     }
 
+    /**
+     * 保留 V2-C.2 十一参数构造方式，默认使用 NOOP Observer。
+     *
+     * @param maxInflightPerConnection 单连接最大并发请求数
+     * @param maxFrameBytes 单帧最大字节数
+     * @param maxWriteQueueBytes 写队列最大字节数
+     * @param connectTimeout 建连超时
+     * @param handshakeTimeout 握手超时
+     * @param codecIds 可用 Codec
+     * @param connectionsPerEndpoint 每端点连接数
+     * @param heartbeatInterval Heartbeat 间隔
+     * @param heartbeatTimeout Heartbeat 超时
+     * @param reconnectBaseBackoff 基础重连退避
+     * @param reconnectMaxBackoff 最大重连退避
+     */
+    public RpcTransportOptions(
+            int maxInflightPerConnection,
+            int maxFrameBytes,
+            int maxWriteQueueBytes,
+            Duration connectTimeout,
+            Duration handshakeTimeout,
+            Set<Byte> codecIds,
+            int connectionsPerEndpoint,
+            Duration heartbeatInterval,
+            Duration heartbeatTimeout,
+            Duration reconnectBaseBackoff,
+            Duration reconnectMaxBackoff) {
+        this(
+                maxInflightPerConnection,
+                maxFrameBytes,
+                maxWriteQueueBytes,
+                connectTimeout,
+                handshakeTimeout,
+                codecIds,
+                connectionsPerEndpoint,
+                heartbeatInterval,
+                heartbeatTimeout,
+                reconnectBaseBackoff,
+                reconnectMaxBackoff,
+                RpcObserver.noop());
+    }
+
     /** 校验容量、超时与能力配置。 */
     public RpcTransportOptions {
         if (maxInflightPerConnection <= 0
@@ -187,6 +233,7 @@ public record RpcTransportOptions(
                     "reconnectMaxBackoff must be >= reconnectBaseBackoff");
         }
         codecIds = codecIds == null ? Set.of() : Set.copyOf(codecIds);
+        observer = observer == null ? RpcObserver.noop() : observer;
         if (codecIds.isEmpty()) {
             throw new IllegalArgumentException(
                     "At least one transport codec id is required");
