@@ -133,7 +133,7 @@ class OpenTelemetryRpcEndToEndTest {
     }
 
     /** 测试服务。 */
-    interface GreetingService {
+    public interface GreetingService {
         /**
          * 返回问候语。
          *
@@ -144,7 +144,7 @@ class OpenTelemetryRpcEndToEndTest {
     }
 
     /** 测试服务实现。 */
-    static final class GreetingServiceImpl
+    public static final class GreetingServiceImpl
             implements GreetingService {
         @Override
         public String hello(String name) {
