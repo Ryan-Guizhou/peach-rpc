@@ -63,6 +63,26 @@ public final class JfrRpcObserver implements RpcObserver {
     }
 
     @Override
+    public void onClientRetryScheduled(
+            ServiceKey serviceKey,
+            int methodId,
+            int nextAttempt,
+            long delayMillis,
+            Throwable cause) {
+        RpcRetryJfrEvent event =
+                new RpcRetryJfrEvent();
+        if (!event.isEnabled()) {
+            return;
+        }
+        event.nextAttempt = nextAttempt;
+        event.delayMillis = delayMillis;
+        event.causeType = cause == null
+                ? "unknown"
+                : cause.getClass().getName();
+        event.commit();
+    }
+
+    @Override
     public void onConnectionReconnectScheduled(
             RpcEndpoint endpoint,
             int attempt,
