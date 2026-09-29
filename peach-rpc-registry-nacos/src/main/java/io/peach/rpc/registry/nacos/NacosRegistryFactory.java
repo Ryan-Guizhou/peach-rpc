@@ -40,20 +40,10 @@ public final class NacosRegistryFactory implements RegistryFactory {
                 options.providerOption("nacosCluster", ""),
                 DEFAULT_CLUSTER);
         validateCluster(cluster);
-        String username = options.providerOption("nacosUsername", "");
-        String password = options.providerOption("nacosPassword", "");
-
-        Properties properties = new Properties();
-        properties.setProperty(
-                PropertyKeyConst.SERVER_ADDR,
-                String.join(",", endpoints));
-        properties.setProperty(PropertyKeyConst.NAMESPACE, namespace);
-        if (!username.isBlank()) {
-            properties.setProperty(PropertyKeyConst.USERNAME, username);
-        }
-        if (!password.isBlank()) {
-            properties.setProperty(PropertyKeyConst.PASSWORD, password);
-        }
+        Properties properties = clientProperties(
+                options,
+                endpoints,
+                namespace);
         try {
             NamingService namingService =
                     NacosFactory.createNamingService(properties);
@@ -75,6 +65,49 @@ public final class NacosRegistryFactory implements RegistryFactory {
                             + cluster,
                     error);
         }
+    }
+
+    /**
+     * 构造 Nacos SDK Properties。
+     *
+     * <p>该包级方法用于验证 Credential 只进入 SDK 配置，而不会被编码进
+     * endpoint 或异常描述。
+     *
+     * @param options Registry 配置
+     * @param endpoints 已校验端点
+     * @param namespace Nacos Namespace
+     * @return Nacos SDK Properties
+     */
+    static Properties clientProperties(
+            RegistryOptions options,
+            List<String> endpoints,
+            String namespace) {
+        Properties properties = new Properties();
+        properties.setProperty(
+                PropertyKeyConst.SERVER_ADDR,
+                String.join(",", endpoints));
+        properties.setProperty(
+                PropertyKeyConst.NAMESPACE,
+                namespace);
+        String username =
+                options.providerOption(
+                        "nacosUsername",
+                        "");
+        String password =
+                options.providerOption(
+                        "nacosPassword",
+                        "");
+        if (!username.isBlank()) {
+            properties.setProperty(
+                    PropertyKeyConst.USERNAME,
+                    username);
+        }
+        if (!password.isBlank()) {
+            properties.setProperty(
+                    PropertyKeyConst.PASSWORD,
+                    password);
+        }
+        return properties;
     }
 
     private static void validateCluster(String cluster) {
