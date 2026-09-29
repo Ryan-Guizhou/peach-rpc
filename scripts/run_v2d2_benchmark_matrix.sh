@@ -18,6 +18,9 @@ case "$PROFILE" in
     shards=(1)
     threads=(1)
     modes=(sample)
+    scenarios=(NOOP)
+    scenario_connections=(1)
+    scenario_threads=(1)
     warmup_iterations=1
     measurement_iterations=1
     warmup_time=500ms
@@ -29,6 +32,9 @@ case "$PROFILE" in
     shards=(1 4)
     threads=(1 64 256)
     modes=(sample thrpt)
+    scenarios=(NOOP CPU BLOCKING SLOW_PROVIDER OVERLOAD)
+    scenario_connections=(1 4)
+    scenario_threads=(1 64 256)
     warmup_iterations=2
     measurement_iterations=3
     warmup_time=1s
@@ -40,6 +46,9 @@ case "$PROFILE" in
     shards=(1 2 4 8)
     threads=(1 16 64 256 1024)
     modes=(sample thrpt)
+    scenarios=(NOOP CPU BLOCKING SLOW_PROVIDER OVERLOAD)
+    scenario_connections=(1 4)
+    scenario_threads=(1 16 64 256 1024)
     warmup_iterations=2
     measurement_iterations=4
     warmup_time=1s
@@ -80,6 +89,34 @@ for payload in "${payloads[@]}"; do
           -rf json \
           -rff "$output"; then
           echo "$mode,$payload,$shard,$thread_count" >> "$OUTPUT_DIR/failures.csv"
+          if [[ "$PROFILE" == "smoke" ]]; then
+            exit 1
+          fi
+        fi
+      done
+    done
+  done
+done
+
+for scenario in "${scenarios[@]}"; do
+  for shard in "${scenario_connections[@]}"; do
+    for thread_count in "${scenario_threads[@]}"; do
+      for mode in "${modes[@]}"; do
+        output="$OUTPUT_DIR/scenario-${scenario}-${mode}-c${shard}-t${thread_count}.json"
+        if ! java -jar "$JAR" ExecutionScenarioBenchmark.invoke \
+          -p "scenario=$scenario" \
+          -p "connectionsPerEndpoint=$shard" \
+          -t "$thread_count" \
+          -bm "$mode" \
+          -wi "$warmup_iterations" \
+          -i "$measurement_iterations" \
+          -w "$warmup_time" \
+          -r "$measurement_time" \
+          -f "$forks" \
+          -prof gc \
+          -rf json \
+          -rff "$output"; then
+          echo "scenario:$scenario,$mode,$shard,$thread_count" >> "$OUTPUT_DIR/failures.csv"
           if [[ "$PROFILE" == "smoke" ]]; then
             exit 1
           fi
