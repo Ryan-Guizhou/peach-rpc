@@ -10,6 +10,11 @@ import jdk.jfr.Name;
 @Label("Peach RPC Recovery")
 @Category({"Peach RPC", "Recovery"})
 public final class RpcRecoveryJfrEvent extends Event {
+
+    /** 创建恢复类 JFR Event。 */
+    public RpcRecoveryJfrEvent() {
+    }
+
     /** 恢复域。 */
     @Label("Domain")
     public String domain;
