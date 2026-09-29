@@ -57,7 +57,7 @@ flowchart LR
 <!-- doc-section:modules -->
 ## 模块
 
-当前 Reactor 从早期 17 个“概念粒度模块”收敛后，在高性能 V2 中保持 12 个有真实依赖隔离价值的模块：
+当前 Reactor 从早期 17 个“概念粒度模块”收敛后，保持 15 个有真实依赖隔离价值的顶层模块；V2-C.3 新增的三个 Observability 模块仅用于隔离第三方观测依赖：
 
 | 模块 | 职责 |
 |---|---|
@@ -69,6 +69,9 @@ flowchart LR
 | `peach-rpc-registry-nacos` | Nacos Registry |
 | `peach-rpc-proxy-cglib` | 可选 CGLIB Proxy |
 | `peach-rpc-proxy-bytebuddy` | 可选 Byte Buddy Runtime Proxy fallback |
+| `peach-rpc-observability-micrometer` | Micrometer 指标 Adapter；不进入 Core |
+| `peach-rpc-observability-opentelemetry` | OpenTelemetry Trace/W3C Context Adapter |
+| `peach-rpc-observability-jfr` | JFR 低开销运行诊断 Adapter |
 | `peach-rpc-spring-boot-autoconfigure` | Spring Boot 自动装配 |
 | `peach-rpc-spring-boot-starter` | 业务项目推荐依赖入口 |
 | `peach-rpc-examples` | Spring Boot 使用示例 |
