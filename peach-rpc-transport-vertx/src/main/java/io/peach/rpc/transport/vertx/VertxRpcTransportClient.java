@@ -194,17 +194,20 @@ final class VertxRpcTransportClient implements RpcTransportClient {
         private void connect(
                 int index,
                 CompletableFuture<Connection> created) {
-            long delayMillis = reconnectDelayMillis(
-                    reconnectAttempts.get(index));
+            int reconnectAttempt =
+                    reconnectAttempts.get(index);
+            long delayMillis =
+                    reconnectDelayMillis(reconnectAttempt);
+            if (reconnectAttempt > 0
+                    && options.observer().enabled()) {
+                options.observer().onConnectionReconnectScheduled(
+                        endpoint,
+                        reconnectAttempt,
+                        delayMillis);
+            }
             if (delayMillis <= 0L) {
                 doConnect(index, created);
                 return;
-            }
-            if (options.observer().enabled()) {
-                options.observer().onConnectionReconnectScheduled(
-                        endpoint,
-                        reconnectAttempts.get(index),
-                        delayMillis);
             }
             vertx.setTimer(delayMillis, ignored -> {
                 if (closed.get() || slots.get(index) != created) {
