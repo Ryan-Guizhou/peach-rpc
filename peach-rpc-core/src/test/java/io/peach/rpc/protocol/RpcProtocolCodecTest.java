@@ -97,6 +97,78 @@ class RpcProtocolCodecTest {
     }
 
     @Test
+    void shouldRoundTripTraceMetadata() {
+        byte[] encoded = RpcProtocolCodec.encodeRequest(
+                (byte) 1,
+                11,
+                22,
+                1000L,
+                500L,
+                Map.of(
+                        "traceparent",
+                        "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+                        "tracestate",
+                        "vendor=value"),
+                new byte[] {1});
+
+        Map<String, String> metadata =
+                RpcProtocolCodec.view(encoded)
+                        .metadataCopy();
+
+        assertEquals(
+                "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+                metadata.get("traceparent"));
+        assertEquals(
+                "vendor=value",
+                metadata.get("tracestate"));
+    }
+
+    @Test
+    void shouldRejectReservedMetadataOverride() {
+        assertThrows(
+                RpcProtocolException.class,
+                () -> RpcProtocolCodec.encodeRequest(
+                        (byte) 1,
+                        11,
+                        22,
+                        1000L,
+                        500L,
+                        Map.of(
+                                "timeoutBudgetMillis",
+                                "999999"),
+                        new byte[] {1}));
+    }
+
+    @Test
+    void shouldRejectUnsafeOrOversizedMetadata() {
+        assertThrows(
+                RpcProtocolException.class,
+                () -> RpcProtocolCodec.encodeRequest(
+                        (byte) 1,
+                        11,
+                        22,
+                        0L,
+                        0L,
+                        Map.of(
+                                "traceparent",
+                                "bad\nvalue"),
+                        new byte[] {1}));
+
+        assertThrows(
+                RpcProtocolException.class,
+                () -> RpcProtocolCodec.encodeRequest(
+                        (byte) 1,
+                        11,
+                        22,
+                        0L,
+                        0L,
+                        Map.of(
+                                "baggage",
+                                "x".repeat(16 * 1024 + 1)),
+                        new byte[] {1}));
+    }
+
+    @Test
     void shouldEncodeUnaryResponseWithoutMetadata() {
         byte[] payload = new byte[] {7, 8};
 
