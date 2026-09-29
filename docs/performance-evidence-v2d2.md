@@ -46,6 +46,13 @@ flowchart LR
 
 ## 3. JMH 完整性能矩阵
 
+矩阵由两部分组成：
+
+1. **Payload Matrix**：64B ~ 1MiB × connection shard × concurrency；
+2. **Execution/Fault Matrix**：NOOP / CPU / BLOCKING / SLOW_PROVIDER / OVERLOAD × connection shard × concurrency。
+
+OVERLOAD 场景通过 JMH AuxCounters 记录 success/error，不让预期过载异常直接终止整个 benchmark。
+
 入口：
 
 ~~~bash
@@ -56,9 +63,9 @@ bash scripts/run_v2d2_benchmark_matrix.sh <profile> <output-directory>
 
 | Profile | Payload | Connections | Threads | Mode | 用途 |
 |---|---|---|---|---|---|
-| `smoke` | 256B | 1 | 1 | sample | PR/CI 工具链验证 |
-| `standard` | 64B / 1KiB / 16KiB | 1 / 4 | 1 / 64 / 256 | sample + thrpt | 日常性能回归 |
-| `full` | 64B / 256B / 1KiB / 16KiB / 1MiB | 1 / 2 / 4 / 8 | 1 / 16 / 64 / 256 / 1024 | sample + thrpt | V2-D.2 完整证据 |
+| `smoke` | 256B + NOOP | 1 | 1 | sample | PR/CI 工具链验证 |
+| `standard` | 64B / 1KiB / 16KiB + 全部场景 | 1 / 4 | 1 / 64 / 256 | sample + thrpt | 日常性能回归 |
+| `full` | 64B / 256B / 1KiB / 16KiB / 1MiB + 全部场景 | Payload 1/2/4/8；Scenario 1/4 | 1 / 16 / 64 / 256 / 1024 | sample + thrpt | V2-D.2 完整证据 |
 
 每个组合都会启用：
 
@@ -274,7 +281,8 @@ error rate:
 - [ ] 在固定硬件执行 full matrix；
 - [ ] 固定硬件执行至少 30 分钟 10k soak；
 - [ ] 建立 p50/p99/p99.9 + allocation/op 基线；
-- [ ] overload / slow Provider / fault benchmark；
+- [x] overload / slow Provider / CPU / blocking benchmark tooling；
+- [ ] retry / circuit / outlier fault-injection benchmark；
 - [ ] TLS vs plaintext overhead matrix；
 - [ ] 基于证据决定 Buffer ownership；
 - [ ] 基于证据决定 Future/PendingRequest 重构；
