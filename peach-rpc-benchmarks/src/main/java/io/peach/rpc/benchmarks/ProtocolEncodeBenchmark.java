@@ -29,6 +29,7 @@ public class ProtocolEncodeBenchmark {
     public int payloadSize;
 
     private byte[] payload;
+    private byte[] budgetRequest;
 
     /** 创建协议编码基准。 */
     public ProtocolEncodeBenchmark() {
@@ -38,6 +39,13 @@ public class ProtocolEncodeBenchmark {
     @Setup
     public void setup() {
         payload = new byte[payloadSize];
+        budgetRequest = RpcProtocolCodec.encodeRequest(
+                RpcCodecIds.FORY_NATIVE,
+                100,
+                200,
+                DEADLINE,
+                1500L,
+                payload);
     }
 
     /**
@@ -58,6 +66,18 @@ public class ProtocolEncodeBenchmark {
                         "deadlineEpochMillis",
                         Long.toString(DEADLINE)),
                 payload));
+    }
+
+    /**
+     * 测量发送前相对 Timeout Budget 原地刷新。
+     *
+     * @return 是否找到并刷新 Budget
+     */
+    @Benchmark
+    public boolean rewriteTimeoutBudgetFastPath() {
+        return RpcProtocolCodec.rewriteTimeoutBudgetMillis(
+                budgetRequest,
+                25L);
     }
 
     /**
