@@ -1,6 +1,6 @@
 # Peach RPC V2-D Performance Kernel Second Pass
 
-> 状态：**Implementation Baseline / In Progress**  
+> 状态：**Batch 1 Verified / In Progress**  
 > 基线：`main@181c7a6e890eb73f4ff78281d92c79cb2c749c03`  
 > 目标：在不破坏 V2-C.3 高可用、安全、可观测性闭环以及 v1 wire 兼容性的前提下，完成第二轮性能内核优化。
 
@@ -237,8 +237,9 @@ REQUEST/RESPONSE byte[]
 - [x] Server normal request routing 移除 full `RpcFrame.decode`；
 - [x] timeout budget rewrite 移除每请求 `RpcFrameView`；
 - [x] compatibility tests；
-- [ ] Transport tests；
-- [ ] `mvn -B -ntp clean verify -Pquality`。
+- [x] Transport tests；
+- [x] `mvn -B -ntp clean verify -Pquality`；
+- [x] Independent JVM / Nacos recovery E2E。
 
 ### D3
 
