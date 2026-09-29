@@ -11,6 +11,10 @@
     <artifactId>peach-rpc-registry-etcd</artifactId>
     <name>peach-rpc-registry-etcd</name>
     <description>Etcd registry adapter for Peach RPC.</description>
+    <properties>
+        <etcd.test.groups></etcd.test.groups>
+        <etcd.test.excluded-groups>chaos</etcd.test.excluded-groups>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.peach.rpc</groupId>
@@ -35,4 +39,27 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <groups>${etcd.test.groups}</groups>
+                    <excludedGroups>${etcd.test.excluded-groups}</excludedGroups>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>etcd-chaos</id>
+            <properties>
+                <etcd.test.groups>chaos</etcd.test.groups>
+                <etcd.test.excluded-groups></etcd.test.excluded-groups>
+            </properties>
+        </profile>
+    </profiles>
 </project>
