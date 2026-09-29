@@ -510,90 +510,154 @@ public class PeachRpcProperties {
         private Duration expiryWarningThreshold =
                 Duration.ofDays(7);
 
-        /** @return 安全模式 */
+        /**
+         * 返回 Transport 安全模式。
+         *
+         * @return 安全模式
+         */
         public RpcSecurityMode getMode() {
             return mode;
         }
 
-        /** @param mode 安全模式 */
+        /**
+         * 设置 Transport 安全模式。
+         *
+         * @param mode 安全模式
+         */
         public void setMode(RpcSecurityMode mode) {
             this.mode = mode;
         }
 
-        /** @return PEM 证书路径 */
+        /**
+         * 返回 PEM 证书路径。
+         *
+         * @return PEM 证书路径
+         */
         public String getCertificatePath() {
             return certificatePath;
         }
 
-        /** @param certificatePath PEM 证书路径 */
+        /**
+         * 设置 PEM 证书路径。
+         *
+         * @param certificatePath PEM 证书路径
+         */
         public void setCertificatePath(
                 String certificatePath) {
             this.certificatePath = certificatePath;
         }
 
-        /** @return PEM 私钥路径 */
+        /**
+         * 返回 PEM 私钥路径。
+         *
+         * @return PEM 私钥路径
+         */
         public String getPrivateKeyPath() {
             return privateKeyPath;
         }
 
-        /** @param privateKeyPath PEM 私钥路径 */
+        /**
+         * 设置 PEM 私钥路径。
+         *
+         * @param privateKeyPath PEM 私钥路径
+         */
         public void setPrivateKeyPath(
                 String privateKeyPath) {
             this.privateKeyPath = privateKeyPath;
         }
 
-        /** @return PEM CA/信任证书路径 */
+        /**
+         * 返回 PEM CA/信任证书路径。
+         *
+         * @return PEM CA/信任证书路径
+         */
         public String getTrustCertificatePath() {
             return trustCertificatePath;
         }
 
-        /** @param trustCertificatePath PEM CA/信任证书路径 */
+        /**
+         * 设置 PEM CA/信任证书路径。
+         *
+         * @param trustCertificatePath PEM CA/信任证书路径
+         */
         public void setTrustCertificatePath(
                 String trustCertificatePath) {
             this.trustCertificatePath =
                     trustCertificatePath;
         }
 
-        /** @return 是否启用 hostname verification */
+        /**
+         * 返回是否启用 Hostname Verification。
+         *
+         * @return 是否启用 Hostname Verification
+         */
         public boolean isHostnameVerification() {
             return hostnameVerification;
         }
 
-        /** @param hostnameVerification 是否校验主机名 */
+        /**
+         * 设置是否启用 Hostname Verification。
+         *
+         * @param hostnameVerification 是否校验主机名
+         */
         public void setHostnameVerification(
                 boolean hostnameVerification) {
             this.hostnameVerification =
                     hostnameVerification;
         }
 
-        /** @return TLS 握手超时 */
+        /**
+         * 返回 TLS 握手超时。
+         *
+         * @return TLS 握手超时
+         */
         public Duration getHandshakeTimeout() {
             return handshakeTimeout;
         }
 
-        /** @param handshakeTimeout TLS 握手超时 */
+        /**
+         * 设置 TLS 握手超时。
+         *
+         * @param handshakeTimeout TLS 握手超时
+         */
         public void setHandshakeTimeout(
                 Duration handshakeTimeout) {
             this.handshakeTimeout = handshakeTimeout;
         }
 
-        /** @return 证书 reload 检查周期 */
+        /**
+         * 返回证书 Reload 检查周期。
+         *
+         * @return 证书 Reload 检查周期
+         */
         public Duration getReloadInterval() {
             return reloadInterval;
         }
 
-        /** @param reloadInterval reload 检查周期 */
+        /**
+         * 设置证书 Reload 检查周期。
+         *
+         * @param reloadInterval Reload 检查周期
+         */
         public void setReloadInterval(
                 Duration reloadInterval) {
             this.reloadInterval = reloadInterval;
         }
 
-        /** @return 证书过期前告警窗口 */
+        /**
+         * 返回证书过期前告警窗口。
+         *
+         * @return 证书过期前告警窗口
+         */
         public Duration getExpiryWarningThreshold() {
             return expiryWarningThreshold;
         }
 
-        /** @param expiryWarningThreshold 过期告警窗口 */
+        /**
+         * 设置证书过期前告警窗口。
+         *
+         * @param expiryWarningThreshold 过期告警窗口
+         */
         public void setExpiryWarningThreshold(
                 Duration expiryWarningThreshold) {
             this.expiryWarningThreshold =
