@@ -58,8 +58,11 @@ STATUS_DOCS = {
     "README.en-US.md": ("project", "v2-c3", "v2-d", "v2-d2"),
     "docs/production-roadmap.md": ("project", "v2-c3", "v2-d", "v2-d2"),
     "docs/readiness.md": ("project", "v2-c3", "v2-d", "v2-d2"),
+    "docs/performance.md": ("v2-d", "v2-d2"),
     "docs/performance-kernel-v2d.md": ("v2-d", "v2-d2"),
     "docs/performance-evidence-v2d2.md": ("v2-d", "v2-d2"),
+    "docs/security.md": ("v2-c3",),
+    "docs/observability.md": ("v2-c3",),
 }
 STALE_DOC_SNIPPETS = {
     "README.md": (
@@ -71,6 +74,7 @@ STALE_DOC_SNIPPETS = {
     "docs/production-roadmap.md": (
         "V2-C.3 在当前 PR 分支",
         "状态：Partial（实现已完成，最终 CI/Chaos 验收中）",
+        "当前 V2-D 分支已经完成",
     ),
     "docs/readiness.md": (
         "## V2-C.3 当前开发分支",
