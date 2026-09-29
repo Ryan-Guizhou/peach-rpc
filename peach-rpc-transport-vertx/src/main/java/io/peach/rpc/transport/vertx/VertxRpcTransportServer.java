@@ -220,14 +220,20 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                 return;
             }
 
-            RpcFrame request = RpcProtocolCodec.decode(frame);
+            long requestId =
+                    RpcProtocolCodec.readRequestId(frame);
+            if (requestId == 0L) {
+                closeMalformed(new RpcProtocolException(
+                        "RPC REQUEST requires a request id"));
+                return;
+            }
             CompletableFuture<byte[]> requestFuture =
                     handler.handle(remote, frame).toCompletableFuture();
-            inflight.put(request.requestId(), requestFuture);
+            inflight.put(requestId, requestFuture);
             requestFuture.whenComplete((response, error) ->
                     context.runOnContext(ignored ->
                             completeRequest(
-                                    request.requestId(),
+                                    requestId,
                                     response,
                                     error)));
         }
