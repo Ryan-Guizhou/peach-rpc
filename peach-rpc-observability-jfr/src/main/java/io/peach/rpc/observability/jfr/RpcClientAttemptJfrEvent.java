@@ -10,6 +10,11 @@ import jdk.jfr.Name;
 @Label("Peach RPC Client Attempt")
 @Category({"Peach RPC", "Client"})
 public final class RpcClientAttemptJfrEvent extends Event {
+
+    /** 创建 Consumer 调用 JFR Event。 */
+    public RpcClientAttemptJfrEvent() {
+    }
+
     /** 服务。 */
     @Label("Service")
     public String service;
