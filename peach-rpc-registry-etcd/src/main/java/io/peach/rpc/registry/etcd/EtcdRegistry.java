@@ -16,6 +16,9 @@ import io.grpc.stub.StreamObserver;
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
+import io.peach.rpc.observability.RpcObserver;
+import io.peach.rpc.observability.RpcRegistryOperation;
+import io.peach.rpc.observability.RpcRegistryRecoveryAction;
 import io.peach.rpc.registry.Registry;
 import io.peach.rpc.registry.RegistryCapabilities;
 import io.peach.rpc.registry.RegistryCapability;
@@ -62,6 +65,7 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
 
     private final Client client;
     private final long leaseTtlSeconds;
+    private final RpcObserver observer;
     private final String root;
     private final Object leaseMonitor = new Object();
     private final ConcurrentMap<String, ServiceInstance> activeRegistrations =
@@ -77,17 +81,45 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
             long leaseTtlSeconds,
             String namespace) {
         this(
+                endpoints,
+                leaseTtlSeconds,
+                namespace,
+                RpcObserver.noop());
+    }
+
+    EtcdRegistry(
+            String[] endpoints,
+            long leaseTtlSeconds,
+            String namespace,
+            RpcObserver observer) {
+        this(
                 Client.builder().endpoints(endpoints).build(),
                 leaseTtlSeconds,
-                namespace);
+                namespace,
+                observer);
     }
 
     EtcdRegistry(
             Client client,
             long leaseTtlSeconds,
             String namespace) {
+        this(
+                client,
+                leaseTtlSeconds,
+                namespace,
+                RpcObserver.noop());
+    }
+
+    EtcdRegistry(
+            Client client,
+            long leaseTtlSeconds,
+            String namespace,
+            RpcObserver observer) {
         this.client = Objects.requireNonNull(client, "client");
         this.leaseTtlSeconds = leaseTtlSeconds;
+        this.observer = observer == null
+                ? RpcObserver.noop()
+                : observer;
         this.root = "default".equals(namespace)
                 ? DEFAULT_ROOT
                 : DEFAULT_ROOT + "ns/" + encode(namespace) + '/';
@@ -106,13 +138,20 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                     new IllegalStateException("Etcd registry is closed"));
         }
         String registrationKey = key(instance);
-        return ensureLease()
+        long startedAtNanos =
+                observer.enabled() ? System.nanoTime() : 0L;
+        CompletionStage<Void> stage = ensureLease()
                 .thenCompose(leaseId -> client.getKVClient().put(
                         bytes(registrationKey),
                         bytes(serialize(instance)),
                         PutOption.builder().withLeaseId(leaseId).build()))
                 .thenRun(() ->
                         activeRegistrations.put(registrationKey, instance));
+        observeOperation(
+                stage,
+                RpcRegistryOperation.REGISTER,
+                startedAtNanos);
+        return stage;
     }
 
     @Override
@@ -123,14 +162,28 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
         if (closed.get()) {
             return CompletableFuture.completedFuture(null);
         }
-        return client.getKVClient()
+        long startedAtNanos =
+                observer.enabled() ? System.nanoTime() : 0L;
+        CompletionStage<Void> stage = client.getKVClient()
                 .delete(bytes(registrationKey))
                 .thenApply(ignored -> null);
+        observeOperation(
+                stage,
+                RpcRegistryOperation.UNREGISTER,
+                startedAtNanos);
+        return stage;
     }
 
     @Override
     public CompletionStage<RegistrySnapshot> lookup(ServiceKey key) {
-        return range(key);
+        long startedAtNanos =
+                observer.enabled() ? System.nanoTime() : 0L;
+        CompletionStage<RegistrySnapshot> stage = range(key);
+        observeOperation(
+                stage,
+                RpcRegistryOperation.LOOKUP,
+                startedAtNanos);
+        return stage;
     }
 
     @Override
@@ -355,6 +408,8 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
     }
 
     private void recoverRegistrations(int attempt) {
+        long recoveryStartedAtNanos =
+                observer.enabled() ? System.nanoTime() : 0L;
         if (closed.get() || activeRegistrations.isEmpty()) {
             leaseRecoveryScheduled.set(false);
             return;
@@ -379,6 +434,14 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                     leaseRecoveryScheduled.set(false);
                     if (closed.get()) {
                         return;
+                    }
+                    if (observer.enabled()) {
+                        observer.onRegistryRecoveryCompleted(
+                                "etcd",
+                                RpcRegistryRecoveryAction.REGISTRATION_RECOVERED,
+                                System.nanoTime()
+                                        - recoveryStartedAtNanos,
+                                error);
                     }
                     if (error != null) {
                         LOGGER.warn(
@@ -411,6 +474,8 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
         private final AtomicBoolean closed = new AtomicBoolean();
         private volatile Watch.Watcher watcher;
         private int restartAttempt;
+        private boolean recovering;
+        private long recoveryStartedAtNanos;
 
         private EtcdSubscription(ServiceKey serviceKey, RegistryListener listener) {
             this.serviceKey = Objects.requireNonNull(serviceKey, "serviceKey");
@@ -421,16 +486,47 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
             if (closed.get()) {
                 return;
             }
+            long subscribeStartedAtNanos =
+                    observer.enabled() ? System.nanoTime() : 0L;
             range(serviceKey).whenComplete((snapshot, error) -> {
                 if (closed.get()) {
                     return;
                 }
                 if (error != null) {
-                    LOGGER.warn("Failed to load Etcd snapshot for {}; retrying", serviceKey.canonicalName(), error);
+                    if (observer.enabled() && !recovering) {
+                        observer.onRegistryOperationCompleted(
+                                "etcd",
+                                RpcRegistryOperation.SUBSCRIBE,
+                                System.nanoTime()
+                                        - subscribeStartedAtNanos,
+                                error);
+                    }
+                    LOGGER.warn(
+                            "Failed to load Etcd snapshot for {}; retrying",
+                            serviceKey.canonicalName(),
+                            error);
                     scheduleRestart();
                     return;
                 }
                 listener.onSnapshot(snapshot);
+                if (observer.enabled()) {
+                    if (recovering) {
+                        observer.onRegistryRecoveryCompleted(
+                                "etcd",
+                                RpcRegistryRecoveryAction.SUBSCRIPTION_RECOVERED,
+                                System.nanoTime()
+                                        - recoveryStartedAtNanos,
+                                null);
+                    } else {
+                        observer.onRegistryOperationCompleted(
+                                "etcd",
+                                RpcRegistryOperation.SUBSCRIBE,
+                                System.nanoTime()
+                                        - subscribeStartedAtNanos,
+                                null);
+                    }
+                }
+                recovering = false;
                 restartAttempt = 0;
                 openWatch(snapshot.revision() + 1);
             });
@@ -465,6 +561,13 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
 
         private void scheduleRestart() {
             closeWatcher();
+            if (!recovering) {
+                recovering = true;
+                recoveryStartedAtNanos =
+                        observer.enabled()
+                                ? System.nanoTime()
+                                : 0L;
+            }
             int attempt = restartAttempt++;
             long delayMillis = recoveryDelayMillis(attempt);
             Executor executor = CompletableFuture.delayedExecutor(
@@ -487,6 +590,21 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                 closeWatcher();
             }
         }
+    }
+
+    private <T> void observeOperation(
+            CompletionStage<T> stage,
+            RpcRegistryOperation operation,
+            long startedAtNanos) {
+        if (!observer.enabled()) {
+            return;
+        }
+        stage.whenComplete((ignored, error) ->
+                observer.onRegistryOperationCompleted(
+                        "etcd",
+                        operation,
+                        System.nanoTime() - startedAtNanos,
+                        error));
     }
 
     private String prefix(ServiceKey key) {
