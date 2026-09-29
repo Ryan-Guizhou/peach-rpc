@@ -30,6 +30,16 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <groupId>io.peach.rpc</groupId>
+            <artifactId>peach-rpc-codec-fory</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.peach.rpc</groupId>
+            <artifactId>peach-rpc-transport-vertx</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk</artifactId>
             <scope>test</scope>
