@@ -21,10 +21,17 @@ def metric(data: dict, key: str) -> float | None:
 
 def percentile(primary: dict, key: str) -> float | None:
     values = primary.get("scorePercentiles", {})
-    value = values.get(key)
-    if value is None:
-        value = values.get(key.replace(".0", ""))
-    return value
+    candidates = [key, key.replace(".0", "")]
+    if key == "50.0":
+        candidates.append("0.5")
+    elif key == "99.0":
+        candidates.append("0.99")
+    elif key == "99.9":
+        candidates.append("0.999")
+    for candidate in candidates:
+        if candidate in values:
+            return values[candidate]
+    return None
 
 
 def load_rows(root: Path) -> list[dict[str, object]]:
