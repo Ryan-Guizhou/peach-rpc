@@ -49,7 +49,6 @@ final class VertxRpcTransportClient implements RpcTransportClient {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(VertxRpcTransportClient.class);
     private static final int MESSAGE_TYPE_OFFSET = 6;
-    private static final int REQUEST_ID_OFFSET = 10;
     private static final int CODEC_OFFSET = 7;
 
     private final Vertx vertx = Vertx.vertx();
