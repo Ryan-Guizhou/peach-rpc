@@ -147,15 +147,21 @@ Core 提供 `RpcObserver`，不依赖 Micrometer、OpenTelemetry 或 JFR。当�
 
 - Consumer attempt 完成；
 - Consumer retry 调度；
-- Provider invocation 完成。
+- Provider invocation 完成；
+- connection established；
+- reconnect scheduled；
+- heartbeat timeout；
+- connection closed。
 
-默认 NOOP Observer 不创建事件对象；多个 Observer 可以组合，且单个 Observer 的运行时异常不会反向破坏 RPC 主链。后续 Micrometer、OpenTelemetry 和 JFR 通过 Adapter 映射这些事件。
+连接事件带 CLIENT/SERVER 角色以及 LOCAL_CLOSE / GO_AWAY / HEARTBEAT_TIMEOUT / TRANSPORT_ERROR / PROTOCOL_ERROR / REMOTE_CLOSE 等归一化关闭原因。默认 NOOP Observer 不创建事件对象；多个 Observer 可以组合，且单个 Observer 的运行时异常不会反向破坏 RPC 主链。V2-C.3 的 Micrometer、OpenTelemetry 和 JFR Adapter 将直接映射这些现有事件，而不再修改 Transport API。
 
 ## 9. 控制面
 
 Registry 仍然只位于控制面。Consumer 热路径不访问 Etcd 或 Nacos。Nacos Java SDK 的阻塞调用运行在 Adapter 私有有界控制面执行器中，回调被归一化为有序 `RegistrySnapshot` 后再发布给 Core。
 
-`ServiceDirectory` 在 Registry snapshot 更新时转换为数组快照，旧 revision 被忽略。Nacos Adapter 对相同视图去重并生成进程内单调 revision。
+`ServiceDirectory` 在 Registry snapshot 更新时转换为数组快照，旧 revision 被忽略。Nacos Adapter 对相同视图去重并生成进程内单调 revision。独立 JVM E2E 已验证 Nacos Server restart 期间既有数据连接继续使用 last-known-good 目录；Nacos 恢复后 Provider 临时实例重新注册，Consumer subscription 重新建立并接收 Endpoint 变化。
+
+Etcd Adapter 的 Watch 出错后会重新 Range 当前快照，再从有效 revision 建立新 Watch；真实 compaction 测试验证 stale revision 可恢复。Lease 主路径依赖 keepalive stream，另有低频 TTL watchdog 识别静默失效；grant 有显式超时，lease-loss 回调按 active leaseId 校验，避免旧 Lease 的迟到回调误伤新 Lease。3 节点 leader transfer 由独立 Chaos workflow 验证。
 
 ## 10. V2-B.1 已补齐的生产行为
 
@@ -176,7 +182,7 @@ Registry 仍然只位于控制面。Consumer 热路径不访问 Etcd 或 Nacos�
 - Fory 参数仍存在 Object[]；
 - TLS/mTLS 未实现；
 - Micrometer/OpenTelemetry/JFR 具体 Adapter 仍待接入；
-- Etcd compaction/recovery 专项故障测试仍需补强；
+- Etcd/Nacos 网络黑洞、partition 与长时间恢复 soak 仍需补强；
 - Fory 稳定 Type ID / Schema fingerprint 未实现。
 
 详细热路径说明见 [V2-B 实现说明](high-performance-kernel-v2b.md) 与 [V2-B.1 生产内核第一批](production-kernel-v2b1.md)。
