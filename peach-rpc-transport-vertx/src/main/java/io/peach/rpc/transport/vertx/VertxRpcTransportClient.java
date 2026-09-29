@@ -6,6 +6,8 @@ import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.api.RpcTimeoutException;
 import io.peach.rpc.api.RpcUnavailableException;
 import io.peach.rpc.codec.RpcCodecIds;
+import io.peach.rpc.observability.RpcConnectionCloseReason;
+import io.peach.rpc.observability.RpcConnectionRole;
 import io.peach.rpc.protocol.RpcErrorCodec;
 import io.peach.rpc.protocol.RpcFeature;
 import io.peach.rpc.protocol.RpcFrame;
@@ -189,6 +191,12 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                 doConnect(index, created);
                 return;
             }
+            if (options.observer().enabled()) {
+                options.observer().onConnectionReconnectScheduled(
+                        endpoint,
+                        reconnectAttempts.get(index),
+                        delayMillis);
+            }
             vertx.setTimer(delayMillis, ignored -> {
                 if (closed.get() || slots.get(index) != created) {
                     slots.compareAndSet(index, created, null);
@@ -204,6 +212,7 @@ final class VertxRpcTransportClient implements RpcTransportClient {
         private void doConnect(
                 int index,
                 CompletableFuture<Connection> created) {
+            long connectStartedNanos = System.nanoTime();
             client.connect(
                     endpoint.port(),
                     endpoint.host())
@@ -231,7 +240,8 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                                 this,
                                 index,
                                 endpoint,
-                                result.result());
+                                result.result(),
+                                connectStartedNanos);
                         connection.handshake()
                                 .whenComplete((ignored, error) -> {
                                     if (error != null) {
@@ -244,6 +254,14 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                                         created.completeExceptionally(error);
                                     } else {
                                         reconnectAttempts.set(index, 0);
+                                        if (options.observer().enabled()) {
+                                            options.observer()
+                                                    .onConnectionEstablished(
+                                                            RpcConnectionRole.CLIENT,
+                                                            endpoint,
+                                                            System.nanoTime()
+                                                                    - connectStartedNanos);
+                                        }
                                         created.complete(connection);
                                     }
                                 });
@@ -323,12 +341,14 @@ final class VertxRpcTransportClient implements RpcTransportClient {
         private long heartbeatTimerId = -1L;
         private long lastReadNanos = System.nanoTime();
         private long pingSentAtNanos;
+        private boolean closeObserved;
 
         private Connection(
                 ConnectionGroup group,
                 int slot,
                 RpcEndpoint endpoint,
-                NetSocket socket) {
+                NetSocket socket,
+                long connectStartedNanos) {
             this.group = group;
             this.slot = slot;
             this.endpoint = endpoint;
@@ -344,15 +364,25 @@ final class VertxRpcTransportClient implements RpcTransportClient {
             socket.handler(buffer ->
                     frames.accept(buffer, this::onFrame));
             socket.exceptionHandler(error ->
-                    failAll(new RpcUnavailableException(
-                            "Connection failed: "
-                                    + endpoint.authority(),
-                            error)));
+                    failAll(
+                            new RpcUnavailableException(
+                                    "Connection failed: "
+                                            + endpoint.authority(),
+                                    error),
+                            RpcConnectionCloseReason.TRANSPORT_ERROR));
             socket.closeHandler(ignored -> {
-                if (open) {
-                    failAll(new RpcUnavailableException(
-                            "Connection closed by remote: "
-                                    + endpoint.authority()));
+                if (!open) {
+                    return;
+                }
+                if (draining) {
+                    closeGracefully(
+                            RpcConnectionCloseReason.GO_AWAY);
+                } else {
+                    failAll(
+                            new RpcUnavailableException(
+                                    "Connection closed by remote: "
+                                            + endpoint.authority()),
+                            RpcConnectionCloseReason.REMOTE_CLOSE);
                 }
             });
             handshakeTimerId = vertx.setTimer(
@@ -636,9 +666,18 @@ final class VertxRpcTransportClient implements RpcTransportClient {
             if (pingSentAtNanos > 0L) {
                 if (now - pingSentAtNanos
                         >= options.heartbeatTimeout().toNanos()) {
-                    failAll(new RpcTimeoutException(
-                            "RPC heartbeat timed out for "
-                                    + endpoint.authority()));
+                    if (options.observer().enabled()) {
+                        options.observer()
+                                .onConnectionHeartbeatTimeout(
+                                        RpcConnectionRole.CLIENT,
+                                        endpoint,
+                                        now - pingSentAtNanos);
+                    }
+                    failAll(
+                            new RpcTimeoutException(
+                                    "RPC heartbeat timed out for "
+                                            + endpoint.authority()),
+                            RpcConnectionCloseReason.HEARTBEAT_TIMEOUT);
                 }
                 return;
             }
@@ -699,8 +738,20 @@ final class VertxRpcTransportClient implements RpcTransportClient {
         }
 
         private void failAll(Throwable error) {
+            RpcConnectionCloseReason reason =
+                    !handshake.isDone()
+                            || error instanceof RpcProtocolException
+                    ? RpcConnectionCloseReason.PROTOCOL_ERROR
+                    : RpcConnectionCloseReason.TRANSPORT_ERROR;
+            failAll(error, reason);
+        }
+
+        private void failAll(
+                Throwable error,
+                RpcConnectionCloseReason reason) {
             if (Vertx.currentContext() != context) {
-                context.runOnContext(ignored -> failAll(error));
+                context.runOnContext(
+                        ignored -> failAll(error, reason));
                 return;
             }
             if (!open) {
@@ -713,32 +764,82 @@ final class VertxRpcTransportClient implements RpcTransportClient {
             } else {
                 group.release(slot, this);
             }
-            pending.values().forEach(request -> {
-                vertx.cancelTimer(request.timerId());
-                request.future().completeExceptionally(error);
-            });
-            pending.clear();
-            inflight = 0;
+            failPendingRequests(error);
             cancelHandshakeTimer();
             cancelHeartbeatTimer();
             if (!handshake.isDone()) {
                 handshake.completeExceptionally(error);
             }
+            observeClosed(reason, error);
             LOGGER.debug(
                     "RPC connection closed: {}",
                     endpoint.authority());
             socket.close();
         }
 
-        private void close() {
+        private void closeGracefully(
+                RpcConnectionCloseReason reason) {
+            if (!open) {
+                return;
+            }
+            open = false;
+            group.release(slot, this);
+            cancelHandshakeTimer();
+            cancelHeartbeatTimer();
+            observeClosed(reason, null);
+        }
+
+        private void closeLocally() {
+            if (!open) {
+                return;
+            }
+            open = false;
+            group.release(slot, this);
             RpcUnavailableException error =
                     new RpcUnavailableException(
                             "RPC connection is closing: "
                                     + endpoint.authority());
+            failPendingRequests(error);
+            cancelHandshakeTimer();
+            cancelHeartbeatTimer();
+            if (!handshake.isDone()) {
+                handshake.completeExceptionally(error);
+            }
+            observeClosed(
+                    RpcConnectionCloseReason.LOCAL_CLOSE,
+                    null);
+            socket.close();
+        }
+
+        private void failPendingRequests(Throwable error) {
+            pending.values().forEach(request -> {
+                vertx.cancelTimer(request.timerId());
+                request.future().completeExceptionally(error);
+            });
+            pending.clear();
+            inflight = 0;
+        }
+
+        private void observeClosed(
+                RpcConnectionCloseReason reason,
+                Throwable error) {
+            if (closeObserved || !options.observer().enabled()) {
+                return;
+            }
+            closeObserved = true;
+            options.observer().onConnectionClosed(
+                    RpcConnectionRole.CLIENT,
+                    endpoint,
+                    reason,
+                    error);
+        }
+
+        private void close() {
             if (Vertx.currentContext() == context) {
-                failAll(error);
+                closeLocally();
             } else {
-                context.runOnContext(ignored -> failAll(error));
+                context.runOnContext(
+                        ignored -> closeLocally());
             }
         }
     }
