@@ -643,12 +643,13 @@ public final class RpcProtocolCodec {
         return encoded;
     }
 
-    private static void validateMetadata(
+    static void validateMetadata(
             String key,
             String value) {
         if (key == null
                 || key.isEmpty()
-                || value == null) {
+                || value == null
+                || value.isEmpty()) {
             throw new RpcProtocolException(
                     "Metadata key/value must not be null or empty");
         }
@@ -691,9 +692,12 @@ public final class RpcProtocolCodec {
                     throw new RpcProtocolException(
                             "Malformed metadata");
                 }
-                metadata.put(
-                        line.substring(0, separator),
-                        line.substring(separator + 1));
+                String key =
+                        line.substring(0, separator);
+                String value =
+                        line.substring(separator + 1);
+                validateMetadata(key, value);
+                metadata.put(key, value);
             }
             return Map.copyOf(metadata);
         } catch (RuntimeException error) {
