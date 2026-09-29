@@ -16,7 +16,10 @@ import io.peach.rpc.generated.RpcGeneratedClients;
 import io.peach.rpc.generated.RpcGeneratedInvocation;
 import io.peach.rpc.loadbalance.LoadBalanceMetrics;
 import io.peach.rpc.loadbalance.LoadBalancer;
+import io.peach.rpc.observability.RpcMetadataPropagator;
 import io.peach.rpc.observability.RpcObserver;
+import io.peach.rpc.observability.RpcTraceContext;
+import io.peach.rpc.observability.RpcTracingBridge;
 import io.peach.rpc.protocol.RpcErrorCodec;
 import io.peach.rpc.protocol.RpcFrameView;
 import io.peach.rpc.protocol.RpcProtocolCodec;
@@ -27,6 +30,7 @@ import io.peach.rpc.transport.RpcTransportClient;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
@@ -50,6 +54,8 @@ public final class PeachRpcClient implements AutoCloseable {
     private final RpcClientResilienceOptions resilienceOptions;
     private final RetryBudget retryBudget;
     private final RpcObserver observer;
+    private final RpcMetadataPropagator metadataPropagator;
+    private final RpcTracingBridge tracingBridge;
     private final ConcurrentMap<ServiceKey, ServiceDirectory> directories =
             new ConcurrentHashMap<>();
     private final ConcurrentMap<RpcEndpoint, EndpointStats> stats =
@@ -94,6 +100,12 @@ public final class PeachRpcClient implements AutoCloseable {
         this.observer = Objects.requireNonNull(
                 builder.observer,
                 "observer");
+        this.metadataPropagator = Objects.requireNonNull(
+                builder.metadataPropagator,
+                "metadataPropagator");
+        this.tracingBridge = Objects.requireNonNull(
+                builder.tracingBridge,
+                "tracingBridge");
     }
 
     /**
@@ -219,36 +231,78 @@ public final class PeachRpcClient implements AutoCloseable {
             ClientMethodBinding method,
             byte[] encodedArguments) {
         retryBudget.onRequest();
+        RpcTraceContext trace = tracingBridge.enabled()
+                ? tracingBridge.startClient(
+                        reference.key(),
+                        method.methodId())
+                : RpcTraceContext.noop();
+        Map<String, String> propagatedMetadata =
+                propagatedMetadata(trace);
+        CompletableFuture<Object> result =
+                new CompletableFuture<>();
+        result.whenComplete((ignoredValue, error) -> {
+            if (result.isCancelled()) {
+                method.circuitBreaker().onCancelled();
+                trace.end(
+                        RpcStatus.UNAVAILABLE,
+                        new CancellationException(
+                                "RPC call cancelled"));
+                return;
+            }
+            Throwable failure =
+                    error == null ? null : unwrap(error);
+            trace.end(
+                    failure == null
+                            ? RpcStatus.OK
+                            : statusOf(failure),
+                    failure);
+        });
+
         if (!method.circuitBreaker().tryAcquire()) {
-            return CompletableFuture.failedFuture(
+            result.completeExceptionally(
                     new RpcUnavailableException(
                             "RPC circuit is open for "
                                     + reference.key().canonicalName()
                                     + '#'
                                     + method.methodId()));
+            return result;
         }
 
-        long deadlineNanos = System.nanoTime() + timeout.toNanos();
-        CompletableFuture<Object> result = new CompletableFuture<>();
-        result.whenComplete((ignoredValue, ignoredError) -> {
-            if (result.isCancelled()) {
-                method.circuitBreaker().onCancelled();
-            }
-        });
+        long deadlineNanos =
+                System.nanoTime() + timeout.toNanos();
         attempt(
                 reference,
                 method,
                 encodedArguments,
+                propagatedMetadata,
                 deadlineNanos,
                 1,
                 result);
         return result;
     }
 
+    private Map<String, String> propagatedMetadata(
+            RpcTraceContext trace) {
+        if (!tracingBridge.enabled()
+                && !metadataPropagator.enabled()) {
+            return Map.of();
+        }
+        Map<String, String> metadata =
+                new LinkedHashMap<>();
+        metadata.putAll(trace.metadata());
+        if (metadataPropagator.enabled()) {
+            metadataPropagator.inject(metadata);
+        }
+        return metadata.isEmpty()
+                ? Map.of()
+                : Map.copyOf(metadata);
+    }
+
     private void attempt(
             ClientReference reference,
             ClientMethodBinding method,
             byte[] encodedArguments,
+            Map<String, String> propagatedMetadata,
             long deadlineNanos,
             int attempt,
             CompletableFuture<Object> result) {
@@ -293,6 +347,7 @@ public final class PeachRpcClient implements AutoCloseable {
                     reference,
                     method,
                     encodedArguments,
+                    propagatedMetadata,
                     deadlineNanos,
                     attempt,
                     result,
@@ -315,6 +370,7 @@ public final class PeachRpcClient implements AutoCloseable {
                 method.methodId(),
                 deadlineEpochMillis,
                 remainingMillis,
+                propagatedMetadata,
                 encodedArguments);
 
         CompletableFuture<byte[]> transportFuture = transport.request(
@@ -353,6 +409,7 @@ public final class PeachRpcClient implements AutoCloseable {
                         reference,
                         method,
                         encodedArguments,
+                        propagatedMetadata,
                         deadlineNanos,
                         attempt,
                         result,
@@ -388,6 +445,7 @@ public final class PeachRpcClient implements AutoCloseable {
                             reference,
                             method,
                             encodedArguments,
+                            propagatedMetadata,
                             deadlineNanos,
                             attempt,
                             result,
@@ -419,6 +477,7 @@ public final class PeachRpcClient implements AutoCloseable {
                         reference,
                         method,
                         encodedArguments,
+                        propagatedMetadata,
                         deadlineNanos,
                         attempt,
                         result,
@@ -431,6 +490,7 @@ public final class PeachRpcClient implements AutoCloseable {
             ClientReference reference,
             ClientMethodBinding method,
             byte[] encodedArguments,
+            Map<String, String> propagatedMetadata,
             long deadlineNanos,
             int attempt,
             CompletableFuture<Object> result,
@@ -471,6 +531,7 @@ public final class PeachRpcClient implements AutoCloseable {
                         reference,
                         method,
                         encodedArguments,
+                        propagatedMetadata,
                         deadlineNanos,
                         attempt + 1,
                         result));
@@ -744,6 +805,10 @@ public final class PeachRpcClient implements AutoCloseable {
         private RpcClientResilienceOptions resilienceOptions =
                 RpcClientResilienceOptions.DEFAULT;
         private RpcObserver observer = RpcObserver.noop();
+        private RpcMetadataPropagator metadataPropagator =
+                RpcMetadataPropagator.noop();
+        private RpcTracingBridge tracingBridge =
+                RpcTracingBridge.noop();
 
         /** 创建 Consumer Builder。 */
         public Builder() {
@@ -839,6 +904,36 @@ public final class PeachRpcClient implements AutoCloseable {
          */
         public Builder observer(RpcObserver value) {
             this.observer = Objects.requireNonNull(value, "observer");
+            return this;
+        }
+
+        /**
+         * 设置 RPC Metadata Propagator。
+         *
+         * @param value Metadata Propagator
+         * @return Consumer Builder
+         */
+        public Builder metadataPropagator(
+                RpcMetadataPropagator value) {
+            this.metadataPropagator =
+                    Objects.requireNonNull(
+                            value,
+                            "metadataPropagator");
+            return this;
+        }
+
+        /**
+         * 设置分布式 Trace Bridge。
+         *
+         * @param value Trace Bridge
+         * @return Consumer Builder
+         */
+        public Builder tracingBridge(
+                RpcTracingBridge value) {
+            this.tracingBridge =
+                    Objects.requireNonNull(
+                            value,
+                            "tracingBridge");
             return this;
         }
 
