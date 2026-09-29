@@ -120,7 +120,7 @@ Consumer 通过目标 RPC host 与证书身份执行校验。
 
 ## 6. 在线证书 Reload
 
-Peach RPC 周期检查：
+Peach RPC 周期检查以下 material 的 SHA-256 内容指纹、mtime 与 size：
 
 - server certificate
 - private key
