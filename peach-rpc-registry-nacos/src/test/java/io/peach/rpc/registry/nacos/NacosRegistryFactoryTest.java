@@ -43,6 +43,8 @@ class NacosRegistryFactoryTest {
 
         assertTrue(
                 !error.getMessage().contains("secret"));
+        assertTrue(
+                !options.toString().contains("secret"));
     }
 
     @Test
