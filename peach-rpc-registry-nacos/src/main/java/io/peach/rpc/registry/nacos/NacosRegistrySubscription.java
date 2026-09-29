@@ -7,6 +7,8 @@ import com.alibaba.nacos.api.naming.listener.NamingEvent;
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
+import io.peach.rpc.observability.RpcObserver;
+import io.peach.rpc.observability.RpcRegistryOperation;
 import io.peach.rpc.registry.RegistryListener;
 import io.peach.rpc.registry.RegistrySnapshot;
 import io.peach.rpc.registry.RegistrySubscription;
@@ -36,6 +38,7 @@ final class NacosRegistrySubscription implements RegistrySubscription {
     private final String cluster;
     private final RegistryListener listener;
     private final AtomicLong revision;
+    private final RpcObserver observer;
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Object eventMonitor = new Object();
     private final Deque<List<Instance>> eventQueue = new ArrayDeque<>();
@@ -52,7 +55,8 @@ final class NacosRegistrySubscription implements RegistrySubscription {
             String group,
             String cluster,
             RegistryListener listener,
-            AtomicLong revision) {
+            AtomicLong revision,
+            RpcObserver observer) {
         this.namingService = Objects.requireNonNull(
                 namingService,
                 "namingService");
@@ -67,9 +71,14 @@ final class NacosRegistrySubscription implements RegistrySubscription {
         this.cluster = Objects.requireNonNull(cluster, "cluster");
         this.listener = Objects.requireNonNull(listener, "listener");
         this.revision = Objects.requireNonNull(revision, "revision");
+        this.observer = observer == null
+                ? RpcObserver.noop()
+                : observer;
     }
 
     void start() {
+        long startedAtNanos =
+                observer.enabled() ? System.nanoTime() : 0L;
         executor.submit(
                 "subscribe",
                 serviceKey,
@@ -87,6 +96,13 @@ final class NacosRegistrySubscription implements RegistrySubscription {
                                     false);
                     initialize(initial);
                 }).whenComplete((ignored, error) -> {
+                    if (observer.enabled()) {
+                        observer.onRegistryOperationCompleted(
+                                "nacos",
+                                RpcRegistryOperation.SUBSCRIBE,
+                                System.nanoTime() - startedAtNanos,
+                                error);
+                    }
                     if (error != null && !closed.get()) {
                         LOGGER.warn(
                                 "Nacos subscription initialization failed: service={}",
