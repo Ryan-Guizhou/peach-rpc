@@ -1,5 +1,10 @@
 # Peach RPC Production Roadmap / Capability Matrix
 
+<!-- capability-status:project=preview -->
+<!-- capability-status:v2-c3=current -->
+<!-- capability-status:v2-d=in-progress -->
+<!-- capability-status:v2-d2=in-progress -->
+
 > 本文是 Peach RPC **生产能力状态与后续优先级的唯一总表**。  
 > V2-A、V2-B、V2-B.1、V2-B.2、V2-C.x 等阶段文档继续保留，用于记录具体设计与历史决策；当“当前状态”和旧阶段文档发生冲突时，以本文与实际代码/测试为准。
 
@@ -21,7 +26,7 @@
 | **Future** | 属于长期生态或能力扩展，不应阻塞近期高可用/高性能主线 |
 | **Optional** | 是否实现取决于项目范围，不作为当前 Production GA 的必选门禁 |
 
-> V2-C.1 与 V2-C.2 已形成当前主线基础。V2-C.3 在当前 PR 分支已完成 Security & Observability 闭环；本文中的 **Current** 表示当前文档所在分支已有实现，并已通过对应自动化门禁。
+> V2-C.1、V2-C.2、V2-C.3 已进入主线。V2-D 第一批已进入主线，V2-D.2 当前正在建立完整性能矩阵、allocation/GC profiling 与 10k logical-concurrency soak；本文中的 **Current** 表示已经进入主线并有对应自动化验证，**In Progress** 表示工程入口已实现但生产证据仍在收集。
 
 ---
 
@@ -39,7 +44,7 @@ Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 - Core 已提供低依赖 `RpcObserver` 观测契约；
 - JMH 已覆盖调用、协议、负载均衡与基础端到端路径。
 
-V2-C.3 当前分支已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemetry 与 JFR 三层可观测基础，但项目仍定位为 **Preview**。距离“可作为中型项目默认 RPC 层”的主要缺口现在集中在：
+V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemetry 与 JFR 三层可观测基础。V2-D 第一批热路径优化已经进入主线，V2-D.2 正在补完整性能证据与 10k soak。项目仍定位为 **Preview**。距离“可作为中型项目默认 RPC 层”的主要缺口现在集中在：
 
 1. Fory Stable Type ID / Schema fingerprint / 滚动升级兼容；
 2. byte[] / Object[] 等剩余热路径分配与完整性能矩阵；
@@ -71,7 +76,7 @@ V2-C.3 当前分支已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer�
 | Buffer ownership | **Partial** | 已有 frame view / slice 基础 | 尚未形成 OwnedBuffer/retain/release 或等价 Buffer API；是否进入默认路径必须由基准决定 |
 | 消除参数 Object[] | **Partial** | Generated CallSite 已减少动态调用 | Fory Codec ID 1 仍使用 Object[] 参数对象图 |
 | Compression 数据面 | **Proposed** | Wire ID 已预留 NONE/LZ4/ZSTD | 当前实际只启用 NONE；必须以 payload/CPU/带宽基准决定策略 |
-| 完整性能矩阵 | **Partial** | 已有 JMH 与 Raw Vert.x / Peach RPC 基线 | 仍缺多 payload、多并发、多连接、过载、慢端、allocation/GC profiler |
+| 完整性能矩阵 | **Partial** | 已有 payload × connection shard × concurrency Matrix Runner、sample/throughput 与 GC profiler；普通 CI 跑 smoke | 仍需固定硬件执行 full matrix，并补 overload/slow endpoint/fault 场景 |
 | 性能容量模型 | **Proposed** | 无固定硬件容量结论 | 建立 QPS/Core、p50/p99/p99.9、CPU、Allocation、GC、错误率与连接数模型 |
 
 ### 3.2 Consumer 高可用与容错
@@ -276,7 +281,7 @@ flowchart LR
 
 ## 7. V2-C.3：安全与可观测性
 
-**状态：Partial（实现已完成，最终 CI/Chaos 验收中）**
+**状态：Current**
 
 ### 7.1 已实现
 
@@ -325,7 +330,7 @@ flowchart LR
 
 ## 8. V2-D：性能内核第二次升级
 
-**状态：In Progress（当前 V2-D 分支）**
+**状态：In Progress**
 
 该阶段必须遵循：
 
@@ -345,7 +350,24 @@ flowchart LR
 8. FrameAccumulator 增加 complete/fragmented benchmark，并复用固定 32B Header 数组；
 9. v1 wire、Fory Codec ID 1 payload、TLS/Trace/Registry 语义保持不变。
 
-### 8.2 继续补完整基准矩阵
+### 8.2 V2-D.2：Performance Evidence & 10k Soak
+
+当前 V2-D.2 已实现：
+
+1. 完整 payload × connection shard × concurrency JMH Matrix Runner；
+2. sample + throughput 双模式；
+3. `-prof gc` allocation / GC profiling；
+4. JMH JSON -> CSV / Markdown 聚合；
+5. JDK 21 Virtual Thread 10k logical-concurrency soak；
+6. Soak 输出吞吐、p50/p99/p99.9、错误率、Heap、GC、CPU、inflight、连接与错误类型；
+7. 普通 CI 增加 Matrix smoke 与 10k short soak smoke；
+8. 独立 Performance Evidence workflow 支持 full matrix 与长时间 10k soak Artifact。
+
+当前仍未把共享 CI Runner 上的数值写成 Production SLO。固定硬件 full matrix、至少 30 分钟 10k soak、TLS 对比和故障性能矩阵仍属于 V2-D.2 未完成证据。
+
+详细运行方式见 [V2-D.2 Performance Evidence & 10k Soak](performance-evidence-v2d2.md)。
+
+#### 完整矩阵维度
 
 Payload：
 
@@ -450,18 +472,18 @@ Peach RPC 从 Preview 提升为 Production Ready 前，建议以下门禁全部�
 
 ### 10.2 Security
 
-- [ ] TLS；
-- [ ] mTLS；
-- [ ] hostname/peer verification；
-- [ ] 证书过期与轮换；
+- [x] TLS；
+- [x] mTLS；
+- [x] hostname/peer verification；
+- [x] 证书过期与轮换；
 - [ ] 凭据/证书错误脱敏。
 
 ### 10.3 Observability
 
-- [ ] Micrometer；
-- [ ] OpenTelemetry；
-- [ ] JFR；
-- [ ] 连接/Registry 生命周期指标；
+- [x] Micrometer；
+- [x] OpenTelemetry；
+- [x] JFR；
+- [x] 连接/Registry 生命周期指标；
 - [ ] 统一错误与状态语义。
 
 ### 10.4 Performance
@@ -485,7 +507,7 @@ Peach RPC 从 Preview 提升为 Production Ready 前，建议以下门禁全部�
 - [ ] malformed frame matrix；
 - [ ] fuzz/property test；
 - [ ] race/concurrency test；
-- [ ] soak test；
+- [ ] 长时间 soak test（10k soak 工具已具备，固定环境长跑证据未完成）；
 - [ ] chaos test；
 - [ ] Maven/CI/Javadoc 全门禁持续通过。
 
@@ -505,13 +527,14 @@ Peach RPC 从 Preview 提升为 Production Ready 前，建议以下门禁全部�
 从本文建立后：
 
 1. **本文负责“现在有什么、还缺什么、下一步优先级”。**
-2. `readiness.md` 负责解释“为什么当前还是 Preview、Production Gate 是什么”。
-3. `performance.md` 负责性能测量方法、基准和优化证据。
-4. `architecture.md` 负责当前架构与运行时流程。
-5. V2-A/V2-B/V2-B.1/V2-B.2/V2-C.x 文档负责阶段设计和历史决策。
-6. 每个改变能力状态的 PR 都必须同步更新本文对应矩阵项。
-7. 不允许只在旧阶段文档中把能力写成“已完成”，而不更新本文。
-8. 旧文档中若存在历史描述，不应静默改写历史；应增加“Current status 见 Production Roadmap”的链接。
+2. 机器可读状态统一维护在 `capability-status.properties`，`check_project.py` 强制校验关键文档标记和已知过期表述。
+3. `readiness.md` 负责解释“为什么当前还是 Preview、Production Gate 是什么”。
+4. `performance.md` 负责性能测量方法、基准和优化证据。
+5. `architecture.md` 负责当前架构与运行时流程。
+6. V2-A/V2-B/V2-B.1/V2-B.2/V2-C.x 文档负责阶段设计和历史决策。
+7. 每个改变能力状态的 PR 都必须同步更新本文对应矩阵项。
+8. 不允许只在旧阶段文档中把能力写成“已完成”，而不更新本文。
+9. 旧文档中若存在历史描述，不应静默改写历史；应增加“Current status 见 Production Roadmap”的链接。
 
 这套规则的目标是避免：
 
