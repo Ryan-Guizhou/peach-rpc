@@ -1,24 +1,30 @@
 # Peach RPC V2-C.2 连接与控制面高可用
 
-> 状态：**Partial（当前开发分支）**  
-> 本文记录 V2-C.2 的当前实现、边界和剩余生产门禁。统一能力状态见 [Production Roadmap / Capability Matrix](production-roadmap.md)。
+> 状态：**Current（当前分支）**  
+> V2-C.2 的目标不是继续扩展 Registry/Codec 数量，而是把“连接失效可检测、连接与控制面可恢复、恢复过程有边界且可验证”形成闭环。统一能力状态见 [Production Roadmap / Capability Matrix](production-roadmap.md)。
 
-## 1. 目标
+## 1. 本阶段结果
 
-V2-C.2 不扩展新的 Codec 或 Registry 生态，重点解决 RPC 长连接与控制面故障恢复中的生产级高可用问题：
+V2-C.2 当前已经完成：
 
-1. 空闲长连接能够主动发现 silent/half-open connection；
-2. 异常断链后的连接恢复有单飞、有界退避和 jitter，避免重连风暴；
-3. 单次逻辑调用的 timeout 覆盖 connect、HELLO/ACK 与 REQUEST，而不是仅覆盖已建立连接后的网络请求；
-4. Deadline 传播减少对跨节点 wall clock 一致性的依赖；
-5. Registry 重启、断链、compaction 等故障能够通过自动化测试证明恢复行为；
-6. 独立进程 E2E 与恢复事件可观测性形成最终闭环。
+1. HELLO/HELLO_ACK 协商式 PING/PONG Heartbeat；
+2. Client/Server idle detection 与 heartbeat timeout；
+3. request-driven single-flight reconnect；
+4. exponential backoff + full jitter + 最大退避窗口；
+5. connect/HELLO/REQUEST 共用逻辑 timeout budget；
+6. rolling-compatible relative timeout metadata；
+7. connection lifecycle RpcObserver；
+8. Etcd compaction、restart 与 3 节点 leader transfer 恢复验证；
+9. Nacos restart、Provider re-registration、Consumer re-subscribe；
+10. last-known-good 数据面验证；
+11. 独立 JVM Provider/Consumer recovery E2E；
+12. 完整 Maven/质量/Chaos 门禁。
 
-当前分支已完成前四项的主要运行时代码和 Transport 自动化测试。Registry Chaos、独立进程 E2E 与连接/恢复 Observer 仍待完成。
+项目整体仍为 Preview。TLS/mTLS、标准可观测 Adapter、Wire Compatibility、完整性能矩阵、网络黑洞/长时间 soak 与容量/升级/回滚指南属于后续阶段。
 
-## 2. Heartbeat 能力协商
+## 2. Heartbeat 协商与 idle detection
 
-PING/PONG 不是无条件启用的控制帧，而是通过 HELLO / HELLO_ACK 协商出的 `RpcFeature.HEARTBEAT`。
+Heartbeat 不是无条件控制帧，而是通过 HELLO/HELLO_ACK 协商出的 `RpcFeature.HEARTBEAT`。
 
 ~~~mermaid
 sequenceDiagram
@@ -29,69 +35,38 @@ sequenceDiagram
     C->>P: HELLO(features includes HEARTBEAT)
     P->>C: HELLO_ACK(features includes HEARTBEAT)
     Note over C,P: HEARTBEAT negotiated
-    Note over C,P: connection becomes Active
-    C->>P: PING after idle interval
+    Note over C,P: idle >= heartbeatInterval
+    C->>P: PING
     P->>C: PONG
 ~~~
 
-只有双方都声明 HEARTBEAT 后才允许发送 PING/PONG。这样在滚动升级期间，新节点不会向不理解 Heartbeat 的旧节点发送新的控制帧。
+只有双方都支持 HEARTBEAT 才发送 PING/PONG，因此 N/N+1 滚动升级时不会把新控制帧发给旧节点。
 
-## 3. Idle detection
-
-Client 和 Server 都维护连接本地的最近入站活跃时间。
-
-当前语义：
-
-- 握手完成且协商 HEARTBEAT 后启动周期检查；
-- 连接持续有正常 REQUEST / RESPONSE / CANCEL / GO_AWAY / PING / PONG 流量时，不额外发送 PING；
-- 入站空闲达到 `heartbeatInterval` 后发送一个 PING；
-- 同一连接最多存在一个 outstanding PING；
-- PING 发出后，任意有效入站帧都能证明远端仍然存活并清除 heartbeat wait；
-- 超过 `heartbeatTimeout` 没有入站流量，则连接被判定不可用并关闭；
-- graceful drain 会停止 Heartbeat，避免排空阶段产生无意义控制流量。
+连接状态：
 
 ~~~mermaid
 stateDiagram-v2
-    [*] --> Active
-    Active --> Active: normal inbound traffic
-    Active --> WaitingPong: idle >= heartbeatInterval / send PING
+    [*] --> Connecting
+    Connecting --> Handshaking: TCP connected
+    Handshaking --> Active: HELLO/ACK
+    Handshaking --> Closed: timeout/rejected
+    Active --> WaitingPong: idle / PING
     WaitingPong --> Active: any valid inbound frame
-    WaitingPong --> Closed: heartbeatTimeout
-    Active --> Draining: GO_AWAY / local drain
-    WaitingPong --> Draining: GO_AWAY / local drain
+    WaitingPong --> Closed: heartbeat timeout
+    Active --> Draining: GO_AWAY
     Draining --> Closed: inflight drained
+    Active --> Closed: transport/protocol failure
 ~~~
 
-该机制用于补充 TCP keepalive。TCP keepalive 仍启用，但 Peach RPC 不依赖操作系统默认 keepalive 周期来满足应用级故障发现时间。
+语义：
 
-## 4. Consumer 重连
+- 正常 RPC 流量本身证明连接活跃，不额外发送 Heartbeat；
+- 同一连接最多存在一个 outstanding PING；
+- 任意有效入站帧都可清除 heartbeat wait；
+- 超过 `heartbeatTimeout` 没有入站流量即摘除 silent/half-open connection；
+- graceful drain 会停止 Heartbeat，避免排空阶段制造无意义控制流量。
 
-Consumer 仍采用按 Endpoint、按 connection shard 管理连接槽。
-
-每个槽位保证：
-
-- 同一时刻只存在一个连接创建 Future；
-- 多个并发请求共享该 Future，不重复创建连接；
-- 已成功握手的连接发生异常后记录连续失败次数；
-- 下一次业务请求触发连接重建；
-- 重连退避使用 exponential backoff + full jitter；
-- 退避窗口有最大值；
-- 握手成功后失败次数归零。
-
-~~~text
-request
-  -> slot
-     -> active connection --------------------------> request
-     -> no connection
-          -> one shared connecting future
-               -> optional jitter backoff
-               -> TCP connect
-               -> HELLO / ACK
-               -> success: reset failures
-               -> failure: increment failures
-~~~
-
-当前默认值：
+默认配置：
 
 | 配置 | 默认值 |
 |---|---:|
@@ -100,157 +75,234 @@ request
 | `peach.rpc.transport.reconnect-base-backoff` | `50ms` |
 | `peach.rpc.transport.reconnect-max-backoff` | `3s` |
 
-重连是 **request-driven**，不会在没有业务流量时主动永久重连。这样可以避免空闲 Consumer 对已经下线的 Endpoint 持续制造连接流量。
+## 3. Consumer 重连模型
 
-## 5. 整体 timeout budget
-
-V2-C.1 之前，Core 虽然维护逻辑 Deadline，但 Transport 在连接建立完成后仍然拿到完整 timeout，因此 connect / HELLO / ACK 耗时不会从网络请求预算扣除。
-
-V2-C.2 改为：
+每个 Endpoint connection shard 只允许一个 connecting future：
 
 ~~~text
-logical deadline
-    |
-    +-- service selection
-    +-- reconnect backoff
-    +-- TCP connect
-    +-- HELLO / HELLO_ACK
-    +-- REQUEST / RESPONSE
+request
+  -> slot
+     -> active connection -----------------------> request
+     -> no connection
+          -> shared connecting future
+               -> optional full-jitter backoff
+               -> TCP connect
+               -> HELLO / ACK
+               -> success: reset failure count
+               -> failure: increase failure count
 ~~~
 
-`VertxRpcTransportClient` 在进入连接获取前记录 monotonic deadline；连接和握手完成后只把剩余时间交给具体 Request。
+特点：
 
-因此慢建连不能再额外突破一次调用的逻辑 timeout。
+- 多个并发请求共享同一个连接创建 Future；
+- 重连由业务请求触发，空闲 Consumer 不会永久主动重连；
+- 连续失败按 exponential backoff 扩大窗口；
+- 每次在窗口内使用 full jitter；
+- 窗口有最大值；
+- 握手成功后失败次数清零；
+- graceful GO_AWAY / 本地主动关闭不计入异常 reconnect failure。
 
-## 6. Relative timeout budget
+这避免大规模故障恢复时的 thundering herd。
 
-仅传播绝对 `deadlineEpochMillis` 会受到 Consumer/Provider wall clock 偏差影响。
+## 4. 整体 Deadline 与 Relative Timeout Budget
 
-V2-C.2 使用兼容式双写：
+V2-C.2 之后，一次 Consumer 逻辑调用的 Deadline 覆盖：
 
 ~~~text
-deadlineEpochMillis=<absolute epoch millis>
-timeoutBudgetMillis=<remaining budget millis>
+service selection
+ -> reconnect backoff
+ -> TCP connect
+ -> HELLO / HELLO_ACK
+ -> REQUEST / RESPONSE
 ~~~
 
-语义：
+Transport 在连接/握手完成后只把**剩余预算**交给 Request。
 
-- 新 Consumer 同时写两个字段；
-- 新 Provider 检测到 `timeoutBudgetMillis` 时，不再因为本机 wall clock 与 Consumer 不一致而用绝对 deadline 提前拒绝请求；
-- 旧 Provider 忽略未知 metadata，并继续使用 `deadlineEpochMillis`；
-- 旧 Consumer 没有 relative budget 时，新 Provider 继续保持旧 absolute deadline 行为。
-
-这允许 N/N+1 滚动升级，而不要求一次性同时升级所有节点。
-
-### 当前边界
-
-relative budget 当前主要解决 **跨节点 wall-clock 判定偏差**。
-
-Provider 对已经进入业务执行阶段的硬超时仍主要由：
+Wire metadata 同时保留：
 
 ~~~text
-Consumer timeout
- -> CANCEL
- -> Provider connection inflight
- -> Future.cancel
- -> interrupt cancellable execution
+deadlineEpochMillis=<legacy absolute deadline>
+timeoutBudgetMillis=<relative remaining budget>
 ~~~
 
-完成。
+兼容策略：
 
-本阶段不额外在 Provider 为每个 invocation 建立独立 timeout timer，避免在没有基准和完整取消语义验证前增加每请求定时器成本。
+- 新 Consumer 双写两个字段；
+- 旧 Provider 忽略未知 relative budget，继续使用 absolute deadline；
+- 新 Provider 检测到 relative budget 时避免依赖远端 wall clock；
+- `timeoutBudgetMillis` 使用固定宽度编码，Transport 在真正 `socket.write` 前原地刷新，因此 Provider 看到的是更接近发送时的剩余预算；
+- 不要求集群一次性升级所有节点。
 
-## 7. 与 Graceful Drain 的关系
+Provider 业务执行阶段的取消仍主要由 Consumer timeout/Future cancel 通过 CANCEL 帧传播，不为每次 invocation 额外创建独立 timer。
 
-Heartbeat failure 与正常 drain 必须区分：
+## 5. Connection Lifecycle Observer
 
-- Heartbeat timeout / socket exception：异常连接；
-- Provider 正常关闭：Registry unregister -> GO_AWAY(UNAVAILABLE) -> inflight drain；
-- 收到 graceful GO_AWAY 后 Client 释放该连接槽，但不把它视为异常 reconnect failure；
-- 新请求可以通过同一 Endpoint 的连接槽建立新连接，但 Registry 正常情况下已经先移除正在关闭的 Provider。
+V2-C.2 扩展现有低依赖 `RpcObserver`，新增：
 
-这避免部署排空被错误统计为故障，并减少不必要的 reconnect backoff。
+- `onConnectionEstablished`；
+- `onConnectionReconnectScheduled`；
+- `onConnectionHeartbeatTimeout`；
+- `onConnectionClosed`。
 
-需要注意：Transport 连接重新建立成功并不等于业务流量立即恢复。Consumer 还会受到方法级 Circuit Breaker 和 Endpoint Outlier Ejection 的恢复窗口保护。默认 `circuit-open-duration=10s`、`outlier-ejection-duration=30s`，因此故障实例恢复后，业务流量可能在保护窗口结束后才重新进入。独立进程 HA E2E 为缩短 CI 时间会显式使用较短的恢复窗口，但生产默认值保持不变。
+连接角色：
 
-## 8. 当前自动化测试
+- `CLIENT`；
+- `SERVER`。
 
-当前分支已经增加：
+归一化关闭原因：
 
-### Protocol
+- `LOCAL_CLOSE`；
+- `GO_AWAY`；
+- `HEARTBEAT_TIMEOUT`；
+- `TRANSPORT_ERROR`；
+- `PROTOCOL_ERROR`；
+- `REMOTE_CLOSE`。
 
-- PING 编码/解码；
-- PONG 编码/解码；
-- 非 PING/PONG 类型不能通过 heartbeat encoder；
-- absolute deadline + relative timeout budget 双写/解析。
+默认 NOOP Observer 不创建事件对象。Spring 运行时把现有 Observer Bean 组合后，在 Client/Server 真正创建时通过 Transport options 注入，避免 AutoConfiguration Bean 循环。具体 Micrometer/OpenTelemetry/JFR Adapter 放在 V2-C.3。
 
-### Vert.x Transport
+## 6. Etcd 恢复闭环
 
-- 正常 Client/Server handshake 与 request；
-- 空闲时间超过多个 heartbeat interval 后连接仍保持可用；
-- Provider 停止并重新监听相同 Endpoint 后，Consumer 能重新建立连接并恢复调用；
-- 原有 handshake timeout、CANCEL、connection shard、Graceful Drain 测试继续保留。
+### 6.1 Lease
 
-CI 仍以：
+正常主路径：
+
+~~~text
+grant lease
+ -> keepAlive stream
+ -> register keys with lease
+~~~
+
+恢复信号：
+
+1. keepalive `onError` / `onCompleted`；
+2. 低频 TTL watchdog 兜底检查当前 Lease；
+3. 明确 `NOT_FOUND` 或 `TTL <= 0` 时进入同一单飞 recovery。
+
+恢复实现还包含：
+
+- grant 使用 jetcd 有界 timeout；
+- `activeLeaseId` 校验，旧 Lease 的迟到回调不能 invalidate 新 Lease；
+- recovery 重新发布当前 `activeRegistrations`；
+- recovery 失败继续使用有界 exponential backoff + jitter。
+
+### 6.2 Watch 与 compaction
+
+Etcd Watch error 后不直接假设 revision 仍有效，而是：
+
+~~~text
+watch error
+ -> backoff
+ -> Range current snapshot
+ -> publish snapshot
+ -> Watch(snapshot.revision + 1)
+~~~
+
+集成测试真实执行：
+
+1. 获取旧 revision；
+2. 写入新实例推进 revision；
+3. `KV.compact(currentRevision)`；
+4. 从已压缩的 stale revision 建 Watch；
+5. 验证 error 后重新 Range；
+6. 验证新 Watch 获得当前完整实例视图。
+
+### 6.3 Restart
+
+jetcd Testcontainers 在容器重建后宿主机映射端口可能改变，因此 restart 集成测试使用 jetcd 官方同款 `cluster://<clusterName>` 动态 resolver，验证的是“逻辑 Etcd 目标重启”而不是固定某次 Testcontainers 动态端口。
+
+生产配置仍继续使用用户配置的 Etcd endpoints；生产部署应保持 Registry DNS/VIP/固定地址语义。
+
+### 6.4 Leader transfer
+
+3 节点 leader transfer 不进入普通 Reactor，避免所有 PR 都承担多节点容器成本。独立 `Etcd Chaos` workflow：
+
+- 创建 3 节点 Etcd；
+- 定位当前 leader；
+- 调用官方 `Maintenance.moveLeader(...)`；
+- 验证 leader 发生变化；
+- 验证 Registry 仍能注册新实例；
+- 验证 Watch 继续得到完整快照；
+- workflow 有 10 分钟硬上限；
+- Etcd 相关 PR 自动触发，也支持手工触发。
+
+## 7. Nacos restart 与 last-known-good
+
+独立进程 E2E 使用真实 Nacos 3.2.4：
+
+~~~text
+Provider JVM ----\
+                  -> Nacos
+Consumer JVM ----/
+~~~
+
+验证序列：
+
+1. Provider/Consumer JAR 独立启动并完成 RPC；
+2. 保持 Consumer JVM 不重启，停止并重新启动 Provider，验证 Transport reconnect；
+3. 重启 Nacos；
+4. Nacos restart 期间既有 RPC 数据连接继续成功，证明数据面使用 last-known-good 本地目录；
+5. 启动新的 Consumer，只有 Provider 恢复临时实例注册后才能发现服务，验证 Provider registration redo；
+6. 把 Provider 从 19090 迁移到 19091；
+7. 原 Consumer JVM 必须再次成功调用，证明 subscription redo 与新 Endpoint 快照生效。
+
+E2E 为缩短 CI 故障恢复时间显式缩短 Circuit Breaker / Outlier Ejection 测试窗口，生产默认值保持不变。
+
+## 8. Graceful Drain 与恢复语义
+
+正常 Provider 关闭：
+
+~~~text
+Registry unregister
+ -> GO_AWAY
+ -> reject new requests
+ -> wait inflight
+ -> close
+~~~
+
+V2-C.2 明确区分：
+
+- graceful GO_AWAY：正常排空，不增加 reconnect failure count；
+- LOCAL_CLOSE：本地主动关闭；
+- heartbeat/socket/protocol failure：异常连接关闭。
+
+需要注意：Transport reconnect 成功不等于业务流量立即恢复。Circuit Breaker 与 Outlier Ejection 仍可能在自己的保护窗口内阻止流量重新进入，这是预期的 resilience 行为。
+
+## 9. 自动化门禁
+
+普通 PR：
 
 ~~~bash
 python3 scripts/check_project.py
 mvn -B -ntp clean verify -Pquality
 ~~~
 
-作为基础门禁。
+CI 在 Reactor 后还会执行：
 
-## 9. V2-C.2 尚未完成
-
-### 9.1 Etcd Chaos
-
-仍需真实验证：
-
-- compaction 后 Range + Watch 恢复；
-- 网络断链 / 恢复；
-- Etcd 进程重启；
-- 多节点 leader change；
-- 恢复期间 last-known-good ServiceDirectory 行为。
-
-### 9.2 Nacos Chaos
-
-仍需真实验证：
-
-- Nacos Server restart；
-- Provider ephemeral registration redo；
-- Consumer subscription redo；
-- 重启期间 last-known-good snapshot；
-- auth-enabled 场景错误脱敏。
-
-### 9.3 独立进程 E2E
-
-当前 Nacos RPC round-trip 使用两个独立 Spring Context，但仍处于同一个测试 JVM。
-
-V2-C.2 还需要建立真正的：
-
-~~~text
-Provider JVM
-   |
-  Nacos
-   |
-Consumer JVM
+~~~bash
+bash scripts/run_example_process_e2e.sh
 ~~~
 
-进程级测试，验证启动、调用、Provider stop/restart、Consumer 恢复与退出码。
+在 CI 环境中该脚本自动包含 Nacos restart/re-registration/re-subscribe 流程。
 
-### 9.4 Recovery observability
+Etcd 多节点 Chaos：
 
-当前 `RpcObserver` 主要覆盖：
+~~~bash
+mvn -B -ntp -pl peach-rpc-registry-etcd -am test -Petcd-chaos
+~~~
 
-- Client attempt；
-- Retry；
-- Provider invocation。
+对应 workflow 仅在 Etcd 相关 PR 或手工触发时运行，并设置 10 分钟 job timeout。
 
-连接建立、heartbeat timeout、reconnect 和 Registry recovery 生命周期事件仍待增加。具体 Micrometer/OpenTelemetry/JFR Adapter 属于 V2-C.3。
+当前分支已经通过：
+
+- Repository checks；
+- 完整 Maven Reactor + quality；
+- Transport heartbeat/reconnect/observer tests；
+- Etcd compaction/restart 集成测试；
+- Etcd 3 节点 leader transfer Chaos；
+- 独立 JVM Provider/Consumer recovery；
+- Nacos restart + Provider re-registration + Consumer re-subscribe。
 
 ## 10. V2-C.2 完成门禁
-
-全部满足后才能把 V2-C.2 从 Partial 改为 Current：
 
 - [x] Negotiated PING/PONG；
 - [x] Client/Server idle detection；
@@ -259,9 +311,43 @@ Consumer JVM
 - [x] exponential backoff + full jitter；
 - [x] connect/handshake/request 共享 timeout budget；
 - [x] rolling-compatible relative timeout metadata；
-- [ ] Etcd compaction/disconnect/restart/leader-change fault injection；
-- [ ] Nacos restart/re-registration/re-subscribe fault injection；
-- [ ] last-known-good 行为验证；
-- [ ] 独立 JVM Provider/Consumer recovery E2E；
-- [ ] connection/recovery Observer events；
-- [ ] 全 Reactor 与 CI 最终通过。
+- [x] connection/recovery RpcObserver events；
+- [x] Etcd compaction recovery；
+- [x] Etcd restart registration/watch recovery；
+- [x] Etcd 3-node leader transfer Chaos；
+- [x] Nacos restart/re-registration/re-subscribe；
+- [x] last-known-good data-plane behavior；
+- [x] independent JVM Provider/Consumer recovery E2E；
+- [x] full Reactor / quality / CI gate。
+
+## 11. 后续阶段边界
+
+以下能力继续重要，但不再属于 V2-C.2 未完成项。
+
+### V2-C.3
+
+- TLS / mTLS；
+- certificate lifecycle；
+- Micrometer Adapter；
+- OpenTelemetry Adapter；
+- JFR Adapter；
+- Registry-specific recovery metrics/events；
+- auth-enabled Nacos 与凭据错误脱敏。
+
+### V2-D / V2-E
+
+- 完整 payload/concurrency/connection performance matrix；
+- Buffer ownership / allocation second pass；
+- Fory Stable Type ID；
+- Schema fingerprint；
+- N/N+1 rolling compatibility；
+- rollback compatibility；
+- Protocol/Codec compatibility matrix。
+
+### 持续 Robustness
+
+- 网络黑洞/partition；
+- 长时间 Registry/Transport recovery soak；
+- malformed frame/fuzz/property tests；
+- 多实例滚动发布矩阵；
+- 容量规划与升级/回滚 runbook。
