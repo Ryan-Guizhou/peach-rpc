@@ -37,7 +37,10 @@ EXPECTED_MODULES = (
     "peach-rpc-examples",
     "peach-rpc-benchmarks",
 )
-SECTION = re.compile(r"<!--\s*doc-section:([a-zA-Z0-9_.-]+)\s*-->")
+SECTION = re.compile(r"<!--\\s*doc-section:([a-zA-Z0-9_.-]+)\\s*-->")
+CAPABILITY_STATUS = re.compile(
+    r"<!--\\s*capability-status:([a-zA-Z0-9_.-]+)=([a-zA-Z0-9_.-]+)\\s*-->"
+)
 MARKDOWN_LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 CHINESE = re.compile(r"[\u4e00-\u9fff]")
 LOGGER_WITH_CHINESE = re.compile(r"LOGGER\.(?:trace|debug|info|warn|error)\([^\n]*[\u4e00-\u9fff]")
@@ -48,6 +51,72 @@ def fail(message: str) -> None:
     print(f"ERROR: {message}")
     raise SystemExit(1)
 
+
+
+STATUS_DOCS = {
+    "README.md": ("project", "v2-c3", "v2-d", "v2-d2"),
+    "README.en-US.md": ("project", "v2-c3", "v2-d", "v2-d2"),
+    "docs/production-roadmap.md": ("project", "v2-c3", "v2-d", "v2-d2"),
+    "docs/readiness.md": ("project", "v2-c3", "v2-d", "v2-d2"),
+    "docs/performance-kernel-v2d.md": ("v2-d", "v2-d2"),
+    "docs/performance-evidence-v2d2.md": ("v2-d", "v2-d2"),
+}
+STALE_DOC_SNIPPETS = {
+    "README.md": (
+        "V2-C.3 当前分支",
+    ),
+    "README.en-US.md": (
+        "current V2-C.3 branch",
+    ),
+    "docs/production-roadmap.md": (
+        "V2-C.3 在当前 PR 分支",
+        "状态：Partial（实现已完成，最终 CI/Chaos 验收中）",
+    ),
+    "docs/readiness.md": (
+        "## V2-C.3 当前开发分支",
+    ),
+}
+
+
+def load_capability_status() -> dict[str, str]:
+    path = ROOT / "docs" / "capability-status.properties"
+    if not path.is_file():
+        fail("Missing docs/capability-status.properties")
+    values: dict[str, str] = {}
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            fail(f"Invalid capability status line: {raw}")
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip()
+    return values
+
+
+def check_capability_status_consistency() -> None:
+    expected = load_capability_status()
+    for relative, required_keys in STATUS_DOCS.items():
+        path = ROOT / relative
+        if not path.is_file():
+            fail(f"Missing status document: {relative}")
+        text = path.read_text(encoding="utf-8")
+        markers = dict(CAPABILITY_STATUS.findall(text))
+        for key in required_keys:
+            expected_value = expected.get(key)
+            if expected_value is None:
+                fail(f"Capability status source is missing key: {key}")
+            actual_value = markers.get(key)
+            if actual_value != expected_value:
+                fail(
+                    f"Capability status drift in {relative}: "
+                    f"{key}={actual_value!r}, expected {expected_value!r}"
+                )
+        for snippet in STALE_DOC_SNIPPETS.get(relative, ()):
+            if snippet in text:
+                fail(
+                    f"Stale capability wording in {relative}: {snippet}"
+                )
 
 def check_readme_parity() -> None:
     zh_path = ROOT / "README.md"
@@ -120,6 +189,7 @@ def check_java_hygiene() -> None:
 
 def main() -> int:
     check_readme_parity()
+    check_capability_status_consistency()
     check_chinese_first_docs()
     check_markdown_links()
     check_maven_reactor()
