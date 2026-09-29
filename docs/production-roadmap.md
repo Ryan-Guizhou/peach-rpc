@@ -338,7 +338,7 @@ flowchart LR
 
 ### 8.1 第一批已进入实现
 
-当前 V2-D 分支已经完成：
+V2-D 第一批已经进入主线：
 
 1. Protocol encode/decode payload 参数化到 64B / 256B / 1KiB / 16KiB / 1MiB；
 2. 新增完整 Peach RPC byte[] E2E benchmark，支持 connection shard 1 / 2 / 4 / 8；
