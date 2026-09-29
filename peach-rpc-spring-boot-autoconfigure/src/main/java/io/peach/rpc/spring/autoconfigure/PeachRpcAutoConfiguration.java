@@ -21,6 +21,7 @@ import io.peach.rpc.spring.processor.PeachRpcServiceBeanPostProcessor;
 import io.peach.rpc.spring.runtime.PeachRpcRuntimeCoordinator;
 import io.peach.rpc.transport.RpcTransportFactory;
 import io.peach.rpc.transport.RpcTransportOptions;
+import io.peach.rpc.transport.RpcTransportSecurityOptions;
 import java.util.Map;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -115,6 +116,18 @@ public class PeachRpcAutoConfiguration {
             PeachRpcProperties properties,
             RpcCodecRegistry codecRegistry) {
         PeachRpcProperties.Transport transport = properties.getTransport();
+        PeachRpcProperties.Security security =
+                transport.getSecurity();
+        RpcTransportSecurityOptions securityOptions =
+                new RpcTransportSecurityOptions(
+                        security.getMode(),
+                        security.getCertificatePath(),
+                        security.getPrivateKeyPath(),
+                        security.getTrustCertificatePath(),
+                        security.isHostnameVerification(),
+                        security.getHandshakeTimeout(),
+                        security.getReloadInterval(),
+                        security.getExpiryWarningThreshold());
         return new RpcTransportOptions(
                 transport.getMaxInflightPerConnection(),
                 transport.getMaxFrameBytes(),
@@ -126,7 +139,8 @@ public class PeachRpcAutoConfiguration {
                 transport.getHeartbeatInterval(),
                 transport.getHeartbeatTimeout(),
                 transport.getReconnectBaseBackoff(),
-                transport.getReconnectMaxBackoff());
+                transport.getReconnectMaxBackoff())
+                .withSecurity(securityOptions);
     }
 
     /**
