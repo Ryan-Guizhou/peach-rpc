@@ -48,3 +48,6 @@ jobs:
 
       - name: Verify Maven reactor
         run: mvn -B -ntp clean verify -Pquality
+
+      - name: Verify independent JVM examples
+        run: bash scripts/run_example_process_e2e.sh

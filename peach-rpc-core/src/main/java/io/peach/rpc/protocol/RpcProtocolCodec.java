@@ -25,6 +25,9 @@ public final class RpcProtocolCodec {
     private static final int PAYLOAD_LENGTH_OFFSET = 28;
     private static final byte[] DEADLINE_PREFIX =
             "deadlineEpochMillis=".getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] TIMEOUT_BUDGET_PREFIX =
+            "timeoutBudgetMillis=".getBytes(StandardCharsets.US_ASCII);
+    private static final int TIMEOUT_BUDGET_DIGITS = 19;
 
     private RpcProtocolCodec() {
     }
@@ -92,13 +95,49 @@ public final class RpcProtocolCodec {
             int methodId,
             long deadlineEpochMillis,
             byte[] payload) {
+        return encodeRequest(
+                codec,
+                serviceId,
+                methodId,
+                deadlineEpochMillis,
+                0L,
+                payload);
+    }
+
+    /**
+     * 编码同时携带绝对 Deadline 与相对剩余预算的 Unary REQUEST。
+     *
+     * <p>相对预算用于新版本 Provider 避免跨节点 wall-clock 偏差；
+     * 绝对 Deadline 保留给旧版本 Provider，支持滚动升级。
+     *
+     * @param codec Codec 编号
+     * @param serviceId 服务 ID
+     * @param methodId 方法 ID
+     * @param deadlineEpochMillis 绝对截止时间；小于等于 0 表示不携带
+     * @param timeoutBudgetMillis 剩余超时预算；小于等于 0 表示不携带
+     * @param payload 已编码参数
+     * @return 完整线协议字节
+     */
+    public static byte[] encodeRequest(
+            byte codec,
+            int serviceId,
+            int methodId,
+            long deadlineEpochMillis,
+            long timeoutBudgetMillis,
+            byte[] payload) {
         byte[] actualPayload =
                 payload == null ? new byte[0] : payload;
-        int metadataLength = deadlineEpochMillis > 0
+        int deadlineLength = deadlineEpochMillis > 0
                 ? DEADLINE_PREFIX.length
                         + decimalLength(deadlineEpochMillis)
                         + 1
                 : 0;
+        int budgetLength = timeoutBudgetMillis > 0
+                ? TIMEOUT_BUDGET_PREFIX.length
+                        + TIMEOUT_BUDGET_DIGITS
+                        + 1
+                : 0;
+        int metadataLength = deadlineLength + budgetLength;
         int bodyLength = checkedBodyLength(
                 metadataLength,
                 actualPayload.length);
@@ -115,28 +154,45 @@ public final class RpcProtocolCodec {
                 metadataLength,
                 actualPayload.length);
 
-        int payloadOffset = HEADER_LENGTH;
-        if (metadataLength > 0) {
+        int metadataOffset = HEADER_LENGTH;
+        if (deadlineLength > 0) {
             System.arraycopy(
                     DEADLINE_PREFIX,
                     0,
                     bytes,
-                    payloadOffset,
+                    metadataOffset,
                     DEADLINE_PREFIX.length);
-            int deadlineOffset =
-                    payloadOffset + DEADLINE_PREFIX.length;
+            int valueOffset =
+                    metadataOffset + DEADLINE_PREFIX.length;
             writePositiveLong(
                     bytes,
-                    deadlineOffset,
+                    valueOffset,
                     deadlineEpochMillis);
-            bytes[HEADER_LENGTH + metadataLength - 1] = '\n';
-            payloadOffset += metadataLength;
+            metadataOffset += deadlineLength;
+            bytes[metadataOffset - 1] = '\n';
+        }
+        if (budgetLength > 0) {
+            System.arraycopy(
+                    TIMEOUT_BUDGET_PREFIX,
+                    0,
+                    bytes,
+                    metadataOffset,
+                    TIMEOUT_BUDGET_PREFIX.length);
+            int valueOffset =
+                    metadataOffset + TIMEOUT_BUDGET_PREFIX.length;
+            writePaddedPositiveLong(
+                    bytes,
+                    valueOffset,
+                    TIMEOUT_BUDGET_DIGITS,
+                    timeoutBudgetMillis);
+            metadataOffset += budgetLength;
+            bytes[metadataOffset - 1] = '\n';
         }
         System.arraycopy(
                 actualPayload,
                 0,
                 bytes,
-                payloadOffset,
+                HEADER_LENGTH + metadataLength,
                 actualPayload.length);
         return bytes;
     }
@@ -208,12 +264,97 @@ public final class RpcProtocolCodec {
     }
 
     /**
+     * 编码连接级 PING/PONG 控制帧。
+     *
+     * @param type PING 或 PONG
+     * @return 完整心跳控制帧
+     */
+    public static byte[] encodeHeartbeat(RpcMessageType type) {
+        if (type != RpcMessageType.PING && type != RpcMessageType.PONG) {
+            throw new IllegalArgumentException(
+                    "Heartbeat type must be PING or PONG");
+        }
+        byte[] bytes = new byte[HEADER_LENGTH];
+        writeHeader(
+                bytes,
+                type,
+                RpcCodecIds.CONTROL,
+                RpcStatus.OK,
+                0L,
+                0,
+                0,
+                0,
+                0);
+        return bytes;
+    }
+
+    /**
      * 将 Transport 分配的 Request ID 写入已编码帧。
      *
      * <p>该方法只修改固定 Header，不重新编码 Metadata 与 Payload。
      *
      * @param bytes 已编码完整帧
      * @param requestId connection-local Request ID
+     */
+    /**
+     * 在不改变帧长度的前提下刷新 REQUEST 中的相对 timeout budget。
+     *
+     * <p>V2-C.2 将该字段编码为固定 19 位十进制值，因此 Transport 可以在
+     * connect / handshake 完成后、真正写 Socket 前把预算更新为发送时剩余值。
+     *
+     * @param bytes 完整 REQUEST 帧
+     * @param timeoutBudgetMillis 发送时剩余预算，必须大于 0
+     * @return 找到并刷新字段时返回 true；旧请求未携带该字段时返回 false
+     */
+    public static boolean rewriteTimeoutBudgetMillis(
+            byte[] bytes,
+            long timeoutBudgetMillis) {
+        if (timeoutBudgetMillis <= 0L) {
+            throw new IllegalArgumentException(
+                    "timeoutBudgetMillis must be positive");
+        }
+        RpcFrameView frame = view(bytes);
+        if (frame.messageType() != RpcMessageType.REQUEST) {
+            return false;
+        }
+        int metadataLength =
+                ((bytes[METADATA_LENGTH_OFFSET] & 0xff) << 8)
+                        | (bytes[METADATA_LENGTH_OFFSET + 1] & 0xff);
+        int end = HEADER_LENGTH + metadataLength;
+        int lineStart = HEADER_LENGTH;
+        while (lineStart < end) {
+            int lineEnd = lineStart;
+            while (lineEnd < end && bytes[lineEnd] != '\n') {
+                lineEnd++;
+            }
+            if (matchesPrefix(
+                    bytes,
+                    lineStart,
+                    lineEnd,
+                    TIMEOUT_BUDGET_PREFIX)) {
+                int valueOffset =
+                        lineStart + TIMEOUT_BUDGET_PREFIX.length;
+                if (lineEnd - valueOffset != TIMEOUT_BUDGET_DIGITS) {
+                    throw new RpcProtocolException(
+                            "Invalid timeout budget metadata width");
+                }
+                writePaddedPositiveLong(
+                        bytes,
+                        valueOffset,
+                        TIMEOUT_BUDGET_DIGITS,
+                        timeoutBudgetMillis);
+                return true;
+            }
+            lineStart = lineEnd + 1;
+        }
+        return false;
+    }
+
+    /**
+     * 覆盖 Unary REQUEST 固定 Header 中的 connection-local Request ID。
+     *
+     * @param bytes 完整 REQUEST 帧
+     * @param requestId connection-local Request ID，必须非零
      */
     public static void writeRequestId(
             byte[] bytes,
@@ -497,6 +638,44 @@ public final class RpcProtocolCodec {
             throw new RpcProtocolException(
                     "Failed to decode metadata",
                     error);
+        }
+    }
+
+    private static boolean matchesPrefix(
+            byte[] bytes,
+            int start,
+            int end,
+            byte[] prefix) {
+        if (end - start <= prefix.length) {
+            return false;
+        }
+        for (int index = 0; index < prefix.length; index++) {
+            if (bytes[start + index] != prefix[index]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static void writePaddedPositiveLong(
+            byte[] target,
+            int offset,
+            int width,
+            long value) {
+        if (value < 0L) {
+            throw new IllegalArgumentException(
+                    "value must be non-negative");
+        }
+        int cursor = offset + width - 1;
+        long current = value;
+        while (cursor >= offset) {
+            target[cursor--] =
+                    (byte) ('0' + (current % 10L));
+            current /= 10L;
+        }
+        if (current != 0L) {
+            throw new IllegalArgumentException(
+                    "value exceeds fixed decimal width");
         }
     }
 

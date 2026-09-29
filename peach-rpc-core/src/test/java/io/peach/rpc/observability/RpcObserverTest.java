@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.api.ServiceKey;
 import java.util.List;
@@ -55,6 +56,58 @@ class RpcObserverTest {
                 new RuntimeException("retry"));
 
         assertEquals(1, calls.get());
+    }
+
+    @Test
+    void compositeShouldForwardConnectionEventsAndIsolateFailures() {
+        AtomicInteger established = new AtomicInteger();
+        AtomicInteger closed = new AtomicInteger();
+        RpcEndpoint endpoint =
+                new RpcEndpoint("127.0.0.1", 19090);
+
+        RpcObserver failing = new RpcObserver() {
+            @Override
+            public void onConnectionEstablished(
+                    RpcConnectionRole role,
+                    RpcEndpoint remote,
+                    long durationNanos) {
+                throw new IllegalStateException("observer failure");
+            }
+        };
+        RpcObserver counting = new RpcObserver() {
+            @Override
+            public void onConnectionEstablished(
+                    RpcConnectionRole role,
+                    RpcEndpoint remote,
+                    long durationNanos) {
+                established.incrementAndGet();
+            }
+
+            @Override
+            public void onConnectionClosed(
+                    RpcConnectionRole role,
+                    RpcEndpoint remote,
+                    RpcConnectionCloseReason reason,
+                    Throwable error) {
+                closed.incrementAndGet();
+            }
+        };
+
+        RpcObserver composite =
+                RpcObserver.composite(List.of(failing, counting));
+
+        composite.onConnectionEstablished(
+                RpcConnectionRole.CLIENT,
+                endpoint,
+                100L);
+        composite.onConnectionClosed(
+                RpcConnectionRole.CLIENT,
+                endpoint,
+                RpcConnectionCloseReason.LOCAL_CLOSE,
+                null);
+
+        assertEquals(1, established.get());
+        assertEquals(1, closed.get());
     }
 
     @Test

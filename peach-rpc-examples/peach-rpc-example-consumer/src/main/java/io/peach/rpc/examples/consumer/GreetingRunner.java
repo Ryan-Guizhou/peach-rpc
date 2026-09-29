@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -25,12 +26,25 @@ public class GreetingRunner implements ApplicationRunner {
     @PeachRpcReference(version = "1.0.0")
     private GreetingService greetingService;
 
+    @Value("${peach.rpc.example.repeat-interval-millis:0}")
+    private long repeatIntervalMillis;
+
     /** 创建示例 Consumer。 */
     public GreetingRunner() {
     }
 
     @Override
     public void run(ApplicationArguments args) {
+        do {
+            invokeWithDiscoveryWait();
+            if (repeatIntervalMillis <= 0L) {
+                return;
+            }
+            sleep(repeatIntervalMillis);
+        } while (!Thread.currentThread().isInterrupted());
+    }
+
+    private void invokeWithDiscoveryWait() {
         long deadline =
                 System.nanoTime() + DISCOVERY_TIMEOUT.toNanos();
         RpcUnavailableException lastFailure = null;
@@ -49,7 +63,7 @@ public class GreetingRunner implements ApplicationRunner {
                     throw error;
                 }
                 lastFailure = unavailable;
-                sleepBeforeRetry();
+                sleep(100L);
             }
         }
         throw new IllegalStateException(
@@ -71,13 +85,13 @@ public class GreetingRunner implements ApplicationRunner {
         return null;
     }
 
-    private static void sleepBeforeRetry() {
+    private static void sleep(long millis) {
         try {
-            Thread.sleep(100L);
+            Thread.sleep(millis);
         } catch (InterruptedException error) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(
-                    "RPC demo discovery wait was interrupted",
+                    "RPC demo wait was interrupted",
                     error);
         }
     }

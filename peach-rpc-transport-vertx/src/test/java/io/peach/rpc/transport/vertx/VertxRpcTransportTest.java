@@ -10,6 +10,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.codec.RpcCodecIds;
+import io.peach.rpc.observability.RpcConnectionCloseReason;
+import io.peach.rpc.observability.RpcConnectionRole;
+import io.peach.rpc.observability.RpcObserver;
 import io.peach.rpc.protocol.RpcFrame;
 import io.peach.rpc.protocol.RpcMessageType;
 import io.peach.rpc.protocol.RpcProtocolCodec;
@@ -24,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -275,6 +279,169 @@ class VertxRpcTransportTest {
     }
 
     @Test
+    void heartbeatShouldKeepIdleConnectionAlive()
+            throws Exception {
+        int port = findFreePort();
+        RpcTransportOptions options = haOptions();
+        VertxRpcTransportServer server =
+                new VertxRpcTransportServer(options);
+        VertxRpcTransportClient client =
+                new VertxRpcTransportClient(options);
+        RpcEndpoint endpoint =
+                new RpcEndpoint("127.0.0.1", port);
+        Set<Integer> remotePorts =
+                ConcurrentHashMap.newKeySet();
+
+        try {
+            server.start(endpoint, (remote, requestBytes) -> {
+                        remotePorts.add(remote.port());
+                        return CompletableFuture.completedFuture(
+                                response(
+                                        requestBytes,
+                                        new byte[] {1}));
+                    })
+                    .toCompletableFuture()
+                    .join();
+
+            client.request(
+                            endpoint,
+                            request(),
+                            Duration.ofSeconds(2))
+                    .toCompletableFuture()
+                    .join();
+
+            Thread.sleep(350L);
+
+            client.request(
+                            endpoint,
+                            request(),
+                            Duration.ofSeconds(2))
+                    .toCompletableFuture()
+                    .join();
+
+            assertEquals(1, remotePorts.size());
+        } finally {
+            client.close();
+            server.close();
+        }
+    }
+
+    @Test
+    void clientShouldReconnectAfterServerRestart()
+            throws Exception {
+        int port = findFreePort();
+        AtomicInteger reconnectScheduled =
+                new AtomicInteger();
+        AtomicInteger clientEstablished =
+                new AtomicInteger();
+        ConcurrentLinkedQueue<RpcConnectionCloseReason> clientCloses =
+                new ConcurrentLinkedQueue<>();
+        RpcObserver observer = new RpcObserver() {
+            @Override
+            public void onConnectionEstablished(
+                    RpcConnectionRole role,
+                    RpcEndpoint endpoint,
+                    long durationNanos) {
+                if (role == RpcConnectionRole.CLIENT) {
+                    clientEstablished.incrementAndGet();
+                }
+            }
+
+            @Override
+            public void onConnectionReconnectScheduled(
+                    RpcEndpoint endpoint,
+                    int attempt,
+                    long delayMillis) {
+                reconnectScheduled.incrementAndGet();
+            }
+
+            @Override
+            public void onConnectionClosed(
+                    RpcConnectionRole role,
+                    RpcEndpoint endpoint,
+                    RpcConnectionCloseReason reason,
+                    Throwable error) {
+                if (role == RpcConnectionRole.CLIENT) {
+                    clientCloses.add(reason);
+                }
+            }
+        };
+        RpcTransportOptions options =
+                haOptions().withObserver(observer);
+        VertxRpcTransportClient client =
+                new VertxRpcTransportClient(options);
+        RpcEndpoint endpoint =
+                new RpcEndpoint("127.0.0.1", port);
+        VertxRpcTransportServer first =
+                new VertxRpcTransportServer(options);
+
+        try {
+            first.start(
+                            endpoint,
+                            (remote, requestBytes) ->
+                                    CompletableFuture.completedFuture(
+                                            response(
+                                                    requestBytes,
+                                                    new byte[] {1})))
+                    .toCompletableFuture()
+                    .join();
+            client.request(
+                            endpoint,
+                            request(),
+                            Duration.ofSeconds(2))
+                    .toCompletableFuture()
+                    .join();
+
+            first.close();
+            Thread.sleep(200L);
+
+            VertxRpcTransportServer replacement =
+                    new VertxRpcTransportServer(options);
+            try {
+                replacement.start(
+                                endpoint,
+                                (remote, requestBytes) ->
+                                        CompletableFuture.completedFuture(
+                                                response(
+                                                        requestBytes,
+                                                        new byte[] {2})))
+                        .toCompletableFuture()
+                        .join();
+
+                byte[] recovered = awaitResponse(
+                        client,
+                        endpoint,
+                        Duration.ofSeconds(3));
+                assertArrayEquals(
+                        new byte[] {2},
+                        RpcProtocolCodec.decode(recovered).payload());
+                assertTrue(clientEstablished.get() >= 2);
+                assertTrue(reconnectScheduled.get() >= 1);
+                assertTrue(clientCloses.stream().anyMatch(
+                        reason -> reason
+                                        == RpcConnectionCloseReason.REMOTE_CLOSE
+                                || reason
+                                        == RpcConnectionCloseReason.TRANSPORT_ERROR));
+            } finally {
+                replacement.close();
+            }
+        } finally {
+            client.close();
+            first.close();
+        }
+
+        long closeDeadline =
+                System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        while (!clientCloses.contains(
+                        RpcConnectionCloseReason.LOCAL_CLOSE)
+                && System.nanoTime() < closeDeadline) {
+            Thread.sleep(10L);
+        }
+        assertTrue(clientCloses.contains(
+                RpcConnectionCloseReason.LOCAL_CLOSE));
+    }
+
+    @Test
     void clientShouldFailWhenHelloAckNeverArrives()
             throws Exception {
         int port = findFreePort();
@@ -362,6 +529,45 @@ class VertxRpcTransportTest {
         } finally {
             server.close();
         }
+    }
+
+    private static RpcTransportOptions haOptions() {
+        return new RpcTransportOptions(
+                32,
+                1024 * 1024,
+                1024 * 1024,
+                Duration.ofSeconds(2),
+                Duration.ofSeconds(2),
+                Set.of(RpcCodecIds.FORY_NATIVE),
+                1,
+                Duration.ofMillis(50),
+                Duration.ofMillis(100),
+                Duration.ofMillis(10),
+                Duration.ofMillis(50));
+    }
+
+    private static byte[] awaitResponse(
+            VertxRpcTransportClient client,
+            RpcEndpoint endpoint,
+            Duration timeout) throws Exception {
+        long deadline = System.nanoTime() + timeout.toNanos();
+        Throwable lastFailure = null;
+        while (System.nanoTime() < deadline) {
+            try {
+                return client.request(
+                                endpoint,
+                                request(),
+                                Duration.ofMillis(500))
+                        .toCompletableFuture()
+                        .join();
+            } catch (RuntimeException error) {
+                lastFailure = error;
+                Thread.sleep(25L);
+            }
+        }
+        throw new AssertionError(
+                "RPC client did not reconnect before timeout",
+                lastFailure);
     }
 
     private static RpcTransportOptions options(

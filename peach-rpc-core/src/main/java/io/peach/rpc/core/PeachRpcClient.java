@@ -314,6 +314,7 @@ public final class PeachRpcClient implements AutoCloseable {
                 reference.serviceId(),
                 method.methodId(),
                 deadlineEpochMillis,
+                remainingMillis,
                 encodedArguments);
 
         CompletableFuture<byte[]> transportFuture = transport.request(

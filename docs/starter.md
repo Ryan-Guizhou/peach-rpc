@@ -63,7 +63,7 @@ DIRECT 默认禁止。只有配置 `peach.rpc.server.execution.allow-direct=true
 private OrderService orderService;
 ```
 
-默认调用超时为 3 秒，可通过 `peach.rpc.client.timeout` 修改。
+默认调用超时为 3 秒，可通过 `peach.rpc.client.timeout` 修改。V2-C.2 起该逻辑 Deadline 同时约束连接建立、HELLO/ACK 握手和请求阶段；请求同时携带旧 `deadlineEpochMillis` 与新 `timeoutBudgetMillis`，新 Provider 优先使用相对预算语义避免跨节点 wall-clock 偏差，旧 Provider 仍可使用绝对 Deadline，支持滚动升级。
 
 自动重试默认最多 2 次 attempt，但**只有显式标注 `@PeachRpcIdempotent` 的服务方法才允许重试**。未标注方法无论 Retry Budget 是否有余额都不会由框架自动重试：
 
@@ -118,6 +118,10 @@ public interface OrderService {
 - `peach.rpc.transport.type`：默认 `vertx`。
 - `peach.rpc.transport.handshake-timeout`：协议握手超时，默认 3 秒。
 - `peach.rpc.transport.connections-per-endpoint`：每个服务端点连接分片数，默认 1。
+- `peach.rpc.transport.heartbeat-interval`：空闲连接发送 PING 前的间隔，默认 30 秒。
+- `peach.rpc.transport.heartbeat-timeout`：PING 后等待任意有效入站流量/PONG 的最大时间，默认 10 秒。
+- `peach.rpc.transport.reconnect-base-backoff`：异常连接下一次 request-driven 重连的基础 full-jitter 窗口，默认 50ms。
+- `peach.rpc.transport.reconnect-max-backoff`：重连 full-jitter 最大窗口，默认 3 秒。
 - `peach.rpc.client.enabled`：默认 true，表示允许 Consumer；没有 `@PeachRpcReference` 时不会创建连接。
 - `peach.rpc.server.enabled`：默认 true，表示允许 Provider；没有 `@PeachRpcService` 时不会监听端口。
 - `peach.rpc.client.proxy`：Generated Stub 缺失时的 fallback，默认 `jdk`；可显式选择 `cglib` 或可选 Byte Buddy 模块提供的 `bytebuddy`。

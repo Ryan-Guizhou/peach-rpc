@@ -167,7 +167,8 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
         return PeachRpcClient.builder()
                 .serviceDiscovery(registry)
                 .codecRegistry(codecRegistry)
-                .transportClient(transportFactory.createClient(transportOptions))
+                .transportClient(transportFactory.createClient(
+                        transportOptions.withObserver(observer())))
                 .loadBalancer(loadBalancer)
                 .proxyFactory(proxyFactory)
                 .timeout(clientProperties.getTimeout())
@@ -183,7 +184,8 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
                         new IllegalStateException(
                                 "Configured RPC registry does not support provider registration")))
                 .codecRegistry(codecRegistry)
-                .transportServer(transportFactory.createServer(transportOptions))
+                .transportServer(transportFactory.createServer(
+                        transportOptions.withObserver(observer())))
                 .bindEndpoint(new RpcEndpoint(
                         serverProperties.getHost(),
                         serverProperties.getPort()))

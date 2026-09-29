@@ -27,6 +27,60 @@ public interface RpcObserver {
     }
 
     /**
+     * 连接握手完成并进入可用状态。
+     *
+     * @param role 本地连接角色
+     * @param endpoint 对端端点
+     * @param durationNanos 从 TCP connect/accept 到握手完成的耗时
+     */
+    default void onConnectionEstablished(
+            RpcConnectionRole role,
+            RpcEndpoint endpoint,
+            long durationNanos) {
+    }
+
+    /**
+     * Consumer 已安排下一次连接重建。
+     *
+     * @param endpoint 目标端点
+     * @param attempt 连续连接失败后的重连序号，从 1 开始
+     * @param delayMillis 计划 full-jitter 退避时间
+     */
+    default void onConnectionReconnectScheduled(
+            RpcEndpoint endpoint,
+            int attempt,
+            long delayMillis) {
+    }
+
+    /**
+     * Heartbeat 超时摘除连接。
+     *
+     * @param role 本地连接角色
+     * @param endpoint 对端端点
+     * @param idleNanos 自 PING 发出后等待入站活跃的时长
+     */
+    default void onConnectionHeartbeatTimeout(
+            RpcConnectionRole role,
+            RpcEndpoint endpoint,
+            long idleNanos) {
+    }
+
+    /**
+     * 连接关闭。
+     *
+     * @param role 本地连接角色
+     * @param endpoint 对端端点
+     * @param reason 归一化关闭原因
+     * @param error 异常原因；正常关闭时为 null
+     */
+    default void onConnectionClosed(
+            RpcConnectionRole role,
+            RpcEndpoint endpoint,
+            RpcConnectionCloseReason reason,
+            Throwable error) {
+    }
+
+    /**
      * Consumer 单次网络 attempt 完成。
      *
      * @param serviceKey 服务键
@@ -112,6 +166,56 @@ public interface RpcObserver {
         }
         List<RpcObserver> immutable = List.copyOf(values);
         return new RpcObserver() {
+            @Override
+            public void onConnectionEstablished(
+                    RpcConnectionRole role,
+                    RpcEndpoint endpoint,
+                    long durationNanos) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onConnectionEstablished(
+                                role,
+                                endpoint,
+                                durationNanos)));
+            }
+
+            @Override
+            public void onConnectionReconnectScheduled(
+                    RpcEndpoint endpoint,
+                    int attempt,
+                    long delayMillis) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onConnectionReconnectScheduled(
+                                endpoint,
+                                attempt,
+                                delayMillis)));
+            }
+
+            @Override
+            public void onConnectionHeartbeatTimeout(
+                    RpcConnectionRole role,
+                    RpcEndpoint endpoint,
+                    long idleNanos) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onConnectionHeartbeatTimeout(
+                                role,
+                                endpoint,
+                                idleNanos)));
+            }
+
+            @Override
+            public void onConnectionClosed(
+                    RpcConnectionRole role,
+                    RpcEndpoint endpoint,
+                    RpcConnectionCloseReason reason,
+                    Throwable error) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onConnectionClosed(
+                                role,
+                                endpoint,
+                                reason,
+                                error)));
+            }
+
             @Override
             public void onClientAttemptCompleted(
                     ServiceKey serviceKey,

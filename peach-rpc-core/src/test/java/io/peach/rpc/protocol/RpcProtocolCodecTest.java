@@ -3,8 +3,10 @@ package io.peach.rpc.protocol;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.peach.rpc.api.RpcStatus;
+import io.peach.rpc.codec.RpcCodecIds;
 import java.util.Arrays;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -66,6 +68,35 @@ class RpcProtocolCodecTest {
     }
 
     @Test
+    void shouldEncodeRelativeTimeoutBudgetAlongsideLegacyDeadline() {
+        long deadline = 2_000_000_000_123L;
+        long timeoutBudgetMillis = 1500L;
+
+        byte[] encoded = RpcProtocolCodec.encodeRequest(
+                (byte) 1,
+                11,
+                22,
+                deadline,
+                timeoutBudgetMillis,
+                new byte[] {1});
+        RpcFrameView view = RpcProtocolCodec.view(encoded);
+
+        assertEquals(deadline, view.deadlineEpochMillis());
+        assertEquals(
+                timeoutBudgetMillis,
+                view.timeoutBudgetMillis());
+
+        assertTrue(
+                RpcProtocolCodec.rewriteTimeoutBudgetMillis(
+                        encoded,
+                        25L));
+        assertEquals(
+                25L,
+                RpcProtocolCodec.view(encoded)
+                        .timeoutBudgetMillis());
+    }
+
+    @Test
     void shouldEncodeUnaryResponseWithoutMetadata() {
         byte[] payload = new byte[] {7, 8};
 
@@ -94,6 +125,30 @@ class RpcProtocolCodecTest {
         assertEquals(RpcMessageType.CANCEL, decoded.messageType());
         assertEquals(77L, decoded.requestId());
         assertEquals(0, decoded.payload().length);
+    }
+
+    @Test
+    void shouldEncodeHeartbeatFrames() {
+        for (RpcMessageType type : new RpcMessageType[]{
+                RpcMessageType.PING,
+                RpcMessageType.PONG}) {
+            RpcFrame decoded = RpcProtocolCodec.decode(
+                    RpcProtocolCodec.encodeHeartbeat(type));
+
+            assertEquals(type, decoded.messageType());
+            assertEquals(RpcCodecIds.CONTROL, decoded.codec());
+            assertEquals(RpcStatus.OK, decoded.status());
+            assertEquals(0L, decoded.requestId());
+            assertEquals(0, decoded.payload().length);
+        }
+    }
+
+    @Test
+    void shouldRejectNonHeartbeatControlType() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> RpcProtocolCodec.encodeHeartbeat(
+                        RpcMessageType.CANCEL));
     }
 
     @Test

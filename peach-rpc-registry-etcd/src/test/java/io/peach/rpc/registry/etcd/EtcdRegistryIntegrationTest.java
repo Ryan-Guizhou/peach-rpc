@@ -21,8 +21,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+@Timeout(value = 90, unit = TimeUnit.SECONDS)
 class EtcdRegistryIntegrationTest {
 
     @RegisterExtension
@@ -142,6 +144,107 @@ class EtcdRegistryIntegrationTest {
     }
 
     @Test
+    void shouldRecoverSubscriptionAfterCompaction()
+            throws Exception {
+        String namespace = uniqueNamespace("compaction");
+        ServiceKey key =
+                new ServiceKey("demo.Compaction", "1.0.0", "default");
+        ServiceInstance first =
+                instance(key, "node-compaction-a", 19100);
+        ServiceInstance second =
+                instance(key, "node-compaction-b", 19101);
+        AtomicReference<RegistrySnapshot> latest =
+                new AtomicReference<>();
+
+        try (EtcdRegistry registry = registry(namespace, 5);
+             Client client = rawClient()) {
+            registry.register(first)
+                    .toCompletableFuture()
+                    .get(10, TimeUnit.SECONDS);
+            long staleRevision = registry.lookup(key)
+                    .toCompletableFuture()
+                    .get(10, TimeUnit.SECONDS)
+                    .revision();
+
+            registry.register(second)
+                    .toCompletableFuture()
+                    .get(10, TimeUnit.SECONDS);
+            long compactRevision = registry.lookup(key)
+                    .toCompletableFuture()
+                    .get(10, TimeUnit.SECONDS)
+                    .revision();
+            assertTrue(compactRevision > staleRevision);
+
+            client.getKVClient()
+                    .compact(compactRevision)
+                    .get(10, TimeUnit.SECONDS);
+
+            try (RegistrySubscription ignored =
+                         registry.subscribeFromRevision(
+                                 key,
+                                 latest::set,
+                                 staleRevision)) {
+                assertTrue(await(
+                        Duration.ofSeconds(15),
+                        () -> contains(latest.get(), first)
+                                && contains(latest.get(), second)));
+                assertTrue(latest.get().revision() >= compactRevision);
+            }
+        }
+    }
+
+    @Test
+    void shouldRecoverRegistrationAndSubscriptionAfterClusterRestart()
+            throws Exception {
+        String namespace = uniqueNamespace("cluster-restart");
+        ServiceKey key =
+                new ServiceKey("demo.ClusterRestart", "1.0.0", "default");
+        ServiceInstance first =
+                instance(key, "node-restart-a", 19095);
+        ServiceInstance second =
+                instance(key, "node-restart-b", 19096);
+        AtomicReference<RegistrySnapshot> latest =
+                new AtomicReference<>();
+
+        try (EtcdRegistry registry =
+                     restartAwareRegistry(namespace, 2);
+             RegistrySubscription ignored =
+                     registry.subscribe(key, latest::set)) {
+            registry.register(first)
+                    .toCompletableFuture()
+                    .join();
+
+            assertTrue(await(
+                    Duration.ofSeconds(10),
+                    () -> contains(latest.get(), first)));
+
+            CLUSTER.restart(2, TimeUnit.SECONDS);
+
+            assertTrue(await(
+                    Duration.ofSeconds(20),
+                    () -> lookupContains(
+                            registry,
+                            key,
+                            first)));
+
+            assertTrue(await(
+                    Duration.ofSeconds(20),
+                    () -> registerEventually(
+                            registry,
+                            second)));
+
+            assertTrue(await(
+                    Duration.ofSeconds(20),
+                    () -> contains(
+                            latest.get(),
+                            first)
+                            && contains(
+                                    latest.get(),
+                                    second)));
+        }
+    }
+
+    @Test
     void shouldRemoveRegistrationAfterLeaseExpires()
             throws Exception {
         ServiceKey key =
@@ -168,6 +271,18 @@ class EtcdRegistryIntegrationTest {
         } finally {
             writer.close();
         }
+    }
+
+    private static EtcdRegistry restartAwareRegistry(
+            String namespace,
+            long leaseTtlSeconds) {
+        Client client = Client.builder()
+                .target("cluster://" + CLUSTER.clusterName())
+                .build();
+        return new EtcdRegistry(
+                client,
+                leaseTtlSeconds,
+                namespace);
     }
 
     private static EtcdRegistry registry(
@@ -222,6 +337,41 @@ class EtcdRegistryIntegrationTest {
                 new RpcEndpoint("127.0.0.1", port),
                 100,
                 Map.of("zone", "test"));
+    }
+
+    private static boolean lookupContains(
+            EtcdRegistry registry,
+            ServiceKey key,
+            ServiceInstance instance) {
+        try {
+            return registry.lookup(key)
+                    .toCompletableFuture()
+                    .get(5, TimeUnit.SECONDS)
+                    .instances()
+                    .contains(instance);
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private static boolean registerEventually(
+            EtcdRegistry registry,
+            ServiceInstance instance) {
+        try {
+            registry.register(instance)
+                    .toCompletableFuture()
+                    .get(5, TimeUnit.SECONDS);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private static boolean contains(
+            RegistrySnapshot snapshot,
+            ServiceInstance instance) {
+        return snapshot != null
+                && snapshot.instances().contains(instance);
     }
 
     private static boolean await(

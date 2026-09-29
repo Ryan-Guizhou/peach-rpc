@@ -1,0 +1,29 @@
+name: Etcd Chaos
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'peach-rpc-registry-etcd/**'
+      - '.github/workflows/etcd-chaos.yml'
+
+jobs:
+  leader-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Verify Etcd leader-transfer chaos
+        run: >
+          mvn -B -ntp
+          -pl peach-rpc-registry-etcd
+          -am
+          test
+          -Petcd-chaos
