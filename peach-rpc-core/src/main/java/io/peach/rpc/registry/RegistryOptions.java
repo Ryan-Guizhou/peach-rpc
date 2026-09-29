@@ -119,15 +119,30 @@ public record RegistryOptions(
                         sensitive(key)
                                 ? "***"
                                 : value));
+        List<String> safeEndpoints = endpoints.stream()
+                .map(RegistryOptions::redactEndpoint)
+                .toList();
         return "RegistryOptions[endpoints="
-                + endpoints
-                + ", namespace="
+                + safeEndpoints
+                + ", namespace=
                 + namespace
                 + ", providerOptions="
                 + safeOptions
                 + ", observer="
                 + observer.getClass().getName()
                 + ']';
+    }
+
+    private static String redactEndpoint(
+            String endpoint) {
+        if (endpoint == null) {
+            return null;
+        }
+        int userInfoEnd = endpoint.lastIndexOf('@');
+        if (userInfoEnd < 0) {
+            return endpoint;
+        }
+        return "***@" + endpoint.substring(userInfoEnd + 1);
     }
 
     private static boolean sensitive(String key) {
