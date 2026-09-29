@@ -398,6 +398,22 @@ public final class RpcProtocolCodec {
     }
 
     /**
+     * 从固定 Header 直接读取 connection-local Request ID。
+     *
+     * <p>该入口只读取 Header，不创建 RpcFrame/RpcFrameView，也不复制
+     * Metadata/Payload。调用方若需要完整协议校验，仍应使用 {@link #view(byte[])}。
+     *
+     * @param bytes 至少包含完整固定 Header 的帧
+     * @return Request ID
+     */
+    public static long readRequestId(byte[] bytes) {
+        requireHeader(bytes);
+        return readLong(
+                bytes,
+                REQUEST_ID_OFFSET);
+    }
+
+    /**
      * 覆盖 Unary REQUEST 固定 Header 中的 connection-local Request ID。
      *
      * @param bytes 完整 REQUEST 帧
