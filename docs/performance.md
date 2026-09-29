@@ -63,17 +63,100 @@ java -jar peach-rpc-benchmarks/target/benchmarks.jar
 
 `EndToEndLatencyBenchmark.rawVertxEcho` 是网络/Vert.x loopback 基线，`peachRpcEcho` 包含 Generated Stub、Codec、协议、Transport、Provider Dispatcher 与返回解码。两者 AverageTime 差值用于观察当前机器上的 **RPC Added Latency**，仓库不提交未固定测试环境的百分比结论。
 
-## 下一批基准
+## V2-D 第一批基准矩阵
 
-需要继续增加：
+当前 V2-D 分支已增加：
 
-1. RPC no-op 64B / 256B / 1KiB / 16KiB / 1MiB；
-2. concurrency 1 / 16 / 64 / 256 / 1024 / 10000；
-3. Generated Dispatcher / MethodHandle；
-4. Fory generic / slice decode；
-5. connection count 1 / 2 / 4 / 8；
-6. overload / slow consumer；
-7. retry/circuit/outlier 故障注入；
-8. GC 与 allocation profiler。
+- Protocol encode payload 参数：64B / 256B / 1KiB / 16KiB / 1MiB；
+- Protocol decode payload 参数：64B / 256B / 1KiB / 16KiB / 1MiB；
+- `requestIdHeaderFastPath`：固定 Header Request ID 无对象读取；
+- `EndToEndPayloadBenchmark`：完整 Generated Stub / Fory / Protocol / Vert.x / Provider Dispatcher byte[] echo；
+- `connectionsPerEndpoint` 参数：1 / 2 / 4 / 8；
+- 并发通过 JMH `-t` 控制。
+
+推荐先构建：
+
+```bash
+mvn -B -ntp -pl peach-rpc-benchmarks -am clean package -DskipTests
+```
+
+单点样例：
+
+```bash
+java -jar peach-rpc-benchmarks/target/benchmarks.jar EndToEndPayloadBenchmark \
+  -p payloadSize=256 \
+  -p connectionsPerEndpoint=1 \
+  -t 16 \
+  -prof gc \
+  -rf json \
+  -rff target/v2d-256b-t16-c1.json
+```
+
+并发矩阵建议：
+
+```text
+1 / 16 / 64 / 256 / 1024
+```
+
+10k concurrency 不直接使用 10k JMH platform threads，后续使用虚拟线程/异步 soak harness 验证，避免把 benchmark driver 自身线程调度成本误判为 RPC 成本。
+
+### V2-D Header fast path
+
+当前第一批已将 Transport 正常路由中的两个确定性分配移除：
+
+1. Client response routing 不再通过 `ByteBuffer.wrap(...).getLong()` 读取 Request ID；
+2. Server 正常 REQUEST tracking 不再执行完整 `RpcProtocolCodec.decode()` 创建 `RpcFrame`、Metadata Map 与 Payload copy。
+
+统一改为：
+
+```java
+RpcProtocolCodec.readRequestId(frame)
+```
+
+该 accessor 只读取固定 Header；完整业务处理仍由 Core 使用 `RpcFrameView` 做协议校验和 payload slice decode，因此 v1 wire、Codec 与业务语义不变。
+
+### 结果记录模板
+
+每次准备形成项目级性能结论时至少记录：
+
+```text
+commit:
+cpu:
+physical cores:
+memory:
+os:
+jdk:
+jvm flags:
+tls mode:
+benchmark:
+payload:
+threads/concurrency:
+connections per endpoint:
+fork:
+warmup:
+measurement:
+qps:
+p50:
+p99:
+p99.9:
+allocation/op:
+gc:
+cpu:
+error rate:
+notes:
+```
+
+## V2-D 后续候选
+
+仍需继续：
+
+1. Generated Dispatcher / MethodHandle 完整基准；
+2. Fory generic / slice decode 与参数对象图 allocation 基准；
+3. FrameAccumulator complete/fragmented frame 基准；
+4. overload / slow consumer/provider；
+5. retry/circuit/outlier 故障注入；
+6. 10k concurrency 异步/虚拟线程 soak；
+7. Buffer ownership 是否值得进入默认路径；
+8. CompletableFuture/PendingRequest 是否值得重构。
 
 所有优化必须通过基准证明收益，不能仅因为“理论上更快”进入默认路径。
