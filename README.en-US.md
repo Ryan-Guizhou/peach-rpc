@@ -40,7 +40,7 @@ See the Chinese-first [architecture document](docs/architecture.md), [Production
 <!-- doc-section:modules -->
 ## Modules
 
-The Reactor is reduced from the early concept-granularity layout and now contains 12 modules with real dependency-isolation value:
+The Reactor remains dependency-oriented rather than concept-oriented and now contains 15 top-level modules; the three V2-C.3 observability modules exist specifically to isolate third-party observability dependencies:
 
 | Module | Responsibility |
 |---|---|
@@ -52,6 +52,9 @@ The Reactor is reduced from the early concept-granularity layout and now contain
 | `peach-rpc-registry-nacos` | Nacos registry |
 | `peach-rpc-proxy-cglib` | Optional CGLIB proxy |
 | `peach-rpc-proxy-bytebuddy` | Optional Byte Buddy runtime proxy fallback |
+| `peach-rpc-observability-micrometer` | Micrometer metrics adapter, isolated from Core |
+| `peach-rpc-observability-opentelemetry` | OpenTelemetry trace/W3C context adapter |
+| `peach-rpc-observability-jfr` | Low-overhead JFR diagnostics adapter |
 | `peach-rpc-spring-boot-autoconfigure` | Spring Boot auto-configuration |
 | `peach-rpc-spring-boot-starter` | Recommended application dependency |
 | `peach-rpc-examples` | Spring Boot quickstart |
