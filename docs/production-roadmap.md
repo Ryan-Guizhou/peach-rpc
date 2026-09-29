@@ -21,7 +21,7 @@
 | **Future** | 属于长期生态或能力扩展，不应阻塞近期高可用/高性能主线 |
 | **Optional** | 是否实现取决于项目范围，不作为当前 Production GA 的必选门禁 |
 
-> V2-C.1 已进入 `main`。V2-C.2 在当前分支已完成 Connection & Control-plane HA 闭环；本文中的 **Current** 表示当前文档所在分支已有实现，并已通过对应自动化门禁。
+> V2-C.1 与 V2-C.2 已形成当前主线基础。V2-C.3 在当前 PR 分支已完成 Security & Observability 闭环；本文中的 **Current** 表示当前文档所在分支已有实现，并已通过对应自动化门禁。
 
 ---
 
@@ -39,14 +39,14 @@ Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 - Core 已提供低依赖 `RpcObserver` 观测契约；
 - JMH 已覆盖调用、协议、负载均衡与基础端到端路径。
 
-但项目仍定位为 **Preview**。距离“可作为中型项目默认 RPC 层”的主要缺口集中在：
+V2-C.3 当前分支已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemetry 与 JFR 三层可观测基础，但项目仍定位为 **Preview**。距离“可作为中型项目默认 RPC 层”的主要缺口现在集中在：
 
-1. TLS/mTLS 与证书生命周期；
-2. Micrometer / OpenTelemetry / JFR 具体 Adapter；
-3. Fory Stable Type ID / Schema fingerprint / 滚动升级兼容；
-4. byte[] / Object[] 等剩余热路径分配与完整性能矩阵；
-5. 网络黑洞/分区、协议 fuzz / malformed frame 与长时间 soak；
-6. 容量规划、升级、回滚和兼容矩阵。
+1. Fory Stable Type ID / Schema fingerprint / 滚动升级兼容；
+2. byte[] / Object[] 等剩余热路径分配与完整性能矩阵；
+3. 网络黑洞/分区、协议 fuzz / malformed frame 与长时间 soak；
+4. Registry Contract TestKit 与更完整的控制面故障矩阵；
+5. 容量规划、升级、回滚和兼容矩阵；
+6. Production SLO、Dashboard 与告警模板。
 
 ---
 
@@ -133,7 +133,7 @@ Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 | Registry credential 配置 | **Current** | Nacos username/password 只进入 SDK Properties；endpoint 禁止嵌入 Credential；RegistryOptions toString 自动脱敏 | 真实 auth-enabled Nacos Server 集成可作为后续增强 |
 | TLS | **Current** | Vert.x Transport TLS、CA Trust、Hostname Verification、独立 TLS handshake timeout；wrong CA/hostname mismatch 真实网络测试 | 后续补更大规模 TLS 性能矩阵 |
 | mTLS | **Current** | Provider ClientAuth.REQUIRED，双向证书校验；缺失 Client Cert 测试 | 后续与服务级授权模型结合 |
-| 证书生命周期 | **Current** | X.509 有效期校验、过期 fail-fast、临期 warning、PEM 在线 Reload；无效 replacement 保留旧 material | 后续可扩展 PKCS#12/JKS 与集中证书管理 |
+| 证书生命周期 | **Current** | X.509 有效期校验、过期 fail-fast、临期 warning、PEM 在线 Reload；SHA-256 内容指纹避免同大小/同 mtime 轮换漏检；无效 replacement 保留旧 material | 后续可扩展 PKCS#12/JKS 与集中证书管理 |
 | TLS 可观测性 | **Current** | RpcObserver + Micrometer/JFR 覆盖 TLS handshake、reload、expiry warning；错误 CA 会产生 handshake failure event | 后续结合告警模板 |
 
 ### 3.7 可观测性
