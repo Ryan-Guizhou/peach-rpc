@@ -103,7 +103,7 @@ public final class OpenTelemetryRpcTracingBridge
             int methodId,
             Map<String, String> metadata) {
         Context parent = propagator.extract(
-                Context.current(),
+                Context.root(),
                 metadata,
                 GETTER);
         Span span = tracer.spanBuilder(
