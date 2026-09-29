@@ -9,6 +9,7 @@ import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.codec.RpcCodecIds;
 import io.peach.rpc.observability.RpcCertificateReloadOutcome;
+import io.peach.rpc.observability.RpcConnectionRole;
 import io.peach.rpc.observability.RpcObserver;
 import io.peach.rpc.observability.RpcSecurityMode;
 import io.peach.rpc.protocol.RpcFrame;
@@ -60,6 +61,22 @@ class VertxRpcTransportTlsTest {
         try (TlsTestCertificates certs =
                      TlsTestCertificates.create()) {
             int port = findFreePort();
+            AtomicInteger handshakeFailures =
+                    new AtomicInteger();
+            RpcObserver observer = new RpcObserver() {
+                @Override
+                public void onTlsHandshakeCompleted(
+                        RpcConnectionRole role,
+                        RpcEndpoint endpoint,
+                        RpcSecurityMode mode,
+                        long durationNanos,
+                        Throwable error) {
+                    if (role == RpcConnectionRole.CLIENT
+                            && error != null) {
+                        handshakeFailures.incrementAndGet();
+                    }
+                }
+            };
             VertxRpcTransportServer server =
                     server(
                             port,
@@ -69,13 +86,15 @@ class VertxRpcTransportTlsTest {
                                             RpcSecurityMode.TLS)));
             VertxRpcTransportClient client =
                     new VertxRpcTransportClient(
-                            baseOptions().withSecurity(
-                                    clientSecurity(
-                                            certs,
-                                            RpcSecurityMode.TLS,
-                                            certs.wrongCaCertificate
-                                                    .toString(),
-                                            true)));
+                            baseOptions()
+                                    .withObserver(observer)
+                                    .withSecurity(
+                                            clientSecurity(
+                                                    certs,
+                                                    RpcSecurityMode.TLS,
+                                                    certs.wrongCaCertificate
+                                                            .toString(),
+                                                    true)));
             try {
                 CompletionException error =
                         assertThrows(
@@ -89,6 +108,9 @@ class VertxRpcTransportTlsTest {
                                         .toCompletableFuture()
                                         .join());
                 assertTrue(error.getCause() != null);
+                assertTrue(await(
+                        Duration.ofSeconds(2),
+                        () -> handshakeFailures.get() >= 1));
             } finally {
                 client.close();
                 server.close();
@@ -240,6 +262,84 @@ class VertxRpcTransportTlsTest {
                     () -> new VertxRpcTransportServer(
                             baseOptions()
                                     .withSecurity(security)));
+        }
+    }
+
+    @Test
+    void tlsShouldSurviveHeartbeatAndReconnectAfterProviderRestart()
+            throws Exception {
+        try (TlsTestCertificates certs =
+                     TlsTestCertificates.create()) {
+            int port = findFreePort();
+            RpcTransportSecurityOptions serverSecurity =
+                    serverSecurity(
+                            certs,
+                            RpcSecurityMode.TLS);
+            RpcTransportSecurityOptions clientSecurity =
+                    clientSecurity(
+                            certs,
+                            RpcSecurityMode.TLS,
+                            certs.caCertificate.toString(),
+                            true);
+            RpcTransportOptions serverOptions =
+                    haOptions().withSecurity(serverSecurity);
+            RpcTransportOptions clientOptions =
+                    haOptions().withSecurity(clientSecurity);
+            RpcEndpoint endpoint =
+                    new RpcEndpoint("localhost", port);
+            VertxRpcTransportClient client =
+                    new VertxRpcTransportClient(
+                            clientOptions);
+            VertxRpcTransportServer first =
+                    server(port, serverOptions);
+            try {
+                byte[] initial = client.request(
+                                endpoint,
+                                request(),
+                                Duration.ofSeconds(2))
+                        .toCompletableFuture()
+                        .join();
+                assertArrayEquals(
+                        new byte[] {7},
+                        RpcProtocolCodec.decode(initial)
+                                .payload());
+
+                Thread.sleep(250L);
+
+                byte[] afterHeartbeat = client.request(
+                                endpoint,
+                                request(),
+                                Duration.ofSeconds(2))
+                        .toCompletableFuture()
+                        .join();
+                assertArrayEquals(
+                        new byte[] {7},
+                        RpcProtocolCodec.decode(
+                                        afterHeartbeat)
+                                .payload());
+
+                first.close();
+                Thread.sleep(150L);
+
+                VertxRpcTransportServer replacement =
+                        server(port, serverOptions);
+                try {
+                    byte[] recovered = awaitResponse(
+                            client,
+                            endpoint,
+                            Duration.ofSeconds(4));
+                    assertArrayEquals(
+                            new byte[] {7},
+                            RpcProtocolCodec.decode(
+                                            recovered)
+                                    .payload());
+                } finally {
+                    replacement.close();
+                }
+            } finally {
+                client.close();
+                first.close();
+            }
         }
     }
 
@@ -400,6 +500,46 @@ class VertxRpcTransportTlsTest {
                 Duration.ofSeconds(2),
                 Duration.ofMillis(50),
                 Duration.ofDays(7));
+    }
+
+    private static RpcTransportOptions haOptions() {
+        return new RpcTransportOptions(
+                32,
+                1024 * 1024,
+                1024 * 1024,
+                Duration.ofSeconds(2),
+                Duration.ofSeconds(2),
+                Set.of(RpcCodecIds.FORY_NATIVE),
+                1,
+                Duration.ofMillis(50),
+                Duration.ofMillis(100),
+                Duration.ofMillis(10),
+                Duration.ofMillis(50));
+    }
+
+    private static byte[] awaitResponse(
+            VertxRpcTransportClient client,
+            RpcEndpoint endpoint,
+            Duration timeout) throws Exception {
+        long deadline =
+                System.nanoTime() + timeout.toNanos();
+        Throwable lastFailure = null;
+        while (System.nanoTime() < deadline) {
+            try {
+                return client.request(
+                                endpoint,
+                                request(),
+                                Duration.ofMillis(750))
+                        .toCompletableFuture()
+                        .join();
+            } catch (RuntimeException error) {
+                lastFailure = error;
+                Thread.sleep(25L);
+            }
+        }
+        throw new AssertionError(
+                "TLS RPC client did not recover before timeout",
+                lastFailure);
     }
 
     private static RpcTransportOptions baseOptions() {
