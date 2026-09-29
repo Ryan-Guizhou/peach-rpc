@@ -344,14 +344,6 @@ public final class RpcProtocolCodec {
     }
 
     /**
-     * 将 Transport 分配的 Request ID 写入已编码帧。
-     *
-     * <p>该方法只修改固定 Header，不重新编码 Metadata 与 Payload。
-     *
-     * @param bytes 已编码完整帧
-     * @param requestId connection-local Request ID
-     */
-    /**
      * 在不改变帧长度的前提下刷新 REQUEST 中的相对 timeout budget。
      *
      * <p>V2-C.2 将该字段编码为固定 19 位十进制值，因此 Transport 可以在
