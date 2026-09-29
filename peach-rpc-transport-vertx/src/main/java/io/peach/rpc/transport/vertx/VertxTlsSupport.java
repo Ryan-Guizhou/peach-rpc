@@ -4,7 +4,7 @@ import io.peach.rpc.observability.RpcCertificateReloadOutcome;
 import io.peach.rpc.observability.RpcObserver;
 import io.peach.rpc.observability.RpcSecurityMode;
 import io.peach.rpc.transport.RpcTransportSecurityOptions;
-import io.vertx.core.net.ClientAuth;
+import io.vertx.core.http.ClientAuth;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetServerOptions;
 import io.vertx.core.net.PemKeyCertOptions;
