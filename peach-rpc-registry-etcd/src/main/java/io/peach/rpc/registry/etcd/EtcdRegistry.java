@@ -2,6 +2,8 @@ package io.peach.rpc.registry.etcd;
 
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
+import io.etcd.jetcd.common.exception.ErrorCode;
+import io.etcd.jetcd.common.exception.EtcdException;
 import io.etcd.jetcd.support.CloseableClient;
 import io.etcd.jetcd.Watch;
 import io.etcd.jetcd.kv.GetResponse;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -180,7 +183,14 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
             }
             CompletableFuture<Long> created = new CompletableFuture<>();
             leaseFuture = created;
-            client.getLeaseClient().grant(leaseTtlSeconds).whenComplete((response, error) -> {
+            long grantTimeoutSeconds =
+                    Math.max(1L, Math.min(leaseTtlSeconds, 5L));
+            client.getLeaseClient()
+                    .grant(
+                            leaseTtlSeconds,
+                            grantTimeoutSeconds,
+                            TimeUnit.SECONDS)
+                    .whenComplete((response, error) -> {
                 if (error != null) {
                     synchronized (leaseMonitor) {
                         leaseFuture = null;
@@ -279,6 +289,15 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                         return;
                     }
                     if (error != null) {
+                        if (isLeaseNotFound(error)) {
+                            LOGGER.warn(
+                                    "Etcd lease no longer exists; "
+                                            + "recovering active registrations: "
+                                            + "leaseId={}",
+                                    leaseId);
+                            handleLeaseLoss(leaseId);
+                            return;
+                        }
                         LOGGER.debug(
                                 "Etcd lease health probe failed; "
                                         + "keeping current lease until the next probe: "
@@ -298,6 +317,16 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                     }
                     scheduleLeaseHealthProbe(leaseId);
                 });
+    }
+
+    private static boolean isLeaseNotFound(Throwable error) {
+        Throwable current = error;
+        while (current instanceof CompletionException
+                && current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current instanceof EtcdException etcdError
+                && etcdError.getErrorCode() == ErrorCode.NOT_FOUND;
     }
 
     private void scheduleLeaseRecovery(int attempt) {
