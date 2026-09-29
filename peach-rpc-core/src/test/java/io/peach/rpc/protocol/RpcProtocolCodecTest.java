@@ -169,6 +169,45 @@ class RpcProtocolCodecTest {
     }
 
     @Test
+    void shouldRejectEmptyOrOversizedInboundMetadata() {
+        assertThrows(
+                RpcProtocolException.class,
+                () -> RpcProtocolCodec.encodeRequest(
+                        (byte) 1,
+                        11,
+                        22,
+                        0L,
+                        0L,
+                        Map.of("traceparent", ""),
+                        new byte[] {1}));
+
+        String maxKey = "k".repeat(256);
+        byte[] malicious = RpcProtocolCodec.encode(
+                new RpcFrame(
+                        RpcMessageType.REQUEST,
+                        (byte) 1,
+                        RpcStatus.OK,
+                        1L,
+                        11,
+                        22,
+                        Map.of(maxKey, "xyz"),
+                        new byte[0]));
+
+        int metadataOffset = RpcProtocolCodec.HEADER_LENGTH;
+        malicious[metadataOffset + 256] = 'k';
+        malicious[metadataOffset + 257] = 'k';
+        malicious[metadataOffset + 258] = '=';
+
+        assertThrows(
+                RpcProtocolException.class,
+                () -> RpcProtocolCodec.decode(malicious));
+        assertThrows(
+                RpcProtocolException.class,
+                () -> RpcProtocolCodec.view(malicious)
+                        .metadataCopy());
+    }
+
+    @Test
     void shouldEncodeUnaryResponseWithoutMetadata() {
         byte[] payload = new byte[] {7, 8};
 

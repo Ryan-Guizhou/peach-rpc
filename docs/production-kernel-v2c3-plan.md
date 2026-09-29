@@ -1,6 +1,6 @@
 # Peach RPC V2-C.3 Production Security & Observability 项目计划书
 
-> 状态：**Proposed / Implementation Baseline**  
+> 状态：**Implemented / Verified on V2-C.3 branch**  
 > 适用分支：`feature/v2c3-production-security-observability`  
 > 前置基线：V2-C.2 已完成并合入 `main`，Connection & Control-plane HA 已形成自动化闭环。  
 > 本文是 V2-C.3 的实施与验收基线；完成后同步更新 Production Roadmap、Readiness、README 与架构文档。
@@ -360,7 +360,7 @@ Provider 和 Consumer 可使用同一配置模型，但验证规则按角色执�
 
 运行时：
 
-1. 周期读取 cert/key/trust 文件 fingerprint/mtime；
+1. 周期读取 cert/key/trust 文件 SHA-256 fingerprint、mtime 与 size；
 2. 变化时先在内存中完整解析；
 3. 解析/校验失败则保留旧证书；
 4. 校验成功后调用 Vert.x `updateSSLOptions`；
@@ -661,36 +661,37 @@ V2-C.3 只有在以下全部满足后才能标记 Current：
 
 ### Observability
 
-- [ ] Registry lifecycle Observer；
-- [ ] Micrometer Adapter；
-- [ ] OpenTelemetry Adapter；
-- [ ] W3C trace propagation；
-- [ ] JFR Adapter；
-- [ ] Adapter failure isolation。
+- [x] Registry lifecycle Observer；
+- [x] Micrometer Adapter；
+- [x] OpenTelemetry Adapter；
+- [x] W3C trace propagation；
+- [x] JFR Adapter（包含 Retry / reconnect / heartbeat / Registry / TLS 恢复类事件）；
+- [x] Adapter failure isolation。
 
 ### Security
 
-- [ ] TLS；
-- [ ] mTLS；
-- [ ] CA verification；
-- [ ] hostname verification；
-- [ ] handshake timeout；
-- [ ] certificate expiry validation；
-- [ ] certificate reload；
-- [ ] invalid reload keeps old certificate；
-- [ ] no plaintext fallback。
+- [x] TLS；
+- [x] mTLS；
+- [x] CA verification；
+- [x] hostname verification；
+- [x] handshake timeout；
+- [x] certificate expiry validation；
+- [x] certificate reload；
+- [x] SHA-256 content fingerprint detects same-size/same-mtime rotation；
+- [x] invalid reload keeps old certificate；
+- [x] no plaintext fallback。
 
 ### Quality
 
-- [ ] Core unit tests；
-- [ ] Adapter tests；
-- [ ] TLS/mTLS integration tests；
-- [ ] plaintext regression；
-- [ ] Chinese/English README parity；
-- [ ] `python3 scripts/check_project.py`；
-- [ ] `mvn -B -ntp clean verify -Pquality`；
-- [ ] existing Nacos recovery CI remains green；
-- [ ] Etcd Chaos remains green。
+- [x] Core unit tests；
+- [x] Adapter tests；
+- [x] TLS/mTLS integration tests；
+- [x] plaintext regression；
+- [x] Chinese/English README parity；
+- [x] `python3 scripts/check_project.py`；
+- [x] `mvn -B -ntp clean verify -Pquality`；
+- [x] independent JVM / Nacos recovery CI remains green；
+- [x] Etcd Chaos remains green。
 
 ---
 

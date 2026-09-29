@@ -14,12 +14,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HexFormat;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -286,12 +289,17 @@ final class VertxTlsSupport {
         }
         Path path = Path.of(value);
         try {
+            byte[] content = Files.readAllBytes(path);
             return new FileStamp(
                     Files.getLastModifiedTime(path)
                             .toMillis(),
-                    Files.size(path));
+                    content.length,
+                    sha256(content));
         } catch (IOException error) {
-            return new FileStamp(-1L, -1L);
+            return new FileStamp(
+                    -1L,
+                    -1L,
+                    "unreadable");
         }
     }
 
@@ -302,9 +310,28 @@ final class VertxTlsSupport {
             FileStamp trustCertificate) {
     }
 
+    private static String sha256(byte[] content) {
+        try {
+            MessageDigest digest =
+                    MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(
+                    digest.digest(content));
+        } catch (NoSuchAlgorithmException error) {
+            throw new IllegalStateException(
+                    "SHA-256 is not available",
+                    error);
+        }
+    }
+
     /** 单文件状态。 */
-    record FileStamp(long modifiedMillis, long size) {
+    record FileStamp(
+            long modifiedMillis,
+            long size,
+            String fingerprint) {
         private static final FileStamp EMPTY =
-                new FileStamp(0L, 0L);
+                new FileStamp(
+                        0L,
+                        0L,
+                        "");
     }
 }

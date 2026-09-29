@@ -3,7 +3,10 @@ package io.peach.rpc.observability.opentelemetry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanId;
 import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
@@ -20,6 +23,7 @@ import io.peach.rpc.observability.RpcTraceContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /** OpenTelemetry Trace Context 传播测试。 */
@@ -91,6 +95,59 @@ class OpenTelemetryRpcTracingBridgeTest {
                     serverSpan.getTraceId());
             assertEquals(
                     clientSpan.getSpanId(),
+                    serverSpan.getParentSpanId());
+        } finally {
+            tracerProvider.close();
+        }
+    }
+
+    @Test
+    void serverWithoutRemoteContextShouldIgnoreAmbientLocalSpan() {
+        RecordingExporter exporter =
+                new RecordingExporter();
+        SdkTracerProvider tracerProvider =
+                SdkTracerProvider.builder()
+                        .addSpanProcessor(
+                                SimpleSpanProcessor.create(
+                                        exporter))
+                        .build();
+        OpenTelemetrySdk openTelemetry =
+                OpenTelemetrySdk.builder()
+                        .setTracerProvider(tracerProvider)
+                        .setPropagators(
+                                ContextPropagators.create(
+                                        W3CTraceContextPropagator
+                                                .getInstance()))
+                        .build();
+
+        try {
+            OpenTelemetryRpcTracingBridge bridge =
+                    new OpenTelemetryRpcTracingBridge(
+                            openTelemetry);
+            Span ambient =
+                    openTelemetry.getTracer("test")
+                            .spanBuilder("ambient")
+                            .startSpan();
+            try (Scope ignored = ambient.makeCurrent()) {
+                RpcTraceContext server =
+                        bridge.startServer(
+                                11,
+                                7,
+                                Map.of());
+                server.end(RpcStatus.OK, null);
+            } finally {
+                ambient.end();
+            }
+
+            SpanData serverSpan =
+                    exporter.spans().stream()
+                            .filter(span ->
+                                    span.getKind()
+                                            == SpanKind.SERVER)
+                            .findFirst()
+                            .orElseThrow();
+            assertEquals(
+                    SpanId.getInvalid(),
                     serverSpan.getParentSpanId());
         } finally {
             tracerProvider.close();

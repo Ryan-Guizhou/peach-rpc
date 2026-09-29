@@ -30,5 +30,16 @@ class JfrRpcObserverTest {
                         Duration.ofMillis(2).toNanos(),
                         RpcStatus.OK,
                         null));
+        assertDoesNotThrow(() ->
+                observer.onClientRetryScheduled(
+                        new ServiceKey(
+                                "demo.Service",
+                                "1.0.0",
+                                "default"),
+                        1,
+                        2,
+                        10L,
+                        new IllegalStateException(
+                                "retry")));
     }
 }

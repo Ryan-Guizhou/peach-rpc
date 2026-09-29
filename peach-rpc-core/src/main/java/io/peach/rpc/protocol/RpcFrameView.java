@@ -179,9 +179,14 @@ public final class RpcFrameView {
                     throw new RpcProtocolException(
                             "Malformed metadata");
                 }
-                metadata.put(
-                        line.substring(0, separator),
-                        line.substring(separator + 1));
+                String key =
+                        line.substring(0, separator);
+                String value =
+                        line.substring(separator + 1);
+                RpcProtocolCodec.validateMetadata(
+                        key,
+                        value);
+                metadata.put(key, value);
             }
             return Map.copyOf(metadata);
         } catch (RuntimeException error) {

@@ -42,3 +42,56 @@ RPC demo completed successfully: Hello, Peach RPC!
 ```
 
 Consumer 在启动阶段允许等待短暂的注册中心传播时间，但真实业务调用仍遵循 Peach RPC 的超时、重试、熔断和端点剔除规则。
+
+
+## TLS / mTLS 可选 Profile
+
+默认示例仍使用 PLAINTEXT，保证本地和 CI 的 Nacos 恢复 E2E 不需要证书准备。
+
+Provider/Consumer 额外提供：
+
+- `application-tls.yml`
+- `application-mtls.yml`
+
+这些 Profile 只引用环境变量，不在仓库保存证书或私钥。
+
+### TLS
+
+Provider 需要：
+
+```text
+PEACH_RPC_TLS_CERT=<provider certificate PEM path>
+PEACH_RPC_TLS_KEY=<provider private key PEM path>
+```
+
+Consumer 需要：
+
+```text
+PEACH_RPC_TLS_CA=<trusted CA PEM path>
+```
+
+分别使用 Spring Profile `tls` 启动 Provider 与 Consumer。Consumer 默认启用 hostname verification，因此调用地址必须与 Provider 证书身份匹配。
+
+### mTLS
+
+Provider 和 Consumer 都需要配置：
+
+```text
+PEACH_RPC_TLS_CERT=<local certificate PEM path>
+PEACH_RPC_TLS_KEY=<local private key PEM path>
+PEACH_RPC_TLS_CA=<trusted CA PEM path>
+```
+
+分别使用 Spring Profile `mtls` 启动。Provider 会要求合法客户端证书，握手失败不会降级到 plaintext。
+
+证书在线 Reload、有效期校验和故障语义见 [TLS / mTLS 安全指南](../docs/security.md)。
+
+## 可选 Observability Adapter
+
+Examples 默认不强制引入观测框架。需要验证生产观测集成时，可按需给 Provider/Consumer 增加：
+
+- `peach-rpc-observability-micrometer`
+- `peach-rpc-observability-opentelemetry`
+- `peach-rpc-observability-jfr`
+
+其中 Micrometer/OpenTelemetry 在 Spring Context 存在对应 Bean 时自动装配；JFR 通过 `peach.rpc.observability.jfr.enabled=true` 启用。完整指标、Trace Context 与 JFR 事件见 [可观测性指南](../docs/observability.md)。

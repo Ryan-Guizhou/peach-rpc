@@ -56,17 +56,17 @@ V2-C.2 已形成连接与控制面 HA 闭环：
 
 ## V2-C.3 当前开发分支
 
-V2-C.3 已完成主要 Security & Observability 实现，正在执行最终质量门禁：
+V2-C.3 已完成 Security & Observability 实现，并已通过当前分支 CI 与 Etcd Chaos 门禁：
 
 - Vert.x Transport 支持 PLAINTEXT / TLS / MTLS；
 - TLS handshake 位于 Peach HELLO 之前，不允许失败后静默降级 plaintext；
 - 支持 CA Trust、Hostname Verification、mTLS ClientAuth、证书有效期 fail-fast；
-- PEM material 支持在线 Reload；新 material 无效时继续使用旧 material；
+- PEM material 支持在线 Reload；SHA-256 内容指纹避免同大小/同 mtime 的替换漏检，新 material 无效时继续使用旧 material；
 - TLS 与 Heartbeat/Reconnect 共存测试覆盖 Provider restart 后同一 Consumer 恢复；
 - Core Observer 已扩展 Registry/TLS/证书生命周期事件；
-- Micrometer Adapter 提供 Client/Server/Connection/Registry/TLS 标准指标；
+- Micrometer Adapter 提供 Client/Server/Connection/Registry/TLS 标准指标，默认不使用 endpoint/instanceId/service/method/error-message/traceId 作为高基数标签；
 - OpenTelemetry Adapter 通过现有 RPC Metadata 传播 W3C Trace Context，真实 RPC E2E 验证 CLIENT/SERVER Span 父子关系；
-- JFR Adapter 记录慢/失败调用和恢复类低频事件；
+- JFR Adapter 记录慢/失败调用、Retry 调度和恢复类低频事件；
 - Registry Credential 的 toString 与 Nacos password 配置边界已增加脱敏测试。
 
 详细配置见 [TLS / mTLS 安全指南](security.md) 与 [可观测性指南](observability.md)。

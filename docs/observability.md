@@ -51,7 +51,7 @@ peach-rpc-core
 - `peach.rpc.tls.certificate.reload`
 - `peach.rpc.tls.certificate.expiry.warnings`
 
-默认不会把 endpoint、instanceId、异常 message、traceId 作为标签。
+默认不会把 endpoint、instanceId、service、method、异常 message、traceId 作为指标标签，避免用户规模和接口数量直接放大 Meter 基数。Client/Server 的 service/method 维度应通过 Trace、日志或受控的自定义 Observer 获取。
 
 ## 3. OpenTelemetry
 
@@ -135,6 +135,7 @@ peach:
 JFR 只记录低频高价值事件：
 
 - 慢/失败 Client attempt；
+- Retry scheduled；
 - 慢/失败 Provider invocation；
 - reconnect；
 - heartbeat timeout；

@@ -116,6 +116,15 @@ public final class MicrometerRpcObserver implements RpcObserver {
                 outcome(error))
                 .record(Duration.ofNanos(
                         Math.max(0L, durationNanos)));
+        if (error != null) {
+            registry.counter(
+                            "peach.rpc.registry.failures",
+                            "registry",
+                            safe(registryType),
+                            "operation",
+                            operation.name())
+                    .increment();
+        }
     }
 
     @Override
@@ -153,6 +162,15 @@ public final class MicrometerRpcObserver implements RpcObserver {
                 outcome(error))
                 .record(Duration.ofNanos(
                         Math.max(0L, durationNanos)));
+        if (error != null) {
+            registry.counter(
+                            "peach.rpc.tls.handshake.failures",
+                            "role",
+                            role.name(),
+                            "mode",
+                            mode.name())
+                    .increment();
+        }
     }
 
     @Override
@@ -192,14 +210,17 @@ public final class MicrometerRpcObserver implements RpcObserver {
             Throwable error) {
         timer(
                 "peach.rpc.client.attempts",
-                "service",
-                serviceKey.canonicalName(),
-                "method",
-                Integer.toString(methodId),
                 "status",
                 status.name())
                 .record(Duration.ofNanos(
                         Math.max(0L, durationNanos)));
+        if (error != null || status != RpcStatus.OK) {
+            registry.counter(
+                            "peach.rpc.client.failures",
+                            "status",
+                            status.name())
+                    .increment();
+        }
     }
 
     @Override
@@ -210,11 +231,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             long delayMillis,
             Throwable cause) {
         registry.counter(
-                        "peach.rpc.client.retries",
-                        "service",
-                        serviceKey.canonicalName(),
-                        "method",
-                        Integer.toString(methodId))
+                        "peach.rpc.client.retries")
                 .increment();
     }
 
@@ -228,16 +245,26 @@ public final class MicrometerRpcObserver implements RpcObserver {
             Throwable error) {
         timer(
                 "peach.rpc.server.invocations",
-                "service",
-                Integer.toString(serviceId),
-                "method",
-                Integer.toString(methodId),
                 "execution",
                 executionMode.name(),
                 "status",
                 status.name())
                 .record(Duration.ofNanos(
                         Math.max(0L, durationNanos)));
+        if (error != null || status != RpcStatus.OK) {
+            registry.counter(
+                            "peach.rpc.server.failures",
+                            "status",
+                            status.name())
+                    .increment();
+        }
+        if (status == RpcStatus.OVERLOADED) {
+            registry.counter(
+                            "peach.rpc.server.overloaded",
+                            "execution",
+                            executionMode.name())
+                    .increment();
+        }
     }
 
     private Timer timer(
