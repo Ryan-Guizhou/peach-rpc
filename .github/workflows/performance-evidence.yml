@@ -1,0 +1,91 @@
+name: Performance Evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      matrix_profile:
+        description: Benchmark matrix profile
+        required: true
+        default: standard
+        type: choice
+        options:
+          - smoke
+          - standard
+          - full
+      run_matrix:
+        description: Run JMH benchmark matrix
+        required: true
+        default: true
+        type: boolean
+      run_soak:
+        description: Run virtual-thread soak
+        required: true
+        default: true
+        type: boolean
+      soak_concurrency:
+        description: Logical RPC concurrency
+        required: true
+        default: "10000"
+        type: string
+      soak_duration_seconds:
+        description: Soak measurement duration
+        required: true
+        default: "600"
+        type: string
+      soak_payload_size:
+        description: Soak payload bytes
+        required: true
+        default: "256"
+        type: string
+      soak_connections:
+        description: Connections per endpoint
+        required: true
+        default: "4"
+        type: string
+
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build benchmark runtime
+        run: mvn -B -ntp -pl peach-rpc-benchmarks -am clean package -DskipTests
+
+      - name: Run JMH matrix
+        if: ${{ inputs.run_matrix }}
+        env:
+          PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
+        run: >
+          bash scripts/run_v2d2_benchmark_matrix.sh
+          "${{ inputs.matrix_profile }}"
+          target/v2d2-evidence/matrix
+
+      - name: Run virtual-thread soak
+        if: ${{ inputs.run_soak }}
+        env:
+          PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
+          PEACH_RPC_SOAK_CONCURRENCY: ${{ inputs.soak_concurrency }}
+          PEACH_RPC_SOAK_DURATION_SECONDS: ${{ inputs.soak_duration_seconds }}
+          PEACH_RPC_SOAK_PAYLOAD_SIZE: ${{ inputs.soak_payload_size }}
+          PEACH_RPC_SOAK_CONNECTIONS: ${{ inputs.soak_connections }}
+          PEACH_RPC_SOAK_WARMUP_SECONDS: "30"
+          PEACH_RPC_SOAK_CLIENT_TIMEOUT_MS: "15000"
+          PEACH_RPC_SOAK_OUTPUT: target/v2d2-evidence/soak.json
+        run: bash scripts/run_v2d2_soak.sh
+
+      - name: Upload performance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2d2-performance-evidence-${{ github.run_id }}
+          path: target/v2d2-evidence
+          if-no-files-found: warn
+          retention-days: 30
