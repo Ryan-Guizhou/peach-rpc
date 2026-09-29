@@ -36,6 +36,7 @@ public final class EtcdRegistryFactory implements RegistryFactory {
         return new EtcdRegistry(
                 configured.toArray(String[]::new),
                 leaseTtlSeconds,
-                namespace);
+                namespace,
+                options.observer());
     }
 }
