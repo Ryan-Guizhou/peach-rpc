@@ -103,6 +103,49 @@ public record RegistryOptions(
     }
 
     /**
+     * 返回脱敏后的配置描述。
+     *
+     * <p>Registry Credential 不允许通过 record 默认 toString 泄露。
+     *
+     * @return 脱敏配置描述
+     */
+    @Override
+    public String toString() {
+        Map<String, String> safeOptions =
+                new java.util.LinkedHashMap<>();
+        providerOptions.forEach((key, value) ->
+                safeOptions.put(
+                        key,
+                        sensitive(key)
+                                ? "***"
+                                : value));
+        return "RegistryOptions[endpoints="
+                + endpoints
+                + ", namespace="
+                + namespace
+                + ", providerOptions="
+                + safeOptions
+                + ", observer="
+                + observer.getClass().getName()
+                + ']';
+    }
+
+    private static boolean sensitive(String key) {
+        String normalized =
+                key == null
+                        ? ""
+                        : key.toLowerCase(
+                                java.util.Locale.ROOT)
+                                .replace("_", "")
+                                .replace("-", "");
+        return normalized.contains("password")
+                || normalized.contains("secret")
+                || normalized.contains("token")
+                || normalized.contains("credential")
+                || normalized.contains("privatekey");
+    }
+
+    /**
      * 读取 Adapter 私有配置。
      *
      * @param key 配置键
