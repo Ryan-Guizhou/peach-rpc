@@ -66,7 +66,7 @@ for payload in "${payloads[@]}"; do
     for thread_count in "${threads[@]}"; do
       for mode in "${modes[@]}"; do
         output="$OUTPUT_DIR/${mode}-p${payload}-c${shard}-t${thread_count}.json"
-        java -jar "$JAR" EndToEndPayloadBenchmark.echo \
+        if ! java -jar "$JAR" EndToEndPayloadBenchmark.echo \
           -p "payloadSize=$payload" \
           -p "connectionsPerEndpoint=$shard" \
           -t "$thread_count" \
@@ -78,7 +78,12 @@ for payload in "${payloads[@]}"; do
           -f "$forks" \
           -prof gc \
           -rf json \
-          -rff "$output"
+          -rff "$output"; then
+          echo "$mode,$payload,$shard,$thread_count" >> "$OUTPUT_DIR/failures.csv"
+          if [[ "$PROFILE" == "smoke" ]]; then
+            exit 1
+          fi
+        fi
       done
     done
   done
