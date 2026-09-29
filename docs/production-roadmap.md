@@ -130,21 +130,21 @@ Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 
 | 能力 | 状态 | 当前实现 | 生产缺口 / 下一步 |
 |---|---|---|---|
-| Registry credential 配置 | **Current** | Nacos username/password 不进入 Core 契约 | 增加 auth-enabled 集成与错误脱敏测试 |
-| TLS | **Proposed** | 尚未实现 | Transport 加密、hostname verification、handshake timeout |
-| mTLS | **Proposed** | 尚未实现 | 双向身份校验 |
-| 证书生命周期 | **Proposed** | 尚未实现 | CA、加载、过期、轮换、reload |
-| TLS 可观测性 | **Proposed** | 尚未实现 | 握手失败、证书过期等标准指标 |
+| Registry credential 配置 | **Current** | Nacos username/password 只进入 SDK Properties；endpoint 禁止嵌入 Credential；RegistryOptions toString 自动脱敏 | 真实 auth-enabled Nacos Server 集成可作为后续增强 |
+| TLS | **Current** | Vert.x Transport TLS、CA Trust、Hostname Verification、独立 TLS handshake timeout；wrong CA/hostname mismatch 真实网络测试 | 后续补更大规模 TLS 性能矩阵 |
+| mTLS | **Current** | Provider ClientAuth.REQUIRED，双向证书校验；缺失 Client Cert 测试 | 后续与服务级授权模型结合 |
+| 证书生命周期 | **Current** | X.509 有效期校验、过期 fail-fast、临期 warning、PEM 在线 Reload；无效 replacement 保留旧 material | 后续可扩展 PKCS#12/JKS 与集中证书管理 |
+| TLS 可观测性 | **Current** | RpcObserver + Micrometer/JFR 覆盖 TLS handshake、reload、expiry warning；错误 CA 会产生 handshake failure event | 后续结合告警模板 |
 
 ### 3.7 可观测性
 
 | 能力 | 状态 | 当前实现 | 生产缺口 / 下一步 |
 |---|---|---|---|
-| Core `RpcObserver` | **Current** | Client attempt/retry、Provider invocation，以及 connection established/reconnect scheduled/heartbeat timeout/closed；NOOP 低开销 | V2-C.3 增加 Registry 生命周期观测与具体 Adapter |
-| Micrometer Adapter | **Proposed** | 尚未实现 | 标准请求、耗时、retry、timeout、inflight、overload、connection 指标 |
-| OpenTelemetry Adapter | **Proposed** | 尚未实现 | Consumer/Provider Span、上下文传播与错误语义 |
-| JFR Adapter | **Proposed** | 尚未实现 | 低开销线上事件分析 |
-| 运行时诊断基线 | **Partial** | 目前主要依赖日志与 benchmark | 增加标准 metrics/tracing/JFR 后才形成生产诊断闭环 |
+| Core `RpcObserver` | **Current** | Client/Provider、Connection、Registry、TLS、Certificate 生命周期事件；Composite 隔离 Adapter 异常，NOOP 低开销 | 后续根据 Production SLO 扩展少量稳定事件 |
+| Micrometer Adapter | **Current** | Client/Server latency、retry、connection、heartbeat、Registry、TLS/reload 指标；避免 endpoint/instanceId/error-message/traceId 标签 | 后续提供 Grafana Dashboard 模板 |
+| OpenTelemetry Adapter | **Current** | Consumer/Provider Span + W3C traceparent/tracestate/baggage；真实 Peach RPC E2E 验证跨 wire parent-child | 后续补更多 semantic conventions |
+| JFR Adapter | **Current** | 慢/失败 RPC、reconnect、heartbeat、Registry recovery、TLS/reload 低频事件 | 后续结合线上 profiling 指南 |
+| 运行时诊断基线 | **Current** | Metrics + distributed tracing + JFR 三层诊断能力均已具备独立 Adapter | 后续完善 SLO/告警/Dashboard |
 
 ### 3.8 Wire Compatibility / Codec
 
@@ -276,20 +276,28 @@ flowchart LR
 
 ## 7. V2-C.3：安全与可观测性
 
-**状态：Proposed**
+**状态：Partial（实现已完成，最终 CI/Chaos 验收中）**
 
-### 7.1 范围
+### 7.1 已实现
 
-1. TLS；
-2. mTLS；
-3. CA/证书加载/过期/轮换/reload；
+1. TLS / mTLS / CA / Hostname Verification；
+2. X.509 有效期校验与 PEM 在线 Reload；
+3. Registry/TLS/Certificate Observer；
 4. Micrometer Adapter；
-5. OpenTelemetry Adapter；
+5. OpenTelemetry CLIENT/SERVER Span 与 W3C Metadata propagation；
 6. JFR Adapter；
-7. 标准连接、请求、重试、熔断、过载、Registry 指标；
-8. auth-enabled Nacos 集成与凭据错误脱敏测试。
+7. Registry Credential 配置边界与脱敏；
+8. TLS + Heartbeat + reconnect 组合测试；
+9. 真实 RPC OTel Trace E2E。
 
-### 7.2 建议标准指标
+### 7.2 后续增强（不阻塞 V2-C.3 Current）
+
+1. auth-enabled Nacos Server 独立集成环境；
+2. Grafana Dashboard / Alert 模板；
+3. PKCS#12/JKS；
+4. 更大规模 TLS 性能与证书轮换 soak。
+
+### 7.3 标准指标
 
 至少覆盖：
 
@@ -305,7 +313,7 @@ flowchart LR
 - Registry control-plane failure/recovery；
 - TLS handshake failure。
 
-### 7.3 验收标准
+### 7.4 验收标准
 
 - Core 仍不直接依赖 Micrometer/OpenTelemetry/JFR；
 - Adapter 缺失时数据面开销保持当前 NOOP 语义；
