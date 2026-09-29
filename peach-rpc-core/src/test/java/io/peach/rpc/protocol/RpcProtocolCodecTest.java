@@ -64,7 +64,22 @@ class RpcProtocolCodecTest {
         assertArrayEquals(payload, view.payloadCopy());
 
         RpcProtocolCodec.writeRequestId(encoded, 99L);
-        assertEquals(99L, RpcProtocolCodec.view(encoded).requestId());
+        assertEquals(
+                99L,
+                RpcProtocolCodec.readRequestId(encoded));
+        assertEquals(
+                99L,
+                RpcProtocolCodec.view(encoded).requestId());
+    }
+
+    @Test
+    void requestIdFastAccessorShouldRejectShortHeader() {
+        assertThrows(
+                RpcProtocolException.class,
+                () -> RpcProtocolCodec.readRequestId(
+                        new byte[
+                                RpcProtocolCodec.HEADER_LENGTH
+                                        - 1]));
     }
 
     @Test

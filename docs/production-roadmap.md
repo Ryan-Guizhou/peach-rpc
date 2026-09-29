@@ -325,13 +325,27 @@ flowchart LR
 
 ## 8. V2-D：性能内核第二次升级
 
-**状态：Proposed**
+**状态：In Progress（当前 V2-D 分支）**
 
 该阶段必须遵循：
 
 > **Benchmark first, API change second。**
 
-### 8.1 先补完整基准矩阵
+### 8.1 第一批已进入实现
+
+当前 V2-D 分支已经完成：
+
+1. Protocol encode/decode payload 参数化到 64B / 256B / 1KiB / 16KiB / 1MiB；
+2. 新增完整 Peach RPC byte[] E2E benchmark，支持 connection shard 1 / 2 / 4 / 8；
+3. 并发矩阵通过 JMH `-t` 控制，10k 并发保留给异步/虚拟线程 soak harness；
+4. 新增固定 Header Request ID 无对象 accessor；
+5. Client response routing 移除临时 `ByteBuffer`；
+6. Server 正常 REQUEST tracking 移除完整 `RpcFrame.decode` 及其 Metadata/Payload copy；
+7. timeout budget 原地刷新不再创建 `RpcFrameView`；
+8. FrameAccumulator 增加 complete/fragmented benchmark，并复用固定 32B Header 数组；
+9. v1 wire、Fory Codec ID 1 payload、TLS/Trace/Registry 语义保持不变。
+
+### 8.2 继续补完整基准矩阵
 
 Payload：
 
@@ -378,7 +392,7 @@ Connection shard：
 - connection count；
 - error rate。
 
-### 8.2 根据数据决定的候选优化
+### 8.3 根据数据决定的候选优化
 
 - Buffer ownership / Buffer-oriented Codec；
 - FrameAccumulator 减少完整 frame copy；

@@ -25,7 +25,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetSocket;
-import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,7 +49,6 @@ final class VertxRpcTransportClient implements RpcTransportClient {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(VertxRpcTransportClient.class);
     private static final int MESSAGE_TYPE_OFFSET = 6;
-    private static final int REQUEST_ID_OFFSET = 10;
     private static final int CODEC_OFFSET = 7;
 
     private final Vertx vertx = Vertx.vertx();
@@ -596,11 +594,8 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                 return;
             }
 
-            long requestId = ByteBuffer.wrap(
-                            bytes,
-                            REQUEST_ID_OFFSET,
-                            Long.BYTES)
-                    .getLong();
+            long requestId =
+                    RpcProtocolCodec.readRequestId(bytes);
             PendingRequest request = pending.remove(requestId);
             if (request == null) {
                 LOGGER.debug(

@@ -360,13 +360,21 @@ public final class RpcProtocolCodec {
             throw new IllegalArgumentException(
                     "timeoutBudgetMillis must be positive");
         }
-        RpcFrameView frame = view(bytes);
-        if (frame.messageType() != RpcMessageType.REQUEST) {
+        requireHeader(bytes);
+        validatePreamble(bytes);
+        if (bytes[6] != RpcMessageType.REQUEST.code()) {
             return false;
         }
-        int metadataLength =
-                ((bytes[METADATA_LENGTH_OFFSET] & 0xff) << 8)
-                        | (bytes[METADATA_LENGTH_OFFSET + 1] & 0xff);
+        int metadataLength = readUnsignedShort(
+                bytes,
+                METADATA_LENGTH_OFFSET);
+        int payloadLength = readInt(
+                bytes,
+                PAYLOAD_LENGTH_OFFSET);
+        validateLengths(
+                bytes.length,
+                metadataLength,
+                payloadLength);
         int end = HEADER_LENGTH + metadataLength;
         int lineStart = HEADER_LENGTH;
         while (lineStart < end) {
@@ -395,6 +403,22 @@ public final class RpcProtocolCodec {
             lineStart = lineEnd + 1;
         }
         return false;
+    }
+
+    /**
+     * 从固定 Header 直接读取 connection-local Request ID。
+     *
+     * <p>该入口只读取 Header，不创建 RpcFrame/RpcFrameView，也不复制
+     * Metadata/Payload。调用方若需要完整协议校验，仍应使用 {@link #view(byte[])}。
+     *
+     * @param bytes 至少包含完整固定 Header 的帧
+     * @return Request ID
+     */
+    public static long readRequestId(byte[] bytes) {
+        requireHeader(bytes);
+        return readLong(
+                bytes,
+                REQUEST_ID_OFFSET);
     }
 
     /**
