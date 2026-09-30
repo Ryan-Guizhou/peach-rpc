@@ -35,9 +35,13 @@ Peach RPC 生产观测按四类信号组织：
 - peach.rpc.client.calls
 - peach.rpc.client.attempts
 - peach.rpc.client.retries
+- peach.rpc.client.inflight
+- peach.rpc.client.timeouts
 - peach.rpc.client.circuit.rejected
+- peach.rpc.client.circuit.state
 - peach.rpc.client.outlier.ejected
 - peach.rpc.server.invocations
+- peach.rpc.server.inflight
 - peach.rpc.server.admission.rejected
 - peach.rpc.server.overloaded
 - peach.rpc.connection.active
@@ -112,7 +116,9 @@ management:
 - Active Connections；
 - Retry Rate；
 - p50/p99/p99.9；
-- Circuit / Outlier / Admission；
+- Client/Server inflight；
+- Timeout rate；
+- Circuit state / reject、Outlier、Admission；
 - Registry / TLS / Heartbeat failure signals。
 
 Dashboard 使用 Prometheus 常见 Micrometer 命名规则。
