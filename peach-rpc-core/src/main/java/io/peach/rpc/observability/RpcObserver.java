@@ -175,6 +175,35 @@ public interface RpcObserver {
     }
 
     /**
+     * Consumer 逻辑 RPC inflight 数变化。
+     *
+     * @param delta +1 表示开始，-1 表示结束
+     */
+    default void onClientInflightChanged(int delta) {
+    }
+
+    /**
+     * Provider 业务 invocation inflight 数变化。
+     *
+     * @param delta +1 表示开始，-1 表示结束
+     */
+    default void onServerInflightChanged(int delta) {
+    }
+
+    /**
+     * Consumer 方法级 Circuit Breaker 状态。
+     *
+     * @param serviceKey 服务键
+     * @param methodId 方法 ID
+     * @param state 当前状态
+     */
+    default void onClientCircuitStateChanged(
+            ServiceKey serviceKey,
+            int methodId,
+            RpcCircuitState state) {
+    }
+
+    /**
      * Consumer 一次逻辑 RPC 调用完成。
      *
      * <p>一次逻辑调用可能包含多个网络 Attempt，该事件只回调一次。
@@ -431,6 +460,30 @@ public interface RpcObserver {
                                 durationNanos,
                                 status,
                                 error)));
+            }
+
+            @Override
+            public void onClientInflightChanged(int delta) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onClientInflightChanged(delta)));
+            }
+
+            @Override
+            public void onServerInflightChanged(int delta) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onServerInflightChanged(delta)));
+            }
+
+            @Override
+            public void onClientCircuitStateChanged(
+                    ServiceKey serviceKey,
+                    int methodId,
+                    RpcCircuitState state) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onClientCircuitStateChanged(
+                                serviceKey,
+                                methodId,
+                                state)));
             }
 
             @Override
