@@ -9,6 +9,31 @@ import org.junit.jupiter.api.Test;
 class RetryBudgetTest {
 
     @Test
+    void shouldKeepCreditsCappedAtConfiguredMaximum() {
+        RpcClientResilienceOptions options =
+                new RpcClientResilienceOptions(
+                        2,
+                        1.0d,
+                        1,
+                        2,
+                        Duration.ZERO,
+                        Duration.ZERO,
+                        3,
+                        Duration.ofSeconds(1),
+                        3,
+                        Duration.ofSeconds(1));
+        RetryBudget budget = new RetryBudget(options);
+
+        for (int index = 0; index < 100; index++) {
+            budget.onRequest();
+        }
+
+        assertTrue(budget.tryAcquireRetry());
+        assertTrue(budget.tryAcquireRetry());
+        assertFalse(budget.tryAcquireRetry());
+    }
+
+    @Test
     void shouldBoundRetriesByBudget() {
         RpcClientResilienceOptions options =
                 new RpcClientResilienceOptions(
