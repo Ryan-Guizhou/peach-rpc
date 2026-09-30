@@ -95,15 +95,8 @@ case "$PROFILE" in
     ;;
 esac
 
-{
-  echo "profile=$PROFILE"
-  echo "commit=${PEACH_RPC_BENCHMARK_COMMIT:-${GITHUB_SHA:-unknown}}"
-  echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  echo "uname=$(uname -a)"
-  echo "java=$(java -version 2>&1 | tr '\n' ' ')"
-  echo "processors=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo unknown)"
-  echo "openssl=$(openssl version 2>/dev/null || echo unavailable)"
-} > "$OUTPUT_DIR/environment.properties"
+bash scripts/capture_v2d2_environment.sh "$OUTPUT_DIR"
+echo "profile=$PROFILE" >> "$OUTPUT_DIR/environment.properties"
 
 for payload in "${payloads[@]}"; do
   for shard in "${shards[@]}"; do
