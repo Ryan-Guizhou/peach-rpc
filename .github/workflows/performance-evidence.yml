@@ -26,6 +26,11 @@ on:
         required: true
         default: manual-run
         type: string
+      host_fingerprint_sha256:
+        description: Expected SHA-256 host fingerprint from runner preflight; required for controlled evidence
+        required: false
+        default: ""
+        type: string
       matrix_profile:
         description: Benchmark matrix profile
         required: true
@@ -78,6 +83,7 @@ jobs:
           RUNNER_LABELS_JSON: ${{ inputs.runner_labels_json }}
           EXPECTED_RUNNER_ID: ${{ inputs.runner_id }}
           ACTUAL_RUNNER_ID: ${{ runner.name }}
+          EXPECTED_HOST_FINGERPRINT_SHA256: ${{ inputs.host_fingerprint_sha256 }}
           RUN_ID: ${{ inputs.run_id }}
           MATRIX_PROFILE: ${{ inputs.matrix_profile }}
           RUN_MATRIX: ${{ inputs.run_matrix }}
@@ -89,6 +95,7 @@ jobs:
           if [[ "$RUNNER_LABELS_JSON" == *"ubuntu-latest"* ]]; then echo "Controlled evidence cannot run on ubuntu-latest"; exit 1; fi
           if [[ -z "$EXPECTED_RUNNER_ID" || "$EXPECTED_RUNNER_ID" == "github-hosted-ephemeral" ]]; then echo "Controlled evidence requires an expected self-hosted runner name"; exit 1; fi
           if [[ "$ACTUAL_RUNNER_ID" != "$EXPECTED_RUNNER_ID" ]]; then echo "Controlled evidence runner mismatch: expected '$EXPECTED_RUNNER_ID', actual '$ACTUAL_RUNNER_ID'"; exit 1; fi
+          if [[ -z "$EXPECTED_HOST_FINGERPRINT_SHA256" ]]; then echo "Controlled evidence requires the expected host fingerprint from runner preflight"; exit 1; fi
           if [[ -z "$RUN_ID" || "$RUN_ID" == "manual-run" ]]; then echo "Controlled evidence requires a unique run_id such as run-1"; exit 1; fi
           if [[ "$MATRIX_PROFILE" != "full" || "$RUN_MATRIX" != "true" || "$RUN_SOAK" != "true" ]]; then echo "Controlled evidence requires full matrix and soak"; exit 1; fi
           if (( SOAK_CONCURRENCY < 10000 || SOAK_DURATION_SECONDS < 1800 )); then echo "Controlled evidence requires >=10000 concurrency and >=1800s soak"; exit 1; fi
@@ -108,6 +115,7 @@ jobs:
           PEACH_RPC_EVIDENCE_RUN_ID: ${{ inputs.run_id }}
           PEACH_RPC_RUNNER_ID: ${{ runner.name }}
           PEACH_RPC_EXPECT_RUNNER_ID: ${{ inputs.runner_id }}
+          PEACH_RPC_EXPECT_HOST_FINGERPRINT_SHA256: ${{ inputs.host_fingerprint_sha256 }}
           PEACH_RPC_RUNNER_LABELS: ${{ inputs.runner_labels_json }}
         run: bash scripts/preflight_v2d2_runner.sh "target/v2d2-evidence-${{ inputs.run_id }}"
 
