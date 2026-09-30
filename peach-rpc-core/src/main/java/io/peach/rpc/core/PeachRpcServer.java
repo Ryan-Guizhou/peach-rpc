@@ -389,7 +389,14 @@ public final class PeachRpcServer implements AutoCloseable {
                             "Server overloaded"));
         }
 
-        CompletableFuture<byte[]> result = new CompletableFuture<>();
+        CompletableFuture<byte[]> result =
+                new CompletableFuture<>();
+        if (observer.enabled()) {
+            observer.onServerInflightChanged(1);
+            result.whenComplete(
+                    (ignoredValue, ignoredError) ->
+                            observer.onServerInflightChanged(-1));
+        }
         RpcExecutionMode executionMode;
         try {
             executionMode = binding.executionMode(request.methodId());
@@ -458,6 +465,9 @@ public final class PeachRpcServer implements AutoCloseable {
                     result));
         } catch (RejectedExecutionException error) {
             admission.release();
+            if (observer.enabled()) {
+                observer.onServerInflightChanged(-1);
+            }
             observeAdmissionRejected(
                     request,
                     "cpu-queue");
