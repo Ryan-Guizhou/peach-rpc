@@ -10,6 +10,7 @@ import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.observability.RpcCertificateReloadOutcome;
 import io.peach.rpc.observability.RpcConnectionCloseReason;
 import io.peach.rpc.observability.RpcConnectionRole;
+import io.peach.rpc.observability.RpcFailureClassifier;
 import io.peach.rpc.observability.RpcObserver;
 import io.peach.rpc.observability.RpcRegistryOperation;
 import io.peach.rpc.observability.RpcRegistryRecoveryAction;
@@ -211,7 +212,12 @@ public final class MicrometerRpcObserver implements RpcObserver {
         timer(
                 "peach.rpc.client.attempts",
                 "status",
-                status.name())
+                status.name(),
+                "category",
+                RpcFailureClassifier.classify(
+                                status,
+                                error)
+                        .name())
                 .record(Duration.ofNanos(
                         Math.max(0L, durationNanos)));
         if (error != null || status != RpcStatus.OK) {
@@ -224,6 +230,45 @@ public final class MicrometerRpcObserver implements RpcObserver {
     }
 
     @Override
+    public void onClientCallCompleted(
+            ServiceKey serviceKey,
+            int methodId,
+            long durationNanos,
+            RpcStatus status,
+            Throwable error) {
+        timer(
+                "peach.rpc.client.calls",
+                "status",
+                status.name(),
+                "category",
+                RpcFailureClassifier.classify(
+                                status,
+                                error)
+                        .name())
+                .record(Duration.ofNanos(
+                        Math.max(0L, durationNanos)));
+    }
+
+    @Override
+    public void onClientCircuitRejected(
+            ServiceKey serviceKey,
+            int methodId) {
+        registry.counter(
+                "peach.rpc.client.circuit.rejected")
+                .increment();
+    }
+
+    @Override
+    public void onEndpointEjected(
+            ServiceKey serviceKey,
+            RpcEndpoint endpoint,
+            long ejectionMillis) {
+        registry.counter(
+                "peach.rpc.client.outlier.ejected")
+                .increment();
+    }
+
+    @Override
     public void onClientRetryScheduled(
             ServiceKey serviceKey,
             int methodId,
@@ -232,6 +277,18 @@ public final class MicrometerRpcObserver implements RpcObserver {
             Throwable cause) {
         registry.counter(
                         "peach.rpc.client.retries")
+                .increment();
+    }
+
+    @Override
+    public void onServerAdmissionRejected(
+            int serviceId,
+            int methodId,
+            String reason) {
+        registry.counter(
+                        "peach.rpc.server.admission.rejected",
+                        "reason",
+                        safe(reason))
                 .increment();
     }
 
@@ -248,7 +305,12 @@ public final class MicrometerRpcObserver implements RpcObserver {
                 "execution",
                 executionMode.name(),
                 "status",
-                status.name())
+                status.name(),
+                "category",
+                RpcFailureClassifier.classify(
+                                status,
+                                error)
+                        .name())
                 .record(Duration.ofNanos(
                         Math.max(0L, durationNanos)));
         if (error != null || status != RpcStatus.OK) {
