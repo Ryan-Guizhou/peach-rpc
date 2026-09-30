@@ -13,7 +13,7 @@ command_required() {
   command -v "$1" >/dev/null 2>&1 || fail "Required command not found: $1"
 }
 
-for command_name in git java mvn python3 openssl lscpu awk getconf; do
+for command_name in git java mvn python3 openssl lscpu awk getconf sha256sum; do
   command_required "$command_name"
 done
 
@@ -24,6 +24,20 @@ RUNNER_ID="${PEACH_RPC_RUNNER_ID:-}"
 [[ "$EVIDENCE_CLASS" == "controlled" ]] || fail "PEACH_RPC_EVIDENCE_CLASS must be controlled"
 [[ -n "$RUNNER_ID" ]] || fail "PEACH_RPC_RUNNER_ID is required"
 [[ "$RUNNER_ID" != "github-hosted-ephemeral" ]] || fail "A stable runner ID is required"
+EXPECTED_RUNNER_ID="${PEACH_RPC_EXPECT_RUNNER_ID:-}"
+if [[ -n "$EXPECTED_RUNNER_ID" && "$RUNNER_ID" != "$EXPECTED_RUNNER_ID" ]]; then
+  fail "Runner ID mismatch: expected '$EXPECTED_RUNNER_ID', actual '$RUNNER_ID'"
+fi
+
+host_identity_material=""
+if [[ -r /etc/machine-id ]]; then
+  host_identity_material="$(cat /etc/machine-id)"
+fi
+if [[ -r /sys/class/dmi/id/product_uuid ]]; then
+  host_identity_material="${host_identity_material}|$(cat /sys/class/dmi/id/product_uuid)"
+fi
+[[ -n "$host_identity_material" ]] || fail "Unable to derive a stable host identity"
+HOST_FINGERPRINT_SHA256="$(printf '%s' "$host_identity_material" | sha256sum | awk '{print $1}')"
 
 GIT_HEAD="$(git rev-parse HEAD)"
 EXPECTED_COMMIT="${PEACH_RPC_BENCHMARK_COMMIT:-$GIT_HEAD}"
@@ -95,6 +109,7 @@ run_id=$RUN_ID
 commit=$GIT_HEAD
 evidence_class=$EVIDENCE_CLASS
 runner_id=$RUNNER_ID
+host_fingerprint_sha256=$HOST_FINGERPRINT_SHA256
 cpu_model=$CPU_MODEL
 logical_cores=$LOGICAL_CORES
 physical_cores=$PHYSICAL_CORES
@@ -113,6 +128,7 @@ cat > "$OUTPUT_DIR/preflight.md" <<EOF
 - Run ID: `$RUN_ID`
 - Commit: `$GIT_HEAD`
 - Runner ID: `$RUNNER_ID`
+- Host fingerprint SHA-256: `$HOST_FINGERPRINT_SHA256`
 - CPU: `$CPU_MODEL`
 - Physical / logical cores: `$PHYSICAL_CORES / $LOGICAL_CORES`
 - Memory bytes: `$MEMORY_BYTES`
