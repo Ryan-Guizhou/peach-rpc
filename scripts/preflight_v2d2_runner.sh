@@ -38,6 +38,10 @@ if [[ -r /sys/class/dmi/id/product_uuid ]]; then
 fi
 [[ -n "$host_identity_material" ]] || fail "Unable to derive a stable host identity"
 HOST_FINGERPRINT_SHA256="$(printf '%s' "$host_identity_material" | sha256sum | awk '{print $1}')"
+EXPECTED_HOST_FINGERPRINT_SHA256="${PEACH_RPC_EXPECT_HOST_FINGERPRINT_SHA256:-}"
+if [[ -n "$EXPECTED_HOST_FINGERPRINT_SHA256" && "$HOST_FINGERPRINT_SHA256" != "$EXPECTED_HOST_FINGERPRINT_SHA256" ]]; then
+  fail "Host fingerprint mismatch: expected '$EXPECTED_HOST_FINGERPRINT_SHA256', actual '$HOST_FINGERPRINT_SHA256'"
+fi
 
 GIT_HEAD="$(git rev-parse HEAD)"
 EXPECTED_COMMIT="${PEACH_RPC_BENCHMARK_COMMIT:-$GIT_HEAD}"
