@@ -15,6 +15,7 @@ import io.peach.rpc.observability.RpcFailureClassifier;
 import io.peach.rpc.observability.RpcObserver;
 import io.peach.rpc.observability.RpcRegistryOperation;
 import io.peach.rpc.observability.RpcRegistryRecoveryAction;
+import io.peach.rpc.observability.RpcRetryExhaustionReason;
 import io.peach.rpc.observability.RpcSecurityMode;
 import java.time.Duration;
 import java.util.Objects;
@@ -322,6 +323,19 @@ public final class MicrometerRpcObserver implements RpcObserver {
                     "peach.rpc.client.timeouts")
                     .increment();
         }
+    }
+
+    @Override
+    public void onClientRetryExhausted(
+            ServiceKey serviceKey,
+            int methodId,
+            RpcRetryExhaustionReason reason,
+            Throwable cause) {
+        registry.counter(
+                        "peach.rpc.client.retry.exhausted",
+                        "reason",
+                        reason.name())
+                .increment();
     }
 
     @Override
