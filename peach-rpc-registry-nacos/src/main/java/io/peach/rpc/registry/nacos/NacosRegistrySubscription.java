@@ -206,6 +206,38 @@ final class NacosRegistrySubscription implements RegistrySubscription {
                 .toList();
     }
 
+    void reconcile() {
+        if (!readyForReconcile()) {
+            return;
+        }
+        try {
+            List<Instance> instances =
+                    namingService.getAllInstances(
+                            serviceName,
+                            group,
+                            List.of(cluster),
+                            false);
+            if (!readyForReconcile()) {
+                return;
+            }
+            publish(instances);
+        } catch (Exception error) {
+            LOGGER.debug(
+                    "Nacos subscription reconcile failed: service={}",
+                    serviceKey.canonicalName(),
+                    error);
+        }
+    }
+
+    private boolean readyForReconcile() {
+        synchronized (eventMonitor) {
+            return !closed.get()
+                    && initialized
+                    && !draining
+                    && eventQueue.isEmpty();
+        }
+    }
+
     boolean matches(ServiceKey key) {
         return serviceKey.equals(key);
     }
