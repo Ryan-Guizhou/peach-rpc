@@ -8,6 +8,7 @@ import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.registry.Registry;
+import io.peach.rpc.registry.RegistryContractTestKit;
 import io.peach.rpc.registry.RegistryOptions;
 import io.peach.rpc.registry.RegistrySnapshot;
 import java.time.Duration;
@@ -19,6 +20,37 @@ import org.junit.jupiter.api.Test;
 
 /** 真实 Nacos 服务发现集成测试。 */
 class NacosRegistryIntegrationTest {
+
+    @Test
+    void shouldSatisfySharedRegistryContract()
+            throws Exception {
+        Registry registry = registry(
+                endpoint(),
+                unique("PEACH_RPC_CONTRACT"),
+                "DEFAULT");
+        ServiceKey key = new ServiceKey(
+                "demo.NacosContract",
+                "1.0.0",
+                "contract");
+
+        try {
+            RegistryContractTestKit
+                    .verifyRegistrationDiscoverySubscription(
+                            registry,
+                            key,
+                            instance(
+                                    key,
+                                    "contract-a",
+                                    19112),
+                            instance(
+                                    key,
+                                    "contract-b",
+                                    19113),
+                            Duration.ofSeconds(20));
+        } finally {
+            registry.close();
+        }
+    }
 
     @Test
     void shouldRegisterSubscribeLookupAndUnregister()
