@@ -19,7 +19,11 @@ GA 不引入新的不兼容协议能力，重点完成：
 - 删除阶段性 V2 计划文档和失真状态；
 - 将性能 Evidence 的责任边界改为“官方性能/容量声明必须有证据”。
 
-## 3. 生产行为
+## 3. GA 稳定性修复
+
+- Nacos subscription 使用 NamingEvent 主通道 + 5 秒完整视图 reconcile 兜底，修复远端最后一个 Provider 注销时 empty snapshot 偶发不收敛的问题。
+
+## 4. 生产行为
 
 ### Consumer
 
@@ -53,7 +57,7 @@ GA 不引入新的不兼容协议能力，重点完成：
 - Grafana Dashboard；
 - Prometheus Alert Example。
 
-## 4. Compatibility
+## 5. Compatibility
 
 自动化验证：
 
@@ -65,7 +69,7 @@ N+1 Consumer -> N+1 Provider
 N+1 Consumer -> N Provider rollback
 ```
 
-## 5. 获取与验证
+## 6. 获取与验证
 
 源码：
 
@@ -81,6 +85,6 @@ mvn -B -ntp clean verify -Pquality
 - `SHA256SUMS`；
 - Artifact Inventory。
 
-## 6. 限制
+## 7. 限制
 
 见 [FAQ](faq.md) 和 [ROADMAP](../ROADMAP.md)。
