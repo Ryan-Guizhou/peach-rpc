@@ -354,6 +354,110 @@ class VertxRpcTransportTest {
     }
 
     @Test
+    void responseCancelRaceShouldNotCorruptConnection()
+            throws Exception {
+        int port = findFreePort();
+        RpcTransportOptions options = options(
+                Set.of(RpcCodecIds.FORY_NATIVE),
+                1);
+        VertxRpcTransportServer server =
+                new VertxRpcTransportServer(options);
+        VertxRpcTransportClient client =
+                new VertxRpcTransportClient(options);
+        RpcEndpoint endpoint =
+                new RpcEndpoint("127.0.0.1", port);
+        AtomicReference<CompletableFuture<byte[]>> pending =
+                new AtomicReference<>();
+        AtomicReference<byte[]> pendingRequest =
+                new AtomicReference<>();
+        CountDownLatch handled = new CountDownLatch(1);
+
+        try {
+            server.start(endpoint, (remote, requestBytes) -> {
+                        CompletableFuture<byte[]> race =
+                                pending.getAndSet(null);
+                        if (race != null) {
+                            pendingRequest.set(requestBytes);
+                            handled.countDown();
+                            return race;
+                        }
+                        return CompletableFuture.completedFuture(
+                                response(
+                                        requestBytes,
+                                        new byte[] {7, 7, 7}));
+                    })
+                    .toCompletableFuture()
+                    .join();
+
+            for (int iteration = 0;
+                    iteration < 20;
+                    iteration++) {
+                CompletableFuture<byte[]> provider =
+                        new CompletableFuture<>();
+                pending.set(provider);
+
+                CompletableFuture<byte[]> call =
+                        client.request(
+                                        endpoint,
+                                        request(),
+                                        Duration.ofSeconds(2))
+                                .toCompletableFuture();
+
+                assertTrue(
+                        handled.await(
+                                2,
+                                TimeUnit.SECONDS));
+
+                CountDownLatch start =
+                        new CountDownLatch(1);
+                CompletableFuture<Void> cancel =
+                        CompletableFuture.runAsync(() -> {
+                            awaitUnchecked(start);
+                            call.cancel(true);
+                        });
+                CompletableFuture<Void> respond =
+                        CompletableFuture.runAsync(() -> {
+                            awaitUnchecked(start);
+                            provider.complete(response(
+                                    pendingRequest.get(),
+                                    new byte[] {1, 2, 3}));
+                        });
+
+                start.countDown();
+                CompletableFuture.allOf(
+                                cancel,
+                                respond)
+                        .join();
+
+                try {
+                    call.join();
+                } catch (java.util.concurrent.CancellationException
+                        | CompletionException ignored) {
+                    // Either side may win this intentional race.
+                }
+
+                byte[] probe = client.request(
+                                endpoint,
+                                request(),
+                                Duration.ofSeconds(2))
+                        .toCompletableFuture()
+                        .join();
+                assertArrayEquals(
+                        new byte[] {7, 7, 7},
+                        RpcProtocolCodec.decode(
+                                        probe)
+                                .payload());
+
+                handled = new CountDownLatch(1);
+                pendingRequest.set(null);
+            }
+        } finally {
+            client.close();
+            server.close();
+        }
+    }
+
+    @Test
     void gracefulDrainShouldWaitForInflightRequest()
             throws Exception {
         int port = findFreePort();
@@ -654,6 +758,21 @@ class VertxRpcTransportTest {
             }
         } finally {
             server.close();
+        }
+    }
+
+    private static void awaitUnchecked(
+            CountDownLatch latch) {
+        try {
+            if (!latch.await(
+                    2,
+                    TimeUnit.SECONDS)) {
+                throw new AssertionError(
+                        "Race barrier timed out");
+            }
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError(error);
         }
     }
 
