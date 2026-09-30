@@ -141,7 +141,7 @@ def check_required_files() -> None:
 
 
 def check_release_status() -> None:
-    status = properties(ROOT / "docs" / "capability-status.properties")
+    status = properties(ROOT / "docs" / "release-status.properties")
     expected = {
         "project": "ga",
         "version": "1.0.0",
