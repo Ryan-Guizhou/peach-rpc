@@ -14,6 +14,7 @@ import io.peach.rpc.observability.RpcConnectionCloseReason;
 import io.peach.rpc.observability.RpcConnectionRole;
 import io.peach.rpc.observability.RpcObserver;
 import io.peach.rpc.protocol.RpcFrame;
+import io.peach.rpc.protocol.RpcHandshakeCodec;
 import io.peach.rpc.protocol.RpcMessageType;
 import io.peach.rpc.protocol.RpcProtocolCodec;
 import io.peach.rpc.protocol.RpcProtocolException;
@@ -352,6 +353,191 @@ class VertxRpcTransportTest {
                             .payload());
         } finally {
             client.close();
+            server.close();
+        }
+    }
+
+    @Test
+    void serverShouldRejectRequestBeforeHello()
+            throws Exception {
+        int port = findFreePort();
+        RpcTransportOptions options = options(
+                Set.of(RpcCodecIds.FORY_NATIVE),
+                1);
+        VertxRpcTransportServer server =
+                new VertxRpcTransportServer(options);
+        RpcEndpoint endpoint =
+                new RpcEndpoint("127.0.0.1", port);
+
+        try {
+            server.start(
+                            endpoint,
+                            (remote, requestBytes) ->
+                                    CompletableFuture.completedFuture(
+                                            response(
+                                                    requestBytes,
+                                                    new byte[] {1})))
+                    .toCompletableFuture()
+                    .join();
+
+            try (Socket socket =
+                         new Socket(
+                                 endpoint.host(),
+                                 endpoint.port())) {
+                socket.setSoTimeout(2000);
+                byte[] request = request();
+                RpcProtocolCodec.writeRequestId(
+                        request,
+                        1L);
+                socket.getOutputStream().write(request);
+                socket.getOutputStream().flush();
+
+                assertProtocolGoAway(readFrame(socket));
+            }
+        } finally {
+            server.close();
+        }
+    }
+
+    @Test
+    void serverShouldRejectMalformedFramesAfterHandshake()
+            throws Exception {
+        int port = findFreePort();
+        RpcTransportOptions options = options(
+                Set.of(RpcCodecIds.FORY_NATIVE),
+                1);
+        VertxRpcTransportServer server =
+                new VertxRpcTransportServer(options);
+        RpcEndpoint endpoint =
+                new RpcEndpoint("127.0.0.1", port);
+
+        try {
+            server.start(
+                            endpoint,
+                            (remote, requestBytes) ->
+                                    CompletableFuture.completedFuture(
+                                            response(
+                                                    requestBytes,
+                                                    new byte[] {1})))
+                    .toCompletableFuture()
+                    .join();
+
+            byte[] zeroRequestId = request();
+
+            byte[] unknownCodec = request();
+            RpcProtocolCodec.writeRequestId(
+                    unknownCodec,
+                    2L);
+            unknownCodec[7] = 127;
+
+            byte[] unsupportedCompression = request();
+            RpcProtocolCodec.writeRequestId(
+                    unsupportedCompression,
+                    3L);
+            unsupportedCompression[8] = 1;
+
+            byte[] invalidCancel =
+                    RpcProtocolCodec.encode(
+                            new RpcFrame(
+                                    RpcMessageType.CANCEL,
+                                    RpcCodecIds.CONTROL,
+                                    RpcStatus.OK,
+                                    0L,
+                                    0,
+                                    0,
+                                    Map.of(),
+                                    new byte[0]));
+
+            byte[] invalidHeartbeat =
+                    RpcProtocolCodec.encode(
+                            new RpcFrame(
+                                    RpcMessageType.PING,
+                                    RpcCodecIds.CONTROL,
+                                    RpcStatus.OK,
+                                    0L,
+                                    0,
+                                    0,
+                                    Map.of(),
+                                    new byte[] {1}));
+
+            for (byte[] malformed :
+                    new byte[][] {
+                            zeroRequestId,
+                            unknownCodec,
+                            unsupportedCompression,
+                            invalidCancel,
+                            invalidHeartbeat
+                    }) {
+                assertRejectedAfterHandshake(
+                        endpoint,
+                        options,
+                        malformed);
+            }
+        } finally {
+            server.close();
+        }
+    }
+
+    @Test
+    void serverShouldRejectConcurrentDuplicateRequestId()
+            throws Exception {
+        int port = findFreePort();
+        RpcTransportOptions options = options(
+                Set.of(RpcCodecIds.FORY_NATIVE),
+                1);
+        VertxRpcTransportServer server =
+                new VertxRpcTransportServer(options);
+        RpcEndpoint endpoint =
+                new RpcEndpoint("127.0.0.1", port);
+        CompletableFuture<byte[]> first =
+                new CompletableFuture<>();
+        CountDownLatch handled =
+                new CountDownLatch(1);
+        AtomicInteger invocations =
+                new AtomicInteger();
+
+        try {
+            server.start(endpoint, (remote, requestBytes) -> {
+                        invocations.incrementAndGet();
+                        handled.countDown();
+                        return first;
+                    })
+                    .toCompletableFuture()
+                    .join();
+
+            try (Socket socket =
+                         new Socket(
+                                 endpoint.host(),
+                                 endpoint.port())) {
+                socket.setSoTimeout(2000);
+                performRawHandshake(
+                        socket,
+                        options);
+
+                byte[] duplicate = request();
+                RpcProtocolCodec.writeRequestId(
+                        duplicate,
+                        77L);
+                socket.getOutputStream().write(
+                        duplicate);
+                socket.getOutputStream().flush();
+                assertTrue(
+                        handled.await(
+                                2,
+                                TimeUnit.SECONDS));
+
+                socket.getOutputStream().write(
+                        duplicate);
+                socket.getOutputStream().flush();
+
+                assertProtocolGoAway(
+                        readFrame(socket));
+                assertEquals(
+                        1,
+                        invocations.get());
+            }
+        } finally {
+            first.cancel(true);
             server.close();
         }
     }
@@ -764,6 +950,100 @@ class VertxRpcTransportTest {
         } finally {
             server.close();
         }
+    }
+
+    private static void assertRejectedAfterHandshake(
+            RpcEndpoint endpoint,
+            RpcTransportOptions options,
+            byte[] malformed) throws Exception {
+        try (Socket socket =
+                     new Socket(
+                             endpoint.host(),
+                             endpoint.port())) {
+            socket.setSoTimeout(2000);
+            performRawHandshake(
+                    socket,
+                    options);
+            socket.getOutputStream().write(
+                    malformed);
+            socket.getOutputStream().flush();
+
+            assertProtocolGoAway(
+                    readFrame(socket));
+        }
+    }
+
+    private static void performRawHandshake(
+            Socket socket,
+            RpcTransportOptions options) throws Exception {
+        RpcFrame hello = new RpcFrame(
+                RpcMessageType.HELLO,
+                RpcCodecIds.CONTROL,
+                RpcStatus.OK,
+                0L,
+                0,
+                0,
+                Map.of(),
+                RpcHandshakeCodec.encode(
+                        options.capabilities()));
+        socket.getOutputStream().write(
+                RpcProtocolCodec.encode(hello));
+        socket.getOutputStream().flush();
+
+        RpcFrame ack = RpcProtocolCodec.decode(
+                readFrame(socket));
+        assertEquals(
+                RpcMessageType.HELLO_ACK,
+                ack.messageType());
+        assertEquals(
+                RpcStatus.OK,
+                ack.status());
+    }
+
+    private static void assertProtocolGoAway(
+            byte[] bytes) {
+        RpcFrame frame =
+                RpcProtocolCodec.decode(bytes);
+        assertEquals(
+                RpcMessageType.GO_AWAY,
+                frame.messageType());
+        assertEquals(
+                RpcStatus.BAD_REQUEST,
+                frame.status());
+    }
+
+    private static byte[] readFrame(
+            Socket socket) throws Exception {
+        byte[] header =
+                socket.getInputStream()
+                        .readNBytes(
+                                RpcProtocolCodec.HEADER_LENGTH);
+        assertEquals(
+                RpcProtocolCodec.HEADER_LENGTH,
+                header.length);
+        int frameLength =
+                RpcProtocolCodec.expectedFrameLength(
+                        header);
+        byte[] frame =
+                java.util.Arrays.copyOf(
+                        header,
+                        frameLength);
+        int bodyLength =
+                frameLength
+                        - RpcProtocolCodec.HEADER_LENGTH;
+        byte[] body =
+                socket.getInputStream()
+                        .readNBytes(bodyLength);
+        assertEquals(
+                bodyLength,
+                body.length);
+        System.arraycopy(
+                body,
+                0,
+                frame,
+                RpcProtocolCodec.HEADER_LENGTH,
+                bodyLength);
+        return frame;
     }
 
     private static void awaitUnchecked(
