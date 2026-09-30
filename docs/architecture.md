@@ -1,16 +1,16 @@
-# Peach RPC 架构设计
+# Peach RPC 1.0 架构设计
 
-## 1. 设计目标
+> 状态：**Current / 1.0.0 GA**
 
-Peach RPC 的长期目标是高吞吐、低尾延迟、高并发和可控资源使用，同时保持清晰扩展边界。
+## 1. 核心原则
 
-核心原则：
+Peach RPC 的设计目标是高吞吐、低尾延迟、可控资源和可预测故障行为，同时维持清晰扩展边界。
 
 > 能在编译期确定的信息，不放到启动阶段；能在启动阶段绑定的信息，不放进单次 RPC 热路径。
 
-## 2. 当前模块边界
+## 2. 模块边界
 
-当前 Reactor 保留 15 个具有真实依赖隔离价值的顶层模块。V2-C.3 新增 Micrometer、OpenTelemetry、JFR 三个 Adapter 模块，只用于隔离第三方观测依赖；编译期 Codegen、Vert.x、Etcd、Nacos、Fory、CGLIB、Byte Buddy、观测框架与 Spring 均不把第三方类型泄漏到 Core 公共契约。
+当前 Reactor 有 15 个顶层模块。Core 不泄漏 Vert.x、Etcd、Nacos、Fory、Spring、Micrometer、OpenTelemetry、JFR 等第三方类型。
 
 ```mermaid
 flowchart TB
@@ -34,175 +34,220 @@ flowchart TB
     Obs --> Metrics[Micrometer Adapter]
     Obs --> Tracing[OpenTelemetry Adapter]
     Obs --> Jfr[JFR Adapter]
-    Core -. fallback .-> JDK[JDK Proxy]
-    Core -. optional fallback .-> Cglib[CGLIB]
-    Core -. optional fallback .-> ByteBuddy[Byte Buddy]
+    Core -. fallback .-> Cglib[CGLIB / Byte Buddy]
 ```
+
+完整模块责任见 [项目构造思路](project-structure.md)。
 
 ## 3. Consumer 数据面
 
-`refer()` 阶段预计算：
+`refer()` 阶段预绑定：
 
-1. Service ID；
-2. Method ID 与冲突检测；
-3. ServiceDirectory；
-4. RpcMethodDescriptor；
-5. RpcMethodCodec；
-6. Generated Consumer Factory。
+- Service/Method identity；
+- `RpcMethodDescriptor`；
+- `RpcMethodCodec`；
+- Generated Consumer Factory 或 Proxy fallback；
+- ServiceDirectory；
+- LoadBalancer；
+- Method Circuit Breaker。
 
-请求热路径：
+单次调用：
 
 ```mermaid
 flowchart LR
-    Stub[Generated Stub] --> CallSite[invoke0..4 / invokeN]
-    CallSite --> Codec[Pre-bound Method Codec]
-    Codec --> Directory[ServiceInstance array snapshot]
-    Directory --> LB[P2C + EWMA]
-    LB --> Encode[Unary Request Fast Encode]
-    Encode --> Group[Endpoint Connection Group]
-    Group --> Conn[Event-loop Connection]
-    Conn --> Pending[Connection-local Pending Table]
-    Pending --> TCP[TCP]
+    Stub[Generated Stub / Proxy]
+    Call[Logical Call]
+    Dir[ServiceInstance[] Snapshot]
+    Compat[Compatibility Filtered]
+    LB[P2C + EWMA]
+    Codec[Method Codec]
+    Conn[Endpoint Connection]
+    Pending[Connection-local Pending]
+    Wire[Wire v1]
+
+    Stub --> Call --> Dir --> Compat --> LB --> Codec --> Conn --> Pending --> Wire
 ```
 
-默认 P2C/EWMA 直接读取 `ServiceInstance[]` 和实时 EndpointStats，不构造临时候选 List。V2-B.1 起 EndpointStats 还承载本地 Outlier Ejection 状态，被临时剔除的实例不会进入默认 P2C 候选。方法绑定同时持有独立 Circuit Breaker；自动重试只允许显式 `@PeachRpcIdempotent` 方法，并受 Retry Budget 与逻辑 Deadline 约束。
+热路径不访问 Registry，不扫描 SPI，不解析配置。
 
 ## 4. Provider 数据面
 
-Provider 注册阶段优先发现 Generated Server Dispatcher。存在生成代码时不构建 MethodHandle 调用路径；不存在时使用 MethodHandle fallback。
-
-请求处理：
-
 ```text
 FrameAccumulator
- -> RpcFrameView
- -> deadline / serviceId / methodId / codec
+ -> RpcFrameView / protocol validation
+ -> connection-local request tracking
  -> admission
- -> payload slice decode
+ -> service/method binding
+ -> payload decode
  -> generated dispatcher or MethodHandle fallback
- -> business execution
- -> unary response fast encode
+ -> execution policy
+ -> response encode
 ```
 
-Provider 业务执行按方法绑定为三类资源策略：
+执行模式：
 
-- `BLOCKING_VIRTUAL`：默认；进入受全局 admission 保护的虚拟线程，适合 JDBC、文件、同步 HTTP/SDK；
-- `CPU`：进入有界固定线程池，线程数与队列容量可配置，队列满时返回 OVERLOADED；
-- `DIRECT`：直接在 Transport Event Loop 执行，只适合极短且确定不阻塞的纯内存逻辑；默认禁止，必须 Provider 显式允许。
+- `BLOCKING_VIRTUAL`：默认；
+- `CPU`：有界固定线程池；
+- `DIRECT`：默认关闭，必须显式允许。
 
-Transport 收到 CANCEL 后取消 connection-local inflight Future，Core 再中断可取消的 Provider 执行任务。
+## 5. Wire v1
 
-## 5. 连接模型
+Wire 由固定 Header、Metadata、Payload 构成。
 
-Vert.x Client 为每个 Endpoint 维护可配置数量的连接分片。
+数据帧：
 
-每条连接拥有 Event Loop 本地状态：
+- REQUEST；
+- RESPONSE。
 
-- Request ID counter；
-- pending HashMap；
-- inflight；
-- FrameAccumulator；
-- negotiated capabilities。
+控制帧：
 
-启用 TLS/mTLS 时，TLS handshake 和证书校验先于 Peach RPC HELLO；明文模式则直接进入 HELLO / HELLO_ACK。Client/Server 均设置协议 handshake timeout，TLS 还有独立 SSL handshake timeout。V2-C.2 起 HEARTBEAT 作为握手 Feature 协商：双方都支持时，空闲连接使用 PING/PONG 主动检测 silent/half-open connection；异常连接由 Consumer 在下一次业务请求时通过单飞连接槽重建，并使用 exponential backoff + full jitter。
+- HELLO；
+- HELLO_ACK；
+- PING；
+- PONG；
+- CANCEL；
+- GO_AWAY。
+
+1.0.x 冻结 Wire v1。详见 [协议](protocol.md)。
+
+## 6. Stable Type ID 与 Schema
+
+`RpcTypeIds` 根据规范化 Java Type 计算稳定 ID：
+
+- 1..1023：Framework；
+- 1024..2147483646：User Contract。
+
+`RpcTypeRegistry` 在方法绑定阶段做冲突检测。
+
+`RpcSchemaFingerprint` 使用 SHA-256 计算服务契约 Fingerprint，并在 Registry Metadata 发布：
+
+```text
+peach.rpc.protocol.version
+peach.rpc.schema.version
+peach.rpc.schema.fingerprint
+```
+
+Consumer 在 Snapshot 更新阶段做 compatibility filtering，不增加单次 RPC 热路径判断。
+
+## 7. Registry 控制面
+
+Consumer 使用本地 `ServiceDirectory`。Registry Adapter 只负责更新 Snapshot。
+
+### Etcd
+
+- Range；
+- Watch；
+- Lease；
+- keepalive；
+- TTL watchdog；
+- compaction recovery；
+- restart recovery；
+- leader transfer Chaos。
+
+### Nacos
+
+- temporary instance；
+- lookup / subscribe；
+- namespace / group / cluster；
+- weight / metadata；
+- health/enabled filter；
+- local unregister convergence；
+- remote NamingEvent convergence；
+- pause/unpause Chaos。
+
+## 8. Connection 生命周期
 
 ```mermaid
 stateDiagram-v2
     [*] --> Connecting
-    Connecting --> TLSHandshake: TLS/mTLS enabled
-    Connecting --> Handshaking: PLAINTEXT
-    TLSHandshake --> Handshaking: certificate verified
-    TLSHandshake --> Closed: TLS rejected/timeout
-    Handshaking --> Active: HELLO/ACK negotiated
-    Handshaking --> Closed: timeout/rejected
-    Active --> HeartbeatWait: idle / PING
-    HeartbeatWait --> Active: inbound / PONG
+    Connecting --> TLSHandshake: TLS/mTLS
+    Connecting --> Handshake: PLAINTEXT
+    TLSHandshake --> Handshake: verified
+    TLSHandshake --> Closed: error/timeout
+    Handshake --> Active: HELLO/ACK
+    Handshake --> Closed: error/timeout
+    Active --> HeartbeatWait: idle/PING
+    HeartbeatWait --> Active: inbound/PONG
     HeartbeatWait --> Closed: heartbeat timeout
-    Active --> Draining: GO_AWAY(UNAVAILABLE)
+    Active --> Draining: GO_AWAY
     Draining --> Closed: inflight=0/timeout
-    Active --> Closed: fatal error/close
+    Active --> Closed: fatal error
 ```
 
-正常 Provider 关闭时先从 Registry 注销实例，再对已有连接进入 Draining；新请求不再接收，已有 inflight 允许完成。Graceful GO_AWAY 不计作异常连接恢复失败，因此不会污染 reconnect backoff。
+异常连接通过 request-driven reconnect、exponential backoff 和 full jitter 重建。
 
-Consumer 的逻辑 timeout 还覆盖连接获取与 HELLO/ACK。Request 同时携带旧 `deadlineEpochMillis` 与 V2-C.2 新增的 `timeoutBudgetMillis`，新 Provider 优先使用相对预算语义避免跨节点 wall-clock 偏差；旧节点仍可按绝对 Deadline 工作。
+## 9. Timeout / Retry / Circuit / Outlier
 
-## 6. Codec 边界
+### Timeout
 
-`RpcCodec` 是启动期 SPI，`RpcMethodCodec` 是方法级热路径绑定。
+Consumer 的 logical Deadline 覆盖连接获取、HELLO/ACK 和请求。
 
-Fory 当前支持 payload slice decode，但为了保持 Codec ID 1 wire compatibility，参数对象图仍以 Object[] 表示。
+### Retry
 
-显式 Fory 类型注册尚未启用。稳定 Type ID、冲突检测和滚动升级兼容策略必须先完成，不能依赖 Classpath 或注册顺序。
+仅 `@PeachRpcIdempotent` 方法允许自动 Retry，并受：
 
-## 7. 协议快路径
+- max attempts；
+- Retry Budget；
+- Deadline；
+- backoff + jitter。
 
-控制帧继续使用通用 `RpcFrame` 编码。
+### Circuit
 
-Unary 数据面使用专用：
+方法级 CLOSED/OPEN/HALF_OPEN；HALF_OPEN 只允许一个并发 probe。
 
-```java
-RpcProtocolCodec.encodeRequest(...);
-RpcProtocolCodec.encodeResponse(...);
-```
+### Outlier
 
-Request deadline 直接写 ASCII metadata，不创建 Map/Long String/StringBuilder。接收端 `RpcFrameView` 不复制 Metadata/Payload。
+Endpoint 基础设施失败可触发临时本地剔除。
 
-## 8. 可观测性边界
+## 10. Graceful Shutdown
 
-Core 提供低依赖 `RpcObserver`、`RpcTracingBridge` 与 `RpcMetadataPropagator`，不依赖 Micrometer、OpenTelemetry 或 JFR。当前覆盖：
+Provider 关闭顺序：
 
-- Consumer attempt/retry；
-- Provider invocation；
-- connection established/reconnect/heartbeat timeout/closed；
-- Registry register/unregister/lookup/subscribe 与 Etcd recovery；
-- TLS handshake；
-- certificate reload/expiry warning；
-- W3C Trace Context/Baggage metadata 传播。
+1. Registry unregister；
+2. GO_AWAY；
+3. stop accepting new request；
+4. wait inflight；
+5. close transport/runtime。
 
-V2-C.3 的三个独立 Adapter：
+## 11. Security
 
-- `peach-rpc-observability-micrometer`：标准 metrics；
-- `peach-rpc-observability-opentelemetry`：CLIENT/SERVER Span 与 W3C propagation；
-- `peach-rpc-observability-jfr`：慢调用、恢复、TLS/Registry 等低频运行诊断。
+TLS/mTLS handshake 先于 Peach RPC HELLO。Consumer 默认开启 hostname verification。TLS 失败不会降级为 PLAINTEXT。
 
-默认 NOOP 路径不创建 Trace Metadata。Observer/Propagator 的运行时异常被隔离，不能反向破坏 RPC 主链。
+## 12. Observability
 
-## 9. 控制面
+Core 定义低依赖：
 
-Registry 仍然只位于控制面。Consumer 热路径不访问 Etcd 或 Nacos。Nacos Java SDK 的阻塞调用运行在 Adapter 私有有界控制面执行器中，回调被归一化为有序 `RegistrySnapshot` 后再发布给 Core。
+- `RpcObserver`；
+- `RpcTracingBridge`；
+- `RpcMetadataPropagator`。
 
-`ServiceDirectory` 在 Registry snapshot 更新时转换为数组快照，旧 revision 被忽略。Nacos Adapter 对相同视图去重并生成进程内单调 revision。独立 JVM E2E 已验证 Nacos Server restart 期间既有数据连接继续使用 last-known-good 目录；Nacos 恢复后 Provider 临时实例重新注册，Consumer subscription 重新建立并接收 Endpoint 变化。
+Adapter：
 
-Etcd Adapter 的 Watch 出错后会重新 Range 当前快照，再从有效 revision 建立新 Watch；真实 compaction 测试验证 stale revision 可恢复。Lease 主路径依赖 keepalive stream，另有低频 TTL watchdog 识别静默失效；grant 有显式超时，lease-loss 回调按 active leaseId 校验，避免旧 Lease 的迟到回调误伤新 Lease。3 节点 leader transfer 由独立 Chaos workflow 验证。
+- Micrometer；
+- OpenTelemetry；
+- JFR。
 
-## 10. V2-B.1 已补齐的生产行为
+Telemetry callback 异常会被隔离。
 
-- CANCEL 已真实传播，并能中断 Provider 虚拟线程任务；
-- 仅 `@PeachRpcIdempotent` 方法可进入受 Retry Budget 约束的自动重试；
-- Endpoint Outlier Ejection 与方法级 Circuit Breaker 已接入 Consumer 数据面；
-- GO_AWAY 已区分 fatal error 与 graceful drain；
-- Provider 关闭先注销 Registry，再等待 inflight 排空；
-- 已建立 Raw Vert.x / 完整 RPC 端到端延迟基线；
-- Provider execution policy 已拆分 BLOCKING_VIRTUAL / CPU / guarded DIRECT；
-- 已建立低依赖 RpcObserver 生命周期契约；
-- Etcd Adapter 已有真实 Etcd 注册、Watch、namespace 与 Lease 集成测试。
+## 13. 自动化验证
 
-## 11. 当前明确未完成
+- Unit/Property/Race；
+- Registry Contract TestKit；
+- Etcd/Nacos Integration；
+- TLS/mTLS；
+- OpenTelemetry RPC E2E；
+- Independent JVM Examples；
+- Etcd/Nacos Chaos；
+- Rolling Compatibility；
+- Benchmark/10k soak；
+- Release Readiness。
 
-- Transport/Core 仍以 byte[] frame 为边界；
-- FrameAccumulator 仍需产出完整 byte[]；
-- Fory 参数仍存在 Object[]；
-- TLS/mTLS 已接入 Vert.x Transport，并支持 PEM 有效期校验、Hostname Verification、mTLS ClientAuth 和在线 SSL material Reload；
-- Micrometer/OpenTelemetry/JFR Adapter 已独立接入，真实 RPC Trace E2E 验证跨 wire 父子 Span；
-- Etcd/Nacos 网络黑洞、partition 与长时间恢复 soak 仍需补强；
-- Fory 稳定 Type ID / Schema fingerprint 未实现。
+## 14. 已知限制
 
-详细热路径说明见 [V2-B 实现说明](high-performance-kernel-v2b.md) 与 [V2-B.1 生产内核第一批](production-kernel-v2b1.md)。
+- Unary only；
+- Fory Native 主要面向 Java；
+- Compression 仅 NONE；
+- Transport/Core 仍以完整 `byte[]` frame 为边界；
+- 官方性能/容量数字需要固定环境 Evidence。
 
-
-## 12. 注解驱动运行时
-
-Spring 侧不再把整个进程固定为 Provider 或 Consumer。第一次发现 `@PeachRpcReference` 时才创建 Client；第一次发现 `@PeachRpcService` 时创建 Server 并注册服务，随后由 `SmartLifecycle` 在所有 singleton 服务完成初始化后统一启动。
-
-Provider 的监听端点与 Registry 发布端点分离。绑定通配地址时必须配置 `advertised-host`，动态监听端口则在 Transport 启动后解析实际端口再进行注册。
+更完整的设计权衡见 [技术方案](technical-solution.md) 与 [详细设计](detailed-design.md)。
