@@ -1,197 +1,148 @@
-# Peach RPC 发布策略与 Production Operations
+# Peach RPC 1.0 发布策略
 
-<!-- capability-status:v2-g2=engineering-ready -->
-
-> 状态：**Engineering Current / 1.0 RC Not Yet Declared**  
-> 本文定义 V2-G.2 发布工程。当前项目仍是 Preview，不因发布工具齐全自动升级为 Production Ready。
+> 状态：**1.0.0 GA**
 
 ## 1. 版本阶段
 
-~~~text
-0.1.x Preview
-    |
-V2-D/E/F/G Engineering Gates
-    |
-1.0.0-RC1
-    |
-RC validation
-    |
-1.0.0 GA
-~~~
+```mermaid
+stateDiagram-v2
+    Preview: 0.x Preview
+    RC: 1.0.0-RC1
+    GA: 1.0.0 GA
+    Maint: 1.0.x Maintenance
 
-V2-G.2 完成不等于 1.0.0-RC1。RC1 仍要求所有外部 Evidence/Chaos/Compatibility 门禁满足。
+    Preview --> RC: contract freeze + gates green
+    RC --> GA: stabilization + docs + release readiness
+    GA --> Maint: patch/security fixes
+```
 
-## 2. 发布前 Gate
+## 2. RC1
 
-发布候选至少需要：
+`1.0.0-RC1` 的目的不是增加功能，而是冻结 1.0.x 契约：
 
-### Repository
-
-- scripts/check_project.py PASS；
-- 中英文 README 同步；
-- 本地 Markdown Link PASS；
-- Core 第三方依赖边界 PASS。
-
-### Build
-
-- JDK 21；
-- Maven 3.9+；
-- mvn clean verify -Pquality PASS；
-- Javadoc Warning = 0；
-- Source JAR 可生成；
-- Reactor 模块与 Parent 版本一致。
-
-### Compatibility
-
-- Stable Type ID 规则存在；
-- Schema Fingerprint 规范存在；
-- N/N+1 Compatibility Matrix 存在；
-- Upgrade/Rollback Runbook 存在；
-- 不兼容业务 Schema 使用新的 ServiceKey.version。
-
-### Performance
-
-进入 RC 前必须：
-
-- E1 Handoff PASS；
-- E2 Repeatability PASS；
-- Baseline Candidate 完成 Engineering Review；
-- 若 V2-D.3 有实际优化，D4 Closure PASS；
-- Capacity Planning 使用真实固定硬件数字。
-
-### Robustness
-
-- Protocol malformed/truncation/property tests PASS；
-- Transport cancel/drain/heartbeat/reconnect PASS；
-- Etcd Chaos PASS；
-- Nacos Chaos PASS；
-- 长时间 fixed-environment recovery/soak 的外部门禁满足。
-
-### Operations
-
-- Production Configuration Guide；
-- Dashboard；
-- Alert template；
-- SLO template；
-- Security Guide；
-- Upgrade/Rollback Guide。
-
-## 3. Artifact
-
-正式 Release 需要验证：
-
-- peach-rpc-core；
-- Codec/Transport/Registry/Proxy/Observability Adapters；
-- Spring Boot autoconfigure/starter；
-- source JAR；
-- Javadoc；
-- POM/flattened metadata；
-- Examples 不作为应用依赖发布入口；
-- Benchmarks 不作为业务 Starter 传递依赖。
-
-## 4. Version Policy
-
-### Preview
-
-0.1.x 允许在明确 Release Notes 下调整未冻结 API/Wire 行为。
-
-### RC1
-
-进入 1.0.0-RC1 后冻结：
-
-- Wire Protocol v1；
+- Wire v1；
 - Public Core API；
-- Stable Type ID range/algorithm；
+- Stable Type ID；
 - Schema Fingerprint v1；
-- 保留 Metadata key；
-- Codec/Message Type 已分配编号。
+- Registry compatibility metadata；
+- Codec/Message Type 编号。
 
-### GA
+RC1 必须通过：
+
+- CI；
+- Release Readiness；
+- Etcd Chaos；
+- Nacos Chaos；
+- Rolling Compatibility；
+- Independent JVM Examples。
+
+## 3. GA
+
+`1.0.0` 在 RC1 冻结边界上完成：
+
+- Blocker/Major 问题清零；
+- README/Quick Start/Design/Operations 文档收口；
+- CHANGELOG/Security/Contribution/Code of Conduct；
+- Maven release metadata；
+- Release Bundle + SHA256；
+- 公开已知限制；
+- 自动 Release Workflow。
+
+GA 不要求伪造统一的生产性能数字。没有固定环境 Evidence 时，禁止发布官方 QPS/SLO/容量承诺。
+
+## 4. 1.0.x 兼容策略
 
 1.0.x 默认只接受：
 
 - Bug fix；
 - Security fix；
-- 不破坏兼容的 Observability/Operational improvement。
+- 文档和示例改进；
+- 不破坏兼容的 Observability/Operations enhancement。
 
-破坏兼容的 Wire 或 API 修改进入新的兼容版本规划。
+破坏 Wire/API/Stable Type/Schema 的改动必须进入新的兼容版本规划。
 
-## 5. Deprecation Policy
+## 5. Deprecation
 
-公开 API 弃用必须：
+公开 API 弃用：
 
-1. 先标记 Deprecated；
-2. Release Notes 解释替代入口；
+1. 标记 Deprecated；
+2. Release Notes 说明替代入口；
 3. 至少跨一个 Minor Release 保留；
-4. 删除前确认下一个兼容边界。
+4. 删除前明确兼容边界。
 
-Wire 编号和 Registry Metadata key 不通过普通 Java Deprecated 流程复用。
+Wire ID、Codec ID、Message Type、Registry Metadata key 不通过普通 Deprecated 流程复用。
 
-## 6. Release Notes
+## 6. Artifact
 
-每个 Release Notes 至少列出：
+Release Workflow 生成：
+
+- 编译后的 Reactor JAR；
+- Source JAR；
+- Javadoc JAR；
+- Release Notes；
+- CHANGELOG；
+- LICENSE；
+- Artifact Inventory；
+- SHA256SUMS；
+- 压缩 Release Bundle。
+
+Examples/Benchmarks 不作为业务 Starter 的传递依赖。
+
+## 7. Release Workflow
+
+人工触发 `.github/workflows/release.yml`：
+
+- `stage=rc1` -> `1.0.0-RC1`；
+- `stage=ga` -> `1.0.0`；
+- `publish=false` 只验证和生成 Artifact；
+- `publish=true` 在全部 gate 通过后创建 GitHub Release。
+
+## 8. Secret 与日志
+
+发布前确认：
+
+- 私钥不进入 Artifact；
+- Registry Password/Token 不进入日志；
+- Runtime log 为英文；
+- Dashboard/Alert 不包含 Secret；
+- Benchmark 证书/私钥不进入 Evidence Bundle。
+
+## 9. 性能声明
+
+可以发布：
+
+- Benchmark 方法；
+- Evidence 工具；
+- 使用者自己的测量结果。
+
+只有受控固定环境、可重复 Evidence 才能晋级：
+
+- 官方 QPS/Core；
+- p99/p99.9；
+- Production Capacity profile；
+- 横向框架性能比较。
+
+## 10. Release Notes
+
+每次发布至少覆盖：
 
 - Added；
 - Changed；
 - Fixed；
 - Compatibility；
 - Security；
-- Performance；
+- Performance evidence boundary；
 - Operational notes；
-- Upgrade；
-- Rollback；
+- Upgrade/Rollback；
 - Known limitations。
 
-如果没有固定硬件 Evidence，不写“性能提升 X%”之类数字。
+当前文件：
 
-## 7. Upgrade / Rollback
+- [1.0.0-RC1](release-notes-1.0.0-RC1.md)
+- [1.0.0](release-notes-1.0.0.md)
 
-操作步骤见 [升级与回滚指南](upgrade-rollback.md)。
+## 11. Rollback
 
-生产配置见 [生产配置与安全加固](production-configuration.md)。
+已发布 Tag 不覆盖、不重写。发现 Blocker 时停止推广，修复后发布新的 RC/Patch，并重新运行全部门禁。
 
-Wire 规则见 [Wire Compatibility](wire-compatibility.md)。
-
-## 8. Secret 与日志
-
-发布前必须确认：
-
-- Registry Credential 的 toString 脱敏；
-- 私钥不进入 Artifact；
-- Benchmark TLS key 不进入 Evidence；
-- Runtime log 使用英文；
-- Error message 不暴露密码/Token/私钥；
-- Dashboard/Alert 不含 Secret。
-
-## 9. 自动 Release Readiness
-
-仓库提供 scripts/check_release_readiness.py，用于检查 G2 所需静态资产与状态。
-
-该脚本不替代真实性能/Chaos 结果，它只证明 Release 工程资产完整。
-
-独立 Release Readiness Workflow 会执行：
-
-~~~text
-Repository checks
-    |
-Release static checks
-    |
-Maven quality build
-    |
-Package artifacts
-    |
-Artifact inventory
-~~~
-
-## 10. 1.0.0-RC1 前最终人工确认
-
-进入 RC1 前必须人工确认：
-
-- E1/E2/D4 Evidence 是否来自受控固定硬件；
-- D3 是否严格按 Evidence Scope 实施；
-- Chaos 是否在目标支持环境真实执行；
-- Compatibility Matrix 是否覆盖本次升级组合；
-- SLO/Alert threshold 是否由目标环境负责人确认；
-- Rollback 是否在预发布环境演练。
-
-通过后才允许把 project 状态从 Preview 改为 Release Candidate。
+运行时滚动回滚见 [升级与回滚](upgrade-rollback.md)。
