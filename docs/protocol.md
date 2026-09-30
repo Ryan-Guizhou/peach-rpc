@@ -96,7 +96,7 @@ Payload 由 offset/length 表示。支持 slice decode 的 Codec 可以直接消
 
 ## 8. CANCEL 与 Graceful Drain
 
-V2-B.1 第一批已经把取消传播接入真实 Vert.x Transport：
+当前实现已经把取消传播接入真实 Vert.x Transport：
 
 ```text
 Consumer Future.cancel / timeout
@@ -112,7 +112,7 @@ Provider 关闭流程先从 Registry 注销服务，再进入 DRAINING。Transpo
 
 ## 9. Heartbeat 与连接恢复
 
-V2-C.2 将 PING/PONG 从“预留 Message Type”接入真实连接生命周期。
+PING/PONG 已接入真实连接生命周期。
 
 - Heartbeat 必须通过 HELLO/HELLO_ACK 协商出 `RpcFeature.HEARTBEAT` 后才能发送；
 - Client/Server 都只在连接空闲达到 `heartbeatInterval` 后发送 PING；
@@ -127,7 +127,7 @@ V2-C.2 将 PING/PONG 从“预留 Message Type”接入真实连接生命周期�
 
 ## 10. Trace Metadata 与兼容性
 
-V2-C.3 的分布式 Trace 复用现有 Metadata 区域，不改变 Protocol Version。
+分布式 Trace 复用现有 Metadata 区域，不改变 Protocol Version。
 
 约束：
 
@@ -142,7 +142,7 @@ OpenTelemetry Adapter 已通过真实 Peach RPC Transport E2E 验证 CLIENT/SERV
 
 ## 11. 当前限制
 
-- Streaming 未实现；
+- 1.0.x 不包含 Streaming RPC；
 - Compression 数据面当前只允许 NONE；LZ4/ZSTD 仅保留 Wire ID，收到 non-NONE Compression 会按协议错误拒绝；
 - TLS/mTLS 已在 Vert.x Transport 层实现，不改变 v1 Header；更大规模 TLS 性能矩阵仍需固定环境 Evidence；
 - Transport/Core 仍以 byte[] 完整帧为 API 边界。
