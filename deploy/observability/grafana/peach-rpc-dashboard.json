@@ -1,5 +1,7 @@
 {
-  "annotations": {"list": []},
+  "annotations": {
+    "list": []
+  },
   "editable": true,
   "graphTooltip": 1,
   "panels": [
@@ -7,9 +9,17 @@
       "type": "stat",
       "title": "Logical RPC QPS",
       "targets": [
-        {"expr": "sum(rate(peach_rpc_client_calls_seconds_count[5m]))", "refId": "A"}
+        {
+          "expr": "sum(rate(peach_rpc_client_calls_seconds_count[5m]))",
+          "refId": "A"
+        }
       ],
-      "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0}
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      }
     },
     {
       "type": "stat",
@@ -20,23 +30,44 @@
           "refId": "A"
         }
       ],
-      "gridPos": {"h": 6, "w": 6, "x": 6, "y": 0}
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      }
     },
     {
       "type": "stat",
       "title": "Active Connections",
       "targets": [
-        {"expr": "sum(peach_rpc_connection_active)", "refId": "A"}
+        {
+          "expr": "sum(peach_rpc_connection_active)",
+          "refId": "A"
+        }
       ],
-      "gridPos": {"h": 6, "w": 6, "x": 12, "y": 0}
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      }
     },
     {
       "type": "stat",
       "title": "Retry Rate",
       "targets": [
-        {"expr": "sum(rate(peach_rpc_client_retries_total[5m]))", "refId": "A"}
+        {
+          "expr": "sum(rate(peach_rpc_client_retries_total[5m]))",
+          "refId": "A"
+        }
       ],
-      "gridPos": {"h": 6, "w": 6, "x": 18, "y": 0}
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      }
     },
     {
       "type": "timeseries",
@@ -59,7 +90,12 @@
           "refId": "C"
         }
       ],
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6}
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      }
     },
     {
       "type": "timeseries",
@@ -81,7 +117,12 @@
           "refId": "C"
         }
       ],
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6}
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      }
     },
     {
       "type": "timeseries",
@@ -103,13 +144,82 @@
           "refId": "C"
         }
       ],
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 14}
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "RPC Inflight",
+      "targets": [
+        {
+          "expr": "sum(peach_rpc_client_inflight)",
+          "legendFormat": "client logical calls",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(peach_rpc_server_inflight)",
+          "legendFormat": "provider invocations",
+          "refId": "B"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 22
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Timeout Rate",
+      "targets": [
+        {
+          "expr": "sum(rate(peach_rpc_client_timeouts_total[5m]))",
+          "legendFormat": "client timeout",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 22
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Circuit Breaker State",
+      "targets": [
+        {
+          "expr": "sum by (state) (peach_rpc_client_circuit_state)",
+          "legendFormat": "{{state}}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 22
+      }
     }
   ],
   "schemaVersion": 39,
-  "tags": ["peach-rpc", "rpc"],
-  "templating": {"list": []},
-  "time": {"from": "now-1h", "to": "now"},
+  "tags": [
+    "peach-rpc",
+    "rpc"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
   "title": "Peach RPC Production Overview",
   "uid": "peach-rpc-production",
   "version": 1
