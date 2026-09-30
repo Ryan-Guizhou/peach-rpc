@@ -10,13 +10,19 @@
 
 ```text
 peach-rpc-core
+├── peach-rpc-codegen
 ├── peach-rpc-codec-fory
 ├── peach-rpc-transport-vertx
 ├── peach-rpc-registry-etcd
+├── peach-rpc-registry-nacos
 ├── peach-rpc-proxy-cglib
+├── peach-rpc-proxy-bytebuddy
+├── peach-rpc-observability-micrometer
+├── peach-rpc-observability-opentelemetry
+├── peach-rpc-observability-jfr
 └── peach-rpc-spring-boot-autoconfigure
     └── peach-rpc-spring-boot-starter
-        └── peach-rpc-examples
+peach-rpc-examples
 peach-rpc-benchmarks
 ```
 
