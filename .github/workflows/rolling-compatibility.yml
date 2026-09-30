@@ -67,6 +67,10 @@ jobs:
           git fetch origin "$BASELINE_REF" --depth=1 || true
           git worktree add target/compat-n "$BASELINE_REF"
 
+      - name: Prepare version N annotation processor
+        working-directory: target/compat-n
+        run: mvn -B -ntp -pl peach-rpc-codegen -am install -DskipTests
+
       - name: Build version N examples
         working-directory: target/compat-n
         run: >
