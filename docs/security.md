@@ -1,8 +1,6 @@
 # Peach RPC TLS / mTLS 安全指南
 
-<!-- capability-status:v2-c3=current -->
-
-> 适用版本：V2-C.3 当前开发分支。  
+> 适用版本：**Peach RPC 1.0.x**。  
 > TLS/mTLS 位于 Transport 层，不改变 Peach RPC v1 固定协议头，也不替代业务授权。
 
 ## 1. 定位
@@ -149,7 +147,7 @@ reload validation failed
 
 不会因为换证主动批量断开所有长连接。
 
-## 7. 与 V2-C.2 HA 的协同
+## 7. 与连接高可用的协同
 
 TLS 已通过以下组合测试：
 
