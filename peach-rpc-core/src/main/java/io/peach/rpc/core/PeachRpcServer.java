@@ -402,6 +402,9 @@ public final class PeachRpcServer implements AutoCloseable {
             executionMode = binding.executionMode(request.methodId());
         } catch (NoSuchMethodException error) {
             admission.release();
+            if (observer.enabled()) {
+                observer.onServerInflightChanged(-1);
+            }
             return CompletableFuture.completedFuture(
                     frameworkError(
                             request,
