@@ -6,6 +6,7 @@ from pathlib import Path
 RESILIENCE={"retryBudgetAcquire","circuitClosedAcquireAndSuccess","circuitOpenReject","outlierHealthyRead","outlierEjectedRead","outlierFailureAccounting"}
 PROFILES={
 "smoke":({"payloads":{256},"shards":{1},"threads":{1},"modes":{"sample"},"scenarios":{"NOOP"},"scenario_shards":{1},"scenario_threads":{1},"security_modes":{"PLAINTEXT"},"security_payloads":{256},"security_shards":{1},"security_threads":{1},"resilience_threads":{1}}),
+"standard":({"payloads":{64,1024,16384},"shards":{1,4},"threads":{1,64,256},"modes":{"sample","thrpt"},"scenarios":{"NOOP","CPU","BLOCKING","SLOW_PROVIDER","OVERLOAD"},"scenario_shards":{1,4},"scenario_threads":{1,64,256},"security_modes":{"PLAINTEXT","TLS"},"security_payloads":{256,16384},"security_shards":{1,4},"security_threads":{1,64},"resilience_threads":{1,64,256}}),
 "full":({"payloads":{64,256,1024,16384,1048576},"shards":{1,2,4,8},"threads":{1,16,64,256,1024},"modes":{"sample","thrpt"},"scenarios":{"NOOP","CPU","BLOCKING","SLOW_PROVIDER","OVERLOAD"},"scenario_shards":{1,4},"scenario_threads":{1,16,64,256,1024},"security_modes":{"PLAINTEXT","TLS"},"security_payloads":{64,256,1024,16384,1048576},"security_shards":{1,2,4,8},"security_threads":{1,16,64,256},"resilience_threads":{1,16,64,256,1024}})}
 def props(p):
  d={}
