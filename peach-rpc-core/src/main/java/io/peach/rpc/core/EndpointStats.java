@@ -36,14 +36,22 @@ final class EndpointStats {
         end(nanos);
     }
 
-    void endFailure(long nanos, RpcClientResilienceOptions options) {
+    boolean endFailure(
+            long nanos,
+            RpcClientResilienceOptions options) {
         end(nanos);
-        int failures = consecutiveFailures.incrementAndGet();
-        if (failures >= options.outlierConsecutiveFailureThreshold()) {
-            consecutiveFailures.set(0);
-            ejectedUntilNanos.set(
-                    System.nanoTime() + options.outlierEjectionDuration().toNanos());
+        int failures =
+                consecutiveFailures.incrementAndGet();
+        if (failures
+                < options.outlierConsecutiveFailureThreshold()) {
+            return false;
         }
+        consecutiveFailures.set(0);
+        ejectedUntilNanos.set(
+                System.nanoTime()
+                        + options.outlierEjectionDuration()
+                                .toNanos());
+        return true;
     }
 
     private void end(long nanos) {
