@@ -175,6 +175,25 @@ public interface RpcObserver {
     }
 
     /**
+     * Consumer 一次逻辑 RPC 调用完成。
+     *
+     * <p>一次逻辑调用可能包含多个网络 Attempt，该事件只回调一次。
+     *
+     * @param serviceKey 服务键
+     * @param methodId 方法 ID
+     * @param durationNanos 逻辑调用总耗时
+     * @param status 最终状态
+     * @param error 最终失败；成功时为 null
+     */
+    default void onClientCallCompleted(
+            ServiceKey serviceKey,
+            int methodId,
+            long durationNanos,
+            RpcStatus status,
+            Throwable error) {
+    }
+
+    /**
      * Consumer 已决定调度下一次 Retry。
      *
      * @param serviceKey 服务键
@@ -409,6 +428,22 @@ public interface RpcObserver {
                                 methodId,
                                 endpoint,
                                 attempt,
+                                durationNanos,
+                                status,
+                                error)));
+            }
+
+            @Override
+            public void onClientCallCompleted(
+                    ServiceKey serviceKey,
+                    int methodId,
+                    long durationNanos,
+                    RpcStatus status,
+                    Throwable error) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onClientCallCompleted(
+                                serviceKey,
+                                methodId,
                                 durationNanos,
                                 status,
                                 error)));
