@@ -317,6 +317,8 @@ export PEACH_RPC_MIN_MEMORY_BYTES='<bytes>'
 
 E1 的 repeatability 保持 **REPORT_ONLY**；CV 阈值与 Baseline Promotion 属于 V2-D.2-E2。
 
+三次真实证据收集完成后必须执行 `finalize_v2d2_e1.py`。只有 `e1-handoff.json` 状态为 PASS 时，E1 才能向 E2 移交；该 PASS 只代表证据采集完整，不代表性能稳定性阈值或 Production Baseline 已建立。
+
 ### 7.3 重复性验证
 
 单次 controlled run 只能形成“可比较证据”，不能直接形成生产基线。正式基线至少执行 3 次独立 controlled run，然后执行：
