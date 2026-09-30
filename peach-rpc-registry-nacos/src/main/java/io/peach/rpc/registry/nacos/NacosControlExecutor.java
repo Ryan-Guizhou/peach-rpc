@@ -1,8 +1,12 @@
 package io.peach.rpc.registry.nacos;
 
 import io.peach.rpc.api.ServiceKey;
+import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -12,17 +16,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 final class NacosControlExecutor implements AutoCloseable {
 
     private final ThreadPoolExecutor executor;
+    private final ScheduledThreadPoolExecutor scheduler;
 
     NacosControlExecutor() {
         AtomicInteger sequence = new AtomicInteger();
-        ThreadFactory factory = task -> {
-            Thread thread = new Thread(
-                    task,
-                    "peach-rpc-nacos-control-"
-                            + sequence.incrementAndGet());
-            thread.setDaemon(true);
-            return thread;
-        };
+        ThreadFactory factory = task -> daemonThread(
+                task,
+                "peach-rpc-nacos-control-"
+                        + sequence.incrementAndGet());
         executor = new ThreadPoolExecutor(
                 2,
                 4,
@@ -31,6 +32,21 @@ final class NacosControlExecutor implements AutoCloseable {
                 new ArrayBlockingQueue<>(256),
                 factory,
                 new ThreadPoolExecutor.AbortPolicy());
+
+        AtomicInteger schedulerSequence =
+                new AtomicInteger();
+        scheduler = new ScheduledThreadPoolExecutor(
+                1,
+                task -> daemonThread(
+                        task,
+                        "peach-rpc-nacos-scheduler-"
+                                + schedulerSequence
+                                        .incrementAndGet()));
+        scheduler.setRemoveOnCancelPolicy(true);
+        scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(
+                false);
+        scheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(
+                false);
     }
 
     <T> CompletableFuture<T> submit(
@@ -60,7 +76,8 @@ final class NacosControlExecutor implements AutoCloseable {
             String operation,
             String subject,
             CheckedSupplier<T> action) {
-        CompletableFuture<T> result = new CompletableFuture<>();
+        CompletableFuture<T> result =
+                new CompletableFuture<>();
         try {
             executor.execute(() -> {
                 try {
@@ -70,12 +87,13 @@ final class NacosControlExecutor implements AutoCloseable {
                 }
             });
         } catch (RuntimeException error) {
-            result.completeExceptionally(new IllegalStateException(
-                    "Nacos control executor queue is full: operation="
-                            + operation
-                            + ", subject="
-                            + subject,
-                    error));
+            result.completeExceptionally(
+                    new IllegalStateException(
+                            "Nacos control executor queue is full: operation="
+                                    + operation
+                                    + ", subject="
+                                    + subject,
+                            error));
         }
         return result;
     }
@@ -93,8 +111,49 @@ final class NacosControlExecutor implements AutoCloseable {
                 });
     }
 
+    ScheduledFuture<?> scheduleWithFixedDelay(
+            String operation,
+            String subject,
+            Duration initialDelay,
+            Duration delay,
+            Runnable action) {
+        Objects.requireNonNull(
+                initialDelay,
+                "initialDelay");
+        Objects.requireNonNull(delay, "delay");
+        Objects.requireNonNull(action, "action");
+        if (initialDelay.isNegative()
+                || delay.isZero()
+                || delay.isNegative()) {
+            throw new IllegalArgumentException(
+                    "Nacos control schedule requires "
+                            + "non-negative initialDelay "
+                            + "and positive delay");
+        }
+        return scheduler.scheduleWithFixedDelay(
+                () -> submit(
+                        operation,
+                        subject,
+                        () -> {
+                            action.run();
+                            return null;
+                        }),
+                initialDelay.toMillis(),
+                delay.toMillis(),
+                TimeUnit.MILLISECONDS);
+    }
+
+    private static Thread daemonThread(
+            Runnable task,
+            String name) {
+        Thread thread = new Thread(task, name);
+        thread.setDaemon(true);
+        return thread;
+    }
+
     @Override
     public void close() {
+        scheduler.shutdownNow();
         executor.shutdownNow();
     }
 
