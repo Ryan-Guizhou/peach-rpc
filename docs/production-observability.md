@@ -1,5 +1,7 @@
 # Peach RPC 生产可观测与 SLO 模板
 
+<!-- capability-status:v2-g1=engineering-ready -->
+
 > 状态：**Engineering Current / SLO Values Environment-specific**  
 > 本文提供指标语义、Dashboard、告警模板和 SLO 建模方式。项目不预设 Production SLO 数字。
 
