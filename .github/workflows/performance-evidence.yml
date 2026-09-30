@@ -21,6 +21,11 @@ on:
         required: true
         default: github-hosted-ephemeral
         type: string
+      run_id:
+        description: Unique evidence run ID; controlled runs must use values such as run-1/run-2/run-3
+        required: true
+        default: manual-run
+        type: string
       matrix_profile:
         description: Benchmark matrix profile
         required: true
@@ -72,6 +77,7 @@ jobs:
           EVIDENCE_CLASS: ${{ inputs.evidence_class }}
           RUNNER_LABELS_JSON: ${{ inputs.runner_labels_json }}
           RUNNER_ID: ${{ inputs.runner_id }}
+          RUN_ID: ${{ inputs.run_id }}
           MATRIX_PROFILE: ${{ inputs.matrix_profile }}
           RUN_MATRIX: ${{ inputs.run_matrix }}
           RUN_SOAK: ${{ inputs.run_soak }}
@@ -81,6 +87,7 @@ jobs:
           if [[ "$EVIDENCE_CLASS" != "controlled" ]]; then exit 0; fi
           if [[ "$RUNNER_LABELS_JSON" == *"ubuntu-latest"* ]]; then echo "Controlled evidence cannot run on ubuntu-latest"; exit 1; fi
           if [[ -z "$RUNNER_ID" || "$RUNNER_ID" == "github-hosted-ephemeral" ]]; then echo "Controlled evidence requires a stable runner_id"; exit 1; fi
+          if [[ -z "$RUN_ID" || "$RUN_ID" == "manual-run" ]]; then echo "Controlled evidence requires a unique run_id such as run-1"; exit 1; fi
           if [[ "$MATRIX_PROFILE" != "full" || "$RUN_MATRIX" != "true" || "$RUN_SOAK" != "true" ]]; then echo "Controlled evidence requires full matrix and soak"; exit 1; fi
           if (( SOAK_CONCURRENCY < 10000 || SOAK_DURATION_SECONDS < 1800 )); then echo "Controlled evidence requires >=10000 concurrency and >=1800s soak"; exit 1; fi
       - uses: actions/checkout@v7
@@ -91,13 +98,24 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Preflight controlled runner
+        if: ${{ inputs.evidence_class == 'controlled' }}
+        env:
+          PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
+          PEACH_RPC_EVIDENCE_CLASS: controlled
+          PEACH_RPC_EVIDENCE_RUN_ID: ${{ inputs.run_id }}
+          PEACH_RPC_RUNNER_ID: ${{ inputs.runner_id }}
+          PEACH_RPC_RUNNER_LABELS: ${{ inputs.runner_labels_json }}
+        run: bash scripts/preflight_v2d2_runner.sh "target/v2d2-evidence-${{ inputs.run_id }}"
+
       - name: Capture evidence environment
         env:
           PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
           PEACH_RPC_EVIDENCE_CLASS: ${{ inputs.evidence_class }}
+          PEACH_RPC_EVIDENCE_RUN_ID: ${{ inputs.run_id }}
           PEACH_RPC_RUNNER_ID: ${{ inputs.runner_id }}
           PEACH_RPC_RUNNER_LABELS: ${{ inputs.runner_labels_json }}
-        run: bash scripts/capture_v2d2_environment.sh target/v2d2-evidence
+        run: bash scripts/capture_v2d2_environment.sh "target/v2d2-evidence-${{ inputs.run_id }}"
 
       - name: Build benchmark runtime
         run: mvn -B -ntp -pl peach-rpc-benchmarks -am clean package -DskipTests
@@ -109,7 +127,7 @@ jobs:
         run: >
           bash scripts/run_v2d2_benchmark_matrix.sh
           "${{ inputs.matrix_profile }}"
-          target/v2d2-evidence/matrix
+          target/v2d2-evidence-${{ inputs.run_id }}/matrix
 
       - name: Run virtual-thread soak
         if: ${{ inputs.run_soak }}
@@ -121,7 +139,7 @@ jobs:
           PEACH_RPC_SOAK_CONNECTIONS: ${{ inputs.soak_connections }}
           PEACH_RPC_SOAK_WARMUP_SECONDS: "30"
           PEACH_RPC_SOAK_CLIENT_TIMEOUT_MS: "15000"
-          PEACH_RPC_SOAK_OUTPUT: target/v2d2-evidence/soak.json
+          PEACH_RPC_SOAK_OUTPUT: target/v2d2-evidence-${{ inputs.run_id }}/soak.json
         run: bash scripts/run_v2d2_soak.sh
 
       - name: Validate evidence bundle
@@ -135,9 +153,9 @@ jobs:
           SOAK_DURATION_SECONDS: ${{ inputs.soak_duration_seconds }}
           SOAK_CONCURRENCY: ${{ inputs.soak_concurrency }}
         run: |
-          args=(--environment target/v2d2-evidence/environment.properties --profile "$MATRIX_PROFILE" --output-dir target/v2d2-evidence)
-          if [[ "$RUN_MATRIX" == "true" ]]; then args+=(--require-matrix --matrix-dir target/v2d2-evidence/matrix); fi
-          if [[ "$RUN_SOAK" == "true" ]]; then args+=(--require-soak --soak target/v2d2-evidence/soak.json --min-soak-seconds "$SOAK_DURATION_SECONDS" --min-concurrency "$SOAK_CONCURRENCY"); fi
+          args=(--environment target/v2d2-evidence-${{ inputs.run_id }}/environment.properties --profile "$MATRIX_PROFILE" --output-dir target/v2d2-evidence-${{ inputs.run_id }})
+          if [[ "$RUN_MATRIX" == "true" ]]; then args+=(--require-matrix --matrix-dir target/v2d2-evidence-${{ inputs.run_id }}/matrix); fi
+          if [[ "$RUN_SOAK" == "true" ]]; then args+=(--require-soak --soak target/v2d2-evidence-${{ inputs.run_id }}/soak.json --min-soak-seconds "$SOAK_DURATION_SECONDS" --min-concurrency "$SOAK_CONCURRENCY"); fi
           if [[ "$EVIDENCE_CLASS" == "controlled" ]]; then args+=(--require-controlled); fi
           python3 scripts/validate_v2d2_evidence.py "${args[@]}"
 
@@ -148,16 +166,22 @@ jobs:
           RUN_MATRIX: ${{ inputs.run_matrix }}
           RUN_SOAK: ${{ inputs.run_soak }}
         run: |
-          args=(--environment target/v2d2-evidence/environment.properties --output-dir target/v2d2-evidence)
-          if [[ "$RUN_MATRIX" == "true" ]]; then args+=(--matrix-summary target/v2d2-evidence/matrix/summary.csv); fi
-          if [[ "$RUN_SOAK" == "true" ]]; then args+=(--soak target/v2d2-evidence/soak.json); fi
+          args=(--environment target/v2d2-evidence-${{ inputs.run_id }}/environment.properties --output-dir target/v2d2-evidence-${{ inputs.run_id }})
+          if [[ "$RUN_MATRIX" == "true" ]]; then args+=(--matrix-summary target/v2d2-evidence-${{ inputs.run_id }}/matrix/summary.csv); fi
+          if [[ "$RUN_SOAK" == "true" ]]; then args+=(--soak target/v2d2-evidence-${{ inputs.run_id }}/soak.json); fi
           python3 scripts/generate_v2d2_decision_report.py "${args[@]}"
+
+      - name: Create and verify evidence manifest
+        if: success()
+        run: |
+          python3 scripts/manage_v2d2_evidence_manifest.py create --bundle "target/v2d2-evidence-${{ inputs.run_id }}"
+          python3 scripts/manage_v2d2_evidence_manifest.py verify --bundle "target/v2d2-evidence-${{ inputs.run_id }}"
 
       - name: Upload performance evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v2d2-performance-evidence-${{ github.run_id }}
-          path: target/v2d2-evidence
+          name: v2d2-performance-evidence-${{ inputs.run_id }}-${{ github.run_id }}
+          path: target/v2d2-evidence-${{ inputs.run_id }}
           if-no-files-found: warn
-          retention-days: 30
+          retention-days: 90
