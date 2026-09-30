@@ -39,6 +39,8 @@ python3 scripts/validate_v2d2_evidence.py \
 
 随后用 `generate_v2d2_decision_report.py` 生成 `decision-inputs.json/.md`。这些输出是容量评审和后续性能内核决策输入，不是自动 SLO。
 
+生产容量数字还必须通过跨运行重复性检查。至少保留 3 份同 commit、同固定硬件、同 JDK/JVM 参数的 controlled evidence，然后使用 `compare_v2d2_evidence.py` 计算 run-to-run CV / spread。没有 repeatability report 的单次高分结果不得写入容量基线。
+
 ## 2. 证据分层
 
 | 层级 | 输入 | 用途 |
