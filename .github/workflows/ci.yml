@@ -56,7 +56,20 @@ jobs:
           PEACH_RPC_RUNNER_ID: ci-self-test
           PEACH_RPC_EXPECT_RUNNER_ID: ci-self-test
           PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
-        run: bash scripts/preflight_v2d2_runner.sh target/v2d2-preflight-self-test
+        run: |
+          bash scripts/preflight_v2d2_runner.sh target/v2d2-preflight-self-test
+
+          if PEACH_RPC_EXPECT_RUNNER_ID=wrong-runner \
+            bash scripts/preflight_v2d2_runner.sh target/v2d2-preflight-wrong-runner; then
+            echo "Preflight unexpectedly accepted the wrong runner ID"
+            exit 1
+          fi
+
+          if PEACH_RPC_EXPECT_HOST_FINGERPRINT_SHA256=0000000000000000000000000000000000000000000000000000000000000000 \
+            bash scripts/preflight_v2d2_runner.sh target/v2d2-preflight-wrong-host; then
+            echo "Preflight unexpectedly accepted the wrong host fingerprint"
+            exit 1
+          fi
 
       - name: Verify V2-D.2 evidence tooling
         run: python3 scripts/test_v2d2_evidence_tools.py
