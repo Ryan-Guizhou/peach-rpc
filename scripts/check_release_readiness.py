@@ -113,6 +113,7 @@ def main() -> int:
         "PeachRpcRegistryFailures",
         "PeachRpcHeartbeatTimeouts",
         "PeachRpcProviderAdmissionRejections",
+        "PeachRpcCircuitStuckOpen",
     ):
         if alert not in alerts:
             fail(f"Missing alert example: {alert}")
