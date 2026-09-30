@@ -29,6 +29,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -374,7 +375,8 @@ class VertxRpcTransportTest {
                 new AtomicReference<>();
         CountDownLatch handled = new CountDownLatch(1);
 
-        try {
+        try (var raceExecutor =
+                     Executors.newFixedThreadPool(2)) {
             server.start(endpoint, (remote, requestBytes) -> {
                         CompletableFuture<byte[]> race =
                                 pending.getAndSet(null);
@@ -416,14 +418,14 @@ class VertxRpcTransportTest {
                         CompletableFuture.runAsync(() -> {
                             awaitUnchecked(start);
                             call.cancel(true);
-                        });
+                        }, raceExecutor);
                 CompletableFuture<Void> respond =
                         CompletableFuture.runAsync(() -> {
                             awaitUnchecked(start);
                             provider.complete(response(
                                     pendingRequest.get(),
                                     new byte[] {1, 2, 3}));
-                        });
+                        }, raceExecutor);
 
                 start.countDown();
                 CompletableFuture.allOf(
