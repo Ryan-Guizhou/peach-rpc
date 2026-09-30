@@ -21,6 +21,13 @@
             <artifactId>peach-rpc-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.peach.rpc</groupId>
+            <artifactId>peach-rpc-core</artifactId>
+            <type>test-jar</type>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
         </dependency>
