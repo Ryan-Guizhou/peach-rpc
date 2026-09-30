@@ -115,6 +115,11 @@
           "expr": "sum(rate(peach_rpc_server_admission_rejected_total[5m]))",
           "legendFormat": "provider admission rejected",
           "refId": "C"
+        },
+        {
+          "expr": "sum by (reason) (rate(peach_rpc_client_retry_exhausted_total[5m]))",
+          "legendFormat": "retry exhausted {{reason}}",
+          "refId": "D"
         }
       ],
       "gridPos": {
