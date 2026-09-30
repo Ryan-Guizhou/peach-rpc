@@ -192,6 +192,43 @@ public interface RpcObserver {
     }
 
     /**
+     * Consumer 因方法级 Circuit Open 拒绝调用。
+     *
+     * @param serviceKey 服务键
+     * @param methodId 方法 ID
+     */
+    default void onClientCircuitRejected(
+            ServiceKey serviceKey,
+            int methodId) {
+    }
+
+    /**
+     * Consumer 因连续基础设施失败临时剔除端点。
+     *
+     * @param serviceKey 服务键
+     * @param endpoint 被剔除端点
+     * @param ejectionMillis 剔除窗口毫秒数
+     */
+    default void onEndpointEjected(
+            ServiceKey serviceKey,
+            RpcEndpoint endpoint,
+            long ejectionMillis) {
+    }
+
+    /**
+     * Provider 在进入业务执行前因容量限制拒绝请求。
+     *
+     * @param serviceId 服务 ID
+     * @param methodId 方法 ID
+     * @param reason 低基数拒绝原因
+     */
+    default void onServerAdmissionRejected(
+            int serviceId,
+            int methodId,
+            String reason) {
+    }
+
+    /**
      * Provider 业务 invocation 完成。
      *
      * @param serviceId 服务 ID
@@ -391,6 +428,40 @@ public interface RpcObserver {
                                 nextAttempt,
                                 delayMillis,
                                 cause)));
+            }
+
+            @Override
+            public void onClientCircuitRejected(
+                    ServiceKey serviceKey,
+                    int methodId) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onClientCircuitRejected(
+                                serviceKey,
+                                methodId)));
+            }
+
+            @Override
+            public void onEndpointEjected(
+                    ServiceKey serviceKey,
+                    RpcEndpoint endpoint,
+                    long ejectionMillis) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onEndpointEjected(
+                                serviceKey,
+                                endpoint,
+                                ejectionMillis)));
+            }
+
+            @Override
+            public void onServerAdmissionRejected(
+                    int serviceId,
+                    int methodId,
+                    String reason) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onServerAdmissionRejected(
+                                serviceId,
+                                methodId,
+                                reason)));
             }
 
             @Override
