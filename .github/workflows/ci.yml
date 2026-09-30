@@ -54,6 +54,7 @@ jobs:
           PEACH_RPC_EVIDENCE_CLASS: controlled
           PEACH_RPC_EVIDENCE_RUN_ID: ci-self-test
           PEACH_RPC_RUNNER_ID: ci-self-test
+          PEACH_RPC_EXPECT_RUNNER_ID: ci-self-test
           PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
         run: bash scripts/preflight_v2d2_runner.sh target/v2d2-preflight-self-test
 
