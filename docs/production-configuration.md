@@ -1,5 +1,7 @@
 # Peach RPC 生产配置与安全加固
 
+<!-- capability-status:v2-g2=engineering-ready -->
+
 > 状态：**Engineering Current / Numeric Capacity Values Pending Evidence**  
 > 本文定义生产配置原则。性能相关数值必须来自固定硬件 Evidence，不在文档中拍脑袋给出 Production 数字。
 
