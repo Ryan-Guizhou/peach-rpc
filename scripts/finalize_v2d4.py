@@ -128,12 +128,26 @@ def main() -> int:
             if alloc_before is not None and alloc_after is not None
             else None
         )
-        if (
-            score_delta is not None
-            and score_delta > args.max_latency_regression_percent
-        ):
+        mode = str(dict(key).get("mode", ""))
+        score_failed = False
+        if score_delta is not None:
+            if mode == "thrpt":
+                score_failed = (
+                    score_delta
+                    < -args.max_throughput_regression_percent
+                )
+            else:
+                score_failed = (
+                    score_delta
+                    > args.max_latency_regression_percent
+                )
+        if score_failed:
             matrix_regressions.append(
-                {"point": dict(key), "metric": "score", "delta": score_delta}
+                {
+                    "point": dict(key),
+                    "metric": "score",
+                    "delta": score_delta,
+                }
             )
         if (
             alloc_delta is not None
