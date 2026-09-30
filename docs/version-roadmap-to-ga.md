@@ -1,6 +1,17 @@
 # Peach RPC V2-D.2 → 1.0 GA 版本执行路线
 
-> 状态：**Approved Plan / V2-D.2-E1 In Progress**  
+<!-- capability-status:project=preview -->
+<!-- capability-status:v2-d2-e2=evidence-blocked -->
+<!-- capability-status:v2-d3=conditional -->
+<!-- capability-status:v2-d4=evidence-blocked -->
+<!-- capability-status:v2-e1=engineering-ready -->
+<!-- capability-status:v2-e2=engineering-ready -->
+<!-- capability-status:v2-f1=engineering-ready -->
+<!-- capability-status:v2-f2=validation-pending -->
+<!-- capability-status:v2-g1=engineering-ready -->
+<!-- capability-status:v2-g2=engineering-ready -->
+
+> 状态：**Approved Plan / E2→G2 Engineering Implemented / External Gates Pending**  
 > 本文定义 Peach RPC 从当前 V2-D.2 到 1.0.0 GA 的**版本执行顺序、范围、依赖与验收标准**。  
 > 当前能力状态仍以 [Production Roadmap / Capability Matrix](production-roadmap.md) 为唯一事实总表；本文只定义后续版本“要做什么”，不把计划项视为已实现能力。
 
@@ -43,15 +54,15 @@ flowchart LR
 | 版本 | 状态 | 主题 | 核心产出 | 是否阻塞 1.0 GA |
 |---|---|---|---|---|
 | V2-D.2-E1 | **In Progress / Engineering Ready** | Controlled Performance Evidence | >=3 份固定硬件完整 Evidence Bundle | 是 |
-| V2-D.2-E2 | **Proposed** | Evidence Analysis & Baseline | Repeatability PASS + Baseline Candidate + 优化决策 | 是 |
-| V2-D.3 | **Conditional Proposed** | Performance Kernel Optimization | 仅实现证据证明值得做的优化 | 条件性 |
-| V2-D.4 | **Proposed** | Performance Closure | 最终性能基线、容量参数、回归证据 | 是 |
-| V2-E.1 | **Proposed** | Wire Identity & Schema | Stable Type ID + Schema Fingerprint | 是 |
-| V2-E.2 | **Proposed** | Rolling Compatibility | N/N+1 + Rollback + Compatibility Matrix | 是 |
-| V2-F.1 | **Proposed** | Protocol Robustness | malformed/fuzz/property/race 测试闭环 | 是 |
-| V2-F.2 | **Proposed** | Chaos & Recovery | 黑洞/分区/长稳恢复 + Registry Contract TestKit | 是 |
-| V2-G.1 | **Proposed** | Observability & Production SLO | Error Model + Dashboard + Alert + SLO | 是 |
-| V2-G.2 | **Proposed** | Production Operations & Release | Upgrade/Rollback/Recommended Defaults/Release Process | 是 |
+| V2-D.2-E2 | **Evidence Blocked / Tooling Ready** | Evidence Analysis & Baseline | Repeatability PASS + Baseline Candidate + 优化决策 | 是 |
+| V2-D.3 | **Conditional / Await E2 Decision** | Performance Kernel Optimization | 仅实现证据证明值得做的优化 | 条件性 |
+| V2-D.4 | **Evidence Blocked / Tooling Ready** | Performance Closure | 最终性能基线、容量参数、回归证据 | 是 |
+| V2-E.1 | **Engineering Ready** | Wire Identity & Schema | Stable Type ID + Schema Fingerprint | 是 |
+| V2-E.2 | **Engineering Ready / Real Rolling E2E Pending** | Rolling Compatibility | N/N+1 + Rollback + Compatibility Matrix | 是 |
+| V2-F.1 | **Engineering Ready** | Protocol Robustness | malformed/fuzz/property/race 测试闭环 | 是 |
+| V2-F.2 | **Validation Pending** | Chaos & Recovery | 黑洞/分区/长稳恢复 + Registry Contract TestKit | 是 |
+| V2-G.1 | **Engineering Ready** | Observability & Production SLO | Error Model + Dashboard + Alert + SLO | 是 |
+| V2-G.2 | **Engineering Ready** | Production Operations & Release | Upgrade/Rollback/Recommended Defaults/Release Process | 是 |
 | 1.0.0-RC1 | **Future** | Production Candidate | Wire/API Freeze + 全量生产门禁 | 是 |
 | 1.0.0 | **Future** | Production GA | 正式生产发布 | - |
 | 1.1.x+ | **Future** | Strategic Ecosystem | Protobuf/K8s/Compression/更多 Adapter | 否 |
@@ -158,6 +169,10 @@ evidence-run-3/
 ---
 
 ## 5. V2-D.2-E2：Evidence Analysis & Baseline Promotion
+
+**工程状态：Tooling Ready / Real E1 Evidence Required**
+
+当前已提供 analyze_v2d2_e2.py：只有 E1 Handoff PASS、Repeatability PASS、Baseline Candidate 和显式人工 Decisions 全部存在时才能产生 E2 PASS。缺少真实 Evidence 时保持 BLOCKED。
 
 ### 5.1 目标
 
@@ -341,21 +356,20 @@ Regression Review
 
 ### 8.2 任务
 
-- [ ] Stable Type ID 规范；
-- [ ] Framework/User ID namespace；
-- [ ] reserved range；
-- [ ] 显式注册边界；
-- [ ] Type ID collision detection；
-- [ ] duplicate registration fail-fast；
-- [ ] Stable Type Registry；
-- [ ] Fory Adapter 接入；
-- [ ] Schema fingerprint；
-- [ ] Method/request/response schema identity；
-- [ ] fingerprint algorithm/version；
-- [ ] HELLO/ACK 兼容能力扩展；
-- [ ] schema mismatch fail-fast；
-- [ ] 明确 wire error code；
-- [ ] compatibility unit/integration tests。
+- [x] Stable Type ID 规范；
+- [x] Framework/User ID namespace；
+- [x] reserved range；
+- [x] 方法绑定阶段显式注册边界；
+- [x] Type ID collision detection / fail-fast；
+- [x] Stable Type Registry；
+- [x] Fory Adapter 接入；
+- [x] Schema fingerprint；
+- [x] Service/Method/request/response schema identity；
+- [x] fingerprint algorithm/version；
+- [x] Registry Metadata 发布 Protocol/Schema identity；
+- [x] Consumer 在请求前隔离明确 schema mismatch；
+- [x] compatibility unit/integration tests；
+- [x] 明确 HELLO 继续只承担 connection capability，Schema Compatibility 留在 Registry 控制面。
 
 ### 8.3 设计约束
 
@@ -389,22 +403,21 @@ N+1        -> N rollback
 
 ### 9.2 任务
 
-- [ ] N/N+1 compatibility contract；
-- [ ] Protocol compatibility rules；
-- [ ] Codec compatibility rules；
-- [ ] Schema evolution rules；
-- [ ] field add/remove 规则；
-- [ ] request/response 双向兼容；
-- [ ] capability negotiation；
-- [ ] incompatible peer rejection；
-- [ ] rolling Provider upgrade E2E；
-- [ ] rolling Consumer upgrade E2E；
-- [ ] mixed-version multi-Provider E2E；
-- [ ] rollback E2E；
-- [ ] Registry mixed-version metadata；
-- [ ] Upgrade Guide；
-- [ ] Rollback Guide；
-- [ ] Compatibility Matrix。
+- [x] N/N+1 compatibility contract；
+- [x] Protocol compatibility rules；
+- [x] Codec compatibility rules；
+- [x] 严格 Schema evolution rules；
+- [x] field add/remove 规则；
+- [x] request/response 双向兼容边界；
+- [x] incompatible provider pre-routing isolation；
+- [x] Registry mixed-version metadata；
+- [x] Upgrade Guide；
+- [x] Rollback Guide；
+- [x] Compatibility Matrix；
+- [ ] rolling Provider upgrade 真实多实例 E2E；
+- [ ] rolling Consumer upgrade 真实多实例 E2E；
+- [ ] mixed-version multi-Provider 真实 E2E；
+- [ ] rollback 预发布真实演练。
 
 ---
 
@@ -412,26 +425,26 @@ N+1        -> N rollback
 
 ### 10.1 Malformed Frame Matrix
 
-- [ ] bad magic；
-- [ ] unsupported version；
-- [ ] unknown message type；
+- [x] bad magic；
+- [x] unsupported version；
+- [x] unknown message type；
 - [ ] unknown codec/compression；
-- [ ] negative/overflow length；
-- [ ] truncated header/payload；
-- [ ] oversized frame；
+- [x] negative/overflow length；
+- [x] truncated header/payload；
+- [x] oversized frame；
 - [ ] duplicate frame；
 - [ ] invalid request ID；
-- [ ] invalid metadata；
+- [x] invalid metadata；
 - [ ] invalid CANCEL/GO_AWAY/PING/PONG/HELLO；
 - [ ] handshake ordering violation。
 
 ### 10.2 Fuzz / Property
 
-- [ ] Protocol decoder fuzz；
-- [ ] FrameAccumulator fuzz；
-- [ ] HELLO fuzz；
-- [ ] metadata fuzz；
-- [ ] random fragmentation/coalescing；
+- [x] deterministic decoder truncation/property matrix；
+- [x] deterministic FrameAccumulator random fragmentation property；
+- [x] HELLO truncation/duplicate/trailing-byte property tests；
+- [x] metadata boundary/malformed tests；
+- [x] random fragmentation/coalescing；
 - [ ] random CANCEL race。
 
 ### 10.3 Race Matrix
@@ -457,8 +470,8 @@ N+1        -> N rollback
 - [ ] partition；
 - [ ] long disconnect；
 - [ ] delayed response；
-- [ ] Watch interruption；
-- [ ] Lease renewal failure。
+- [x] Watch interruption / compaction recovery；
+- [x] Lease renewal failure。
 
 **Nacos**
 
@@ -468,13 +481,13 @@ N+1        -> N rollback
 - [ ] credential failure；
 - [ ] delayed control plane；
 - [ ] restart loop；
-- [ ] subscription recovery。
+- [x] subscription recovery。
 
 ### 11.2 Transport Chaos
 
 - [ ] packet blackhole；
-- [ ] half-open socket；
-- [ ] Provider kill -9；
+- [x] heartbeat-detected silent/half-open connection；
+- [x] Provider process restart / same Consumer recovery；
 - [ ] Consumer network loss；
 - [ ] reconnect storm；
 - [ ] TLS handshake stall；
@@ -505,40 +518,40 @@ N+1        -> N rollback
 
 ### 12.1 Error Model
 
-- [ ] Error taxonomy；
-- [ ] stable error code；
-- [ ] Client / Provider / Transport / Registry / Security / Protocol 分类；
+- [x] Error taxonomy；
+- [x] stable RpcStatus code + low-cardinality Failure Category；
+- [x] Client / Provider / Transport / Registry / Security / Protocol 分类；
 - [ ] Retry exhausted；
-- [ ] Circuit open；
-- [ ] Overloaded；
-- [ ] 错误信息脱敏。
+- [x] Circuit reject metric；
+- [x] Overloaded / admission reject metrics；
+- [x] 错误信息/credential 既有脱敏边界。
 
 ### 12.2 Metrics / SLO
 
 至少形成：
 
-- [ ] QPS；
-- [ ] p50/p95/p99/p99.9；
-- [ ] error rate；
+- [x] logical-call QPS；
+- [x] Timer histogram 支持 p50/p95/p99/p99.9 查询；
+- [x] final status/category error rate；
 - [ ] timeout rate；
-- [ ] retry rate；
+- [x] retry rate；
 - [ ] circuit state；
-- [ ] outlier count；
-- [ ] active connections；
-- [ ] reconnect；
+- [x] outlier ejection count；
+- [x] active connections；
+- [x] reconnect；
 - [ ] inflight；
-- [ ] overload；
-- [ ] Registry health；
-- [ ] TLS handshake failure。
+- [x] overload/admission reject；
+- [x] Registry operation/recovery/failure signals；
+- [x] TLS handshake failure。
 
 ### 12.3 运维资产
 
-- [ ] Grafana Dashboard；
-- [ ] Alert Rules；
-- [ ] Production SLO Template；
-- [ ] Golden Signals；
-- [ ] JFR Troubleshooting；
-- [ ] OpenTelemetry Troubleshooting。
+- [x] Grafana Dashboard；
+- [x] Prometheus Alert Example；
+- [x] Production SLO Template；
+- [x] Golden Signals；
+- [x] JFR troubleshooting 路径已纳入可观测文档；
+- [x] OpenTelemetry troubleshooting 路径已纳入可观测文档。
 
 ---
 
@@ -546,31 +559,31 @@ N+1        -> N rollback
 
 ### 13.1 运维文档
 
-- [ ] Capacity Planning 最终版；
-- [ ] Upgrade Guide；
-- [ ] Rollback Guide；
-- [ ] Compatibility Matrix；
-- [ ] Production Configuration Guide；
-- [ ] Security Hardening Guide。
+- [x] Capacity Planning 方法论与 Evidence 晋级规则；
+- [x] Upgrade Guide；
+- [x] Rollback Guide；
+- [x] Compatibility Matrix；
+- [x] Production Configuration Guide；
+- [x] Security Hardening Guide。
 
 ### 13.2 默认值与配置治理
 
-- [ ] Recommended Defaults；
-- [ ] dangerous option 标记；
-- [ ] Starter configuration audit；
-- [ ] secret/redaction review；
-- [ ] credential error sanitization；
-- [ ] timeout/retry/admission 默认值审查。
+- [x] 默认值/证据型推荐值边界；
+- [x] dangerous option 标记；
+- [x] Starter configuration 现有表 + Production guide audit；
+- [x] secret/redaction review；
+- [x] credential error sanitization；
+- [x] timeout/retry/admission 默认值审查规则。
 
 ### 13.3 Release Engineering
 
-- [ ] Examples 完整性；
-- [ ] multi-instance rolling example；
-- [ ] Maven deploy/release process；
-- [ ] artifact verification；
-- [ ] version policy；
-- [ ] deprecation policy；
-- [ ] changelog/release-note policy。
+- [x] Examples 独立 JVM 基础完整性；
+- [ ] multi-instance rolling 预发布演练；
+- [x] Maven/Release process 文档与 Readiness workflow；
+- [x] Release artifact inventory verification；
+- [x] version policy；
+- [x] deprecation policy；
+- [x] changelog/release-note policy。
 
 ---
 
