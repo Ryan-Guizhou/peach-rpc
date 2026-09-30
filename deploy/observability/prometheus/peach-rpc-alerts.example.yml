@@ -38,3 +38,12 @@ groups:
         annotations:
           summary: Peach RPC provider is rejecting work
           description: Review max-concurrent, CPU queue, downstream latency and capacity.
+
+      - alert: PeachRpcCircuitStuckOpen
+        expr: sum(peach_rpc_client_circuit_state{state="OPEN"}) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Peach RPC circuit breaker remains open
+          description: Check downstream availability, retry amplification and provider saturation.
