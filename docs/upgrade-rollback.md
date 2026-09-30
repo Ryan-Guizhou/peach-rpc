@@ -1,5 +1,8 @@
 # Peach RPC 升级与回滚指南
 
+<!-- capability-status:v2-e2=engineering-ready -->
+<!-- capability-status:v2-g2=engineering-ready -->
+
 > 状态：**Engineering Current**  
 > 适用于 Wire Protocol v1 内的 N/N+1 滚动升级。若业务契约不兼容，必须使用新的 ServiceKey.version。
 
