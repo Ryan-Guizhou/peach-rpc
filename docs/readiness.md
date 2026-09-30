@@ -1,5 +1,10 @@
 # 生产就绪门禁
 
+<!-- capability-status:project=preview -->
+<!-- capability-status:v2-c3=current -->
+<!-- capability-status:v2-d=in-progress -->
+<!-- capability-status:v2-d2=in-progress -->
+
 当前版本定位为 Preview，可用于内部验证和中型项目集成试点，但不直接宣称生产就绪。
 
 > 当前能力状态、未完成项和阶段优先级统一维护在 [Production Roadmap / Capability Matrix](production-roadmap.md)。本文只解释 Production Ready 所需门禁，不再作为阶段状态的唯一来源。
@@ -54,9 +59,9 @@ V2-C.2 已形成连接与控制面 HA 闭环：
 - 同一进程级 E2E 会重启 Nacos，证明 last-known-good 数据面继续可用、Provider 临时实例重新注册、Consumer 恢复订阅并发现新的 Provider Endpoint；
 - Repository checks、完整 Maven Reactor、独立 JVM/Nacos recovery 和 Etcd Chaos 均形成自动化门禁。
 
-## V2-C.3 当前开发分支
+## V2-C.3 已完成
 
-V2-C.3 已完成 Security & Observability 实现，并已通过当前分支 CI 与 Etcd Chaos 门禁：
+V2-C.3 已进入主线，并完成 Security & Observability 闭环：
 
 - Vert.x Transport 支持 PLAINTEXT / TLS / MTLS；
 - TLS handshake 位于 Peach HELLO 之前，不允许失败后静默降级 plaintext；
@@ -70,6 +75,27 @@ V2-C.3 已完成 Security & Observability 实现，并已通过当前分支 CI �
 - Registry Credential 的 toString 与 Nacos password 配置边界已增加脱敏测试。
 
 详细配置见 [TLS / mTLS 安全指南](security.md) 与 [可观测性指南](observability.md)。
+
+## V2-D / V2-D.2 当前进展
+
+V2-D 第一批性能 fast path 已进入主线：
+
+- Client response routing 使用固定 Header Request ID accessor；
+- Server 正常 REQUEST tracking 不再执行完整 `RpcFrame.decode()`；
+- timeout budget 原地刷新不再创建 `RpcFrameView`；
+- FrameAccumulator 复用固定 32B Header 数组；
+- JMH 已覆盖多 Payload、connection shard 和完整 byte[] E2E。
+
+V2-D.2 当前正在建立性能证据闭环：
+
+- 完整 payload × connections × concurrency JMH Matrix Runner；
+- `-prof gc` allocation / GC 数据；
+- JSON + CSV + Markdown 结果聚合；
+- JDK 21 Virtual Thread 10k logical-concurrency soak；
+- 普通 CI 运行短时 10k soak smoke，只验证工具链和高并发路径；
+- 长时间 soak 与 full matrix 由独立 Performance Evidence workflow 执行。
+
+详细运行方式见 [V2-D.2 Performance Evidence & 10k Soak](performance-evidence-v2d2.md)。容量规划方法论、QPS/Core 计算、连接分片选择和生产记录模板见 [Capacity Planning Guide](capacity-planning.md)；其中生产数值仍需固定硬件证据。
 
 ## 仍需完成的生产门禁
 

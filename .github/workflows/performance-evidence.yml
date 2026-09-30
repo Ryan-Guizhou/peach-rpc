@@ -1,0 +1,163 @@
+name: Performance Evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      evidence_class:
+        description: Evidence provenance class
+        required: true
+        default: shared-ci
+        type: choice
+        options:
+          - shared-ci
+          - controlled
+      runner_labels_json:
+        description: JSON array of GitHub runner labels
+        required: true
+        default: '["ubuntu-latest"]'
+        type: string
+      runner_id:
+        description: Stable runner identifier for controlled evidence
+        required: true
+        default: github-hosted-ephemeral
+        type: string
+      matrix_profile:
+        description: Benchmark matrix profile
+        required: true
+        default: standard
+        type: choice
+        options:
+          - smoke
+          - standard
+          - full
+      run_matrix:
+        description: Run JMH benchmark matrix
+        required: true
+        default: true
+        type: boolean
+      run_soak:
+        description: Run virtual-thread soak
+        required: true
+        default: true
+        type: boolean
+      soak_concurrency:
+        description: Logical RPC concurrency
+        required: true
+        default: "10000"
+        type: string
+      soak_duration_seconds:
+        description: Soak measurement duration
+        required: true
+        default: "1800"
+        type: string
+      soak_payload_size:
+        description: Soak payload bytes
+        required: true
+        default: "256"
+        type: string
+      soak_connections:
+        description: Connections per endpoint
+        required: true
+        default: "4"
+        type: string
+
+jobs:
+  evidence:
+    runs-on: ${{ fromJSON(inputs.runner_labels_json) }}
+    timeout-minutes: 360
+    steps:
+      - name: Guard controlled evidence
+        shell: bash
+        env:
+          EVIDENCE_CLASS: ${{ inputs.evidence_class }}
+          RUNNER_LABELS_JSON: ${{ inputs.runner_labels_json }}
+          RUNNER_ID: ${{ inputs.runner_id }}
+          MATRIX_PROFILE: ${{ inputs.matrix_profile }}
+          RUN_MATRIX: ${{ inputs.run_matrix }}
+          RUN_SOAK: ${{ inputs.run_soak }}
+          SOAK_CONCURRENCY: ${{ inputs.soak_concurrency }}
+          SOAK_DURATION_SECONDS: ${{ inputs.soak_duration_seconds }}
+        run: |
+          if [[ "$EVIDENCE_CLASS" != "controlled" ]]; then exit 0; fi
+          if [[ "$RUNNER_LABELS_JSON" == *"ubuntu-latest"* ]]; then echo "Controlled evidence cannot run on ubuntu-latest"; exit 1; fi
+          if [[ -z "$RUNNER_ID" || "$RUNNER_ID" == "github-hosted-ephemeral" ]]; then echo "Controlled evidence requires a stable runner_id"; exit 1; fi
+          if [[ "$MATRIX_PROFILE" != "full" || "$RUN_MATRIX" != "true" || "$RUN_SOAK" != "true" ]]; then echo "Controlled evidence requires full matrix and soak"; exit 1; fi
+          if (( SOAK_CONCURRENCY < 10000 || SOAK_DURATION_SECONDS < 1800 )); then echo "Controlled evidence requires >=10000 concurrency and >=1800s soak"; exit 1; fi
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Capture evidence environment
+        env:
+          PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
+          PEACH_RPC_EVIDENCE_CLASS: ${{ inputs.evidence_class }}
+          PEACH_RPC_RUNNER_ID: ${{ inputs.runner_id }}
+          PEACH_RPC_RUNNER_LABELS: ${{ inputs.runner_labels_json }}
+        run: bash scripts/capture_v2d2_environment.sh target/v2d2-evidence
+
+      - name: Build benchmark runtime
+        run: mvn -B -ntp -pl peach-rpc-benchmarks -am clean package -DskipTests
+
+      - name: Run JMH matrix
+        if: ${{ inputs.run_matrix }}
+        env:
+          PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
+        run: >
+          bash scripts/run_v2d2_benchmark_matrix.sh
+          "${{ inputs.matrix_profile }}"
+          target/v2d2-evidence/matrix
+
+      - name: Run virtual-thread soak
+        if: ${{ inputs.run_soak }}
+        env:
+          PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
+          PEACH_RPC_SOAK_CONCURRENCY: ${{ inputs.soak_concurrency }}
+          PEACH_RPC_SOAK_DURATION_SECONDS: ${{ inputs.soak_duration_seconds }}
+          PEACH_RPC_SOAK_PAYLOAD_SIZE: ${{ inputs.soak_payload_size }}
+          PEACH_RPC_SOAK_CONNECTIONS: ${{ inputs.soak_connections }}
+          PEACH_RPC_SOAK_WARMUP_SECONDS: "30"
+          PEACH_RPC_SOAK_CLIENT_TIMEOUT_MS: "15000"
+          PEACH_RPC_SOAK_OUTPUT: target/v2d2-evidence/soak.json
+        run: bash scripts/run_v2d2_soak.sh
+
+      - name: Validate evidence bundle
+        if: always()
+        shell: bash
+        env:
+          RUN_MATRIX: ${{ inputs.run_matrix }}
+          RUN_SOAK: ${{ inputs.run_soak }}
+          EVIDENCE_CLASS: ${{ inputs.evidence_class }}
+          MATRIX_PROFILE: ${{ inputs.matrix_profile }}
+          SOAK_DURATION_SECONDS: ${{ inputs.soak_duration_seconds }}
+          SOAK_CONCURRENCY: ${{ inputs.soak_concurrency }}
+        run: |
+          args=(--environment target/v2d2-evidence/environment.properties --profile "$MATRIX_PROFILE" --output-dir target/v2d2-evidence)
+          if [[ "$RUN_MATRIX" == "true" ]]; then args+=(--require-matrix --matrix-dir target/v2d2-evidence/matrix); fi
+          if [[ "$RUN_SOAK" == "true" ]]; then args+=(--require-soak --soak target/v2d2-evidence/soak.json --min-soak-seconds "$SOAK_DURATION_SECONDS" --min-concurrency "$SOAK_CONCURRENCY"); fi
+          if [[ "$EVIDENCE_CLASS" == "controlled" ]]; then args+=(--require-controlled); fi
+          python3 scripts/validate_v2d2_evidence.py "${args[@]}"
+
+      - name: Generate decision inputs
+        if: success()
+        shell: bash
+        env:
+          RUN_MATRIX: ${{ inputs.run_matrix }}
+          RUN_SOAK: ${{ inputs.run_soak }}
+        run: |
+          args=(--environment target/v2d2-evidence/environment.properties --output-dir target/v2d2-evidence)
+          if [[ "$RUN_MATRIX" == "true" ]]; then args+=(--matrix-summary target/v2d2-evidence/matrix/summary.csv); fi
+          if [[ "$RUN_SOAK" == "true" ]]; then args+=(--soak target/v2d2-evidence/soak.json); fi
+          python3 scripts/generate_v2d2_decision_report.py "${args[@]}"
+
+      - name: Upload performance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2d2-performance-evidence-${{ github.run_id }}
+          path: target/v2d2-evidence
+          if-no-files-found: warn
+          retention-days: 30

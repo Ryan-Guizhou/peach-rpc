@@ -1,5 +1,10 @@
 # 性能基准与优化规则
 
+<!-- capability-status:v2-d=in-progress -->
+<!-- capability-status:v2-d2=in-progress -->
+
+V2-D.2 的完整矩阵、allocation profiling、10k logical-concurrency soak 和 evidence workflow 见 [V2-D.2 Performance Evidence & 10k Soak](performance-evidence-v2d2.md)。容量计算、QPS/Core、连接分片、CPU/内存余量与发布门禁见 [Capacity Planning Guide](capacity-planning.md)。
+
 Peach RPC 不接受没有可重复环境信息的“高性能”结论。
 
 验证至少分为：JMH 微基准、Raw Transport、端到端 RPC、故障/过载。需要记录 QPS/Core、p50/p99/p99.9、CPU、Allocation、GC、inflight、连接数和错误率。
@@ -148,6 +153,19 @@ cpu:
 error rate:
 notes:
 ```
+
+## V2-D.2 当前证据工具
+
+当前已提供：
+
+- `scripts/run_v2d2_benchmark_matrix.sh`：smoke / standard / full Matrix，包含 Payload 与 NOOP/CPU/BLOCKING/SLOW_PROVIDER/OVERLOAD 场景；
+- `scripts/summarize_v2d2_results.py`：Payload/Scenario JMH JSON 聚合为 CSV/Markdown，并保留 success/error AuxCounters；
+- `scripts/run_v2d2_soak.sh`：Virtual Thread soak；
+- `PerformanceSoakRunner`：默认 10000 logical concurrency；
+- `.github/workflows/performance-evidence.yml`：可保存长期证据 Artifact；
+- 普通 CI 的 benchmark smoke + 10k short soak smoke。
+
+注意：共享 CI Runner 上的数据只验证工具和行为，不写入 Production SLO。固定硬件 full matrix / 长时间 soak 尚未完成，因此 V2-D.2 保持 In Progress。
 
 ## V2-D 后续候选
 

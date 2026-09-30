@@ -2,12 +2,17 @@
 
 [简体中文](README.md) | English
 
+<!-- capability-status:project=preview -->
+<!-- capability-status:v2-c3=current -->
+<!-- capability-status:v2-d=in-progress -->
+<!-- capability-status:v2-d2=in-progress -->
+
 <!-- doc-section:overview -->
 ## Overview
 
 Peach RPC is a high-performance and extensible Java RPC framework. The `0.1.x` line focuses on a durable data/control-plane foundation: long-lived multiplexed connections, local service directories, bounded concurrency, SPI extensions, a binary protocol, a Spring Boot Starter, and reproducible benchmarks.
 
-> Status: Preview. V2-C.1 delivers annotation-driven runtimes and Nacos; V2-C.2 delivers the connection/control-plane HA closure. The current V2-C.3 branch adds TLS/mTLS, hostname verification, PEM validity checks and live reload, Registry/TLS lifecycle observation, plus optional Micrometer, OpenTelemetry, and JFR adapters. OpenTelemetry propagates W3C trace context through existing RPC metadata, and real-RPC tests verify CLIENT/SERVER parent-child spans. TLS integration tests cover wrong CAs, hostname mismatch, missing client certificates, expired certificates, reload, and coexistence with heartbeat/reconnect. Full performance evidence, wire compatibility, long soak/network partition coverage, capacity planning, and upgrade/rollback guidance remain Production GA gates. See the [Production Roadmap / Capability Matrix](docs/production-roadmap.md) for the authoritative status view.
+> Status: Preview. V2-C.1, V2-C.2, and V2-C.3 are in the mainline and provide annotation-driven runtimes, Nacos/Etcd control-plane HA, TLS/mTLS, live certificate reload, Micrometer, OpenTelemetry, and JFR. The first V2-D hot-path optimizations and parameterized JMH benchmarks are also in main. V2-D.2 is now building the full performance matrix, allocation/GC evidence pipeline, and a 10k logical-concurrency soak harness. Fixed-hardware performance evidence, network blackhole/long-running fault soak, wire compatibility, capacity planning, and upgrade/rollback remain Production GA gates. See the [Production Roadmap / Capability Matrix](docs/production-roadmap.md) for the authoritative status view.
 
 Current capabilities include Vert.x TCP multiplexing with connection-local request IDs, negotiated heartbeat/idle detection and reconnect backoff, TLS/mTLS with certificate reload, Etcd and Nacos recovery, immutable local service snapshots, allocation-light P2C+EWMA, generated client/server paths, bounded retries, outlier ejection, circuit breaking, cancellation propagation, graceful draining, independent-JVM recovery E2E, low-dependency lifecycle observation, Micrometer metrics, OpenTelemetry distributed tracing, and JFR diagnostics.
 
@@ -129,4 +134,4 @@ mvn -B -ntp -pl peach-rpc-registry-etcd -am test -Petcd-chaos
 <!-- doc-section:docs -->
 ## Documentation
 
-Repository documentation is maintained primarily in Simplified Chinese. Start with [Production Roadmap / Capability Matrix](docs/production-roadmap.md), [Architecture](docs/architecture.md), [Starter](docs/starter.md), [TLS/mTLS Security](docs/security.md), [Observability](docs/observability.md), [Nacos Registry](docs/registry-nacos.md), and [Production readiness](docs/readiness.md).
+Repository documentation is maintained primarily in Simplified Chinese. Start with [Production Roadmap / Capability Matrix](docs/production-roadmap.md), [Architecture](docs/architecture.md), [Starter](docs/starter.md), [TLS/mTLS Security](docs/security.md), [Observability](docs/observability.md), [Performance](docs/performance.md), [V2-D.2 Performance Evidence & 10k Soak](docs/performance-evidence-v2d2.md), [Capacity Planning Guide](docs/capacity-planning.md), [Nacos Registry](docs/registry-nacos.md), and [Production readiness](docs/readiness.md).

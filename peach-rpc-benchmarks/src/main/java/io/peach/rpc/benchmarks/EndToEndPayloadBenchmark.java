@@ -8,9 +8,11 @@ import io.peach.rpc.core.PeachRpcServer;
 import io.peach.rpc.registry.Registry;
 import io.peach.rpc.registry.RegistryFactory;
 import io.peach.rpc.registry.RegistryOptions;
+import io.peach.rpc.observability.RpcSecurityMode;
 import io.peach.rpc.spi.ExtensionLoader;
 import io.peach.rpc.transport.RpcTransportFactory;
 import io.peach.rpc.transport.RpcTransportOptions;
+import io.peach.rpc.transport.RpcTransportSecurityOptions;
 import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.List;
@@ -54,6 +56,10 @@ public class EndToEndPayloadBenchmark {
     @Param({"1", "2", "4", "8"})
     public int connectionsPerEndpoint;
 
+    /** Transport 安全模式；完整矩阵脚本会显式覆盖为 PLAINTEXT/TLS。 */
+    @Param({"PLAINTEXT"})
+    public String transportSecurity;
+
     private Registry registry;
     private PeachRpcServer server;
     private PeachRpcClient client;
@@ -87,7 +93,7 @@ public class EndToEndPayloadBenchmark {
                 ExtensionLoader
                         .getLoader(RpcTransportFactory.class)
                         .getExtension("vertx");
-        RpcTransportOptions transportOptions =
+        RpcTransportOptions baseTransportOptions =
                 new RpcTransportOptions(
                         4096,
                         16 * 1024 * 1024,
@@ -96,13 +102,19 @@ public class EndToEndPayloadBenchmark {
                         Duration.ofSeconds(3),
                         Set.of(RpcCodecIds.FORY_NATIVE),
                         connectionsPerEndpoint);
+        RpcTransportOptions serverTransportOptions =
+                baseTransportOptions.withSecurity(
+                        serverSecurity());
+        RpcTransportOptions clientTransportOptions =
+                baseTransportOptions.withSecurity(
+                        clientSecurity());
 
         server = PeachRpcServer.builder()
                 .serviceRegistrar(
                         registry.registrar().orElseThrow())
                 .transportServer(
                         transportFactory.createServer(
-                                transportOptions))
+                                serverTransportOptions))
                 .codecRegistry(codecs)
                 .bindEndpoint(
                         new RpcEndpoint(
@@ -123,7 +135,7 @@ public class EndToEndPayloadBenchmark {
                 .serviceDiscovery(registry)
                 .transportClient(
                         transportFactory.createClient(
-                                transportOptions))
+                                clientTransportOptions))
                 .codecRegistry(codecs)
                 .timeout(Duration.ofSeconds(10))
                 .build();
@@ -157,6 +169,53 @@ public class EndToEndPayloadBenchmark {
         if (registry != null) {
             registry.close();
         }
+    }
+
+    private RpcTransportSecurityOptions serverSecurity() {
+        if ("PLAINTEXT".equalsIgnoreCase(transportSecurity)) {
+            return RpcTransportSecurityOptions.PLAINTEXT;
+        }
+        if (!"TLS".equalsIgnoreCase(transportSecurity)) {
+            throw new IllegalArgumentException(
+                    "Unsupported transportSecurity: " + transportSecurity);
+        }
+        return new RpcTransportSecurityOptions(
+                RpcSecurityMode.TLS,
+                requiredEnvironment("PEACH_RPC_BENCHMARK_TLS_CERT"),
+                requiredEnvironment("PEACH_RPC_BENCHMARK_TLS_KEY"),
+                "",
+                true,
+                Duration.ofSeconds(3),
+                Duration.ofHours(1),
+                Duration.ofDays(1));
+    }
+
+    private RpcTransportSecurityOptions clientSecurity() {
+        if ("PLAINTEXT".equalsIgnoreCase(transportSecurity)) {
+            return RpcTransportSecurityOptions.PLAINTEXT;
+        }
+        if (!"TLS".equalsIgnoreCase(transportSecurity)) {
+            throw new IllegalArgumentException(
+                    "Unsupported transportSecurity: " + transportSecurity);
+        }
+        return new RpcTransportSecurityOptions(
+                RpcSecurityMode.TLS,
+                "",
+                "",
+                requiredEnvironment("PEACH_RPC_BENCHMARK_TLS_CA"),
+                true,
+                Duration.ofSeconds(3),
+                Duration.ofHours(1),
+                Duration.ofDays(1));
+    }
+
+    private static String requiredEnvironment(String name) {
+        String value = System.getenv(name);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException(
+                    name + " is required for TLS benchmark mode");
+        }
+        return value;
     }
 
     private static int freePort() throws Exception {

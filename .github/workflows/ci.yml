@@ -49,5 +49,39 @@ jobs:
       - name: Verify Maven reactor
         run: mvn -B -ntp clean verify -Pquality
 
+      - name: Verify V2-D.2 evidence tooling
+        run: python3 scripts/test_v2d2_evidence_tools.py
+
+      - name: Verify V2-D.2 benchmark harness
+        run: bash scripts/run_v2d2_benchmark_matrix.sh smoke target/v2d2-matrix-smoke
+
+      - name: Verify 10k virtual-thread soak harness
+        env:
+          PEACH_RPC_SOAK_CONCURRENCY: "10000"
+          PEACH_RPC_SOAK_PAYLOAD_SIZE: "64"
+          PEACH_RPC_SOAK_CONNECTIONS: "4"
+          PEACH_RPC_SOAK_WARMUP_SECONDS: "1"
+          PEACH_RPC_SOAK_DURATION_SECONDS: "3"
+          PEACH_RPC_SOAK_CLIENT_TIMEOUT_MS: "15000"
+          PEACH_RPC_SOAK_OUTPUT: "target/v2d2-soak-smoke.json"
+        run: bash scripts/run_v2d2_soak.sh
+
+      - name: Validate V2-D.2 smoke evidence
+        run: |
+          python3 scripts/validate_v2d2_evidence.py --environment target/v2d2-matrix-smoke/environment.properties --matrix-dir target/v2d2-matrix-smoke --soak target/v2d2-soak-smoke.json --profile smoke --require-matrix --require-soak --min-soak-seconds 3 --min-concurrency 10000 --output-dir target/v2d2-smoke-report
+          python3 scripts/generate_v2d2_decision_report.py --environment target/v2d2-matrix-smoke/environment.properties --matrix-summary target/v2d2-matrix-smoke/summary.csv --soak target/v2d2-soak-smoke.json --output-dir target/v2d2-smoke-report
+
+      - name: Upload V2-D.2 smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2d2-smoke-evidence-${{ github.run_id }}
+          path: |
+            target/v2d2-matrix-smoke
+            target/v2d2-soak-smoke.json
+            target/v2d2-smoke-report
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Verify independent JVM examples
         run: bash scripts/run_example_process_e2e.sh

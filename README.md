@@ -2,12 +2,17 @@
 
 简体中文 | [English](README.en-US.md)
 
+<!-- capability-status:project=preview -->
+<!-- capability-status:v2-c3=current -->
+<!-- capability-status:v2-d=in-progress -->
+<!-- capability-status:v2-d2=in-progress -->
+
 <!-- doc-section:overview -->
 ## 项目简介
 
 Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框架。当前 `0.1.x` 重点不是堆叠功能，而是先建立可长期演进的数据面与控制面边界：长连接多路复用、本地服务目录、有界并发、SPI 扩展、二进制协议、Spring Boot Starter 和可重复性能基准。
 
-> 当前状态：Preview。V2-C.1 已完成注解驱动运行时、Examples 拆分与 Nacos 3.2.4 Registry Adapter；V2-C.2 已完成连接与控制面 HA 闭环；V2-C.3 当前分支已实现 TLS/mTLS、Hostname Verification、PEM 证书有效期校验与在线 Reload、Registry/TLS 生命周期 Observer，以及 Micrometer、OpenTelemetry、JFR 三类可选 Adapter。OpenTelemetry 通过现有 RPC Metadata 传播 W3C Trace Context，真实 RPC E2E 验证 CLIENT/SERVER Span 父子关系；TLS 真实网络测试覆盖错误 CA、主机名不匹配、缺失客户端证书、过期证书、Reload 和 Heartbeat/Reconnect 共存。项目仍保持 Preview：完整性能矩阵、Wire Compatibility、网络黑洞/长时间 soak、容量规划与升级回滚仍是 Production GA 门禁。统一能力状态与优先级见 [Production Roadmap / Capability Matrix](docs/production-roadmap.md)。
+> 当前状态：Preview。V2-C.1、V2-C.2、V2-C.3 已进入主线，已具备注解运行时、Nacos/Etcd 控制面 HA、TLS/mTLS、证书在线 Reload、Micrometer、OpenTelemetry 和 JFR。V2-D 第一批性能 fast path 与参数化 JMH 已进入主线；V2-D.2 当前正在建立完整性能矩阵、allocation/GC 证据链与 10k logical-concurrency soak。项目仍保持 Preview：固定硬件性能证据、网络黑洞/长时间故障 soak、Wire Compatibility、容量规划与升级回滚仍是 Production GA 门禁。统一能力状态与优先级见 [Production Roadmap / Capability Matrix](docs/production-roadmap.md)。
 
 核心能力：
 
@@ -217,6 +222,8 @@ CI 使用 JDK 21 执行相同门禁，并额外运行独立 JVM + Nacos restart 
 - [SPI 扩展指南](docs/spi.md)
 - [Nacos Registry Adapter](docs/registry-nacos.md)
 - [性能基准](docs/performance.md)
+- [V2-D.2 性能证据与 10k Soak](docs/performance-evidence-v2d2.md)
+- [容量规划指南](docs/capacity-planning.md)
 - [Production Roadmap / Capability Matrix](docs/production-roadmap.md)
 - [生产就绪门禁](docs/readiness.md)
 - [开发规范](docs/development.md)

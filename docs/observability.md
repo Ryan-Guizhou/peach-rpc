@@ -1,4 +1,6 @@
-# Peach RPC 可观测性指南
+# Peach RPC 可观测性
+
+<!-- capability-status:v2-c3=current -->指南
 
 > V2-C.3 提供三层可观测 Adapter：Micrometer、OpenTelemetry、JFR。  
 > Core 本身不直接依赖上述框架。

@@ -1,7 +1,10 @@
 # Peach RPC V2-D Performance Kernel Second Pass
 
-> 状态：**Batch 1 Verified / In Progress**  
-> 基线：`main@181c7a6e890eb73f4ff78281d92c79cb2c749c03`  
+<!-- capability-status:v2-d=in-progress -->
+<!-- capability-status:v2-d2=in-progress -->
+
+> 状态：**Batch 1 Current / V2-D.2 In Progress**  
+> 基线：`main@f87dd0ef3bcc3e6faeb11e124750e28cdd547531`  
 > 目标：在不破坏 V2-C.3 高可用、安全、可观测性闭环以及 v1 wire 兼容性的前提下，完成第二轮性能内核优化。
 
 ## 1. Summary
@@ -274,4 +277,8 @@ ByteBuffer.wrap(frame, requestIdOffset, 8)
 8. 跑 Repository checks；
 9. 跑完整 Maven Reactor + `-Pquality`；
 10. 跑 independent JVM/Nacos recovery；
-11. 根据 benchmark 数据决定是否进入 FrameAccumulator/Buffer ownership 第二批。
+11. FrameAccumulator Header allocation 优化已完成并进入主线；
+12. V2-D.2 继续执行完整 Matrix、allocation profiling 与 10k concurrency soak；
+13. 根据固定环境证据决定 Buffer ownership / Future / PendingRequest 是否进入默认路径。
+
+V2-D.2 的可执行证据流程见 [Performance Evidence & 10k Soak](performance-evidence-v2d2.md)。
