@@ -71,14 +71,14 @@ Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 - Core 已提供低依赖 `RpcObserver` 观测契约；
 - JMH 已覆盖调用、协议、负载均衡与基础端到端路径。
 
-V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemetry 与 JFR 三层可观测基础。V2-D 第一批热路径优化已经进入主线，V2-D.2 正在补完整性能证据与 10k soak。项目仍定位为 **Preview**。距离“可作为中型项目默认 RPC 层”的主要缺口现在集中在：
+V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemetry 与 JFR 三层可观测基础。V2-D 第一批热路径优化已经进入主线，V2-D.2 正在补完整性能证据与 10k soak；当前分支已经完成 Stable Type ID / Schema Fingerprint / Rolling Compatibility 的工程实现、系统性协议 Robustness、Nacos Chaos 工程门禁、Production Observability 与 Release Operations 资产。项目仍定位为 **Preview**。距离“可作为中型项目默认 RPC 层”的主要缺口现在集中在：
 
-1. Fory Stable Type ID / Schema fingerprint / 滚动升级兼容；
-2. byte[] / Object[] 等剩余热路径分配与完整性能矩阵；
-3. 网络黑洞/分区、协议 fuzz / malformed frame 与长时间 soak；
-4. Registry Contract TestKit 与更完整的控制面故障矩阵；
-5. 容量规划、升级、回滚和兼容矩阵；
-6. Production SLO、Dashboard 与告警模板。
+1. 固定硬件三轮 E1 Evidence、E2 Repeatability/Baseline 与 D4 性能收口；
+2. 是否继续做 Buffer/Object[]/Future/PendingRequest 优化，必须由真实 E2 数据决定；
+3. 网络黑洞/partition、长时间 Registry/Transport recovery soak；
+4. N/N+1/rollback 的真实多实例预发布演练；
+5. 目标环境确认 Capacity、Production SLO 与 Alert Threshold；
+6. RC Release/Upgrade/Rollback 演练与最终 Artifact 验收。
 
 ---
 
@@ -173,10 +173,10 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 | 能力 | 状态 | 当前实现 | 生产缺口 / 下一步 |
 |---|---|---|---|
 | Core `RpcObserver` | **Current** | Client/Provider、Connection、Registry、TLS、Certificate 生命周期事件；Composite 隔离 Adapter 异常，NOOP 低开销 | 后续根据 Production SLO 扩展少量稳定事件 |
-| Micrometer Adapter | **Current** | Client/Server latency、retry、connection、heartbeat、Registry、TLS/reload 指标；避免 endpoint/instanceId/error-message/traceId 标签 | 后续提供 Grafana Dashboard 模板 |
+| Micrometer Adapter | **Current** | logical client call / attempt / retry、Circuit/Outlier、Provider admission、connection、Registry、TLS 指标；保持低基数标签 | 目标环境只需决定 Histogram/SLO/Alert 阈值 |
 | OpenTelemetry Adapter | **Current** | Consumer/Provider Span + W3C traceparent/tracestate/baggage；真实 Peach RPC E2E 验证跨 wire parent-child | 后续补更多 semantic conventions |
 | JFR Adapter | **Current** | 慢/失败 RPC、reconnect、heartbeat、Registry recovery、TLS/reload 低频事件 | 后续结合线上 profiling 指南 |
-| 运行时诊断基线 | **Current** | Metrics + distributed tracing + JFR 三层诊断能力均已具备独立 Adapter | 后续完善 SLO/告警/Dashboard |
+| 运行时诊断基线 | **Current** | Metrics + distributed tracing + JFR 三层诊断能力；Dashboard/Alert Example/SLO Template 已具备 | 目标环境确认实际 SLO 与告警阈值 |
 
 ### 3.8 Wire Compatibility / Codec
 
@@ -184,7 +184,7 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 |---|---|---|---|
 | 固定 Protocol Header | **Current** | v1 32 字节固定 Header | 增加跨版本 compatibility matrix |
 | Codec/Compression Wire ID | **Current** | ID 已固化并保留 | 不能按 Classpath/SPI 顺序动态分配 |
-| Fory 默认 Codec | **Current** | 当前高性能主 Codec | Stable Type ID 尚未完成 |
+| Fory 默认 Codec | **Current** | 当前高性能主 Codec；bind 阶段接入 Stable Type Registry 冲突检测 | 跨语言 IDL/字段级宽松兼容后续处理 |
 | Stable Type ID | **Engineering Ready** | 确定性 Type canonicalization、Framework/User range、启动绑定冲突检测；Fory bind 已接入 | 合并后冻结算法；跨语言 IDL 后续扩展 |
 | Schema fingerprint | **Engineering Ready** | SHA-256 Service/Method/DTO Fingerprint；Provider 发布 Registry Metadata；Consumer 本地目录过滤明确不兼容节点 | 当前为保守严格模型；不兼容契约使用新的 ServiceKey.version |
 | Rolling upgrade compatibility | **Engineering Ready** | N Consumer 忽略新 Metadata；N+1 Consumer 接受 LEGACY Provider、保留匹配节点、隔离明确 mismatch；Upgrade/Rollback Runbook 已形成 | RC 前补真实多实例滚动演练 |
@@ -325,7 +325,7 @@ flowchart LR
 ### 7.2 后续增强（不阻塞 V2-C.3 Current）
 
 1. auth-enabled Nacos Server 独立集成环境；
-2. Grafana Dashboard / Alert 模板；
+2. 生产 Dashboard / Alert Example 已在 V2-G.1 补齐；
 3. PKCS#12/JKS；
 4. 更大规模 TLS 性能与证书轮换 soak。
 
@@ -470,30 +470,24 @@ Connection shard：
 
 ## 9. V2-E：Wire Compatibility 与战略生态
 
-**状态：Proposed / Future**
+**状态：Engineering Ready / Real Rolling E2E Pending**
 
-### 9.1 必须优先完成的兼容能力
+### 9.1 当前已完成的兼容能力
 
-1. Fory Stable Type ID；
-2. Type ID collision detection；
-3. Schema fingerprint；
-4. N/N+1 rolling compatibility；
-5. rollback compatibility；
-6. Protocol/Codec compatibility matrix。
+1. Stable Type ID 与 Framework/User reserved range；
+2. Type ID collision fail-fast；
+3. SHA-256 Schema Fingerprint v1；
+4. Provider Registry Metadata 发布 Protocol/Schema identity；
+5. N+1 Consumer 对 N Provider 的 LEGACY 兼容；
+6. N+1 Consumer 对明确 Schema mismatch 的 pre-routing isolation；
+7. N/N+1 与 rollback compatibility matrix；
+8. Upgrade/Rollback Runbook。
+
+真实多实例 Provider/Consumer mixed-version 与 rollback 演练仍属于 RC 外部门禁。
 
 ### 9.2 战略生态
 
-兼容模型稳定后，优先级建议：
-
-1. Protobuf / IDL；
-2. Kubernetes EndpointSlice；
-3. 其他 Registry / Codec。
-
-原因：
-
-- Protobuf/IDL 能验证跨语言、稳定 Schema 与 Codegen 边界；
-- Kubernetes EndpointSlice 能验证 discovery-only Registry Capability 模型；
-- ZooKeeper、Consul、Eureka、Kryo、Hessian2、JSON 属于生态扩展，不应早于核心生产门禁。
+兼容模型稳定后，Protobuf/IDL、Kubernetes EndpointSlice 以及 ZooKeeper/Consul/Eureka/Kryo/Hessian2/JSON 继续放在 1.1.x+，不阻塞 1.0 GA。
 
 ---
 
