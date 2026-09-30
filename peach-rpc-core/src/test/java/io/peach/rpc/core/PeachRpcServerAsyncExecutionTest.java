@@ -76,7 +76,8 @@ public class PeachRpcServerAsyncExecutionTest {
 
     private static byte[] request(String methodName) throws Exception {
         ServiceKey key =
-                new ServiceKey("io.peach.rpc.core.PeachRpcServerAsyncExecutionTest$AsyncService",
+                new ServiceKey(
+                        AsyncService.class.getName(),
                         "1.0.0",
                         "default");
         Method method = AsyncService.class.getMethod(methodName);
