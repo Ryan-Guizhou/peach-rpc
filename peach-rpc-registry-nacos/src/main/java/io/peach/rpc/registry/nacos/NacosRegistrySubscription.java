@@ -173,17 +173,19 @@ final class NacosRegistrySubscription implements RegistrySubscription {
         }
     }
 
-    private synchronized void publish(List<Instance> instances) {
-        if (closed.get()) {
+    private void publish(List<Instance> instances) {
+        publishNormalized(normalize(instances));
+    }
+
+    private synchronized void publishNormalized(
+            List<ServiceInstance> normalized) {
+        if (closed.get()
+                || normalized.equals(lastSnapshot)) {
             return;
         }
-        List<ServiceInstance> normalized = normalize(instances);
-        if (normalized.equals(lastSnapshot)) {
-            return;
-        }
-        lastSnapshot = normalized;
+        lastSnapshot = List.copyOf(normalized);
         listener.onSnapshot(new RegistrySnapshot(
-                normalized,
+                lastSnapshot,
                 revision.incrementAndGet()));
     }
 
@@ -202,6 +204,38 @@ final class NacosRegistrySubscription implements RegistrySubscription {
                         .thenComparing(ServiceInstance::instanceId))
                 .distinct()
                 .toList();
+    }
+
+    boolean matches(ServiceKey key) {
+        return serviceKey.equals(key);
+    }
+
+    void onLocalUnregistered(
+            ServiceInstance instance) {
+        if (closed.get()) {
+            return;
+        }
+        synchronized (eventMonitor) {
+            if (!initialized) {
+                return;
+            }
+            List<ServiceInstance> current =
+                    snapshotCopy();
+            List<ServiceInstance> updated =
+                    current.stream()
+                            .filter(value ->
+                                    !value.endpoint()
+                                            .equals(
+                                                    instance.endpoint()))
+                            .toList();
+            publishNormalized(updated);
+        }
+    }
+
+    private synchronized List<ServiceInstance> snapshotCopy() {
+        return lastSnapshot == null
+                ? List.of()
+                : List.copyOf(lastSnapshot);
     }
 
     CompletableFuture<Void> closeAsync() {
