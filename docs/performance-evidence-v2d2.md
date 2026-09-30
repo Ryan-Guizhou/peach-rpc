@@ -283,7 +283,40 @@ bash scripts/run_v2d2_fixed_evidence.sh target/v2d2-fixed-evidence
 
 该入口依次完成 Build -> 环境指纹 -> Full Matrix -> 30m Soak -> Evidence Validation -> Decision Inputs。
 
-### 7.2 重复性验证
+### 7.2 V2-D.2-E1 固定证据执行
+
+E1 增加真实固定 Runner 所需的执行约束：
+
+- `preflight_v2d2_runner.sh` 校验 Linux、JDK 21、Maven 3.9+、Git commit 与稳定 Runner ID，并支持约束 CPU/核心数/内存/governor；
+- `check_v2d2_runner_baseline.py` 在首轮锁定 commit、CPU、Memory、Kernel、JDK、JVM flags 等稳定字段，后续 Run 在重型测试前 fail-fast；
+- `manage_v2d2_evidence_manifest.py` 为 Evidence Bundle 生成并校验 SHA-256 Manifest；
+- `run_v2d2_e1_series.sh` 顺序执行至少 3 次完整 controlled run，并输出 REPORT_ONLY repeatability；
+- Evidence 目录不允许静默覆盖；
+- TLS benchmark 测试私钥使用系统临时目录并在退出时删除，不进入 Artifact。
+
+固定 Runner 推荐入口：
+
+~~~bash
+export PEACH_RPC_EVIDENCE_CLASS=controlled
+export PEACH_RPC_RUNNER_ID=peach-rpc-perf-01
+export PEACH_RPC_RUNNER_LABELS='self-hosted,linux,x64,peach-rpc-perf'
+
+bash scripts/run_v2d2_e1_series.sh target/v2d2-e1-controlled
+~~~
+
+可选严格硬件约束必须来自实际 Runner：
+
+~~~bash
+export PEACH_RPC_EXPECT_CPU_MODEL='<exact model>'
+export PEACH_RPC_EXPECT_PHYSICAL_CORES='<count>'
+export PEACH_RPC_EXPECT_LOGICAL_CORES='<count>'
+export PEACH_RPC_EXPECT_CPU_GOVERNOR='<governor>'
+export PEACH_RPC_MIN_MEMORY_BYTES='<bytes>'
+~~~
+
+E1 的 repeatability 保持 **REPORT_ONLY**；CV 阈值与 Baseline Promotion 属于 V2-D.2-E2。
+
+### 7.3 重复性验证
 
 单次 controlled run 只能形成“可比较证据”，不能直接形成生产基线。正式基线至少执行 3 次独立 controlled run，然后执行：
 

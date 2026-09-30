@@ -375,6 +375,12 @@ V2-D 第一批已经进入主线：
 
 详细运行方式见 [V2-D.2 Performance Evidence & 10k Soak](performance-evidence-v2d2.md)，容量计算与生产记录模板见 [Capacity Planning Guide](capacity-planning.md)。
 
+#### V2-D.2-E1：Controlled Evidence Execution
+
+**状态：In Progress / Engineering Ready / Real Runs Pending**
+
+当前分支已补齐固定 Runner preflight、环境 baseline、唯一 Run ID、Evidence SHA-256 Manifest、至少三次 controlled run 编排，以及 GitHub self-hosted Evidence workflow。E1 仍未完成：退出该阶段前必须在同一真实固定 Runner 上产生至少 3 份完整 Evidence Bundle，并且每份 Validation 都为 PASS。
+
 #### 完整矩阵维度
 
 Payload：
