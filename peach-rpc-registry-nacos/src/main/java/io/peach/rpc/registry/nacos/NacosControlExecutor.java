@@ -131,13 +131,20 @@ final class NacosControlExecutor implements AutoCloseable {
                             + "and positive delay");
         }
         return scheduler.scheduleWithFixedDelay(
-                () -> submit(
-                        operation,
-                        subject,
-                        () -> {
-                            action.run();
-                            return null;
-                        }),
+                () -> {
+                    try {
+                        submit(
+                                operation,
+                                subject,
+                                () -> {
+                                    action.run();
+                                    return null;
+                                }).join();
+                    } catch (RuntimeException ignored) {
+                        // Keep the periodic reconcile alive. The next fixed
+                        // delay starts only after this attempt has completed.
+                    }
+                },
                 initialDelay.toMillis(),
                 delay.toMillis(),
                 TimeUnit.MILLISECONDS);
