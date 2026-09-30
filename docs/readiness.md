@@ -4,6 +4,15 @@
 <!-- capability-status:v2-c3=current -->
 <!-- capability-status:v2-d=in-progress -->
 <!-- capability-status:v2-d2=in-progress -->
+<!-- capability-status:v2-d2-e2=evidence-blocked -->
+<!-- capability-status:v2-d3=conditional -->
+<!-- capability-status:v2-d4=evidence-blocked -->
+<!-- capability-status:v2-e1=engineering-ready -->
+<!-- capability-status:v2-e2=engineering-ready -->
+<!-- capability-status:v2-f1=engineering-ready -->
+<!-- capability-status:v2-f2=validation-pending -->
+<!-- capability-status:v2-g1=engineering-ready -->
+<!-- capability-status:v2-g2=engineering-ready -->
 
 当前版本定位为 Preview，可用于内部验证和中型项目集成试点，但不直接宣称生产就绪。
 
@@ -99,16 +108,31 @@ V2-D.2 当前正在建立性能证据闭环：
 
 当前已进入 **V2-D.2-E1 Controlled Performance Evidence Execution**。固定 Runner 预检、环境 Baseline、Run ID、Evidence Manifest 与三次运行编排已经具备；E1 仍需真实固定硬件完成至少三次 Full Matrix + >=30 分钟 10k Soak。完整后续版本链见 [V2-D.2 → 1.0 GA 版本执行路线](version-roadmap-to-ga.md)。
 
+## V2-D.2-E2 → V2-G.2 工程闭环
+
+当前分支已经把 E2 到 G2 的**工程能力**一次性补齐：
+
+- E2：真实 Evidence 输入检查、优化候选人工决策文件和 Handoff；
+- D4：同 Runner/同 Host 的 before/after Baseline 回归门禁，并按 JMH sample/thrpt 不同方向判定；
+- E1/E2：Stable Type ID、Type collision fail-fast、Schema Fingerprint、Registry Metadata、LEGACY/COMPATIBLE/INCOMPATIBLE 路由过滤；
+- F1：Frame/HELLO 全截断、非法 Header/Length、随机 fragmentation/coalescing；
+- F2：现有 Etcd Chaos 之外新增 Nacos pause/recovery Chaos Profile/Workflow；
+- G1：logical client call 指标、Failure Category、Circuit/Outlier/Admission 指标、Grafana Dashboard、Prometheus Alert Example、SLO Template；
+- G2：Wire Compatibility、Upgrade/Rollback、Production Configuration/Hardening、Release Policy、Release Readiness 静态检查和独立 Workflow。
+
+这些能力完成后项目仍保持 Preview，因为“工程入口完成”和“目标环境门禁通过”不是同一件事。
+
 ## 仍需完成的生产门禁
 
 正式成为中型项目默认 RPC 层之前，至少还需要。详细状态以 [Production Roadmap / Capability Matrix](production-roadmap.md) 为准：
 
-- 更完整的协议兼容、畸形帧和故障注入测试；
-- Etcd/Nacos 网络黑洞、partition、长时间 Registry/Transport 恢复 soak 与更大规模故障矩阵；
-- Buffer ownership / buffer-oriented Codec，是否进入默认路径必须由基准收益决定；
-- Fory 稳定 Type ID、Schema fingerprint、冲突检测与滚动升级兼容策略；
-- 多 payload、多并发、过载、慢 Consumer/Provider 的稳定端到端性能基线；
-- 容量规划与升级/回滚文档；
+- 同一固定硬件至少三次 E1 Full Matrix + >=30 分钟 / 10k Soak，并生成 E1 Handoff PASS；
+- E2 基于真实数据定义 Repeatability Threshold、Baseline Candidate 和优化决策；
+- 若 E2 选择实际内核优化，D3 实施后必须用 D4 同硬件回归门禁收口；
+- Etcd/Nacos 真实网络黑洞、partition、长时间 Registry/Transport 恢复 soak 与更大规模故障矩阵；
+- N/N+1 与 rollback 在预发布多实例环境完成真实演练；
+- 目标环境确认 Production SLO、Alert threshold 与容量数字；
+- RC 环境执行 Release/Upgrade/Rollback 演练；
 - Streaming RPC 若进入项目范围，需要单独完成流控、取消与背压设计。
 
 当前已经具备的基础约束包括长连接、多路复用、有界 inflight、Provider 并发准入、本地服务目录、SPI 边界、协议长度校验、真实握手、取消传播、受预算重试、端点剔除、方法熔断和优雅排空。

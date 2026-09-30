@@ -227,6 +227,12 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                         "RPC REQUEST requires a request id"));
                 return;
             }
+            if (inflight.containsKey(requestId)) {
+                closeMalformed(new RpcProtocolException(
+                        "Duplicate RPC request id: "
+                                + requestId));
+                return;
+            }
             CompletableFuture<byte[]> requestFuture =
                     handler.handle(remote, frame).toCompletableFuture();
             inflight.put(requestId, requestFuture);
@@ -243,7 +249,10 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                 RpcFrame hello = RpcProtocolCodec.decode(bytes);
                 if (hello.messageType() != RpcMessageType.HELLO
                         || hello.requestId() != 0L
-                        || hello.codec() != RpcCodecIds.CONTROL) {
+                        || hello.codec() != RpcCodecIds.CONTROL
+                        || hello.status() != RpcStatus.OK
+                        || hello.serviceId() != 0
+                        || hello.methodId() != 0) {
                     throw new RpcProtocolException(
                             "Expected HELLO as first client frame");
                 }
@@ -423,9 +432,14 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                 return;
             }
             RpcFrame cancel = RpcProtocolCodec.decode(bytes);
-            if (cancel.requestId() == 0L) {
+            if (cancel.requestId() == 0L
+                    || cancel.codec() != RpcCodecIds.CONTROL
+                    || cancel.status() != RpcStatus.OK
+                    || cancel.serviceId() != 0
+                    || cancel.methodId() != 0
+                    || cancel.payload().length != 0) {
                 closeMalformed(new RpcProtocolException(
-                        "RPC CANCEL requires a request id"));
+                        "Invalid RPC CANCEL frame"));
                 return;
             }
             CompletableFuture<byte[]> request =

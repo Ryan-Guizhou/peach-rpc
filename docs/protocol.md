@@ -143,6 +143,6 @@ OpenTelemetry Adapter 已通过真实 Peach RPC Transport E2E 验证 CLIENT/SERV
 ## 11. 当前限制
 
 - Streaming 未实现；
-- Compression 尚未进入数据面；
-- TLS/mTLS 未实现；
+- Compression 数据面当前只允许 NONE；LZ4/ZSTD 仅保留 Wire ID，收到 non-NONE Compression 会按协议错误拒绝；
+- TLS/mTLS 已在 Vert.x Transport 层实现，不改变 v1 Header；更大规模 TLS 性能矩阵仍需固定环境 Evidence；
 - Transport/Core 仍以 byte[] 完整帧为 API 边界。

@@ -11,6 +11,7 @@ import io.vertx.core.buffer.Buffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 class FrameAccumulatorTest {
@@ -80,6 +81,84 @@ class FrameAccumulatorTest {
         assertEquals(2, decoded.size());
         assertArrayEquals(first, decoded.get(0));
         assertArrayEquals(second, decoded.get(1));
+    }
+
+    @Test
+    void shouldReassembleDeterministicRandomFragmentation() {
+        Random random = new Random(20260930L);
+        for (int iteration = 0;
+                iteration < 100;
+                iteration++) {
+            byte[] expected = frame(
+                    iteration + 1L,
+                    new byte[1 + random.nextInt(4096)]);
+            FrameAccumulator accumulator =
+                    new FrameAccumulator(expected.length);
+            List<byte[]> decoded = new ArrayList<>();
+
+            int offset = 0;
+            while (offset < expected.length) {
+                int remaining = expected.length - offset;
+                int length = Math.min(
+                        remaining,
+                        1 + random.nextInt(
+                                Math.min(remaining, 97)));
+                accumulator.accept(
+                        Buffer.buffer(
+                                java.util.Arrays.copyOfRange(
+                                        expected,
+                                        offset,
+                                        offset + length)),
+                        decoded::add);
+                offset += length;
+            }
+
+            assertEquals(1, decoded.size());
+            assertArrayEquals(
+                    expected,
+                    decoded.get(0));
+        }
+    }
+
+    @Test
+    void shouldReassembleRandomCoalescingAndFragmentation() {
+        Random random = new Random(20261001L);
+        List<byte[]> expected = new ArrayList<>();
+        Buffer stream = Buffer.buffer();
+        for (int index = 0; index < 20; index++) {
+            byte[] value = frame(
+                    index + 1L,
+                    new byte[random.nextInt(256)]);
+            expected.add(value);
+            stream.appendBytes(value);
+        }
+
+        FrameAccumulator accumulator =
+                new FrameAccumulator(1024);
+        List<byte[]> decoded = new ArrayList<>();
+        int offset = 0;
+        while (offset < stream.length()) {
+            int remaining = stream.length() - offset;
+            int length = Math.min(
+                    remaining,
+                    1 + random.nextInt(
+                            Math.min(remaining, 131)));
+            accumulator.accept(
+                    stream.getBuffer(
+                            offset,
+                            offset + length),
+                    decoded::add);
+            offset += length;
+        }
+
+        assertEquals(expected.size(), decoded.size());
+        for (int index = 0;
+                index < expected.size();
+                index++) {
+            assertArrayEquals(
+                    expected.get(index),
+                    decoded.get(index));
+        }
     }
 
     private static byte[] frame(long requestId, byte[] payload) {

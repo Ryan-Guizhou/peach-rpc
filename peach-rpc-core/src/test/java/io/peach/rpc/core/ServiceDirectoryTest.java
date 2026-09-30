@@ -2,6 +2,7 @@ package io.peach.rpc.core;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
+import io.peach.rpc.api.RpcCompatibilityMetadata;
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
@@ -31,6 +32,56 @@ class ServiceDirectoryTest {
             registry.publish(new RegistrySnapshot(List.of(older), 19));
 
             assertArrayEquals(new ServiceInstance[] {newer}, directory.snapshot());
+        }
+    }
+
+    @Test
+    void shouldFilterExplicitSchemaMismatchButKeepLegacyNodes() {
+        ServiceKey key = new ServiceKey(
+                "example.Service",
+                "1.0.0",
+                "default");
+        CapturingRegistry registry = new CapturingRegistry();
+
+        try (ServiceDirectory directory =
+                     new ServiceDirectory(
+                             registry,
+                             key,
+                             "expected")) {
+            ServiceInstance matching = new ServiceInstance(
+                    "matching",
+                    key,
+                    new RpcEndpoint("127.0.0.1", 19091),
+                    100,
+                    Map.of(
+                            RpcCompatibilityMetadata.SCHEMA_FINGERPRINT,
+                            "expected"));
+            ServiceInstance legacy = instance(
+                    key,
+                    "legacy",
+                    19092);
+            ServiceInstance mismatch = new ServiceInstance(
+                    "mismatch",
+                    key,
+                    new RpcEndpoint("127.0.0.1", 19093),
+                    100,
+                    Map.of(
+                            RpcCompatibilityMetadata.SCHEMA_FINGERPRINT,
+                            "different"));
+
+            registry.publish(new RegistrySnapshot(
+                    List.of(
+                            matching,
+                            legacy,
+                            mismatch),
+                    1));
+
+            assertArrayEquals(
+                    new ServiceInstance[] {
+                            matching,
+                            legacy
+                    },
+                    directory.snapshot());
         }
     }
 

@@ -14,6 +14,8 @@ import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.codec.RpcCodec;
 import io.peach.rpc.codec.RpcCodecRegistry;
 import io.peach.rpc.codec.RpcMethodCodec;
+import io.peach.rpc.observability.RpcObserver;
+import io.peach.rpc.observability.RpcRetryExhaustionReason;
 import io.peach.rpc.protocol.RpcFrameView;
 import io.peach.rpc.protocol.RpcProtocolCodec;
 import io.peach.rpc.registry.RegistryListener;
@@ -29,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 class PeachRpcClientResilienceTest {
@@ -55,6 +58,52 @@ class PeachRpcClientResilienceTest {
     }
 
     @Test
+    void shouldObserveRetryExhaustionAtMaxAttempts() {
+        AtomicInteger attempts =
+                new AtomicInteger();
+        AtomicReference<RpcRetryExhaustionReason> reason =
+                new AtomicReference<>();
+        RpcObserver observer = new RpcObserver() {
+            @Override
+            public void onClientRetryExhausted(
+                    ServiceKey serviceKey,
+                    int methodId,
+                    RpcRetryExhaustionReason exhaustionReason,
+                    Throwable cause) {
+                reason.set(exhaustionReason);
+            }
+        };
+
+        try (PeachRpcClient client = client(
+                (endpoint, frame, timeout) -> {
+                    attempts.incrementAndGet();
+                    return CompletableFuture.failedFuture(
+                            new RpcUnavailableException(
+                                    "temporary"));
+                },
+                observer)) {
+            RetryService service = client.refer(
+                    RetryService.class,
+                    "1.0.0",
+                    "test");
+
+            CompletionException error = assertThrows(
+                    CompletionException.class,
+                    () -> service.find("42"));
+
+            assertInstanceOf(
+                    RpcUnavailableException.class,
+                    error.getCause());
+            assertEquals(
+                    2,
+                    attempts.get());
+            assertEquals(
+                    RpcRetryExhaustionReason.MAX_ATTEMPTS,
+                    reason.get());
+        }
+    }
+
+    @Test
     void shouldNotRetryMethodWithoutIdempotentContract() {
         AtomicInteger attempts = new AtomicInteger();
         try (PeachRpcClient client = client((endpoint, frame, timeout) -> {
@@ -77,7 +126,16 @@ class PeachRpcClientResilienceTest {
         }
     }
 
-    private static PeachRpcClient client(RequestFunction request) {
+    private static PeachRpcClient client(
+            RequestFunction request) {
+        return client(
+                request,
+                RpcObserver.noop());
+    }
+
+    private static PeachRpcClient client(
+            RequestFunction request,
+            RpcObserver observer) {
         RpcClientResilienceOptions resilience =
                 new RpcClientResilienceOptions(
                         2,
@@ -96,6 +154,7 @@ class PeachRpcClientResilienceTest {
                 .codecRegistry(RpcCodecRegistry.of(new StringCodec()))
                 .timeout(Duration.ofSeconds(1))
                 .resilienceOptions(resilience)
+                .observer(observer)
                 .build();
     }
 

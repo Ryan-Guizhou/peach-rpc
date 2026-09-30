@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.alibaba.nacos.api.naming.pojo.Instance;
+import io.peach.rpc.api.RpcCompatibilityMetadata;
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
@@ -51,6 +52,44 @@ class NacosInstanceMapperTest {
                 () -> NacosInstanceMapper.toNacos(
                         source,
                         "DEFAULT"));
+    }
+
+    @Test
+    void shouldRoundTripCoreCompatibilityMetadata() {
+        ServiceInstance source = new ServiceInstance(
+                "node-compat",
+                KEY,
+                new RpcEndpoint(
+                        "127.0.0.1",
+                        19090),
+                100,
+                Map.of(
+                        RpcCompatibilityMetadata.PROTOCOL_VERSION,
+                        "1",
+                        RpcCompatibilityMetadata.SCHEMA_VERSION,
+                        "1",
+                        RpcCompatibilityMetadata.SCHEMA_FINGERPRINT,
+                        "abc123"));
+
+        ServiceInstance mapped =
+                NacosInstanceMapper.fromNacos(
+                        KEY,
+                        NacosInstanceMapper.toNacos(
+                                source,
+                                "DEFAULT"));
+
+        assertEquals(
+                "1",
+                mapped.metadata().get(
+                        RpcCompatibilityMetadata.PROTOCOL_VERSION));
+        assertEquals(
+                "1",
+                mapped.metadata().get(
+                        RpcCompatibilityMetadata.SCHEMA_VERSION));
+        assertEquals(
+                "abc123",
+                mapped.metadata().get(
+                        RpcCompatibilityMetadata.SCHEMA_FINGERPRINT));
     }
 
     @Test

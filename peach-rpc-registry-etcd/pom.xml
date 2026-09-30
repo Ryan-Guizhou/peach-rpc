@@ -21,6 +21,14 @@
             <artifactId>peach-rpc-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.peach.rpc</groupId>
+            <artifactId>peach-rpc-core</artifactId>
+            <version>${revision}</version>
+            <type>test-jar</type>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.etcd</groupId>
             <artifactId>jetcd-core</artifactId>
         </dependency>

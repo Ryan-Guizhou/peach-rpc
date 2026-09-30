@@ -6,15 +6,21 @@
 <!-- capability-status:v2-c3=current -->
 <!-- capability-status:v2-d=in-progress -->
 <!-- capability-status:v2-d2=in-progress -->
+<!-- capability-status:v2-e1=engineering-ready -->
+<!-- capability-status:v2-e2=engineering-ready -->
+<!-- capability-status:v2-f1=engineering-ready -->
+<!-- capability-status:v2-f2=validation-pending -->
+<!-- capability-status:v2-g1=engineering-ready -->
+<!-- capability-status:v2-g2=engineering-ready -->
 
 <!-- doc-section:overview -->
 ## Overview
 
 Peach RPC is a high-performance and extensible Java RPC framework. The `0.1.x` line focuses on a durable data/control-plane foundation: long-lived multiplexed connections, local service directories, bounded concurrency, SPI extensions, a binary protocol, a Spring Boot Starter, and reproducible benchmarks.
 
-> Status: Preview. V2-C.1, V2-C.2, and V2-C.3 are in the mainline and provide annotation-driven runtimes, Nacos/Etcd control-plane HA, TLS/mTLS, live certificate reload, Micrometer, OpenTelemetry, and JFR. The first V2-D hot-path optimizations and parameterized JMH benchmarks are also in main. V2-D.2 is now building the full performance matrix, allocation/GC evidence pipeline, and a 10k logical-concurrency soak harness. Fixed-hardware performance evidence, network blackhole/long-running fault soak, wire compatibility, capacity planning, and upgrade/rollback remain Production GA gates. See the [Production Roadmap / Capability Matrix](docs/production-roadmap.md) for the authoritative status view.
+> Status: Preview. V2-C.x and the V2-D foundation are already established. This branch adds stable type IDs, schema fingerprints, Registry-side compatibility filtering, malformed/property protocol coverage, the Nacos chaos gate, logical-call Micrometer metrics, Dashboard/Alert/SLO assets, and upgrade/rollback/release operations. The project remains Preview because real fixed-hardware E1 evidence, E2 repeatability thresholds and baseline promotion, D4 real performance closure, and final chaos/RC environment validation are still Production GA gates. See the [Production Roadmap / Capability Matrix](docs/production-roadmap.md) for the authoritative status view.
 
-Current capabilities include Vert.x TCP multiplexing with connection-local request IDs, negotiated heartbeat/idle detection and reconnect backoff, TLS/mTLS with certificate reload, Etcd and Nacos recovery, immutable local service snapshots, allocation-light P2C+EWMA, generated client/server paths, bounded retries, outlier ejection, circuit breaking, cancellation propagation, graceful draining, independent-JVM recovery E2E, low-dependency lifecycle observation, Micrometer metrics, OpenTelemetry distributed tracing, and JFR diagnostics.
+Current capabilities include Vert.x TCP multiplexing with connection-local request IDs, negotiated heartbeat/idle detection and reconnect backoff, TLS/mTLS with certificate reload, Etcd and Nacos recovery, immutable local service snapshots, stable type/schema identity with conservative rolling compatibility, allocation-light P2C+EWMA, generated client/server paths, bounded retries, outlier ejection, circuit breaking, cancellation propagation, graceful draining, independent-JVM recovery E2E, protocol robustness/property tests, low-dependency lifecycle observation, logical-call Micrometer metrics, OpenTelemetry distributed tracing, and JFR diagnostics.
 
 <!-- doc-section:architecture -->
 ## Architecture
@@ -125,7 +131,7 @@ python3 scripts/check_project.py
 mvn -B -ntp clean verify -Pquality
 ```
 
-CI also runs the independent-JVM Nacos recovery E2E. The bounded three-node Etcd leader-transfer chaos gate can be run locally with:
+CI also runs the independent-JVM Nacos recovery E2E. Etcd leader-transfer and Nacos pause/recovery have dedicated chaos workflows, while the Release Readiness workflow verifies repository/release assets, the full quality build, and the release artifact inventory. The Etcd chaos gate can be run locally with:
 
 ```bash
 mvn -B -ntp -pl peach-rpc-registry-etcd -am test -Petcd-chaos
@@ -134,4 +140,4 @@ mvn -B -ntp -pl peach-rpc-registry-etcd -am test -Petcd-chaos
 <!-- doc-section:docs -->
 ## Documentation
 
-Repository documentation is maintained primarily in Simplified Chinese. Start with [Production Roadmap / Capability Matrix](docs/production-roadmap.md), [Architecture](docs/architecture.md), [Starter](docs/starter.md), [TLS/mTLS Security](docs/security.md), [Observability](docs/observability.md), [Performance](docs/performance.md), [V2-D.2 Performance Evidence & 10k Soak](docs/performance-evidence-v2d2.md), [Capacity Planning Guide](docs/capacity-planning.md), [Nacos Registry](docs/registry-nacos.md), and [Production readiness](docs/readiness.md).
+Repository documentation is maintained primarily in Simplified Chinese. Start with [Production Roadmap / Capability Matrix](docs/production-roadmap.md), [Architecture](docs/architecture.md), [Starter](docs/starter.md), [Wire Compatibility](docs/wire-compatibility.md), [Upgrade/Rollback](docs/upgrade-rollback.md), [Production Configuration](docs/production-configuration.md), [Production Observability/SLO](docs/production-observability.md), [Release Policy](docs/release-policy.md), [TLS/mTLS Security](docs/security.md), [Performance Evidence](docs/performance-evidence-v2d2.md), [Capacity Planning Guide](docs/capacity-planning.md), and [Production readiness](docs/readiness.md).

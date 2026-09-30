@@ -39,21 +39,28 @@ peach-rpc-core
 
 主要指标：
 
-- `peach.rpc.client.attempts`
-- `peach.rpc.client.retries`
-- `peach.rpc.server.invocations`
-- `peach.rpc.connection.active`
-- `peach.rpc.connection.established`
-- `peach.rpc.connection.reconnects`
-- `peach.rpc.connection.heartbeat.timeouts`
-- `peach.rpc.connection.closed`
-- `peach.rpc.registry.operations`
-- `peach.rpc.registry.recoveries`
-- `peach.rpc.tls.handshake`
-- `peach.rpc.tls.certificate.reload`
-- `peach.rpc.tls.certificate.expiry.warnings`
+- `peach.rpc.client.calls`：一次业务调用只记录一次，用于 QPS/SLO；
+- `peach.rpc.client.attempts`：网络 Attempt，可被 Retry 放大；
+- `peach.rpc.client.retries`；
+- `peach.rpc.client.circuit.rejected`；
+- `peach.rpc.client.outlier.ejected`；
+- `peach.rpc.server.invocations`；
+- `peach.rpc.server.admission.rejected`；
+- `peach.rpc.server.overloaded`；
+- `peach.rpc.connection.active`；
+- `peach.rpc.connection.established`；
+- `peach.rpc.connection.reconnects`；
+- `peach.rpc.connection.heartbeat.timeouts`；
+- `peach.rpc.connection.closed`；
+- `peach.rpc.registry.operations`；
+- `peach.rpc.registry.recoveries`；
+- `peach.rpc.tls.handshake`；
+- `peach.rpc.tls.certificate.reload`；
+- `peach.rpc.tls.certificate.expiry.warnings`。
 
-默认不会把 endpoint、instanceId、service、method、异常 message、traceId 作为指标标签，避免用户规模和接口数量直接放大 Meter 基数。Client/Server 的 service/method 维度应通过 Trace、日志或受控的自定义 Observer 获取。
+默认不会把 endpoint、instanceId、service、method、异常 message、traceId 作为指标标签，避免用户规模和接口数量直接放大 Meter 基数。Client Call/Attempt 与 Server Invocation 只使用低基数 status/category 等标签；service/method 维度应通过 Trace、日志或受控的自定义 Observer 获取。
+
+生产 Dashboard、Prometheus 告警示例、Golden Signals 与 SLO 口径见 [生产可观测与 SLO 模板](production-observability.md)。
 
 ## 3. OpenTelemetry
 

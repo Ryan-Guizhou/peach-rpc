@@ -10,6 +10,7 @@ import io.etcd.jetcd.test.EtcdClusterExtension;
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
+import io.peach.rpc.registry.RegistryContractTestKit;
 import io.peach.rpc.registry.RegistrySnapshot;
 import io.peach.rpc.registry.RegistrySubscription;
 import java.net.URI;
@@ -34,6 +35,28 @@ class EtcdRegistryIntegrationTest {
                     .withNodes(1)
                     .withSsl(false)
                     .build();
+
+    @Test
+    void shouldSatisfySharedRegistryContract() throws Exception {
+        try (EtcdRegistry registry =
+                     registry(
+                             uniqueNamespace("contract"),
+                             5)) {
+            ServiceKey key = new ServiceKey(
+                    "demo.Contract",
+                    "1.0.0",
+                    "contract");
+            RegistryContractTestKit
+                    .verifyRegistrationDiscoverySubscription(
+                            registry,
+                            key,
+                            instance(
+                                    key,
+                                    "contract-a",
+                                    19110),
+                            Duration.ofSeconds(15));
+        }
+    }
 
     @Test
     void shouldRegisterLookupAndUnregisterAgainstRealEtcd() {

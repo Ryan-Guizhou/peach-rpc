@@ -6,13 +6,19 @@
 <!-- capability-status:v2-c3=current -->
 <!-- capability-status:v2-d=in-progress -->
 <!-- capability-status:v2-d2=in-progress -->
+<!-- capability-status:v2-e1=engineering-ready -->
+<!-- capability-status:v2-e2=engineering-ready -->
+<!-- capability-status:v2-f1=engineering-ready -->
+<!-- capability-status:v2-f2=validation-pending -->
+<!-- capability-status:v2-g1=engineering-ready -->
+<!-- capability-status:v2-g2=engineering-ready -->
 
 <!-- doc-section:overview -->
 ## 项目简介
 
 Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框架。当前 `0.1.x` 重点不是堆叠功能，而是先建立可长期演进的数据面与控制面边界：长连接多路复用、本地服务目录、有界并发、SPI 扩展、二进制协议、Spring Boot Starter 和可重复性能基准。
 
-> 当前状态：Preview。V2-C.1、V2-C.2、V2-C.3 已进入主线，已具备注解运行时、Nacos/Etcd 控制面 HA、TLS/mTLS、证书在线 Reload、Micrometer、OpenTelemetry 和 JFR。V2-D 第一批性能 fast path 与参数化 JMH 已进入主线；V2-D.2 当前正在建立完整性能矩阵、allocation/GC 证据链与 10k logical-concurrency soak。项目仍保持 Preview：固定硬件性能证据、网络黑洞/长时间故障 soak、Wire Compatibility、容量规划与升级回滚仍是 Production GA 门禁。统一能力状态与优先级见 [Production Roadmap / Capability Matrix](docs/production-roadmap.md)。
+> 当前状态：Preview。V2-C.x 与 V2-D 基础能力已经形成主线；当前分支进一步完成 Stable Type ID、Schema Fingerprint、Registry 兼容过滤、协议畸形/随机分片测试、Nacos Chaos 工程入口、logical-call Micrometer 指标、Dashboard/Alert/SLO 模板以及升级/回滚/发布资产。项目仍保持 Preview：V2-D.2-E1 的真实固定硬件三轮 Evidence、V2-D.2-E2 的阈值与 Baseline、V2-D.4 的真实性能收口，以及最终 Chaos/RC 环境验证仍是 Production GA 门禁。统一能力状态与优先级见 [Production Roadmap / Capability Matrix](docs/production-roadmap.md)。
 
 核心能力：
 
@@ -31,6 +37,9 @@ Peach RPC 是一个面向 Java 服务间通信的高性能、可扩展 RPC 框�
 - Core 提供无 Micrometer/OpenTelemetry/JFR 依赖的 `RpcObserver`、`RpcTracingBridge` 与 `RpcMetadataPropagator`；覆盖 Client/Provider、Connection、Registry、TLS 和证书生命周期事件。可选 Micrometer Adapter 提供标准指标，OpenTelemetry Adapter 传播 W3C Trace Context，JFR Adapter 提供低频高价值运行诊断；未安装 Adapter 时保持 NOOP 路径。
 - Etcd Adapter 具备真实 Etcd 集成与 Chaos 门禁：覆盖注册/注销、Watch、namespace、Lease 过期、compaction 后 Range+Watch 恢复、单节点 restart 后 Lease/注册恢复，以及独立 3 节点 leader transfer；Lease 恢复同时使用 keepalive 信号、低频 TTL watchdog、stale lease callback 保护和有界 grant。
 - Provider 的 Registry 注册/回滚/注销操作具有独立控制面超时，避免停机流程无限阻塞。
+- Provider 在 Registry 发布 Protocol/Schema Metadata；Consumer 在本地 ServiceDirectory 更新时保留 LEGACY/匹配节点并剔除明确 Schema 不兼容节点，不增加单次 RPC 热路径成本。
+- Core 提供稳定 Type ID 与 Schema Fingerprint；Fory 绑定阶段执行 Type ID 冲突检测，业务不兼容 Schema 推荐通过新的 ServiceKey.version 隔离。
+- 协议 Robustness 已补齐截断 Header/Payload、非法 Version/Message/Status/Length、HELLO 截断/重复能力，以及 FrameAccumulator 随机分片/合并回归测试。
 - `peach-rpc-examples` 拆为共享 API、独立 Provider 和独立 Consumer；CI 会真正启动两个可执行 JAR，验证 Provider restart、Nacos restart、Provider 临时实例重注册、Consumer 重订阅以及 Endpoint 迁移后的恢复。
 
 <!-- doc-section:architecture -->
@@ -210,7 +219,7 @@ python3 scripts/check_project.py
 mvn -B -ntp clean verify -Pquality
 ```
 
-CI 使用 JDK 21 执行相同门禁，并额外运行独立 JVM + Nacos restart 恢复 E2E。Etcd 3 节点 leader-transfer Chaos 通过独立、10 分钟有界的 workflow 执行；本地可使用 `mvn -B -ntp -pl peach-rpc-registry-etcd -am test -Petcd-chaos`。根 POM 使用 `${revision}` 和 flatten plugin，后续可通过 Maven `deploy` 发布到 Nexus，再由 `peach-cloud` 直接引入 Starter。
+CI 使用 JDK 21 执行相同门禁，并额外运行独立 JVM + Nacos restart 恢复 E2E。Etcd leader-transfer 与 Nacos pause/recovery 使用独立 Chaos Workflow；Release Readiness Workflow 额外验证兼容/运维资产、完整 quality build 与 Release Artifact Inventory。根 POM 使用 `${revision}` 和 flatten plugin，正式发布流程见 [发布策略](docs/release-policy.md)。
 
 <!-- doc-section:docs -->
 ## 文档
@@ -239,5 +248,10 @@ CI 使用 JDK 21 执行相同门禁，并额外运行独立 JVM + Nacos restart 
 - [V2-C.3 Security & Observability 计划](docs/production-kernel-v2c3-plan.md)
 - [TLS / mTLS 安全指南](docs/security.md)
 - [可观测性指南](docs/observability.md)
+- [Wire Compatibility](docs/wire-compatibility.md)
+- [升级与回滚指南](docs/upgrade-rollback.md)
+- [生产配置与安全加固](docs/production-configuration.md)
+- [生产可观测与 SLO 模板](docs/production-observability.md)
+- [发布策略与 Production Operations](docs/release-policy.md)
 - [可运行 Examples](peach-rpc-examples/README.md)
 

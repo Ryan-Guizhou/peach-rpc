@@ -7,6 +7,10 @@ on:
       - 'peach-rpc-registry-etcd/**'
       - '.github/workflows/etcd-chaos.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   leader-transfer:
     runs-on: ubuntu-latest

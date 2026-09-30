@@ -1,5 +1,6 @@
 package io.peach.rpc.core;
 
+import io.peach.rpc.api.RpcCompatibilityMetadata;
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.RpcException;
 import io.peach.rpc.api.RpcExecutionMode;
@@ -179,7 +180,9 @@ public final class PeachRpcServer implements AutoCloseable {
                 key,
                 bindEndpoint,
                 100,
-                Map.of()));
+                RpcCompatibilityMetadata.providerMetadata(
+                        key,
+                        api)));
         return this;
     }
 
@@ -375,6 +378,9 @@ public final class PeachRpcServer implements AutoCloseable {
         }
 
         if (!admission.tryAcquire()) {
+            observeAdmissionRejected(
+                    request,
+                    "concurrency");
             return CompletableFuture.completedFuture(
                     errorResponse(
                             request,
@@ -383,12 +389,22 @@ public final class PeachRpcServer implements AutoCloseable {
                             "Server overloaded"));
         }
 
-        CompletableFuture<byte[]> result = new CompletableFuture<>();
+        CompletableFuture<byte[]> result =
+                new CompletableFuture<>();
+        if (observer.enabled()) {
+            observer.onServerInflightChanged(1);
+            result.whenComplete(
+                    (ignoredValue, ignoredError) ->
+                            observer.onServerInflightChanged(-1));
+        }
         RpcExecutionMode executionMode;
         try {
             executionMode = binding.executionMode(request.methodId());
         } catch (NoSuchMethodException error) {
             admission.release();
+            if (observer.enabled()) {
+                observer.onServerInflightChanged(-1);
+            }
             return CompletableFuture.completedFuture(
                     frameworkError(
                             request,
@@ -452,6 +468,12 @@ public final class PeachRpcServer implements AutoCloseable {
                     result));
         } catch (RejectedExecutionException error) {
             admission.release();
+            if (observer.enabled()) {
+                observer.onServerInflightChanged(-1);
+            }
+            observeAdmissionRejected(
+                    request,
+                    "cpu-queue");
             return CompletableFuture.completedFuture(
                     errorResponse(
                             request,
@@ -465,6 +487,18 @@ public final class PeachRpcServer implements AutoCloseable {
             }
         });
         return result;
+    }
+
+    private void observeAdmissionRejected(
+            RpcFrameView request,
+            String reason) {
+        if (!observer.enabled()) {
+            return;
+        }
+        observer.onServerAdmissionRejected(
+                request.serviceId(),
+                request.methodId(),
+                reason);
     }
 
     private void observeServerInvocation(

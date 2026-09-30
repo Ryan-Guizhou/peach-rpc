@@ -152,7 +152,8 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
                             "Unregistered RPC service from Nacos: service={}, endpoint={}",
                             instance.serviceKey().canonicalName(),
                             instance.endpoint().authority());
-                });
+                }).thenRun(() ->
+                        notifyLocalUnregister(instance));
         observeOperation(
                 stage,
                 RpcRegistryOperation.UNREGISTER,
@@ -206,6 +207,17 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
             subscriptions.remove(subscription);
             subscription.close();
         };
+    }
+
+    private void notifyLocalUnregister(
+            ServiceInstance instance) {
+        subscriptions.stream()
+                .filter(subscription ->
+                        subscription.matches(
+                                instance.serviceKey()))
+                .forEach(subscription ->
+                        subscription.onLocalUnregistered(
+                                instance));
     }
 
     private <T> void observeOperation(
