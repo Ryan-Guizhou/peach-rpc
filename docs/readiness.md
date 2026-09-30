@@ -95,7 +95,7 @@ V2-D.2 当前正在建立性能证据闭环：
 - 普通 CI 运行短时 10k soak smoke，只验证工具链和高并发路径；
 - 长时间 soak 与 full matrix 由独立 Performance Evidence workflow 执行。
 
-详细运行方式见 [V2-D.2 Performance Evidence & 10k Soak](performance-evidence-v2d2.md)。
+详细运行方式见 [V2-D.2 Performance Evidence & 10k Soak](performance-evidence-v2d2.md)。容量规划方法论、QPS/Core 计算、连接分片选择和生产记录模板见 [Capacity Planning Guide](capacity-planning.md)；其中生产数值仍需固定硬件证据。
 
 ## 仍需完成的生产门禁
 
