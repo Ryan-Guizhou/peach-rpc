@@ -15,10 +15,10 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
 /**
- * Consumer resilience primitives hot-path benchmark.
+ * Consumer 容错原语热路径性能基准。
  *
- * <p>This class intentionally shares the core package so it can measure the
- * package-private resilience primitives without widening the production API.
+ * <p>该基准刻意与 Core 使用相同 package，以便在不扩大生产 API 可见性的前提下，
+ * 直接测量 package-private 的 Retry Budget、Circuit Breaker 与 Outlier 状态路径。
  */
 @BenchmarkMode({Mode.SampleTime, Mode.Throughput})
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -36,11 +36,11 @@ public class ResiliencePathBenchmark {
     private EndpointStats ejectedEndpoint;
     private EndpointStats failureAccountingEndpoint;
 
-    /** Create benchmark state. */
+    /** 创建 Benchmark 状态。 */
     public ResiliencePathBenchmark() {
     }
 
-    /** Reset independent resilience states for each measurement iteration. */
+    /** 每个测量迭代前重建相互独立的容错状态。 */
     @Setup(Level.Iteration)
     public void setup() {
         options = new RpcClientResilienceOptions(
@@ -78,9 +78,9 @@ public class ResiliencePathBenchmark {
     }
 
     /**
-     * Measure retry-budget refill and acquire path.
+     * 测量 Retry Budget 补充额度并申请一次重试的路径。
      *
-     * @return whether one retry credit was acquired
+     * @return 是否成功申请一个重试额度
      */
     @Benchmark
     public boolean retryBudgetAcquire() {
@@ -89,9 +89,9 @@ public class ResiliencePathBenchmark {
     }
 
     /**
-     * Measure closed-circuit acquire plus successful completion.
+     * 测量闭合 Circuit 的准入与成功完成路径。
      *
-     * @return whether the call was admitted
+     * @return 调用是否获准进入
      */
     @Benchmark
     public boolean circuitClosedAcquireAndSuccess() {
@@ -101,9 +101,9 @@ public class ResiliencePathBenchmark {
     }
 
     /**
-     * Measure fail-fast rejection while a circuit is open.
+     * 测量 Circuit OPEN 状态下的快速拒绝路径。
      *
-     * @return false while the circuit remains open
+     * @return Circuit 保持 OPEN 时返回 false
      */
     @Benchmark
     public boolean circuitOpenReject() {
@@ -111,9 +111,9 @@ public class ResiliencePathBenchmark {
     }
 
     /**
-     * Measure healthy endpoint availability read.
+     * 测量健康 Endpoint 的可用性读取路径。
      *
-     * @return true for a healthy endpoint
+     * @return 健康 Endpoint 返回 true
      */
     @Benchmark
     public boolean outlierHealthyRead() {
@@ -121,9 +121,9 @@ public class ResiliencePathBenchmark {
     }
 
     /**
-     * Measure ejected endpoint availability read.
+     * 测量已剔除 Endpoint 的可用性读取路径。
      *
-     * @return false while the endpoint is ejected
+     * @return Endpoint 仍处于剔除窗口时返回 false
      */
     @Benchmark
     public boolean outlierEjectedRead() {
@@ -131,9 +131,9 @@ public class ResiliencePathBenchmark {
     }
 
     /**
-     * Measure the atomic failure-accounting path used before outlier ejection.
+     * 测量 Outlier Ejection 前使用的原子失败记账路径。
      *
-     * @return current inflight count after completion
+     * @return 本次完成后的 inflight 数量
      */
     @Benchmark
     public int outlierFailureAccounting() {
