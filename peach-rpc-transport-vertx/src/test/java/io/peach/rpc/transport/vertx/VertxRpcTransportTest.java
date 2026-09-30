@@ -191,7 +191,9 @@ class VertxRpcTransportTest {
                 new VertxRpcTransportClient(options);
         RpcEndpoint endpoint =
                 new RpcEndpoint("127.0.0.1", port);
-        CountDownLatch handled = new CountDownLatch(1);
+        AtomicReference<CountDownLatch> handled =
+                new AtomicReference<>(
+                        new CountDownLatch(1));
         AtomicReference<CompletableFuture<byte[]>> provider =
                 new AtomicReference<>();
 
@@ -378,7 +380,7 @@ class VertxRpcTransportTest {
                                 pending.getAndSet(null);
                         if (race != null) {
                             pendingRequest.set(requestBytes);
-                            handled.countDown();
+                            handled.get().countDown();
                             return race;
                         }
                         return CompletableFuture.completedFuture(
@@ -404,7 +406,7 @@ class VertxRpcTransportTest {
                                 .toCompletableFuture();
 
                 assertTrue(
-                        handled.await(
+                        handled.get().await(
                                 2,
                                 TimeUnit.SECONDS));
 
@@ -448,7 +450,8 @@ class VertxRpcTransportTest {
                                         probe)
                                 .payload());
 
-                handled = new CountDownLatch(1);
+                handled.set(
+                        new CountDownLatch(1));
                 pendingRequest.set(null);
             }
         } finally {
