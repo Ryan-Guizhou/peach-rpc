@@ -283,6 +283,42 @@ bash scripts/run_v2d2_fixed_evidence.sh target/v2d2-fixed-evidence
 
 该入口依次完成 Build -> 环境指纹 -> Full Matrix -> 30m Soak -> Evidence Validation -> Decision Inputs。
 
+### 7.2 重复性验证
+
+单次 controlled run 只能形成“可比较证据”，不能直接形成生产基线。正式基线至少执行 3 次独立 controlled run，然后执行：
+
+~~~bash
+python3 scripts/compare_v2d2_evidence.py \
+  --run target/evidence-run-1 \
+  --run target/evidence-run-2 \
+  --run target/evidence-run-3 \
+  --output-dir target/v2d2-repeatability
+~~~
+
+默认进入 **REPORT_ONLY** 模式：
+
+- 校验 commit、runner、CPU、核心数、内存、kernel、JDK、JVM flags 等环境一致性；
+- 校验三次 Matrix point 集合完全一致；
+- 汇总 soak throughput / p50 / p99 / p99.9 / CPU / GC 的 CV 与 spread；
+- 汇总全部 Matrix score 与 allocation/op 的 run-to-run CV；
+- 输出 `repeatability-report.json/.md`。
+
+项目当前**不预设拍脑袋的稳定性阈值**。获得真实固定硬件数据后，可显式传入门槛：
+
+~~~bash
+python3 scripts/compare_v2d2_evidence.py \
+  --run target/evidence-run-1 \
+  --run target/evidence-run-2 \
+  --run target/evidence-run-3 \
+  --max-matrix-score-cv-percent <threshold> \
+  --max-matrix-allocation-cv-percent <threshold> \
+  --max-soak-throughput-cv-percent <threshold> \
+  --max-soak-p99-cv-percent <threshold> \
+  --output-dir target/v2d2-repeatability
+~~~
+
+只有显式提供阈值且全部通过时，repeatability report 才为 **PASS**；未设置阈值时为 **REPORT_ONLY**，避免工具擅自定义 Production Gate。
+
 ## 8. 正式性能结论的环境要求
 
 任何进入 `performance.md`、Capacity Planning 或 SLO 的数字必须记录：
@@ -336,12 +372,14 @@ error rate:
 - [x] CPU/内存/JDK/Runner 环境指纹；
 - [x] Evidence bundle 完整性与来源校验；
 - [x] Decision Inputs JSON/Markdown 自动生成；
-- [x] 单命令 fixed-runner evidence orchestrator。
+- [x] 单命令 fixed-runner evidence orchestrator；
+- [x] controlled evidence 跨运行环境一致性与 repeatability 分析器。
 
 ### Evidence
 
 - [ ] 在固定硬件执行 full matrix；
 - [ ] 固定硬件执行至少 30 分钟 10k soak；
+- [ ] 至少 3 次 controlled run 并形成 repeatability report；
 - [ ] 建立 p50/p99/p99.9 + allocation/op 基线；
 - [x] overload / slow Provider / CPU / blocking benchmark tooling；
 - [x] Retry Budget / Circuit Breaker / Outlier Ejection resilience primitive matrix tooling；
