@@ -2,9 +2,16 @@ package io.peach.rpc.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.peach.rpc.observability.RpcCircuitState;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -67,6 +74,67 @@ class RpcCircuitBreakerTest {
         }
 
         assertEquals(1, acquired.get());
+    }
+
+    @Test
+    void halfOpenShouldAllowOnlyOneConcurrentProbe()
+            throws Exception {
+        RpcCircuitBreaker breaker =
+                new RpcCircuitBreaker(
+                        1,
+                        Duration.ofMillis(20));
+
+        breaker.onFailure();
+        assertTrue(breaker.isOpen());
+        Thread.sleep(30L);
+
+        int contenders = 32;
+        CountDownLatch ready =
+                new CountDownLatch(contenders);
+        CountDownLatch start =
+                new CountDownLatch(1);
+        List<CompletableFuture<Boolean>> probes =
+                new ArrayList<>();
+
+        for (int index = 0;
+                index < contenders;
+                index++) {
+            probes.add(CompletableFuture.supplyAsync(() -> {
+                ready.countDown();
+                try {
+                    if (!start.await(
+                            2,
+                            TimeUnit.SECONDS)) {
+                        throw new AssertionError(
+                                "Probe start barrier timed out");
+                    }
+                } catch (InterruptedException error) {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError(error);
+                }
+                return breaker.tryAcquire();
+            }));
+        }
+
+        assertTrue(ready.await(2, TimeUnit.SECONDS));
+        start.countDown();
+
+        long accepted = probes.stream()
+                .map(CompletableFuture::join)
+                .filter(Boolean::booleanValue)
+                .count();
+
+        assertEquals(1L, accepted);
+        assertEquals(
+                RpcCircuitState.HALF_OPEN,
+                breaker.state());
+
+        breaker.onSuccess();
+
+        assertEquals(
+                RpcCircuitState.CLOSED,
+                breaker.state());
+        assertTrue(breaker.tryAcquire());
     }
 
     @Test
