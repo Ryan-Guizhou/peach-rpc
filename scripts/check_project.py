@@ -86,6 +86,7 @@ REQUIRED_FILES = (
     "docs/faq.md",
     "docs/release-notes-1.0.0-RC1.md",
     "docs/release-notes-1.0.0.md",
+    "docs/release-status.properties",
     ".github/workflows/ci.yml",
     ".github/workflows/release-readiness.yml",
     ".github/workflows/release.yml",
