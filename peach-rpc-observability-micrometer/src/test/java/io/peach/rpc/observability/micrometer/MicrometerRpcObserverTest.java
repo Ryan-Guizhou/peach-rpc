@@ -10,6 +10,7 @@ import io.peach.rpc.api.RpcExecutionMode;
 import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.observability.RpcConnectionCloseReason;
+import io.peach.rpc.observability.RpcCircuitState;
 import io.peach.rpc.observability.RpcConnectionRole;
 import org.junit.jupiter.api.Test;
 
@@ -40,14 +41,40 @@ class MicrometerRpcObserverTest {
                 2000L,
                 RpcStatus.OK,
                 null);
-        observer.onClientCallCompleted(
+        ServiceKey serviceKey =
                 new ServiceKey(
                         "demo.Service",
                         "1.0.0",
-                        "default"),
+                        "default");
+        observer.onClientInflightChanged(1);
+        observer.onClientCircuitStateChanged(
+                serviceKey,
+                1,
+                RpcCircuitState.CLOSED);
+        observer.onClientCallCompleted(
+                serviceKey,
                 1,
                 2500L,
                 RpcStatus.OK,
+                null);
+        observer.onClientInflightChanged(-1);
+        observer.onClientCircuitStateChanged(
+                serviceKey,
+                1,
+                RpcCircuitState.OPEN);
+        observer.onClientCircuitStateChanged(
+                serviceKey,
+                1,
+                RpcCircuitState.HALF_OPEN);
+        observer.onClientCircuitStateChanged(
+                serviceKey,
+                1,
+                RpcCircuitState.CLOSED);
+        observer.onClientCallCompleted(
+                serviceKey,
+                1,
+                3000L,
+                RpcStatus.DEADLINE_EXCEEDED,
                 null);
         observer.onClientCircuitRejected(
                 new ServiceKey(
@@ -84,6 +111,45 @@ class MicrometerRpcObserverTest {
                                 "peach.rpc.client.outlier.ejected")
                         .counter()
                         .count());
+        assertEquals(
+                1.0,
+                registry.find(
+                                "peach.rpc.client.timeouts")
+                        .counter()
+                        .count());
+        assertEquals(
+                0.0,
+                registry.find(
+                                "peach.rpc.client.inflight")
+                        .gauge()
+                        .value());
+        assertEquals(
+                1.0,
+                registry.find(
+                                "peach.rpc.client.circuit.state")
+                        .tag(
+                                "state",
+                                RpcCircuitState.CLOSED.name())
+                        .gauge()
+                        .value());
+        assertEquals(
+                0.0,
+                registry.find(
+                                "peach.rpc.client.circuit.state")
+                        .tag(
+                                "state",
+                                RpcCircuitState.OPEN.name())
+                        .gauge()
+                        .value());
+        assertEquals(
+                0.0,
+                registry.find(
+                                "peach.rpc.client.circuit.state")
+                        .tag(
+                                "state",
+                                RpcCircuitState.HALF_OPEN.name())
+                        .gauge()
+                        .value());
         assertNull(
                 registry.find("peach.rpc.client.attempts")
                         .timer()
@@ -130,6 +196,7 @@ class MicrometerRpcObserverTest {
                 1000L,
                 RpcStatus.UNAVAILABLE,
                 new IllegalStateException("failure"));
+        observer.onServerInflightChanged(1);
         observer.onServerInvocationCompleted(
                 11,
                 7,
@@ -137,6 +204,7 @@ class MicrometerRpcObserverTest {
                 1000L,
                 RpcStatus.OVERLOADED,
                 null);
+        observer.onServerInflightChanged(-1);
         observer.onServerAdmissionRejected(
                 11,
                 7,
@@ -163,6 +231,12 @@ class MicrometerRpcObserverTest {
                                 "peach.rpc.server.admission.rejected")
                         .counter()
                         .count());
+        assertEquals(
+                0.0,
+                registry.find(
+                                "peach.rpc.server.inflight")
+                        .gauge()
+                        .value());
         assertNull(
                 registry.find("peach.rpc.server.invocations")
                         .timer()
