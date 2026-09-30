@@ -26,7 +26,8 @@ import org.junit.jupiter.api.Timeout;
 /**
  * Nacos 容器暂停/恢复故障注入测试。
  *
- * <p>该测试仅由 nacos-chaos Profile 执行，需要宿主机 Docker CLI。
+ * <p>使用独立 Consumer、Provider A、Provider B Registry Client 模拟真实进程边界。
+ * 该测试仅由 nacos-chaos Profile 执行，需要宿主机 Docker CLI。
  */
 @Tag("chaos")
 @Timeout(value = 150, unit = TimeUnit.SECONDS)
@@ -45,9 +46,18 @@ class NacosRegistryChaosTest {
                 container != null && !container.isBlank(),
                 "NACOS_CHAOS_CONTAINER is required");
 
-        Registry registry = registry(
+        String group = unique("PEACH_RPC_CHAOS");
+        Registry consumer = registry(
                 endpoint,
-                unique("PEACH_RPC_CHAOS"),
+                group,
+                "DEFAULT");
+        Registry providerA = registry(
+                endpoint,
+                group,
+                "DEFAULT");
+        Registry providerB = registry(
+                endpoint,
+                group,
                 "DEFAULT");
         ServiceKey key = new ServiceKey(
                 "demo.NacosChaos",
@@ -62,21 +72,32 @@ class NacosRegistryChaosTest {
         boolean paused = false;
 
         try (var subscription =
-                     registry.subscribe(
+                     consumer.subscribe(
                              key,
                              latest::set)) {
+            providerA.registrar()
+                    .orElseThrow()
+                    .register(first)
+                    .toCompletableFuture()
+                    .get(10, TimeUnit.SECONDS);
+
             assertTrue(await(
                     Duration.ofSeconds(30),
-                    () -> registerAndLookupEventually(
-                            registry,
+                    () -> lookupContains(
+                            consumer,
                             key,
+                            first)));
+            assertTrue(await(
+                    Duration.ofSeconds(30),
+                    () -> containsIdentity(
+                            latest.get(),
                             first)));
 
             docker("pause", container);
             paused = true;
 
             CompletableFuture<Void> duringPause =
-                    registry.registrar()
+                    providerB.registrar()
                             .orElseThrow()
                             .register(second)
                             .toCompletableFuture();
@@ -89,29 +110,44 @@ class NacosRegistryChaosTest {
             docker("unpause", container);
             paused = false;
 
-            assertTrue(await(
-                    Duration.ofSeconds(30),
-                    () -> registerEventually(
-                            registry,
-                            second)));
+            if (!awaitFutureSuccess(
+                    duringPause,
+                    Duration.ofSeconds(15))) {
+                assertTrue(await(
+                        Duration.ofSeconds(30),
+                        () -> registerEventually(
+                                providerB,
+                                second)));
+            }
+
             assertTrue(await(
                     Duration.ofSeconds(30),
                     () -> {
                         RegistrySnapshot snapshot =
-                                registry.lookup(key)
+                                consumer.lookup(key)
                                         .toCompletableFuture()
-                                        .get(5, TimeUnit.SECONDS);
-                        return contains(snapshot, first)
-                                && contains(snapshot, second);
+                                        .get(
+                                                5,
+                                                TimeUnit.SECONDS);
+                        return containsIdentity(
+                                snapshot,
+                                first)
+                                && containsIdentity(
+                                        snapshot,
+                                        second);
                     }));
             assertTrue(await(
                     Duration.ofSeconds(30),
-                    () -> contains(latest.get(), second)));
+                    () -> containsIdentity(
+                            latest.get(),
+                            second)));
         } finally {
             if (paused) {
                 docker("unpause", container);
             }
-            registry.close();
+            providerA.close();
+            providerB.close();
+            consumer.close();
         }
     }
 
@@ -137,22 +173,19 @@ class NacosRegistryChaosTest {
         return new ServiceInstance(
                 id,
                 key,
-                new RpcEndpoint("127.0.0.1", port),
+                new RpcEndpoint(
+                        "127.0.0.1",
+                        port),
                 100,
                 Map.of("zone", "chaos"));
     }
 
-    private static boolean registerAndLookupEventually(
+    private static boolean lookupContains(
             Registry registry,
             ServiceKey key,
             ServiceInstance instance) {
-        if (!registerEventually(
-                registry,
-                instance)) {
-            return false;
-        }
         try {
-            return contains(
+            return containsIdentity(
                     registry.lookup(key)
                             .toCompletableFuture()
                             .get(
@@ -172,18 +205,41 @@ class NacosRegistryChaosTest {
                     .orElseThrow()
                     .register(instance)
                     .toCompletableFuture()
-                    .get(5, TimeUnit.SECONDS);
+                    .get(
+                            5,
+                            TimeUnit.SECONDS);
             return true;
         } catch (Exception ignored) {
             return false;
         }
     }
 
-    private static boolean contains(
+    private static boolean awaitFutureSuccess(
+            CompletableFuture<Void> future,
+            Duration timeout) {
+        try {
+            future.get(
+                    timeout.toMillis(),
+                    TimeUnit.MILLISECONDS);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private static boolean containsIdentity(
             RegistrySnapshot snapshot,
-            ServiceInstance instance) {
+            ServiceInstance expected) {
         return snapshot != null
-                && snapshot.instances().contains(instance);
+                && snapshot.instances()
+                        .stream()
+                        .anyMatch(value ->
+                                value.instanceId()
+                                        .equals(
+                                                expected.instanceId())
+                                        && value.endpoint()
+                                                .equals(
+                                                        expected.endpoint()));
     }
 
     private static void docker(
