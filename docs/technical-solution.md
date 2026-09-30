@@ -143,7 +143,7 @@ Registry Adapter 负责：
 
 Core 只接收 `RegistrySnapshot`。Directory 根据 revision 更新本地数组快照。
 
-Etcd 使用 Lease + Range/Watch；Nacos 使用临时实例 + Naming subscription。Nacos 阻塞 SDK 被隔离到 Adapter 私有控制面执行器。
+Etcd 使用 Lease + Range/Watch；Nacos 使用临时实例 + Naming subscription。Nacos 以 NamingEvent 作为主更新通道，并用 5 秒低频完整视图 reconcile 兜底最后实例消失等通知缺口；reconcile 只在事件队列空闲时发布，避免旧查询结果覆盖新事件。Nacos 阻塞 SDK 被隔离到 Adapter 私有控制面执行器。
 
 ## 6. Wire 与兼容
 
