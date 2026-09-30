@@ -1,9 +1,16 @@
 package io.peach.rpc.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 class RpcCircuitBreakerTest {
@@ -20,6 +27,46 @@ class RpcCircuitBreakerTest {
 
         assertTrue(breaker.isOpen());
         assertFalse(breaker.tryAcquire());
+    }
+
+    @Test
+    void halfOpenShouldAllowOnlyOneConcurrentProbe()
+            throws Exception {
+        RpcCircuitBreaker breaker =
+                new RpcCircuitBreaker(
+                        1,
+                        Duration.ofMillis(20));
+
+        assertTrue(breaker.tryAcquire());
+        breaker.onFailure();
+        Thread.sleep(30L);
+
+        int concurrency = 16;
+        CountDownLatch start = new CountDownLatch(1);
+        AtomicInteger acquired = new AtomicInteger();
+        try (var executor =
+                     Executors.newFixedThreadPool(
+                             concurrency)) {
+            List<Future<?>> futures =
+                    new ArrayList<>();
+            for (int index = 0;
+                    index < concurrency;
+                    index++) {
+                futures.add(executor.submit(() -> {
+                    start.await();
+                    if (breaker.tryAcquire()) {
+                        acquired.incrementAndGet();
+                    }
+                    return null;
+                }));
+            }
+            start.countDown();
+            for (Future<?> future : futures) {
+                future.get();
+            }
+        }
+
+        assertEquals(1, acquired.get());
     }
 
     @Test
