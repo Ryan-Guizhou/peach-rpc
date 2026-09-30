@@ -25,10 +25,15 @@ for jar in "$OLD_PROVIDER" "$OLD_CONSUMER" "$NEW_PROVIDER" "$NEW_CONSUMER"; do
 done
 
 PROVIDER_PID=""
+CONSUMER_PID=""
 PROVIDER_LOG="$(mktemp)"
 CONSUMER_LOG="$(mktemp)"
 
 cleanup() {
+  if [[ -n "$CONSUMER_PID" ]]; then
+    kill "$CONSUMER_PID" 2>/dev/null || true
+    wait "$CONSUMER_PID" 2>/dev/null || true
+  fi
   if [[ -n "$PROVIDER_PID" ]]; then
     kill "$PROVIDER_PID" 2>/dev/null || true
     wait "$PROVIDER_PID" 2>/dev/null || true
@@ -73,18 +78,39 @@ stop_provider() {
   sleep 1
 }
 
+stop_consumer() {
+  if [[ -z "$CONSUMER_PID" ]]; then
+    return
+  fi
+  kill "$CONSUMER_PID" 2>/dev/null || true
+  wait "$CONSUMER_PID" 2>/dev/null || true
+  CONSUMER_PID=""
+}
+
 run_consumer() {
   local jar="$1"
   local label="$2"
-  : >"$CONSUMER_LOG"
 
   for _ in {1..4}; do
-    if timeout 30 java -jar "$jar"       --peach.rpc.registry.endpoints="$NACOS_ENDPOINT"       >"$CONSUMER_LOG" 2>&1; then
+    : >"$CONSUMER_LOG"
+    java -jar "$jar"       --peach.rpc.registry.endpoints="$NACOS_ENDPOINT"       >"$CONSUMER_LOG" 2>&1 &
+    CONSUMER_PID=$!
+
+    for _ in {1..300}; do
       if grep -q         "RPC demo completed successfully: Hello, Peach RPC!"         "$CONSUMER_LOG"; then
+        stop_consumer
         echo "Compatibility PASS: $label"
         return
       fi
-    fi
+      if ! kill -0 "$CONSUMER_PID" 2>/dev/null; then
+        wait "$CONSUMER_PID" 2>/dev/null || true
+        CONSUMER_PID=""
+        break
+      fi
+      sleep 0.1
+    done
+
+    stop_consumer
     sleep 1
   done
 
