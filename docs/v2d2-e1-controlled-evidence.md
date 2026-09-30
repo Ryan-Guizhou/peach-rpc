@@ -59,7 +59,7 @@ export PEACH_RPC_RUNNER_LABELS='self-hosted,linux,x64,peach-rpc-perf'
 bash scripts/run_v2d2_e1_series.sh target/v2d2-e1-controlled
 ~~~
 
-默认执行 3 次独立 controlled run；每次包含 Full Matrix 和 >=1800 秒 / 10000 logical callers Soak；Run 之间默认 cooldown 60 秒。
+默认执行 3 次独立 controlled run；每次包含 Full Matrix 和 >=1800 秒 / 10000 logical callers Soak；Run 之间默认 cooldown 60 秒。三轮完成后不会直接进入 E2，而是先调用 `finalize_v2d2_e1.py` 生成机器可读的 E1 Handoff。
 
 GitHub self-hosted Runner 也可以手工触发 `.github/workflows/performance-evidence.yml`。Controlled 模式中的 `runner_id` 是**期望的 GitHub self-hosted Runner 名称**；Workflow 会读取真实 `runner.name` 并要求二者完全一致，不能用手填 ID 冒充固定 Runner。每次执行还必须设置不同的 `run_id`，例如 `run-1`、`run-2`、`run-3`。
 
@@ -91,11 +91,36 @@ python3 scripts/manage_v2d2_evidence_manifest.py verify --bundle <bundle>
 
 Series 第一轮生成 `runner-baseline.json`，锁定 commit、Runner ID、**host fingerprint SHA-256**、CPU、核心数、NUMA、Memory、CPU governor、Kernel、Java、JVM flags 与 containerized 状态。后续 Run 在 Full Matrix 前比较，发生漂移立即终止。即使两台机器配置完全相同，只要主机指纹不同，也不会被当成同一固定 Runner。
 
-## 6. Artifact 安全
+## 6. E1 Handoff Gate
+
+`finalize_v2d2_e1.py` 是 E1 的显式退出门禁。它要求：
+
+- 至少 3 份 controlled Evidence Bundle；
+- 每份 `validation-report.json` 为 PASS；
+- 每份 SHA-256 Manifest verify PASS；
+- 每份具有唯一、非 unknown 的 `run_id`；
+- Soak concurrency >=10000；
+- Soak duration >=1800 秒；
+- 每份 Soak 存在成功请求；
+- commit / Runner ID / host fingerprint / hardware / JDK / JVM flags 等可比较；
+- threshold-free repeatability 状态必须为 `REPORT_ONLY` 且没有 comparability failure。
+
+输出：
+
+~~~text
+e1-handoff/
+├── e1-handoff.json
+├── e1-handoff.md
+└── repeatability-report-only/
+~~~
+
+`e1-handoff.status=PASS` 只表示 **V2-D.2-E1 原始证据采集完成**。它不会定义 CV 阈值、不会晋级 Baseline，也不会建立 Production SLO；这些属于 V2-D.2-E2。
+
+## 7. Artifact 安全
 
 TLS Matrix 使用测试用自签名证书。E1 后测试私钥只存在于系统临时目录，Benchmark 退出时删除，不上传到 Evidence Artifact。
 
-## 7. 验收清单
+## 8. 验收清单
 
 ### 工程能力
 
@@ -109,6 +134,7 @@ TLS Matrix 使用测试用自签名证书。E1 后测试私钥只存在于系统
 - [x] SHA-256 Manifest / verify；
 - [x] >=3 Run series orchestration；
 - [x] REPORT_ONLY repeatability handoff；
+- [x] explicit E1 Handoff Gate；
 - [x] TLS temporary-key artifact hygiene；
 - [x] Evidence tooling CI self-test。
 
@@ -120,6 +146,7 @@ TLS Matrix 使用测试用自签名证书。E1 后测试私钥只存在于系统
 - [ ] Run #3 Full Matrix + >=30m/10k Soak PASS；
 - [ ] 三份 Manifest verify PASS；
 - [ ] Runner baseline 全程无漂移；
-- [ ] REPORT_ONLY repeatability 无 comparability failure。
+- [ ] REPORT_ONLY repeatability 无 comparability failure；
+- [ ] `e1-handoff.status=PASS`。
 
 只有真实执行全部完成，E1 才能结束并进入 V2-D.2-E2。
