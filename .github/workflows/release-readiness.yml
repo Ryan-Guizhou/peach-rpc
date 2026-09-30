@@ -42,11 +42,26 @@ jobs:
       - name: Repository checks
         run: python3 scripts/check_project.py
 
-      - name: Release-readiness static checks
-        run: python3 scripts/check_release_readiness.py --stage ga --version 1.0.0
+      - name: Verify RC1 release contract
+        run: |
+          python3 scripts/check_release_version.py --stage rc1 --version 1.0.0-RC1
+          python3 scripts/check_release_readiness.py --stage rc1 --version 1.0.0-RC1
 
-      - name: Verify Maven reactor
-        run: mvn -B -ntp clean verify -Pquality
+      - name: Verify RC1 release packaging
+        run: >
+          mvn -B -ntp
+          -Drevision=1.0.0-RC1
+          clean verify
+          -DskipTests
+          -Prelease
+
+      - name: Verify GA release contract
+        run: |
+          python3 scripts/check_release_version.py --stage ga --version 1.0.0
+          python3 scripts/check_release_readiness.py --stage ga --version 1.0.0
+
+      - name: Verify GA Maven reactor
+        run: mvn -B -ntp clean verify -Pquality,release
 
       - name: Build release artifact inventory
         shell: bash
