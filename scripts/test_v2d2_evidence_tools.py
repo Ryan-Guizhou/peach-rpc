@@ -228,6 +228,10 @@ def write_bundle(
         json.dumps({"status": "PASS"}),
         encoding="utf-8",
     )
+    (root / "decision-inputs.json").write_text(
+        json.dumps({"schemaVersion": 1, "evidenceClass": "controlled"}),
+        encoding="utf-8",
+    )
 
 
 def main() -> int:
