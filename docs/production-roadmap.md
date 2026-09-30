@@ -77,7 +77,7 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 | 消除参数 Object[] | **Partial** | Generated CallSite 已减少动态调用 | Fory Codec ID 1 仍使用 Object[] 参数对象图 |
 | Compression 数据面 | **Proposed** | Wire ID 已预留 NONE/LZ4/ZSTD | 当前实际只启用 NONE；必须以 payload/CPU/带宽基准决定策略 |
 | 完整性能矩阵 | **Partial** | 已有 payload × connection shard × concurrency Matrix Runner、sample/throughput 与 GC profiler；普通 CI 跑 smoke | 仍需固定硬件执行 full matrix，并补 overload/slow endpoint/fault 场景 |
-| 性能容量模型 | **Proposed** | 无固定硬件容量结论 | 建立 QPS/Core、p50/p99/p99.9、CPU、Allocation、GC、错误率与连接数模型 |
+| 性能容量模型 | **Partial** | 已形成 Capacity Planning 方法论、QPS/Core/实例数公式、Payload/TLS 分桶与决策模板；暂无固定硬件生产数值 | 在固定硬件填充 p50/p99/p99.9、CPU、Allocation、GC、错误率与连接数基线 |
 
 ### 3.2 Consumer 高可用与容错
 
@@ -183,7 +183,7 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 |---|---|---|---|
 | Maven Reactor / CI | **Current** | JDK 21 + `check_project.py` + `clean verify -Pquality` | 继续作为所有 PR 基础门禁 |
 | Examples | **Current** | API/Provider/Consumer 分模块；CI 运行独立 executable JAR recovery E2E 与 Nacos restart | 继续补多实例滚动发布示例 |
-| Capacity Planning | **Proposed** | 尚未形成正式指南 | connections/maxInflight/maxConcurrent/CPU pool/timeout/retry 参数容量模型 |
+| Capacity Planning | **Partial** | 已有 `capacity-planning.md` 方法论、证据分层、QPS/Core 与实例数计算模板 | 固定硬件填充生产数值，并形成 connections/maxInflight/maxConcurrent/CPU pool/timeout/retry 推荐区间 |
 | Upgrade Guide | **Proposed** | 尚未完成 | 协议、Codec、Registry、Starter 升级步骤 |
 | Rollback Guide | **Proposed** | 尚未完成 | N/N+1 回滚与 Registry/Codec 兼容边界 |
 | Compatibility Matrix | **Proposed** | 尚未形成 | JDK/Spring/Protocol/Codec/Adapter 版本矩阵 |
@@ -362,11 +362,14 @@ V2-D 第一批已经进入主线：
 6. JDK 21 Virtual Thread 10k logical-concurrency soak；
 7. Soak 输出吞吐、p50/p99/p99.9、错误率、Heap、GC、CPU、inflight、连接与错误类型；
 8. 普通 CI 增加 Matrix smoke 与 10k short soak smoke；
-9. 独立 Performance Evidence workflow 支持 full matrix 与长时间 10k soak Artifact。
+9. 独立 Performance Evidence workflow 支持 full matrix 与长时间 10k soak Artifact；
+10. TLS/PLAINTEXT security matrix tooling；
+11. Retry Budget / Circuit Breaker / Outlier Ejection resilience primitive matrix tooling；
+12. `capacity-planning.md` 容量规划方法论与数据记录模板。
 
-当前仍未把共享 CI Runner 上的数值写成 Production SLO。固定硬件 full matrix、至少 30 分钟 10k soak、TLS 对比和故障性能矩阵仍属于 V2-D.2 未完成证据。
+当前仍未把共享 CI Runner 上的数值写成 Production SLO。固定硬件 full matrix、至少 30 分钟 10k soak、TLS/PLAINTEXT 数值对比、Provider fault 与 resilience 数值基线仍属于 V2-D.2 未完成证据。
 
-详细运行方式见 [V2-D.2 Performance Evidence & 10k Soak](performance-evidence-v2d2.md)。
+详细运行方式见 [V2-D.2 Performance Evidence & 10k Soak](performance-evidence-v2d2.md)，容量计算与生产记录模板见 [Capacity Planning Guide](capacity-planning.md)。
 
 #### 完整矩阵维度
 
