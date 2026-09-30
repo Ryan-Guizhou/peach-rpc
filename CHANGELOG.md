@@ -17,6 +17,10 @@ Peach RPC 使用语义化版本。1.0.x 保持 Wire v1、Stable Type ID、Schema
 - 对外文档从 V2 阶段研发日志收敛为 1.0 稳定文档体系。
 - 固定硬件性能 Evidence 改为“发布官方性能/容量数字”的必需门槛，而不是开源 GA 本身的阻塞项。
 
+### Fixed
+
+- Nacos Consumer subscription 增加低频完整视图 reconcile，确保远端最后一个 Provider 注销后即使 NamingEvent 延迟或缺失，本地目录也能最终收敛为空。
+
 ### Verified
 
 - CI。
