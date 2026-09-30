@@ -8,13 +8,51 @@ import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.registry.Registry;
 import io.peach.rpc.registry.RegistryCapability;
+import io.peach.rpc.registry.RegistryContractTestKit;
 import io.peach.rpc.registry.ServiceRegistrar;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.jupiter.api.Test;
 
 class MemoryRegistryTest {
+
+    @Test
+    void shouldSatisfySharedRegistryContract()
+            throws Exception {
+        try (Registry registry = new MemoryRegistry()) {
+            ServiceKey key = new ServiceKey(
+                    "demo.Contract",
+                    "1.0.0",
+                    "memory");
+            ServiceInstance first = new ServiceInstance(
+                    "memory-a",
+                    key,
+                    new RpcEndpoint(
+                            "127.0.0.1",
+                            19090),
+                    100,
+                    Map.of());
+            ServiceInstance second = new ServiceInstance(
+                    "memory-b",
+                    key,
+                    new RpcEndpoint(
+                            "127.0.0.1",
+                            19091),
+                    100,
+                    Map.of());
+
+            RegistryContractTestKit
+                    .verifyRegistrationDiscoverySubscription(
+                            registry,
+                            key,
+                            first,
+                            second,
+                            Duration.ofSeconds(2));
+        }
+    }
+
     @Test
     void subscriberShouldObserveRegisterAndUnregister() {
         Registry registry = new MemoryRegistry();
