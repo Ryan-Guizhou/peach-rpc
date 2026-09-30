@@ -268,6 +268,7 @@ Performance Evidence workflow 支持：
 - 不能使用 `ubuntu-latest`；
 - 必须使用稳定 `runner_id`，并在 GitHub self-hosted Workflow 中校验 expected runner name == actual `runner.name`；
 - 必须生成非 `unknown` 的 `host_fingerprint_sha256`；该值只保存哈希，不保存原始 machine-id / DMI UUID；
+- GitHub controlled Workflow 必须预先提供 expected `host_fingerprint_sha256`，并在 Full Matrix 前与当前机器计算值一致；
 - 必须 `matrix_profile=full`；
 - Matrix 与 Soak 必须同时运行；
 - concurrency >= 10000；
