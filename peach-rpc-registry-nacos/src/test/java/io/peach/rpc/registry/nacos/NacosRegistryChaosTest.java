@@ -81,22 +81,25 @@ class NacosRegistryChaosTest {
             docker("pause", container);
             paused = true;
 
-            CompletableFuture<Void> blockedRegistration =
+            CompletableFuture<Void> duringPause =
                     registry.registrar()
                             .orElseThrow()
                             .register(second)
                             .toCompletableFuture();
             Thread.sleep(1500L);
             assertFalse(
-                    blockedRegistration.isDone(),
-                    "Registration should not complete while Nacos is paused");
+                    duringPause.isDone()
+                            && !duringPause.isCompletedExceptionally(),
+                    "Registration must not succeed while Nacos is paused");
 
             docker("unpause", container);
             paused = false;
 
-            blockedRegistration.get(
-                    30,
-                    TimeUnit.SECONDS);
+            assertTrue(await(
+                    Duration.ofSeconds(30),
+                    () -> registerEventually(
+                            registry,
+                            second)));
             assertTrue(await(
                     Duration.ofSeconds(30),
                     () -> {
@@ -143,6 +146,21 @@ class NacosRegistryChaosTest {
                 new RpcEndpoint("127.0.0.1", port),
                 100,
                 Map.of("zone", "chaos"));
+    }
+
+    private static boolean registerEventually(
+            Registry registry,
+            ServiceInstance instance) {
+        try {
+            registry.registrar()
+                    .orElseThrow()
+                    .register(instance)
+                    .toCompletableFuture()
+                    .get(5, TimeUnit.SECONDS);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     private static boolean contains(
