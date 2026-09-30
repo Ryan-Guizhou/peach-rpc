@@ -236,6 +236,36 @@ def main() -> int:
             write_bundle(root, scale)
             runs.append(root)
 
+        for root in runs:
+            run(
+                "scripts/manage_v2d2_evidence_manifest.py",
+                "create",
+                "--bundle",
+                str(root),
+            )
+
+        e1_output = temp / "e1-handoff"
+        run(
+            "scripts/finalize_v2d2_e1.py",
+            "--run",
+            str(runs[0]),
+            "--run",
+            str(runs[1]),
+            "--run",
+            str(runs[2]),
+            "--output-dir",
+            str(e1_output),
+        )
+        e1_handoff = json.loads(
+            (e1_output / "e1-handoff.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        if e1_handoff.get("status") != "PASS":
+            raise AssertionError(e1_handoff)
+        if e1_handoff.get("nextStage") != "V2-D.2-E2":
+            raise AssertionError(e1_handoff)
+
         output = temp / "repeatability"
         args = [
             "scripts/compare_v2d2_evidence.py",
