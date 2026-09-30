@@ -22,7 +22,9 @@ Nacos group 与 RPC `ServiceKey.group` 不可混用：前者是 Registry 管理�
 
 ## 3. 保留元数据
 
-框架保留 `peach.rpc.*` 前缀，当前包括：
+`peach.rpc.*` 是框架命名空间，分为两类：
+
+**Nacos Adapter 生成的身份键**：
 
 - `peach.rpc.instance-id`
 - `peach.rpc.interface`
@@ -31,7 +33,15 @@ Nacos group 与 RPC `ServiceKey.group` 不可混用：前者是 Registry 管理�
 - `peach.rpc.protocol`
 - `peach.rpc.cluster`
 
-Provider 用户元数据覆盖该前缀会在注册前失败。
+这些键由 Adapter 根据 `ServiceInstance` 写入，输入 metadata 覆盖它们会在注册前 fail-fast。
+
+**Core 兼容元数据**：
+
+- `peach.rpc.protocol.version`
+- `peach.rpc.schema.version`
+- `peach.rpc.schema.fingerprint`
+
+这些键由 N+1 Provider 的 Core 生成，Registry Adapter 必须原样透传，旧 Consumer 会忽略它们，新 Consumer 用于 Schema Compatibility 过滤。
 
 ## 4. 查询与订阅
 
