@@ -49,6 +49,9 @@ jobs:
       - name: Verify Maven reactor
         run: mvn -B -ntp clean verify -Pquality
 
+      - name: Verify V2-D.2 evidence tooling
+        run: python3 scripts/test_v2d2_evidence_tools.py
+
       - name: Verify V2-D.2 benchmark harness
         run: bash scripts/run_v2d2_benchmark_matrix.sh smoke target/v2d2-matrix-smoke
 
