@@ -1,5 +1,7 @@
 # Peach RPC 发布策略与 Production Operations
 
+<!-- capability-status:v2-g2=engineering-ready -->
+
 > 状态：**Engineering Current / 1.0 RC Not Yet Declared**  
 > 本文定义 V2-G.2 发布工程。当前项目仍是 Preview，不因发布工具齐全自动升级为 Production Ready。
 
