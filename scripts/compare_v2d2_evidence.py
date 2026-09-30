@@ -365,6 +365,7 @@ def write_reports(
         "errors": errors,
         "thresholdFailures": threshold_failures,
         "soakVariability": soak,
+        "matrixVariability": matrix,
         "worstScoreCvPoints": worst_points(
             matrix,
             "scoreCvPercent",
