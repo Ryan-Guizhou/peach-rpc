@@ -44,6 +44,30 @@ flowchart LR
 
 > **代码优化必须由可重复证据驱动；工具可在 CI 验证，性能结论必须来自固定环境。**
 
+完整证据链：
+
+~~~text
+Environment fingerprint
+        |
+        v
+Full JMH matrix + GC profiler
+        |
+        v
+30m+ / 10k soak
+        |
+        v
+Evidence validator
+        |
+        v
+Decision inputs
+        |
+        +--> Buffer ownership gate
+        +--> Future/PendingRequest gate
+        +--> Capacity planning numbers
+~~~
+
+`validation-report.*` 只证明证据包结构、来源和维度完整；`decision-inputs.*` 只汇总描述性数据，不会自动宣告 Production SLO。
+
 ## 3. JMH 完整性能矩阵
 
 矩阵由两部分组成：
@@ -231,6 +255,34 @@ Latency 使用固定上限的 Reservoir，避免长时间 soak 因保存全部�
 
 建议固定专用 Runner 后，把 full matrix + 长时间 soak 作为发布前证据门禁。Performance Evidence workflow 的 soak 默认时长为 1800 秒；共享 Runner 仍只用于工具链验证，不用于形成 Production SLO。
 
+### 7.1 固定 Runner 模式
+
+Performance Evidence workflow 支持：
+
+- `evidence_class=shared-ci|controlled`；
+- `runner_labels_json`，例如 `["self-hosted","linux","x64","peach-rpc-perf"]`；
+- `runner_id`，用于记录固定机器稳定标识。
+
+当 `evidence_class=controlled` 时会 fail-fast 要求：
+
+- 不能使用 `ubuntu-latest`；
+- 必须使用稳定 `runner_id`；
+- 必须 `matrix_profile=full`；
+- Matrix 与 Soak 必须同时运行；
+- concurrency >= 10000；
+- soak >= 1800 秒。
+
+固定 Linux 主机也可直接执行：
+
+~~~bash
+export PEACH_RPC_EVIDENCE_CLASS=controlled
+export PEACH_RPC_RUNNER_ID=<stable-runner-id>
+export PEACH_RPC_RUNNER_LABELS='local-fixed-linux'
+bash scripts/run_v2d2_fixed_evidence.sh target/v2d2-fixed-evidence
+~~~
+
+该入口依次完成 Build -> 环境指纹 -> Full Matrix -> 30m Soak -> Evidence Validation -> Decision Inputs。
+
 ## 8. 正式性能结论的环境要求
 
 任何进入 `performance.md`、Capacity Planning 或 SLO 的数字必须记录：
@@ -277,6 +329,14 @@ error rate:
 - [x] Soak JSON schema；
 - [x] Performance Evidence workflow；
 - [x] PR smoke gate。
+
+### Evidence tooling
+
+- [x] 固定 Runner / controlled evidence workflow gate；
+- [x] CPU/内存/JDK/Runner 环境指纹；
+- [x] Evidence bundle 完整性与来源校验；
+- [x] Decision Inputs JSON/Markdown 自动生成；
+- [x] 单命令 fixed-runner evidence orchestrator。
 
 ### Evidence
 
