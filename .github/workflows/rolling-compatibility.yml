@@ -80,6 +80,9 @@ jobs:
           package
           -DskipTests
 
+      - name: Prepare current annotation processor
+        run: mvn -B -ntp -pl peach-rpc-codegen -am install -DskipTests
+
       - name: Build version N+1 examples
         run: >
           mvn -B -ntp
