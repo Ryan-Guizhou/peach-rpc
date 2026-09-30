@@ -50,13 +50,18 @@ flowchart TD
     VT --> Invoke[Generated Dispatcher / Fallback]
     CPU --> Invoke
     EL --> Invoke
-    Invoke --> Encode[Response Encode]
+    Invoke --> Async{CompletionStage?}
+    Async -->|No| Encode[Response Encode]
+    Async -->|Yes| Await[Register Completion Callback]
+    Await --> Encode
     Encode --> Write[Transport Write]
 ```
 
 ### Admission
 
 Provider 最大并发必须有边界。CPU 模式还具有独立有界队列；满时返回 OVERLOADED。
+
+对于业务方法返回的 `CompletionStage`，Provider 不在 CPU/Virtual Thread worker 上执行 `join()`。框架注册完成回调后立即归还执行 worker，但 **admission permit 会一直持有到异步业务真正完成、失败或取消**，因此异步化不会绕过 Provider 最大业务并发保护。
 
 ### Cancellation
 
