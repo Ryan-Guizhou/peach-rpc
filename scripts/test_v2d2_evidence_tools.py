@@ -41,6 +41,7 @@ def run(*args: str, expect_success: bool = True) -> subprocess.CompletedProcess[
 def environment(
     commit: str = "test-commit",
     host_fingerprint: str = "host-fingerprint-a",
+    run_id: str = "test-run",
 ) -> str:
     return "\n".join(
         [
@@ -51,6 +52,7 @@ def environment(
             "runner_id=peach-rpc-perf-01",
             f"host_fingerprint_sha256={host_fingerprint}",
             "runner_labels=self-hosted,linux,x64,peach-rpc-perf",
+            f"run_id={run_id}",
             "hostname=perf-host",
             "kernel=Linux test",
             "cpu_model=Test CPU",
@@ -194,10 +196,11 @@ def write_bundle(
     score_scale: float,
     commit: str = "test-commit",
     host_fingerprint: str = "host-fingerprint-a",
+    run_id: str = "test-run",
 ) -> None:
     root.mkdir(parents=True, exist_ok=True)
     (root / "environment.properties").write_text(
-        environment(commit, host_fingerprint),
+        environment(commit, host_fingerprint, run_id),
         encoding="utf-8",
     )
     write_summary(root / "matrix" / "summary.csv", score_scale)
@@ -233,7 +236,7 @@ def main() -> int:
         runs = []
         for index, scale in enumerate((1.00, 1.01, 0.99), start=1):
             root = temp / f"run-{index}"
-            write_bundle(root, scale)
+            write_bundle(root, scale, run_id=f"run-{index}")
             runs.append(root)
 
         for root in runs:
