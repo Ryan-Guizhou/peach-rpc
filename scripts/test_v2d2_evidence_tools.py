@@ -247,6 +247,10 @@ def main() -> int:
         )
         if report.get("status") != "REPORT_ONLY":
             raise AssertionError(report)
+        if not report.get("matrixVariability"):
+            raise AssertionError(
+                "Repeatability report lost full matrix variability"
+            )
 
         threshold_output = temp / "threshold-pass"
         run(
