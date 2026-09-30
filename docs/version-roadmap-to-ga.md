@@ -449,13 +449,13 @@ N+1        -> N rollback
 
 ### 10.3 Race Matrix
 
-- [ ] timeout vs response；
+- [x] timeout vs response；
 - [x] cancel vs response；
-- [ ] cancel vs disconnect；
+- [x] cancel vs disconnect；
 - [x] reconnect vs directory update（Nacos restart + endpoint migration E2E）；
-- [ ] drain vs new request；
-- [ ] drain vs retry；
-- [ ] close vs heartbeat；
+- [x] drain vs new request；
+- [x] drain vs retry（GO_AWAY 映射 UNAVAILABLE + 幂等 Retry 契约）；
+- [x] close vs heartbeat；
 - [x] circuit HALF_OPEN concurrent probe single-flight。
 
 ---
