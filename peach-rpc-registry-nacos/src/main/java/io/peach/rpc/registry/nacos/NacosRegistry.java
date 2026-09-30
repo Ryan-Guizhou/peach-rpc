@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -34,6 +35,8 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
             LoggerFactory.getLogger(NacosRegistry.class);
     private static final Duration CLOSE_TIMEOUT =
             Duration.ofSeconds(3);
+    private static final Duration SUBSCRIPTION_RECONCILE_INTERVAL =
+            Duration.ofSeconds(5);
     private static final RegistryCapabilities CAPABILITIES =
             RegistryCapabilities.of(
                     RegistryCapability.REGISTRATION,
@@ -57,6 +60,7 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
             ConcurrentHashMap.newKeySet();
     private final AtomicLong revision = new AtomicLong();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final ScheduledFuture<?> subscriptionReconcileTask;
 
     NacosRegistry(
             NamingService namingService,
@@ -88,6 +92,13 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
                 "namespace");
         this.group = Objects.requireNonNull(group, "group");
         this.cluster = Objects.requireNonNull(cluster, "cluster");
+        subscriptionReconcileTask =
+                executor.scheduleWithFixedDelay(
+                        "subscription-reconcile",
+                        namespace,
+                        SUBSCRIPTION_RECONCILE_INTERVAL,
+                        SUBSCRIPTION_RECONCILE_INTERVAL,
+                        this::reconcileSubscriptions);
         LOGGER.info(
                 "Nacos registry initialized: namespace={}, group={}, cluster={}",
                 namespace,
@@ -220,6 +231,14 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
                                 instance));
     }
 
+    private void reconcileSubscriptions() {
+        if (closed.get() || subscriptions.isEmpty()) {
+            return;
+        }
+        subscriptions.forEach(
+                NacosRegistrySubscription::reconcile);
+    }
+
     private <T> void observeOperation(
             CompletionStage<T> stage,
             RpcRegistryOperation operation,
@@ -266,6 +285,7 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
         if (!closed.compareAndSet(false, true)) {
             return;
         }
+        subscriptionReconcileTask.cancel(false);
         CompletableFuture<?>[] closes =
                 subscriptions.stream()
                         .map(NacosRegistrySubscription::closeAsync)
