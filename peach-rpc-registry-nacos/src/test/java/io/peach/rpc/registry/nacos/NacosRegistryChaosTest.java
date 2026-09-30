@@ -65,17 +65,11 @@ class NacosRegistryChaosTest {
                      registry.subscribe(
                              key,
                              latest::set)) {
-            registry.registrar()
-                    .orElseThrow()
-                    .register(first)
-                    .toCompletableFuture()
-                    .get(15, TimeUnit.SECONDS);
             assertTrue(await(
-                    Duration.ofSeconds(15),
-                    () -> contains(
-                            registry.lookup(key)
-                                    .toCompletableFuture()
-                                    .get(5, TimeUnit.SECONDS),
+                    Duration.ofSeconds(30),
+                    () -> registerAndLookupEventually(
+                            registry,
+                            key,
                             first)));
 
             docker("pause", container);
@@ -146,6 +140,28 @@ class NacosRegistryChaosTest {
                 new RpcEndpoint("127.0.0.1", port),
                 100,
                 Map.of("zone", "chaos"));
+    }
+
+    private static boolean registerAndLookupEventually(
+            Registry registry,
+            ServiceKey key,
+            ServiceInstance instance) {
+        if (!registerEventually(
+                registry,
+                instance)) {
+            return false;
+        }
+        try {
+            return contains(
+                    registry.lookup(key)
+                            .toCompletableFuture()
+                            .get(
+                                    5,
+                                    TimeUnit.SECONDS),
+                    instance);
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     private static boolean registerEventually(
