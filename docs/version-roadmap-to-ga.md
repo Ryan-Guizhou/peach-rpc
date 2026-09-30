@@ -428,15 +428,15 @@ N+1        -> N rollback
 - [x] bad magic；
 - [x] unsupported version；
 - [x] unknown message type；
-- [ ] unknown codec/compression；
+- [x] 未协商 Codec 与 non-NONE Compression 拒绝；
 - [x] negative/overflow length；
 - [x] truncated header/payload；
 - [x] oversized frame；
-- [ ] duplicate frame；
-- [ ] invalid request ID；
+- [x] connection-local duplicate Request ID 拒绝；
+- [x] REQUEST/RESPONSE/CANCEL Request ID 语义校验；
 - [x] invalid metadata；
-- [ ] invalid CANCEL/GO_AWAY/PING/PONG/HELLO；
-- [ ] handshake ordering violation。
+- [x] CANCEL/GO_AWAY/PING/PONG/HELLO/HELLO_ACK 控制帧语义校验；
+- [x] HELLO/HELLO_ACK 首帧顺序校验与 raw-socket 回归。
 
 ### 10.2 Fuzz / Property
 
@@ -450,9 +450,9 @@ N+1        -> N rollback
 ### 10.3 Race Matrix
 
 - [ ] timeout vs response；
-- [ ] cancel vs response；
+- [x] cancel vs response；
 - [ ] cancel vs disconnect；
-- [ ] reconnect vs directory update；
+- [x] reconnect vs directory update（Nacos restart + endpoint migration E2E）；
 - [ ] drain vs new request；
 - [ ] drain vs retry；
 - [ ] close vs heartbeat；
@@ -505,12 +505,12 @@ N+1        -> N rollback
 
 ### 11.4 Registry Contract TestKit
 
-- [ ] 定义统一 Registry 行为契约；
-- [ ] Memory Adapter；
-- [ ] Etcd Adapter；
-- [ ] Nacos Adapter；
-- [ ] capability-specific assertions；
-- [ ] registration/discovery/subscription/recovery 共用测试矩阵。
+- [x] 定义统一 Registry 行为契约；
+- [x] Memory Adapter；
+- [x] Etcd Adapter；
+- [x] Nacos Adapter；
+- [x] capability-specific assertions；
+- [x] registration/discovery/subscription/unregister 共用 TestKit；failure/recovery 由 Adapter Chaos 扩展。
 
 ---
 
@@ -521,7 +521,7 @@ N+1        -> N rollback
 - [x] Error taxonomy；
 - [x] stable RpcStatus code + low-cardinality Failure Category；
 - [x] Client / Provider / Transport / Registry / Security / Protocol 分类；
-- [ ] Retry exhausted；
+- [x] Retry exhausted + MAX_ATTEMPTS/BUDGET/DEADLINE 低基数原因；
 - [x] Circuit reject metric；
 - [x] Overloaded / admission reject metrics；
 - [x] 错误信息/credential 既有脱敏边界。
@@ -535,7 +535,7 @@ N+1        -> N rollback
 - [x] final status/category error rate；
 - [x] timeout rate；
 - [x] retry rate；
-- [ ] circuit state；
+- [x] circuit state；
 - [x] outlier ejection count；
 - [x] active connections；
 - [x] reconnect；
