@@ -379,7 +379,7 @@ V2-D 第一批已经进入主线：
 
 **状态：In Progress / Engineering Ready / Real Runs Pending**
 
-当前分支已补齐固定 Runner preflight、expected/actual GitHub Runner 名称校验、hashed physical-host fingerprint、环境 baseline、唯一 Run ID、Evidence SHA-256 Manifest、至少三次 controlled run 编排，以及 GitHub self-hosted Evidence workflow。即使不同机器拥有相同硬件规格，也会因 host fingerprint 不一致而被拒绝。E1 仍未完成：退出该阶段前必须在同一真实固定 Runner 上产生至少 3 份完整 Evidence Bundle，并且每份 Validation 都为 PASS。
+当前分支已补齐固定 Runner preflight、expected/actual GitHub Runner 名称校验、hashed physical-host fingerprint、显式且实际应用到 JMH fork/Soak JVM 的固定 JVM flags、环境 baseline、唯一 Run ID、Evidence SHA-256 Manifest、至少三次 controlled run 编排、E1 Handoff Gate，以及 GitHub self-hosted Evidence workflow。即使不同机器拥有相同硬件规格，也会因 host fingerprint 不一致而被拒绝。E1 仍未完成：退出该阶段前必须在同一真实固定 Runner 上产生至少 3 份完整 Evidence Bundle、每份 Validation/Manifest 都通过，并最终生成 `e1-handoff.status=PASS`。
 
 #### 完整矩阵维度
 
