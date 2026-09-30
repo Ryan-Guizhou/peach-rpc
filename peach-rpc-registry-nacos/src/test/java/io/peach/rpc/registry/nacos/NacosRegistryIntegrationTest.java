@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 /** 真实 Nacos 服务发现集成测试。 */
@@ -127,6 +128,64 @@ class NacosRegistryIntegrationTest {
                             .isEmpty()));
         } finally {
             registry.close();
+        }
+    }
+
+    @Test
+    void remoteProviderRemovalShouldPublishEmptySnapshot()
+            throws Exception {
+        String endpoint = endpoint();
+        String group = unique("PEACH_RPC_REMOTE");
+        Registry provider = registry(
+                endpoint,
+                group,
+                "DEFAULT");
+        Registry consumer = registry(
+                endpoint,
+                group,
+                "DEFAULT");
+        ServiceKey key = new ServiceKey(
+                "demo.NacosRemoteLifecycle",
+                "1.0.0",
+                "remote");
+        ServiceInstance instance = instance(
+                key,
+                "remote-node",
+                19094);
+        AtomicReference<RegistrySnapshot> latest =
+                new AtomicReference<>();
+
+        try (var subscription =
+                     consumer.subscribe(
+                             key,
+                             latest::set)) {
+            provider.registrar()
+                    .orElseThrow()
+                    .register(instance)
+                    .toCompletableFuture()
+                    .get(10, java.util.concurrent.TimeUnit.SECONDS);
+
+            assertTrue(await(
+                    Duration.ofSeconds(20),
+                    () -> containsIdentity(
+                            latest.get(),
+                            instance)));
+
+            provider.registrar()
+                    .orElseThrow()
+                    .unregister(instance)
+                    .toCompletableFuture()
+                    .get(10, java.util.concurrent.TimeUnit.SECONDS);
+
+            assertTrue(await(
+                    Duration.ofSeconds(20),
+                    () -> latest.get() != null
+                            && latest.get()
+                                    .instances()
+                                    .isEmpty()));
+        } finally {
+            provider.close();
+            consumer.close();
         }
     }
 
@@ -317,6 +376,21 @@ class NacosRegistryIntegrationTest {
                         port),
                 100,
                 Map.of("zone", "test"));
+    }
+
+    private static boolean containsIdentity(
+            RegistrySnapshot snapshot,
+            ServiceInstance expected) {
+        return snapshot != null
+                && snapshot.instances()
+                        .stream()
+                        .anyMatch(value ->
+                                value.instanceId()
+                                        .equals(
+                                                expected.instanceId())
+                                        && value.endpoint()
+                                                .equals(
+                                                        expected.endpoint()));
     }
 
     private static String endpoint() {
