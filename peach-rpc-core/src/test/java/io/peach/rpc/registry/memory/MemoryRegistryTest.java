@@ -34,15 +34,6 @@ class MemoryRegistryTest {
                             19090),
                     100,
                     Map.of());
-            ServiceInstance second = new ServiceInstance(
-                    "memory-b",
-                    key,
-                    new RpcEndpoint(
-                            "127.0.0.1",
-                            19091),
-                    100,
-                    Map.of());
-
             RegistryContractTestKit
                     .verifyRegistrationDiscoverySubscription(
                             registry,
