@@ -1,13 +1,17 @@
 package io.peach.rpc.registry.nacos;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.peach.rpc.api.ServiceKey;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 /** Nacos 控制面执行器背压测试。 */
@@ -44,6 +48,32 @@ class NacosControlExecutorTest {
                     rejected::join);
         } finally {
             release.countDown();
+            executor.close();
+        }
+    }
+
+    @Test
+    void scheduledTaskShouldUseControlPlaneExecutor()
+            throws Exception {
+        NacosControlExecutor executor =
+                new NacosControlExecutor();
+        CountDownLatch invoked = new CountDownLatch(1);
+
+        try {
+            ScheduledFuture<?> task =
+                    executor.scheduleWithFixedDelay(
+                            "scheduled-test",
+                            "test",
+                            Duration.ZERO,
+                            Duration.ofMillis(20),
+                            invoked::countDown);
+
+            assertTrue(
+                    invoked.await(
+                            2,
+                            TimeUnit.SECONDS));
+            task.cancel(false);
+        } finally {
             executor.close();
         }
     }
