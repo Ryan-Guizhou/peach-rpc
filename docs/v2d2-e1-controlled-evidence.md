@@ -31,6 +31,7 @@ flowchart LR
 - OpenSSL；
 - tracked Git 工作树干净；
 - 稳定的 `PEACH_RPC_RUNNER_ID`；
+- 同一物理 Runner：Environment 会记录由 `/etc/machine-id` 与 DMI product UUID 组合后计算的 SHA-256 指纹，不上传原始机器标识；
 - 三次 Run 使用同一个 commit；
 - CPU / 核心数 / Memory / Kernel / JDK / JVM flags / governor 保持一致；
 - 性能执行期间不与普通 CI 竞争同一组 CPU/Memory 资源。
@@ -60,7 +61,7 @@ bash scripts/run_v2d2_e1_series.sh target/v2d2-e1-controlled
 
 默认执行 3 次独立 controlled run；每次包含 Full Matrix 和 >=1800 秒 / 10000 logical callers Soak；Run 之间默认 cooldown 60 秒。
 
-GitHub self-hosted Runner 也可以手工触发 `.github/workflows/performance-evidence.yml`。Controlled 模式必须为每次执行设置不同的 `run_id`，例如 `run-1`、`run-2`、`run-3`。
+GitHub self-hosted Runner 也可以手工触发 `.github/workflows/performance-evidence.yml`。Controlled 模式中的 `runner_id` 是**期望的 GitHub self-hosted Runner 名称**；Workflow 会读取真实 `runner.name` 并要求二者完全一致，不能用手填 ID 冒充固定 Runner。每次执行还必须设置不同的 `run_id`，例如 `run-1`、`run-2`、`run-3`。
 
 ## 4. Evidence Bundle
 
@@ -88,7 +89,7 @@ python3 scripts/manage_v2d2_evidence_manifest.py verify --bundle <bundle>
 
 ## 5. Runner Baseline
 
-Series 第一轮生成 `runner-baseline.json`，锁定 commit、Runner ID、CPU、核心数、NUMA、Memory、CPU governor、Kernel、Java、JVM flags 与 containerized 状态。后续 Run 在 Full Matrix 前比较，发生漂移立即终止。
+Series 第一轮生成 `runner-baseline.json`，锁定 commit、Runner ID、**host fingerprint SHA-256**、CPU、核心数、NUMA、Memory、CPU governor、Kernel、Java、JVM flags 与 containerized 状态。后续 Run 在 Full Matrix 前比较，发生漂移立即终止。即使两台机器配置完全相同，只要主机指纹不同，也不会被当成同一固定 Runner。
 
 ## 6. Artifact 安全
 
@@ -101,6 +102,8 @@ TLS Matrix 使用测试用自签名证书。E1 后测试私钥只存在于系统
 - [x] Runner Preflight；
 - [x] Git commit 一致性；
 - [x] Environment Baseline；
+- [x] GitHub actual `runner.name` 与 expected runner name 一致性校验；
+- [x] hashed physical-host fingerprint；
 - [x] 唯一 Run ID；
 - [x] Evidence 防覆盖；
 - [x] SHA-256 Manifest / verify；
