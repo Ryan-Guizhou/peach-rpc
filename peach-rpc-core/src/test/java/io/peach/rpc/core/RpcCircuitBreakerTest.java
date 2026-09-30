@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -96,28 +97,34 @@ class RpcCircuitBreakerTest {
         List<CompletableFuture<Boolean>> probes =
                 new ArrayList<>();
 
-        for (int index = 0;
-                index < contenders;
-                index++) {
-            probes.add(CompletableFuture.supplyAsync(() -> {
-                ready.countDown();
-                try {
-                    if (!start.await(
-                            2,
-                            TimeUnit.SECONDS)) {
-                        throw new AssertionError(
-                                "Probe start barrier timed out");
+        try (var executor =
+                     Executors.newFixedThreadPool(contenders)) {
+            for (int index = 0;
+                    index < contenders;
+                    index++) {
+                probes.add(CompletableFuture.supplyAsync(() -> {
+                    ready.countDown();
+                    try {
+                        if (!start.await(
+                                2,
+                                TimeUnit.SECONDS)) {
+                            throw new AssertionError(
+                                    "Probe start barrier timed out");
+                        }
+                    } catch (InterruptedException error) {
+                        Thread.currentThread().interrupt();
+                        throw new AssertionError(error);
                     }
-                } catch (InterruptedException error) {
-                    Thread.currentThread().interrupt();
-                    throw new AssertionError(error);
-                }
-                return breaker.tryAcquire();
-            }));
-        }
+                    return breaker.tryAcquire();
+                }, executor));
+            }
 
-        assertTrue(ready.await(2, TimeUnit.SECONDS));
-        start.countDown();
+            assertTrue(
+                    ready.await(
+                            2,
+                            TimeUnit.SECONDS));
+            start.countDown();
+        }
 
         long accepted = probes.stream()
                 .map(CompletableFuture::join)
