@@ -367,7 +367,8 @@ V2-D 第一批已经进入主线：
 11. Retry Budget / Circuit Breaker / Outlier Ejection resilience primitive matrix tooling；
 12. `capacity-planning.md` 容量规划方法论与数据记录模板；
 13. fixed Runner controlled evidence gate、硬件环境指纹与证据完整性校验；
-14. `decision-inputs.json/.md` 自动生成，为 Buffer ownership / Future/PendingRequest / Capacity Planning 提供描述性决策输入。
+14. `decision-inputs.json/.md` 自动生成，为 Buffer ownership / Future/PendingRequest / Capacity Planning 提供描述性决策输入；
+15. `compare_v2d2_evidence.py` 支持至少 3 次 controlled run 的环境一致性、Matrix shape、CV/spread 重复性分析。
 
 当前仍未把共享 CI Runner 上的数值写成 Production SLO。固定硬件 full matrix、至少 30 分钟 10k soak、TLS/PLAINTEXT 数值对比、Provider fault 与 resilience 数值基线仍属于 V2-D.2 未完成证据。
 
@@ -495,6 +496,7 @@ Peach RPC 从 Preview 提升为 Production Ready 前，建议以下门禁全部�
 ### 10.4 Performance
 
 - [ ] 固定环境完整 benchmark matrix；
+- [ ] 至少 3 次 controlled run 的 repeatability report；
 - [ ] QPS/Core、p99/p99.9、Allocation、GC 基线；
 - [ ] 固定硬件 overload / slow endpoint / resilience fault 数值基线；
 - [ ] 是否进入 Buffer-oriented 默认路径有数据结论；
