@@ -228,6 +228,132 @@ class VertxRpcTransportTest {
     }
 
     @Test
+    void responseAndCancellationRaceShouldNotPoisonConnection()
+            throws Exception {
+        int port = findFreePort();
+        RpcTransportOptions options = options(
+                Set.of(RpcCodecIds.FORY_NATIVE),
+                1);
+        VertxRpcTransportServer server =
+                new VertxRpcTransportServer(options);
+        VertxRpcTransportClient client =
+                new VertxRpcTransportClient(options);
+        RpcEndpoint endpoint =
+                new RpcEndpoint("127.0.0.1", port);
+
+        try {
+            server.start(endpoint, (remote, requestBytes) -> {
+                        CompletableFuture<byte[]> pending =
+                                new CompletableFuture<>();
+                        CompletableFuture.delayedExecutor(
+                                        2,
+                                        TimeUnit.MILLISECONDS)
+                                .execute(() -> pending.complete(
+                                        response(
+                                                requestBytes,
+                                                new byte[] {7})));
+                        return pending;
+                    })
+                    .toCompletableFuture()
+                    .join();
+
+            for (int index = 0; index < 30; index++) {
+                CompletableFuture<byte[]> call = client.request(
+                                endpoint,
+                                request(),
+                                Duration.ofSeconds(1))
+                        .toCompletableFuture();
+                CompletableFuture.delayedExecutor(
+                                index % 3,
+                                TimeUnit.MILLISECONDS)
+                        .execute(() -> call.cancel(true));
+                try {
+                    call.join();
+                } catch (RuntimeException ignored) {
+                    // Either response or cancellation may win this race.
+                }
+                Thread.sleep(3L);
+            }
+
+            byte[] finalResponse = client.request(
+                            endpoint,
+                            request(),
+                            Duration.ofSeconds(2))
+                    .toCompletableFuture()
+                    .join();
+            assertArrayEquals(
+                    new byte[] {7},
+                    RpcProtocolCodec.decode(
+                            finalResponse)
+                            .payload());
+        } finally {
+            client.close();
+            server.close();
+        }
+    }
+
+    @Test
+    void responseAndTimeoutRaceShouldNotPoisonConnection()
+            throws Exception {
+        int port = findFreePort();
+        RpcTransportOptions options = options(
+                Set.of(RpcCodecIds.FORY_NATIVE),
+                1);
+        VertxRpcTransportServer server =
+                new VertxRpcTransportServer(options);
+        VertxRpcTransportClient client =
+                new VertxRpcTransportClient(options);
+        RpcEndpoint endpoint =
+                new RpcEndpoint("127.0.0.1", port);
+
+        try {
+            server.start(endpoint, (remote, requestBytes) -> {
+                        CompletableFuture<byte[]> pending =
+                                new CompletableFuture<>();
+                        CompletableFuture.delayedExecutor(
+                                        5,
+                                        TimeUnit.MILLISECONDS)
+                                .execute(() -> pending.complete(
+                                        response(
+                                                requestBytes,
+                                                new byte[] {8})));
+                        return pending;
+                    })
+                    .toCompletableFuture()
+                    .join();
+
+            for (int index = 0; index < 20; index++) {
+                try {
+                    client.request(
+                                    endpoint,
+                                    request(),
+                                    Duration.ofMillis(5))
+                            .toCompletableFuture()
+                            .join();
+                } catch (RuntimeException ignored) {
+                    // Either response or timeout may win this race.
+                }
+                Thread.sleep(6L);
+            }
+
+            byte[] finalResponse = client.request(
+                            endpoint,
+                            request(),
+                            Duration.ofSeconds(2))
+                    .toCompletableFuture()
+                    .join();
+            assertArrayEquals(
+                    new byte[] {8},
+                    RpcProtocolCodec.decode(
+                            finalResponse)
+                            .payload());
+        } finally {
+            client.close();
+            server.close();
+        }
+    }
+
+    @Test
     void gracefulDrainShouldWaitForInflightRequest()
             throws Exception {
         int port = findFreePort();
