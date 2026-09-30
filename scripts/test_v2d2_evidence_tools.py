@@ -38,7 +38,10 @@ def run(*args: str, expect_success: bool = True) -> subprocess.CompletedProcess[
     return result
 
 
-def environment(commit: str = "test-commit") -> str:
+def environment(
+    commit: str = "test-commit",
+    host_fingerprint: str = "host-fingerprint-a",
+) -> str:
     return "\n".join(
         [
             "schema_version=1",
@@ -46,6 +49,7 @@ def environment(commit: str = "test-commit") -> str:
             f"commit={commit}",
             "evidence_class=controlled",
             "runner_id=peach-rpc-perf-01",
+            f"host_fingerprint_sha256={host_fingerprint}",
             "runner_labels=self-hosted,linux,x64,peach-rpc-perf",
             "hostname=perf-host",
             "kernel=Linux test",
@@ -185,10 +189,15 @@ def write_summary(path: Path, score_scale: float) -> None:
         writer.writerows(rows)
 
 
-def write_bundle(root: Path, score_scale: float, commit: str = "test-commit") -> None:
+def write_bundle(
+    root: Path,
+    score_scale: float,
+    commit: str = "test-commit",
+    host_fingerprint: str = "host-fingerprint-a",
+) -> None:
     root.mkdir(parents=True, exist_ok=True)
     (root / "environment.properties").write_text(
-        environment(commit),
+        environment(commit, host_fingerprint),
         encoding="utf-8",
     )
     write_summary(root / "matrix" / "summary.csv", score_scale)
@@ -329,6 +338,33 @@ def main() -> int:
             "verify",
             "--bundle",
             str(manifest_bundle),
+            expect_success=False,
+        )
+
+        host_mismatch = temp / "run-host-mismatch"
+        write_bundle(
+            host_mismatch,
+            1.0,
+            host_fingerprint="host-fingerprint-b",
+        )
+        run(
+            "scripts/check_v2d2_runner_baseline.py",
+            "--environment",
+            str(host_mismatch / "environment.properties"),
+            "--baseline",
+            str(baseline_path),
+            expect_success=False,
+        )
+        run(
+            "scripts/compare_v2d2_evidence.py",
+            "--run",
+            str(runs[0]),
+            "--run",
+            str(runs[1]),
+            "--run",
+            str(host_mismatch),
+            "--output-dir",
+            str(temp / "host-mismatch-output"),
             expect_success=False,
         )
 
