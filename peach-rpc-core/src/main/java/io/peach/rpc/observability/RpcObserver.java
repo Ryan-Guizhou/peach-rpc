@@ -240,6 +240,23 @@ public interface RpcObserver {
     }
 
     /**
+     * Consumer 已无法继续自动 Retry。
+     *
+     * <p>只对显式幂等且当前失败可重试的方法产生该事件。
+     *
+     * @param serviceKey 服务键
+     * @param methodId 方法 ID
+     * @param reason Retry 停止原因
+     * @param cause 最终触发失败
+     */
+    default void onClientRetryExhausted(
+            ServiceKey serviceKey,
+            int methodId,
+            RpcRetryExhaustionReason reason,
+            Throwable cause) {
+    }
+
+    /**
      * Consumer 因方法级 Circuit Open 拒绝调用。
      *
      * @param serviceKey 服务键
@@ -515,6 +532,20 @@ public interface RpcObserver {
                                 methodId,
                                 nextAttempt,
                                 delayMillis,
+                                cause)));
+            }
+
+            @Override
+            public void onClientRetryExhausted(
+                    ServiceKey serviceKey,
+                    int methodId,
+                    RpcRetryExhaustionReason reason,
+                    Throwable cause) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onClientRetryExhausted(
+                                serviceKey,
+                                methodId,
+                                reason,
                                 cause)));
             }
 
