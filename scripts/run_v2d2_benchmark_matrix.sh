@@ -4,6 +4,8 @@ set -euo pipefail
 PROFILE="${1:-full}"
 OUTPUT_DIR="${2:-target/v2d2-matrix}"
 JAR="${PEACH_RPC_BENCHMARK_JAR:-peach-rpc-benchmarks/target/benchmarks.jar}"
+JVM_FLAGS="${PEACH_RPC_JVM_FLAGS:-}"
+export JAVA_TOOL_OPTIONS="$JVM_FLAGS"
 
 if [[ ! -f "$JAR" ]]; then
   echo "Benchmark JAR not found: $JAR" >&2
