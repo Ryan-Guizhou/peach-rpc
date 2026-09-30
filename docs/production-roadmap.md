@@ -4,6 +4,15 @@
 <!-- capability-status:v2-c3=current -->
 <!-- capability-status:v2-d=in-progress -->
 <!-- capability-status:v2-d2=in-progress -->
+<!-- capability-status:v2-d2-e2=evidence-blocked -->
+<!-- capability-status:v2-d3=conditional -->
+<!-- capability-status:v2-d4=evidence-blocked -->
+<!-- capability-status:v2-e1=engineering-ready -->
+<!-- capability-status:v2-e2=engineering-ready -->
+<!-- capability-status:v2-f1=engineering-ready -->
+<!-- capability-status:v2-f2=validation-pending -->
+<!-- capability-status:v2-g1=engineering-ready -->
+<!-- capability-status:v2-g2=engineering-ready -->
 
 > 本文是 Peach RPC **生产能力状态与后续优先级的唯一总表**。  
 > V2-A、V2-B、V2-B.1、V2-B.2、V2-C.x 等阶段文档继续保留，用于记录具体设计与历史决策；当“当前状态”和旧阶段文档发生冲突时，以本文与实际代码/测试为准。
@@ -29,6 +38,24 @@
 > V2-C.1、V2-C.2、V2-C.3 已进入主线。V2-D 第一批已进入主线，V2-D.2 当前正在建立完整性能矩阵、allocation/GC profiling 与 10k logical-concurrency soak；本文中的 **Current** 表示已经进入主线并有对应自动化验证，**In Progress** 表示工程入口已实现但生产证据仍在收集。
 
 ---
+
+## 2. 当前总体判断
+
+### 2.1 V2-D.2-E2 → V2-G.2 工程状态
+
+当前分支已一次性补齐后续版本的工程入口，但**不伪造外部 Evidence**：
+
+| 阶段 | 工程状态 | 外部门禁 |
+|---|---|---|
+| V2-D.2-E2 | Evidence analyzer / decision gate 已完成 | 需要真实 E1 Handoff、Repeatability PASS、Baseline Candidate 与人工决策 |
+| V2-D.3 | Conditional | 只有 E2 标记 DO 的候选优化才允许实施；当前没有真实数据，因此不擅自改内核 |
+| V2-D.4 | Before/After regression closure 已完成 | 需要同固定硬件的真实优化后 Baseline |
+| V2-E.1 | Stable Type ID / Schema Fingerprint 已完成 | 合并/RC 后冻结算法与规范版本 |
+| V2-E.2 | Registry compatibility filter + N/N+1/rollback 规则已完成 | RC 前真实多实例滚动升级演练 |
+| V2-F.1 | malformed/truncation/property tests 已完成 | RC 前继续长期 fuzz/slow-frame 环境验证 |
+| V2-F.2 | Etcd + Nacos Chaos 工程门禁已形成 | Nacos Chaos 最终验收、网络黑洞/partition/长稳仍需真实环境 |
+| V2-G.1 | logical-call metrics、failure taxonomy、Dashboard/Alert/SLO 模板已完成 | 环境 SLO 数值由生产负责人确定 |
+| V2-G.2 | Upgrade/Rollback/Production Config/Release Readiness 已完成 | RC 前执行真实发布与回滚演练 |
 
 ## 2. 当前总体判断
 
@@ -158,9 +185,9 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 | 固定 Protocol Header | **Current** | v1 32 字节固定 Header | 增加跨版本 compatibility matrix |
 | Codec/Compression Wire ID | **Current** | ID 已固化并保留 | 不能按 Classpath/SPI 顺序动态分配 |
 | Fory 默认 Codec | **Current** | 当前高性能主 Codec | Stable Type ID 尚未完成 |
-| Stable Type ID | **Proposed** | 尚未实现 | 定义确定性 ID 与冲突检测 |
-| Schema fingerprint | **Proposed** | 尚未实现 | 支持版本/schema 不一致快速检测 |
-| Rolling upgrade compatibility | **Proposed** | 尚未形成正式策略 | 明确 N/N+1 双向兼容、失败模式与回滚 |
+| Stable Type ID | **Engineering Ready** | 确定性 Type canonicalization、Framework/User range、启动绑定冲突检测；Fory bind 已接入 | 合并后冻结算法；跨语言 IDL 后续扩展 |
+| Schema fingerprint | **Engineering Ready** | SHA-256 Service/Method/DTO Fingerprint；Provider 发布 Registry Metadata；Consumer 本地目录过滤明确不兼容节点 | 当前为保守严格模型；不兼容契约使用新的 ServiceKey.version |
+| Rolling upgrade compatibility | **Engineering Ready** | N Consumer 忽略新 Metadata；N+1 Consumer 接受 LEGACY Provider、保留匹配节点、隔离明确 mismatch；Upgrade/Rollback Runbook 已形成 | RC 前补真实多实例滚动演练 |
 | Protobuf / IDL | **Future** | Wire ID 已预留 | 在兼容模型稳定后再实现跨语言路径 |
 | Kryo / Hessian2 / JSON | **Future** | Wire ID/规划存在 | 不阻塞近期生产主线 |
 
@@ -173,9 +200,9 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 | Etcd 真实集成测试 | **Current** | register/watch/namespace/lease/recovery/compaction/restart；3 节点 leader transfer 在独立 Chaos workflow 验证 | 继续补网络黑洞/partition 与 soak |
 | Nacos 真实集成测试 | **Current** | register/query/subscribe/unregister + RPC round-trip；独立 JVM E2E 覆盖 Nacos restart、Provider re-registration、Consumer re-subscribe | 继续补 auth-enabled 与网络分区 |
 | 独立进程 RPC E2E | **Current** | CI 真正启动 Provider/Consumer executable JAR；覆盖 Provider restart、同一 Consumer 恢复、Nacos restart、新 Consumer 发现恢复、Provider 迁移端口后的 subscription redo | 增加滚动多实例与长时间 soak |
-| Fuzz / property testing | **Proposed** | 尚未系统建立 | 覆盖长度溢出、截断、未知类型、重复帧、慢帧等 |
+| Fuzz / property testing | **Engineering Ready** | 系统性 truncated frame/HELLO、非法 Version/Message/Status/Length、随机 fragmentation/coalescing 已进入自动化测试 | RC 前继续补长时间 fuzz corpus 与网络级慢帧 |
 | Soak test | **Partial** | 已有 10k Virtual Thread soak、CI 短时 smoke、30m controlled evidence gate 与环境指纹 | 固定硬件完成长时间运行、内存/GC/连接稳定性基线 |
-| Chaos test | **Partial** | 已有 Etcd 3 节点 leader-transfer Chaos workflow 与 Nacos restart process E2E | 仍缺网络黑洞/分区、长时间 soak 与更大规模并发故障矩阵 |
+| Chaos test | **Validation Pending** | Etcd 3 节点 leader-transfer/lease/compaction/restart 已覆盖；Nacos pause/recovery 独立 Chaos Workflow 已加入 | 等最终 Nacos Chaos 验收；真实网络黑洞/partition 与长时间 soak 仍是 RC 外部门禁 |
 
 ### 3.10 运维与发布
 
@@ -184,10 +211,10 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 | Maven Reactor / CI | **Current** | JDK 21 + `check_project.py` + `clean verify -Pquality` | 继续作为所有 PR 基础门禁 |
 | Examples | **Current** | API/Provider/Consumer 分模块；CI 运行独立 executable JAR recovery E2E 与 Nacos restart | 继续补多实例滚动发布示例 |
 | Capacity Planning | **Partial** | 已有 `capacity-planning.md` 方法论、证据分层、QPS/Core 与实例数计算模板 | 固定硬件填充生产数值，并形成 connections/maxInflight/maxConcurrent/CPU pool/timeout/retry 推荐区间 |
-| Upgrade Guide | **Proposed** | 尚未完成 | 协议、Codec、Registry、Starter 升级步骤 |
-| Rollback Guide | **Proposed** | 尚未完成 | N/N+1 回滚与 Registry/Codec 兼容边界 |
-| Compatibility Matrix | **Proposed** | 尚未形成 | JDK/Spring/Protocol/Codec/Adapter 版本矩阵 |
-| Production SLO | **Proposed** | 尚未定义 | 结合固定硬件和业务模型定义可验证目标 |
+| Upgrade Guide | **Engineering Ready** | Provider-first 滚动升级、Consumer 混部、指标观察与停止条件已形成 | RC 前在预发布真实演练 |
+| Rollback Guide | **Engineering Ready** | Provider/Consumer 回滚、LEGACY Provider、ServiceKey.version 边界已形成 | RC 前在预发布真实演练 |
+| Compatibility Matrix | **Engineering Ready** | Wire v1 的 N/N+1 与 rollback 行为已固化；环境版本继续由 README/Parent POM 管理 | RC 前冻结 Wire/API compatibility baseline |
+| Production SLO | **Engineering Ready / Values Pending** | logical-call 指标、Failure Category、Dashboard、Alert Example、SLO Template 已具备 | 目标数值必须由业务环境与固定硬件 Evidence 确认 |
 
 ### 3.11 Streaming
 
