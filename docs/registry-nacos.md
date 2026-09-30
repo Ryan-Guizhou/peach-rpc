@@ -22,7 +22,9 @@ Nacos group 与 RPC `ServiceKey.group` 不可混用：前者是 Registry 管理�
 
 ## 3. 保留元数据
 
-框架保留 `peach.rpc.*` 前缀，当前包括：
+`peach.rpc.*` 是框架命名空间，分为两类：
+
+**Nacos Adapter 生成的身份键**：
 
 - `peach.rpc.instance-id`
 - `peach.rpc.interface`
@@ -31,7 +33,15 @@ Nacos group 与 RPC `ServiceKey.group` 不可混用：前者是 Registry 管理�
 - `peach.rpc.protocol`
 - `peach.rpc.cluster`
 
-Provider 用户元数据覆盖该前缀会在注册前失败。
+这些键由 Adapter 根据 `ServiceInstance` 写入，输入 metadata 覆盖它们会在注册前 fail-fast。
+
+**Core 兼容元数据**：
+
+- `peach.rpc.protocol.version`
+- `peach.rpc.schema.version`
+- `peach.rpc.schema.fingerprint`
+
+这些键由 N+1 Provider 的 Core 生成，Registry Adapter 必须原样透传，旧 Consumer 会忽略它们，新 Consumer 用于 Schema Compatibility 过滤。
 
 ## 4. 查询与订阅
 
@@ -47,7 +57,11 @@ Provider 用户元数据覆盖该前缀会在注册前失败。
 6. 实例按 endpoint 与 instanceId 稳定排序并去重；
 7. 相同视图不重复刷新 Core；
 8. 变化视图使用 Adapter 进程内 AtomicLong 生成单调 revision；
-9. 关闭时使用原 EventListener 实例 unsubscribe。
+9. 同一 Registry Client 主动注销本地 Provider 后，会立即从该 Client 的 subscription 快照中移除对应 endpoint，避免最后一个实例注销时目录悬挂；
+10. 远端 Provider 生命周期以 Nacos NamingEvent 为主通道；
+11. Registry 每 5 秒执行一次低频完整视图 reconcile 作为最终一致性兜底；只有事件队列空闲时才执行，避免旧查询结果覆盖正在排队的新事件；
+12. 独立 Provider/Consumer Client 集成测试验证“远端最后一个 Provider 注销 -> empty snapshot”最终收敛；
+13. 关闭时取消 reconcile task，并使用原 EventListener 实例 unsubscribe。
 
 ## 5. 线程与资源
 
@@ -58,7 +72,8 @@ Nacos Java SDK 的注册、注销、查询和订阅初始化可能阻塞。Adapt
 - queue：256；
 - 拒绝时快速失败；
 - 不使用 ForkJoinPool.commonPool；
-- 不占用 Vert.x Event Loop。
+- 不占用 Vert.x Event Loop；
+- 单线程 daemon scheduler 只负责触发低频 reconcile，真实 Nacos 查询仍提交到上述有界控制面执行器。
 
 Registry 关闭先取消订阅，再关闭 NamingService，最后关闭控制面执行器；重复关闭幂等。
 
@@ -98,6 +113,6 @@ peach:
 
 ## 8. 测试
 
-CI 启动固定版本 Nacos 3.2.4，并设置 `NACOS_TEST_ENDPOINT`。当前自动化覆盖 SPI 加载、服务名映射、权重与元数据映射、健康实例过滤、真实注册/查询/订阅/注销，以及拆分 Provider/Consumer 的 RPC round-trip。
+CI 启动固定版本 Nacos 3.2.4，并设置 `NACOS_TEST_ENDPOINT`。当前自动化覆盖 SPI 加载、服务名映射、权重与元数据映射、健康实例过滤、共享 Registry Contract、独立 Provider/Consumer Client 的远端注册/注销订阅收敛、真实注册/查询/订阅/注销，以及拆分 Provider/Consumer 的 RPC round-trip。独立 Nacos Chaos 使用 Consumer、Provider A、Provider B 三个 Registry Client 模拟容器 pause/unpause 下的注册与订阅恢复。
 
 本地未提供 `NACOS_TEST_ENDPOINT` 时，真实 Nacos 集成测试会跳过；普通单元测试仍正常执行。

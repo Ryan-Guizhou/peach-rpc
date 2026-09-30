@@ -1,5 +1,6 @@
 package io.peach.rpc.core;
 
+import io.peach.rpc.api.RpcCompatibilityMetadata;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.registry.ServiceDiscovery;
@@ -14,11 +15,21 @@ final class ServiceDirectory implements AutoCloseable {
             new AtomicReference<>(new DirectorySnapshot(
                     new ServiceInstance[0],
                     0));
+    private final String expectedSchemaFingerprint;
     private final RegistrySubscription subscription;
 
     ServiceDirectory(
             ServiceDiscovery discovery,
             ServiceKey key) {
+        this(discovery, key, null);
+    }
+
+    ServiceDirectory(
+            ServiceDiscovery discovery,
+            ServiceKey key,
+            String expectedSchemaFingerprint) {
+        this.expectedSchemaFingerprint =
+                expectedSchemaFingerprint;
         subscription = discovery.subscribe(
                 key,
                 this::publish);
@@ -29,10 +40,24 @@ final class ServiceDirectory implements AutoCloseable {
             if (candidate.revision() < current.revision()) {
                 return current;
             }
+            ServiceInstance[] compatible =
+                    candidate.instances().stream()
+                            .filter(this::compatible)
+                            .toArray(ServiceInstance[]::new);
             return new DirectorySnapshot(
-                    candidate.instances().toArray(ServiceInstance[]::new),
+                    compatible,
                     candidate.revision());
         });
+    }
+
+    private boolean compatible(ServiceInstance instance) {
+        if (expectedSchemaFingerprint == null) {
+            return true;
+        }
+        return RpcCompatibilityMetadata.compatibility(
+                instance,
+                expectedSchemaFingerprint)
+                != RpcCompatibilityMetadata.Compatibility.INCOMPATIBLE;
     }
 
     ServiceInstance[] snapshot() {

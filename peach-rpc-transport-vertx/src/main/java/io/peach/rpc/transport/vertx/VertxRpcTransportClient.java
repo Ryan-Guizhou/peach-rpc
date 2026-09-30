@@ -593,9 +593,23 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                 handleHeartbeat(bytes);
                 return;
             }
+            if (messageType != RpcMessageType.RESPONSE.code()) {
+                failAll(
+                        new RpcProtocolException(
+                                "Expected RESPONSE after handshake"),
+                        RpcConnectionCloseReason.PROTOCOL_ERROR);
+                return;
+            }
 
             long requestId =
                     RpcProtocolCodec.readRequestId(bytes);
+            if (requestId == 0L) {
+                failAll(
+                        new RpcProtocolException(
+                                "RPC RESPONSE requires a request id"),
+                        RpcConnectionCloseReason.PROTOCOL_ERROR);
+                return;
+            }
             PendingRequest request = pending.remove(requestId);
             if (request == null) {
                 LOGGER.debug(
@@ -614,6 +628,15 @@ final class VertxRpcTransportClient implements RpcTransportClient {
         private void handleGoAway(byte[] bytes) {
             try {
                 RpcFrame frame = RpcProtocolCodec.decode(bytes);
+                if (frame.messageType() != RpcMessageType.GO_AWAY
+                        || frame.requestId() != 0L
+                        || frame.codec() != RpcCodecIds.CONTROL
+                        || frame.serviceId() != 0
+                        || frame.methodId() != 0) {
+                    failAll(new RpcProtocolException(
+                            "Invalid RPC GO_AWAY frame"));
+                    return;
+                }
                 var error = RpcErrorCodec.decode(frame.payload());
                 if (frame.status() != RpcStatus.UNAVAILABLE) {
                     failAll(new RpcProtocolException(
@@ -644,7 +667,10 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                 RpcFrame frame = RpcProtocolCodec.decode(bytes);
                 if (frame.messageType() != RpcMessageType.HELLO_ACK
                         || frame.requestId() != 0L
-                        || frame.codec() != RpcCodecIds.CONTROL) {
+                        || frame.codec() != RpcCodecIds.CONTROL
+                        || frame.status() != RpcStatus.OK
+                        || frame.serviceId() != 0
+                        || frame.methodId() != 0) {
                     throw new RpcProtocolException(
                             "Expected HELLO_ACK as first server frame");
                 }

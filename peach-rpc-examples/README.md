@@ -95,3 +95,21 @@ Examples 默认不强制引入观测框架。需要验证生产观测集成时�
 - `peach-rpc-observability-jfr`
 
 其中 Micrometer/OpenTelemetry 在 Spring Context 存在对应 Bean 时自动装配；JFR 通过 `peach.rpc.observability.jfr.enabled=true` 启用。完整指标、Trace Context 与 JFR 事件见 [可观测性指南](../docs/observability.md)。
+
+
+## N/N+1 Rolling Compatibility E2E
+
+仓库提供 `scripts/run_rolling_compatibility_e2e.sh` 与独立 `Rolling Compatibility` Workflow。
+
+PR 场景会把 PR base commit 作为 N、当前 HEAD 作为 N+1，分别构建两套 Provider/Consumer executable JAR，然后验证：
+
+~~~text
+N Consumer   -> N Provider
+N+1 Consumer -> N Provider
+N Consumer   -> N+1 Provider
+N+1 Consumer -> N+1 Provider
+N+1 Consumer -> N Provider rollback
+~~~
+
+该 E2E 验证 Wire v1 与 Registry Schema Metadata 的跨 Git 版本兼容。它不替代生产多副本滚动发布演练；真实多实例分批发布、容量和流量切换仍属于 RC 环境门禁。
+

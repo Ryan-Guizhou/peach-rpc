@@ -22,3 +22,23 @@ mvn -B -ntp clean verify -Pquality
 ```
 
 涉及热路径的改动还需要执行对应 JMH 基准，并在 PR 中记录 JDK、CPU、操作系统、Payload、并发度、预热和测量参数。
+
+
+## 1.0.x 兼容红线
+
+Peach RPC 1.0.x 已冻结：
+
+- Wire Protocol v1；
+- Public Core API；
+- Stable Type ID 规则；
+- Schema Fingerprint v1；
+- 已分配 Codec / Message Type；
+- Registry Compatibility Metadata key。
+
+涉及这些边界的改动必须先提供兼容方案，并通过 Rolling Compatibility。不能为了局部实现简化静默破坏旧 Consumer/Provider。
+
+## 社区与安全
+
+- 参与项目即应遵守 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。
+- 安全漏洞按 [SECURITY.md](SECURITY.md) 私密报告，不使用公开 Issue。
+- 用户可见行为变化必须同步 README 中英文和相关设计/配置文档。

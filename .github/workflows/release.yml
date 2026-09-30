@@ -1,0 +1,126 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: Release stage
+        required: true
+        default: ga
+        type: choice
+        options:
+          - rc1
+          - ga
+      publish:
+        description: Create the GitHub Release after all gates pass
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.stage }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Resolve release metadata
+        id: release
+        shell: bash
+        run: |
+          if [[ "${{ inputs.stage }}" == "rc1" ]]; then
+            echo "version=1.0.0-RC1" >> "$GITHUB_OUTPUT"
+            echo "notes=docs/release-notes-1.0.0-RC1.md" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=1.0.0" >> "$GITHUB_OUTPUT"
+            echo "notes=docs/release-notes-1.0.0.md" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify repository
+        run: python3 scripts/check_project.py
+
+      - name: Verify release version
+        run: >
+          python3 scripts/check_release_version.py
+          --stage ${{ inputs.stage }}
+          --version ${{ steps.release.outputs.version }}
+
+      - name: Verify release readiness
+        run: >
+          python3 scripts/check_release_readiness.py
+          --stage ${{ inputs.stage }}
+          --version ${{ steps.release.outputs.version }}
+
+      - name: Build release reactor
+        run: >
+          mvn -B -ntp
+          -Drevision=${{ steps.release.outputs.version }}
+          clean verify
+          -Pquality,release
+
+      - name: Build release bundle
+        shell: bash
+        run: |
+          VERSION="${{ steps.release.outputs.version }}"
+          BUNDLE="target/release-bundle"
+          mkdir -p "$BUNDLE"
+
+          find . -path '*/target/*.jar' -type f             ! -name 'original-*.jar'             ! -name '*-tests.jar'             -print | sort > "$BUNDLE/artifact-inventory.txt"
+
+          while IFS= read -r artifact; do
+            cp "$artifact" "$BUNDLE/"
+          done < "$BUNDLE/artifact-inventory.txt"
+
+          cp LICENSE CHANGELOG.md "$BUNDLE/"
+          cp "${{ steps.release.outputs.notes }}" "$BUNDLE/RELEASE_NOTES.md"
+
+          (
+            cd "$BUNDLE"
+            sha256sum ./*.jar LICENSE CHANGELOG.md RELEASE_NOTES.md               > SHA256SUMS
+          )
+
+          tar -czf "target/peach-rpc-${VERSION}-artifacts.tar.gz"             -C "$BUNDLE" .
+
+      - name: Upload verified release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: peach-rpc-${{ steps.release.outputs.version }}
+          path: |
+            target/peach-rpc-${{ steps.release.outputs.version }}-artifacts.tar.gz
+            target/release-bundle/SHA256SUMS
+            target/release-bundle/artifact-inventory.txt
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish GitHub Release
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.release.outputs.version }}
+          NOTES: ${{ steps.release.outputs.notes }}
+          PRERELEASE: ${{ steps.release.outputs.prerelease }}
+        shell: bash
+        run: |
+          FLAGS=()
+          if [[ "$PRERELEASE" == "true" ]]; then
+            FLAGS+=(--prerelease)
+          fi
+
+          gh release create "v$VERSION"             --target "$GITHUB_SHA"             --title "Peach RPC $VERSION"             --notes-file "$NOTES"             "${FLAGS[@]}"             "target/peach-rpc-${VERSION}-artifacts.tar.gz"             "target/release-bundle/SHA256SUMS"

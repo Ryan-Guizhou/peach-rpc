@@ -1,0 +1,65 @@
+name: Bug report
+description: 报告可复现的 Peach RPC 问题
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        安全漏洞请不要使用公开 Issue，请阅读 SECURITY.md。
+  - type: input
+    id: version
+    attributes:
+      label: Peach RPC Version
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: java
+    attributes:
+      label: Java Version
+      placeholder: 21.0.x
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Core
+        - Transport
+        - Registry Etcd
+        - Registry Nacos
+        - Codec
+        - Spring Boot Starter
+        - Observability
+        - Compatibility
+        - Build / Release
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: 最小复现步骤、配置和代码。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / stack trace
+      render: text

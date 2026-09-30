@@ -1,0 +1,70 @@
+name: Nacos Chaos
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'peach-rpc-registry-nacos/**'
+      - '.github/workflows/nacos-chaos.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pause-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      NACOS_TEST_ENDPOINT: 127.0.0.1:8848
+      NACOS_CHAOS_CONTAINER: peach-rpc-nacos-chaos
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Start Nacos
+        run: |
+          docker run -d \
+            --name "$NACOS_CHAOS_CONTAINER" \
+            -p 8848:8848 \
+            -p 9848:9848 \
+            -e MODE=standalone \
+            -e NACOS_AUTH_ENABLE=false \
+            -e NACOS_AUTH_TOKEN=UGVhY2hScGNDb250cm9sUGxhbmVTZWNyZXRLZXkxMjM0NTY3ODkwMTIzNDU2Nzg5MA== \
+            -e NACOS_AUTH_IDENTITY_KEY=peach-rpc-ci \
+            -e NACOS_AUTH_IDENTITY_VALUE=peach-rpc-ci-secret \
+            nacos/nacos-server:v3.2.4
+
+      - name: Wait for Nacos
+        shell: bash
+        run: |
+          for attempt in {1..90}; do
+            if timeout 1 bash -c '</dev/tcp/127.0.0.1/8848' 2>/dev/null; then
+              sleep 25
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs "$NACOS_CHAOS_CONTAINER"
+          exit 1
+
+      - name: Verify Nacos pause recovery chaos
+        run: >
+          mvn -B -ntp
+          -pl peach-rpc-registry-nacos
+          -am
+          test
+          -Pnacos-chaos
+
+      - name: Nacos logs
+        if: failure()
+        run: docker logs "$NACOS_CHAOS_CONTAINER" || true
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f "$NACOS_CHAOS_CONTAINER" || true

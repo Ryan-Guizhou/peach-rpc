@@ -1,5 +1,6 @@
 package io.peach.rpc.core;
 
+import io.peach.rpc.observability.RpcCircuitState;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,5 +52,16 @@ final class RpcCircuitBreaker {
     boolean isOpen() {
         long openUntil = openUntilNanos.get();
         return openUntil != 0L && System.nanoTime() < openUntil;
+    }
+
+    RpcCircuitState state() {
+        long openUntil = openUntilNanos.get();
+        if (openUntil == 0L) {
+            return RpcCircuitState.CLOSED;
+        }
+        if (halfOpenProbe.get()) {
+            return RpcCircuitState.HALF_OPEN;
+        }
+        return RpcCircuitState.OPEN;
     }
 }

@@ -81,7 +81,7 @@ RegistryOptions(
 
 标注 `@PeachRpcContract` 并启用 `peach-rpc-codegen` 后，编译期生成 Consumer Stub；运行时优先发现生成类，缺失时才回退 ProxyFactory。
 
-后续 V2-B 会加入 Byte Buddy fallback。CGLIB 保留兼容定位，不作为高性能主线。
+当前同时提供 CGLIB 与 Byte Buddy fallback；Generated Stub 仍是推荐高性能路径。
 
 
 ## 6. Nacos Adapter 能力

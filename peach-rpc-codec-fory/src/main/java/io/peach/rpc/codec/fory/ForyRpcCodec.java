@@ -1,6 +1,7 @@
 package io.peach.rpc.codec.fory;
 
 import io.peach.rpc.api.RpcMethodDescriptor;
+import io.peach.rpc.api.RpcTypeRegistry;
 import io.peach.rpc.codec.RpcCodec;
 import io.peach.rpc.codec.RpcCodecIds;
 import io.peach.rpc.codec.RpcMethodCodec;
@@ -19,6 +20,8 @@ import org.apache.fory.ThreadSafeFory;
 @Extension("fory")
 public final class ForyRpcCodec implements RpcCodec {
 
+    private final RpcTypeRegistry typeRegistry =
+            new RpcTypeRegistry();
     private final ThreadSafeFory fory = Fory.builder()
             .withXlang(false)
             .requireClassRegistration(false)
@@ -50,6 +53,7 @@ public final class ForyRpcCodec implements RpcCodec {
     public RpcMethodCodec bind(
             RpcMethodDescriptor descriptor) {
         Objects.requireNonNull(descriptor, "descriptor");
+        typeRegistry.register(descriptor);
         return new ForyMethodCodec();
     }
 

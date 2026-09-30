@@ -1,0 +1,81 @@
+name: Release Readiness
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'peach-rpc-*/**'
+      - 'README.md'
+      - 'README.en-US.md'
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
+      - 'SECURITY.md'
+      - 'ROADMAP.md'
+      - 'LICENSE'
+      - 'docs/**'
+      - 'deploy/observability/**'
+      - 'scripts/check_project.py'
+      - 'scripts/check_release_version.py'
+      - 'scripts/check_release_readiness.py'
+      - '.github/workflows/release-readiness.yml'
+      - '.github/workflows/release.yml'
+      - 'pom.xml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Repository checks
+        run: python3 scripts/check_project.py
+
+      - name: Verify RC1 release contract
+        run: |
+          python3 scripts/check_release_version.py --stage rc1 --version 1.0.0-RC1
+          python3 scripts/check_release_readiness.py --stage rc1 --version 1.0.0-RC1
+
+      - name: Verify RC1 release packaging
+        run: >
+          mvn -B -ntp
+          -Drevision=1.0.0-RC1
+          clean verify
+          -DskipTests
+          -Prelease
+
+      - name: Verify GA release contract
+        run: |
+          python3 scripts/check_release_version.py --stage ga --version 1.0.0
+          python3 scripts/check_release_readiness.py --stage ga --version 1.0.0
+
+      - name: Verify GA Maven reactor
+        run: mvn -B -ntp clean verify -Pquality,release
+
+      - name: Build release artifact inventory
+        shell: bash
+        run: |
+          mkdir -p target
+          find . -path '*/target/*.jar' -type f -print \
+            | sort > target/release-artifacts.txt
+          test -s target/release-artifacts.txt
+          cat target/release-artifacts.txt
+
+      - name: Upload release artifact inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: peach-rpc-release-readiness-${{ github.run_id }}
+          path: target/release-artifacts.txt
+          if-no-files-found: error
+          retention-days: 30

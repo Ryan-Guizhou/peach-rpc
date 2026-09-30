@@ -8,14 +8,19 @@ import io.peach.rpc.api.RpcExecutionMode;
 import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.observability.RpcCertificateReloadOutcome;
+import io.peach.rpc.observability.RpcCircuitState;
 import io.peach.rpc.observability.RpcConnectionCloseReason;
 import io.peach.rpc.observability.RpcConnectionRole;
+import io.peach.rpc.observability.RpcFailureClassifier;
 import io.peach.rpc.observability.RpcObserver;
 import io.peach.rpc.observability.RpcRegistryOperation;
 import io.peach.rpc.observability.RpcRegistryRecoveryAction;
+import io.peach.rpc.observability.RpcRetryExhaustionReason;
 import io.peach.rpc.observability.RpcSecurityMode;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -28,6 +33,18 @@ public final class MicrometerRpcObserver implements RpcObserver {
     private final MeterRegistry registry;
     private final AtomicInteger activeConnections =
             new AtomicInteger();
+    private final AtomicInteger clientInflight =
+            new AtomicInteger();
+    private final AtomicInteger serverInflight =
+            new AtomicInteger();
+    private final AtomicInteger circuitClosed =
+            new AtomicInteger();
+    private final AtomicInteger circuitOpen =
+            new AtomicInteger();
+    private final AtomicInteger circuitHalfOpen =
+            new AtomicInteger();
+    private final ConcurrentMap<String, RpcCircuitState> circuitStates =
+            new ConcurrentHashMap<>();
 
     /**
      * 创建 Micrometer Observer。
@@ -44,6 +61,27 @@ public final class MicrometerRpcObserver implements RpcObserver {
                         AtomicInteger::get)
                 .description("Active Peach RPC transport connections")
                 .register(registry);
+        Gauge.builder(
+                        "peach.rpc.client.inflight",
+                        clientInflight,
+                        AtomicInteger::get)
+                .description("Inflight logical Peach RPC client calls")
+                .register(registry);
+        Gauge.builder(
+                        "peach.rpc.server.inflight",
+                        serverInflight,
+                        AtomicInteger::get)
+                .description("Inflight Peach RPC provider invocations")
+                .register(registry);
+        registerCircuitGauge(
+                RpcCircuitState.CLOSED,
+                circuitClosed);
+        registerCircuitGauge(
+                RpcCircuitState.OPEN,
+                circuitOpen);
+        registerCircuitGauge(
+                RpcCircuitState.HALF_OPEN,
+                circuitHalfOpen);
     }
 
     @Override
@@ -211,7 +249,12 @@ public final class MicrometerRpcObserver implements RpcObserver {
         timer(
                 "peach.rpc.client.attempts",
                 "status",
-                status.name())
+                status.name(),
+                "category",
+                RpcFailureClassifier.classify(
+                                status,
+                                error)
+                        .name())
                 .record(Duration.ofNanos(
                         Math.max(0L, durationNanos)));
         if (error != null || status != RpcStatus.OK) {
@@ -224,6 +267,97 @@ public final class MicrometerRpcObserver implements RpcObserver {
     }
 
     @Override
+    public void onClientInflightChanged(int delta) {
+        clientInflight.updateAndGet(
+                current -> Math.max(0, current + delta));
+    }
+
+    @Override
+    public void onServerInflightChanged(int delta) {
+        serverInflight.updateAndGet(
+                current -> Math.max(0, current + delta));
+    }
+
+    @Override
+    public void onClientCircuitStateChanged(
+            ServiceKey serviceKey,
+            int methodId,
+            RpcCircuitState state) {
+        String key = serviceKey.canonicalName()
+                + '#'
+                + methodId;
+        circuitStates.compute(key, (ignored, previous) -> {
+            if (previous == state) {
+                return state;
+            }
+            if (previous != null) {
+                circuitCounter(previous)
+                        .updateAndGet(value ->
+                                Math.max(0, value - 1));
+            }
+            circuitCounter(state).incrementAndGet();
+            return state;
+        });
+    }
+
+    @Override
+    public void onClientCallCompleted(
+            ServiceKey serviceKey,
+            int methodId,
+            long durationNanos,
+            RpcStatus status,
+            Throwable error) {
+        timer(
+                "peach.rpc.client.calls",
+                "status",
+                status.name(),
+                "category",
+                RpcFailureClassifier.classify(
+                                status,
+                                error)
+                        .name())
+                .record(Duration.ofNanos(
+                        Math.max(0L, durationNanos)));
+        if (status == RpcStatus.DEADLINE_EXCEEDED) {
+            registry.counter(
+                    "peach.rpc.client.timeouts")
+                    .increment();
+        }
+    }
+
+    @Override
+    public void onClientRetryExhausted(
+            ServiceKey serviceKey,
+            int methodId,
+            RpcRetryExhaustionReason reason,
+            Throwable cause) {
+        registry.counter(
+                        "peach.rpc.client.retry.exhausted",
+                        "reason",
+                        reason.name())
+                .increment();
+    }
+
+    @Override
+    public void onClientCircuitRejected(
+            ServiceKey serviceKey,
+            int methodId) {
+        registry.counter(
+                "peach.rpc.client.circuit.rejected")
+                .increment();
+    }
+
+    @Override
+    public void onEndpointEjected(
+            ServiceKey serviceKey,
+            RpcEndpoint endpoint,
+            long ejectionMillis) {
+        registry.counter(
+                "peach.rpc.client.outlier.ejected")
+                .increment();
+    }
+
+    @Override
     public void onClientRetryScheduled(
             ServiceKey serviceKey,
             int methodId,
@@ -232,6 +366,18 @@ public final class MicrometerRpcObserver implements RpcObserver {
             Throwable cause) {
         registry.counter(
                         "peach.rpc.client.retries")
+                .increment();
+    }
+
+    @Override
+    public void onServerAdmissionRejected(
+            int serviceId,
+            int methodId,
+            String reason) {
+        registry.counter(
+                        "peach.rpc.server.admission.rejected",
+                        "reason",
+                        safe(reason))
                 .increment();
     }
 
@@ -248,7 +394,12 @@ public final class MicrometerRpcObserver implements RpcObserver {
                 "execution",
                 executionMode.name(),
                 "status",
-                status.name())
+                status.name(),
+                "category",
+                RpcFailureClassifier.classify(
+                                status,
+                                error)
+                        .name())
                 .record(Duration.ofNanos(
                         Math.max(0L, durationNanos)));
         if (error != null || status != RpcStatus.OK) {
@@ -265,6 +416,28 @@ public final class MicrometerRpcObserver implements RpcObserver {
                             executionMode.name())
                     .increment();
         }
+    }
+
+    private void registerCircuitGauge(
+            RpcCircuitState state,
+            AtomicInteger value) {
+        Gauge.builder(
+                        "peach.rpc.client.circuit.state",
+                        value,
+                        AtomicInteger::get)
+                .tag("state", state.name())
+                .description(
+                        "Peach RPC client method circuit breakers by state")
+                .register(registry);
+    }
+
+    private AtomicInteger circuitCounter(
+            RpcCircuitState state) {
+        return switch (state) {
+            case CLOSED -> circuitClosed;
+            case OPEN -> circuitOpen;
+            case HALF_OPEN -> circuitHalfOpen;
+        };
     }
 
     private Timer timer(

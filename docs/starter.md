@@ -8,7 +8,7 @@
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-spring-boot-starter</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
@@ -63,7 +63,7 @@ DIRECT 默认禁止。只有配置 `peach.rpc.server.execution.allow-direct=true
 private OrderService orderService;
 ```
 
-默认调用超时为 3 秒，可通过 `peach.rpc.client.timeout` 修改。V2-C.2 起该逻辑 Deadline 同时约束连接建立、HELLO/ACK 握手和请求阶段；请求同时携带旧 `deadlineEpochMillis` 与新 `timeoutBudgetMillis`，新 Provider 优先使用相对预算语义避免跨节点 wall-clock 偏差，旧 Provider 仍可使用绝对 Deadline，支持滚动升级。
+默认调用超时为 3 秒，可通过 `peach.rpc.client.timeout` 修改。1.0 中该逻辑 Deadline 同时约束连接建立、HELLO/ACK 握手和请求阶段；请求同时携带旧 `deadlineEpochMillis` 与新 `timeoutBudgetMillis`，新 Provider 优先使用相对预算语义避免跨节点 wall-clock 偏差，旧 Provider 仍可使用绝对 Deadline，支持滚动升级。
 
 自动重试默认最多 2 次 attempt，但**只有显式标注 `@PeachRpcIdempotent` 的服务方法才允许重试**。未标注方法无论 Retry Budget 是否有余额都不会由框架自动重试：
 
@@ -173,7 +173,7 @@ Core 的 `RpcObserver`、`RpcTracingBridge`、`RpcMetadataPropagator` 不依赖�
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-observability-micrometer</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 </dependency>
 ~~~
 
@@ -181,7 +181,7 @@ Core 的 `RpcObserver`、`RpcTracingBridge`、`RpcMetadataPropagator` 不依赖�
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-observability-opentelemetry</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 </dependency>
 ~~~
 
@@ -189,7 +189,7 @@ Core 的 `RpcObserver`、`RpcTracingBridge`、`RpcMetadataPropagator` 不依赖�
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-observability-jfr</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 </dependency>
 ~~~
 

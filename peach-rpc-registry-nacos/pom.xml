@@ -11,10 +11,22 @@
     <artifactId>peach-rpc-registry-nacos</artifactId>
     <name>peach-rpc-registry-nacos</name>
     <description>Nacos registry adapter for Peach RPC.</description>
+    <properties>
+        <nacos.test.groups></nacos.test.groups>
+        <nacos.test.excluded-groups>chaos</nacos.test.excluded-groups>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.peach.rpc</groupId>
             <artifactId>peach-rpc-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.peach.rpc</groupId>
+            <artifactId>peach-rpc-core</artifactId>
+            <version>${revision}</version>
+            <type>test-jar</type>
+            <classifier>tests</classifier>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
@@ -30,4 +42,27 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <groups>${nacos.test.groups}</groups>
+                    <excludedGroups>${nacos.test.excluded-groups}</excludedGroups>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>nacos-chaos</id>
+            <properties>
+                <nacos.test.groups>chaos</nacos.test.groups>
+                <nacos.test.excluded-groups></nacos.test.excluded-groups>
+            </properties>
+        </profile>
+    </profiles>
 </project>

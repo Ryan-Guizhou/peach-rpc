@@ -14,7 +14,12 @@ final class NacosReservedMetadata {
     private NacosReservedMetadata() {
     }
 
-    static boolean reserved(String key) {
-        return key != null && key.startsWith(PREFIX);
+    static boolean adapterOwned(String key) {
+        return INSTANCE_ID.equals(key)
+                || INTERFACE.equals(key)
+                || VERSION.equals(key)
+                || GROUP.equals(key)
+                || PROTOCOL.equals(key)
+                || CLUSTER.equals(key);
     }
 }

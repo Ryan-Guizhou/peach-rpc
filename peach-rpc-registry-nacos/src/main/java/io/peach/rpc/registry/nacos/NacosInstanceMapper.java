@@ -33,9 +33,10 @@ final class NacosInstanceMapper {
         }
         Map<String, String> metadata = new HashMap<>(source.metadata());
         for (String key : metadata.keySet()) {
-            if (NacosReservedMetadata.reserved(key)) {
+            if (NacosReservedMetadata.adapterOwned(key)) {
                 throw new IllegalArgumentException(
-                        "RPC metadata must not override reserved key: " + key);
+                        "RPC metadata must not override Nacos adapter key: "
+                                + key);
             }
         }
         metadata.put(NacosReservedMetadata.INSTANCE_ID, source.instanceId());

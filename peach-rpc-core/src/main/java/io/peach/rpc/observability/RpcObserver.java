@@ -175,6 +175,54 @@ public interface RpcObserver {
     }
 
     /**
+     * Consumer 逻辑 RPC inflight 数变化。
+     *
+     * @param delta +1 表示开始，-1 表示结束
+     */
+    default void onClientInflightChanged(int delta) {
+    }
+
+    /**
+     * Provider 业务 invocation inflight 数变化。
+     *
+     * @param delta +1 表示开始，-1 表示结束
+     */
+    default void onServerInflightChanged(int delta) {
+    }
+
+    /**
+     * Consumer 方法级 Circuit Breaker 状态。
+     *
+     * @param serviceKey 服务键
+     * @param methodId 方法 ID
+     * @param state 当前状态
+     */
+    default void onClientCircuitStateChanged(
+            ServiceKey serviceKey,
+            int methodId,
+            RpcCircuitState state) {
+    }
+
+    /**
+     * Consumer 一次逻辑 RPC 调用完成。
+     *
+     * <p>一次逻辑调用可能包含多个网络 Attempt，该事件只回调一次。
+     *
+     * @param serviceKey 服务键
+     * @param methodId 方法 ID
+     * @param durationNanos 逻辑调用总耗时
+     * @param status 最终状态
+     * @param error 最终失败；成功时为 null
+     */
+    default void onClientCallCompleted(
+            ServiceKey serviceKey,
+            int methodId,
+            long durationNanos,
+            RpcStatus status,
+            Throwable error) {
+    }
+
+    /**
      * Consumer 已决定调度下一次 Retry。
      *
      * @param serviceKey 服务键
@@ -189,6 +237,60 @@ public interface RpcObserver {
             int nextAttempt,
             long delayMillis,
             Throwable cause) {
+    }
+
+    /**
+     * Consumer 已无法继续自动 Retry。
+     *
+     * <p>只对显式幂等且当前失败可重试的方法产生该事件。
+     *
+     * @param serviceKey 服务键
+     * @param methodId 方法 ID
+     * @param reason Retry 停止原因
+     * @param cause 最终触发失败
+     */
+    default void onClientRetryExhausted(
+            ServiceKey serviceKey,
+            int methodId,
+            RpcRetryExhaustionReason reason,
+            Throwable cause) {
+    }
+
+    /**
+     * Consumer 因方法级 Circuit Open 拒绝调用。
+     *
+     * @param serviceKey 服务键
+     * @param methodId 方法 ID
+     */
+    default void onClientCircuitRejected(
+            ServiceKey serviceKey,
+            int methodId) {
+    }
+
+    /**
+     * Consumer 因连续基础设施失败临时剔除端点。
+     *
+     * @param serviceKey 服务键
+     * @param endpoint 被剔除端点
+     * @param ejectionMillis 剔除窗口毫秒数
+     */
+    default void onEndpointEjected(
+            ServiceKey serviceKey,
+            RpcEndpoint endpoint,
+            long ejectionMillis) {
+    }
+
+    /**
+     * Provider 在进入业务执行前因容量限制拒绝请求。
+     *
+     * @param serviceId 服务 ID
+     * @param methodId 方法 ID
+     * @param reason 低基数拒绝原因
+     */
+    default void onServerAdmissionRejected(
+            int serviceId,
+            int methodId,
+            String reason) {
     }
 
     /**
@@ -378,6 +480,46 @@ public interface RpcObserver {
             }
 
             @Override
+            public void onClientInflightChanged(int delta) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onClientInflightChanged(delta)));
+            }
+
+            @Override
+            public void onServerInflightChanged(int delta) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onServerInflightChanged(delta)));
+            }
+
+            @Override
+            public void onClientCircuitStateChanged(
+                    ServiceKey serviceKey,
+                    int methodId,
+                    RpcCircuitState state) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onClientCircuitStateChanged(
+                                serviceKey,
+                                methodId,
+                                state)));
+            }
+
+            @Override
+            public void onClientCallCompleted(
+                    ServiceKey serviceKey,
+                    int methodId,
+                    long durationNanos,
+                    RpcStatus status,
+                    Throwable error) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onClientCallCompleted(
+                                serviceKey,
+                                methodId,
+                                durationNanos,
+                                status,
+                                error)));
+            }
+
+            @Override
             public void onClientRetryScheduled(
                     ServiceKey serviceKey,
                     int methodId,
@@ -391,6 +533,54 @@ public interface RpcObserver {
                                 nextAttempt,
                                 delayMillis,
                                 cause)));
+            }
+
+            @Override
+            public void onClientRetryExhausted(
+                    ServiceKey serviceKey,
+                    int methodId,
+                    RpcRetryExhaustionReason reason,
+                    Throwable cause) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onClientRetryExhausted(
+                                serviceKey,
+                                methodId,
+                                reason,
+                                cause)));
+            }
+
+            @Override
+            public void onClientCircuitRejected(
+                    ServiceKey serviceKey,
+                    int methodId) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onClientCircuitRejected(
+                                serviceKey,
+                                methodId)));
+            }
+
+            @Override
+            public void onEndpointEjected(
+                    ServiceKey serviceKey,
+                    RpcEndpoint endpoint,
+                    long ejectionMillis) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onEndpointEjected(
+                                serviceKey,
+                                endpoint,
+                                ejectionMillis)));
+            }
+
+            @Override
+            public void onServerAdmissionRejected(
+                    int serviceId,
+                    int methodId,
+                    String reason) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onServerAdmissionRejected(
+                                serviceId,
+                                methodId,
+                                reason)));
             }
 
             @Override

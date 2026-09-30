@@ -5,6 +5,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -74,6 +78,9 @@ jobs:
 
       - name: Verify V2-D.2 evidence tooling
         run: python3 scripts/test_v2d2_evidence_tools.py
+
+      - name: Verify V2-D.2-E2 and V2-D.4 gates
+        run: python3 scripts/test_v2d2_e2_d4_tools.py
 
       - name: Verify V2-D.2 benchmark harness
         env:

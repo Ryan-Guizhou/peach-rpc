@@ -11,10 +11,34 @@
 
     <name>Peach RPC</name>
     <description>High-performance extensible Java RPC framework.</description>
+    <url>https://github.com/Ryan-Guizhou/peach-rpc</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>Ryan-Guizhou</id>
+            <name>Ryan</name>
+            <url>https://github.com/Ryan-Guizhou</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/Ryan-Guizhou/peach-rpc.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/Ryan-Guizhou/peach-rpc.git</developerConnection>
+        <url>https://github.com/Ryan-Guizhou/peach-rpc</url>
+        <tag>HEAD</tag>
+    </scm>
 
     <properties>
         <java.version>21</java.version>
-        <revision>0.1.0-SNAPSHOT</revision>
+        <revision>1.0.0</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>${java.version}</maven.compiler.release>
@@ -353,6 +377,26 @@
                                 <phase>verify</phase>
                                 <goals>
                                     <goal>javadoc</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
                                 </goals>
                             </execution>
                         </executions>
