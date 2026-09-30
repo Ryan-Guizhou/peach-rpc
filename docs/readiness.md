@@ -97,6 +97,27 @@ V2-D.2 当前正在建立性能证据闭环：
 
 详细运行方式见 [V2-D.2 Performance Evidence & 10k Soak](performance-evidence-v2d2.md)。容量规划方法论、QPS/Core 计算、连接分片选择和生产记录模板见 [Capacity Planning Guide](capacity-planning.md)；其中生产数值仍需固定硬件证据。
 
+## 已确认的 1.0 GA 版本路径
+
+后续版本顺序已经固定为：
+
+~~~text
+V2-D.2-E1  Controlled Evidence Execution
+    -> V2-D.2-E2  Evidence Analysis & Baseline
+    -> V2-D.3     Evidence-driven Kernel Optimization
+    -> V2-D.4     Performance Closure
+    -> V2-E.1     Wire Identity & Schema
+    -> V2-E.2     Rolling Upgrade & Rollback
+    -> V2-F.1     Protocol Robustness
+    -> V2-F.2     Chaos & Recovery
+    -> V2-G.1     Observability & Production SLO
+    -> V2-G.2     Production Operations & Release
+    -> 1.0.0-RC1
+    -> 1.0.0 GA
+~~~
+
+V2-D.3 为条件执行版本，具体优化项由 V2-D.2-E2 的固定硬件证据决定。Streaming 继续保持 Optional；Protobuf/IDL、Kubernetes 与更多 Registry/Codec 默认进入 1.1.x+。逐版本任务和 Exit Gate 见 [V2-D.2 → 1.0 GA 版本执行路线](version-roadmap-to-ga.md)。
+
 ## 仍需完成的生产门禁
 
 正式成为中型项目默认 RPC 层之前，至少还需要。详细状态以 [Production Roadmap / Capability Matrix](production-roadmap.md) 为准：

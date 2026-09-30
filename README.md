@@ -225,6 +225,7 @@ CI 使用 JDK 21 执行相同门禁，并额外运行独立 JVM + Nacos restart 
 - [V2-D.2 性能证据与 10k Soak](docs/performance-evidence-v2d2.md)
 - [容量规划指南](docs/capacity-planning.md)
 - [Production Roadmap / Capability Matrix](docs/production-roadmap.md)
+- [V2-D.2 → 1.0 GA 版本执行路线](docs/version-roadmap-to-ga.md)
 - [生产就绪门禁](docs/readiness.md)
 - [开发规范](docs/development.md)
 - [实施路线](docs/implementation-plan.md)

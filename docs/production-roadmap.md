@@ -209,18 +209,47 @@ Streaming 当前**不作为近期 Production GA 的必选门禁**。如果项目
 
 ~~~mermaid
 flowchart LR
-    C1[V2-C.1<br/>Annotation Runtime + Nacos] --> C2[V2-C.2<br/>Connection & Control-plane HA]
-    C2 --> C3[V2-C.3<br/>Security & Observability]
-    C3 --> D[V2-D<br/>Performance Kernel Second Pass]
-    D --> E[V2-E<br/>Wire Compatibility & Strategic Ecosystem]
-    E --> GA[Production GA Gate]
+    C3[V2-C.3<br/>Security & Observability]
+    E1[V2-D.2-E1<br/>Controlled Evidence]
+    E2[V2-D.2-E2<br/>Analysis & Baseline]
+    D3[V2-D.3<br/>Conditional Kernel Optimization]
+    D4[V2-D.4<br/>Performance Closure]
+    W1[V2-E.1<br/>Wire Identity & Schema]
+    W2[V2-E.2<br/>Rolling Compatibility]
+    F1[V2-F.1<br/>Protocol Robustness]
+    F2[V2-F.2<br/>Chaos & Recovery]
+    G1[V2-G.1<br/>SLO & Observability]
+    G2[V2-G.2<br/>Production Operations]
+    RC[1.0.0-RC1]
+    GA[1.0.0 GA]
+
+    C3 --> E1 --> E2 --> D3 --> D4 --> W1 --> W2 --> F1 --> F2 --> G1 --> G2 --> RC --> GA
 ~~~
 
 路线原则：
 
-> **优先补齐高可用恢复、安全和可观测性，再做第二轮极限性能优化，最后扩展更多生态。**
+> **先取得可重复证据，再做有证据支撑的性能优化；随后完成 Wire Compatibility、Robustness、Chaos 与 Production Operations，最后进入 RC/GA。**
 
-不建议在 V2-C.2/V2-C.3 完成前优先增加大量 Registry/Codec Adapter。
+完整的逐版本 Scope、任务清单、依赖与 Exit Gate 统一见 [V2-D.2 → 1.0 GA 版本执行路线](version-roadmap-to-ga.md)。
+
+### 4.2 已确认版本顺序
+
+| 顺序 | 版本 | 状态 | 说明 |
+|---:|---|---|---|
+| 1 | V2-D.2-E1 | **Next / Execution Pending** | 固定硬件 controlled evidence |
+| 2 | V2-D.2-E2 | **Proposed** | repeatability、baseline、优化决策 |
+| 3 | V2-D.3 | **Conditional Proposed** | 只实现证据证明值得做的性能优化 |
+| 4 | V2-D.4 | **Proposed** | 性能收口与容量模型 |
+| 5 | V2-E.1 | **Proposed** | Stable Type ID / Schema Fingerprint |
+| 6 | V2-E.2 | **Proposed** | N/N+1 / Rolling / Rollback |
+| 7 | V2-F.1 | **Proposed** | malformed / fuzz / property / race |
+| 8 | V2-F.2 | **Proposed** | blackhole / partition / chaos / recovery |
+| 9 | V2-G.1 | **Proposed** | Error Model / SLO / Dashboard / Alert |
+| 10 | V2-G.2 | **Proposed** | Upgrade / Rollback / Recommended Defaults / Release |
+| 11 | 1.0.0-RC1 | **Future** | Wire/API Freeze + Production Candidate |
+| 12 | 1.0.0 | **Future** | Production GA |
+
+Protobuf/IDL、Kubernetes EndpointSlice、Compression 以及更多 Registry/Codec 默认进入 1.1.x+，不阻塞 1.0 GA。Streaming 继续保持 Optional。
 
 ---
 
@@ -435,7 +464,7 @@ Connection shard：
 
 ---
 
-## 9. V2-E：Wire Compatibility 与战略生态
+## 9. V2-E：Wire Compatibility
 
 **状态：Proposed / Future**
 
@@ -448,19 +477,9 @@ Connection shard：
 5. rollback compatibility；
 6. Protocol/Codec compatibility matrix。
 
-### 9.2 战略生态
+### 9.2 生态边界
 
-兼容模型稳定后，优先级建议：
-
-1. Protobuf / IDL；
-2. Kubernetes EndpointSlice；
-3. 其他 Registry / Codec。
-
-原因：
-
-- Protobuf/IDL 能验证跨语言、稳定 Schema 与 Codegen 边界；
-- Kubernetes EndpointSlice 能验证 discovery-only Registry Capability 模型；
-- ZooKeeper、Consul、Eureka、Kryo、Hessian2、JSON 属于生态扩展，不应早于核心生产门禁。
+V2-E 只负责 1.0 GA 所需 Wire Compatibility。Protobuf/IDL、Kubernetes EndpointSlice、ZooKeeper、Consul、Eureka、Kryo、Hessian2、JSON 等战略生态统一后移到 1.1.x+，避免在兼容模型尚未稳定时扩大维护面。
 
 ---
 
