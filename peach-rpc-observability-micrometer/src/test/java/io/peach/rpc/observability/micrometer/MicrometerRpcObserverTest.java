@@ -12,6 +12,7 @@ import io.peach.rpc.api.ServiceKey;
 import io.peach.rpc.observability.RpcConnectionCloseReason;
 import io.peach.rpc.observability.RpcCircuitState;
 import io.peach.rpc.observability.RpcConnectionRole;
+import io.peach.rpc.observability.RpcRetryExhaustionReason;
 import org.junit.jupiter.api.Test;
 
 /** Micrometer Observer 指标映射测试。 */
@@ -76,6 +77,11 @@ class MicrometerRpcObserverTest {
                 3000L,
                 RpcStatus.DEADLINE_EXCEEDED,
                 null);
+        observer.onClientRetryExhausted(
+                serviceKey,
+                1,
+                RpcRetryExhaustionReason.MAX_ATTEMPTS,
+                new IllegalStateException("failure"));
         observer.onClientCircuitRejected(
                 new ServiceKey(
                         "demo.Service",
@@ -99,6 +105,17 @@ class MicrometerRpcObserverTest {
                 "peach.rpc.client.attempts").timer());
         assertNotNull(registry.find(
                 "peach.rpc.client.calls").timer());
+        assertEquals(
+                1.0,
+                registry.find(
+                                "peach.rpc.client.retry.exhausted")
+                        .tag(
+                                "reason",
+                                RpcRetryExhaustionReason
+                                        .MAX_ATTEMPTS
+                                        .name())
+                        .counter()
+                        .count());
         assertEquals(
                 1.0,
                 registry.find(
