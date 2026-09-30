@@ -1,5 +1,8 @@
 # Peach RPC Wire Compatibility
 
+<!-- capability-status:v2-e1=engineering-ready -->
+<!-- capability-status:v2-e2=engineering-ready -->
+
 > 状态：**Engineering Current / Production Evidence Pending**  
 > 本文定义 V2-E.1 / V2-E.2 的稳定标识、Schema Fingerprint 与滚动升级语义。
 
