@@ -1,50 +1,57 @@
 # Peach RPC 可观测性
 
-<!-- capability-status:v2-c3=current -->指南
-
-> V2-C.3 提供三层可观测 Adapter：Micrometer、OpenTelemetry、JFR。  
-> Core 本身不直接依赖上述框架。
+> 状态：**1.0.0 GA**  
+> Core 不直接依赖 Micrometer、OpenTelemetry 或 JFR。
 
 ## 1. 架构边界
 
-~~~text
-peach-rpc-core
-   |
-   +-- RpcObserver
-   +-- RpcTracingBridge
-   +-- RpcMetadataPropagator
-            |
-            +-- Micrometer Adapter
-            +-- OpenTelemetry Adapter
-            +-- JFR Adapter
-~~~
+```mermaid
+flowchart LR
+    Core[peach-rpc-core]
+    Observer[RpcObserver]
+    Trace[RpcTracingBridge]
+    Meta[RpcMetadataPropagator]
+    Micro[Micrometer Adapter]
+    OTel[OpenTelemetry Adapter]
+    Jfr[JFR Adapter]
 
-未安装 Adapter 时，Core 使用 NOOP 实现。
+    Core --> Observer
+    Core --> Trace
+    Core --> Meta
+    Observer --> Micro
+    Trace --> OTel
+    Observer --> Jfr
+```
+
+未安装 Adapter 时使用 NOOP 路径。
 
 ## 2. Micrometer
 
 依赖：
 
-~~~xml
+```xml
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-observability-micrometer</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 </dependency>
-~~~
+```
 
-当 Spring Context 中存在 `MeterRegistry` 时自动创建 RPC Observer。
+Spring Context 中存在 `MeterRegistry` 时可自动装配 RPC Observer。
 
 ### 标准指标
 
-主要指标：
-
-- `peach.rpc.client.calls`：一次业务调用只记录一次，用于 QPS/SLO；
-- `peach.rpc.client.attempts`：网络 Attempt，可被 Retry 放大；
+- `peach.rpc.client.calls`；
+- `peach.rpc.client.attempts`；
 - `peach.rpc.client.retries`；
+- `peach.rpc.client.retry.exhausted`；
+- `peach.rpc.client.inflight`；
+- `peach.rpc.client.timeouts`；
 - `peach.rpc.client.circuit.rejected`；
+- `peach.rpc.client.circuit.state`；
 - `peach.rpc.client.outlier.ejected`；
 - `peach.rpc.server.invocations`；
+- `peach.rpc.server.inflight`；
 - `peach.rpc.server.admission.rejected`；
 - `peach.rpc.server.overloaded`；
 - `peach.rpc.connection.active`；
@@ -53,127 +60,99 @@ peach-rpc-core
 - `peach.rpc.connection.heartbeat.timeouts`；
 - `peach.rpc.connection.closed`；
 - `peach.rpc.registry.operations`；
+- `peach.rpc.registry.failures`；
 - `peach.rpc.registry.recoveries`；
 - `peach.rpc.tls.handshake`；
 - `peach.rpc.tls.certificate.reload`；
 - `peach.rpc.tls.certificate.expiry.warnings`。
 
-默认不会把 endpoint、instanceId、service、method、异常 message、traceId 作为指标标签，避免用户规模和接口数量直接放大 Meter 基数。Client Call/Attempt 与 Server Invocation 只使用低基数 status/category 等标签；service/method 维度应通过 Trace、日志或受控的自定义 Observer 获取。
+默认不把 endpoint、instanceId、service、method、exception message、traceId 放进 Meter Tag，避免高基数。
 
-生产 Dashboard、Prometheus 告警示例、Golden Signals 与 SLO 口径见 [生产可观测与 SLO 模板](production-observability.md)。
+## 3. Call 与 Attempt
 
-## 3. OpenTelemetry
+一次业务调用可能产生多个网络 Attempt：
+
+```text
+client.calls = 1
+client.attempts = 1..N
+client.retries = attempts - 1
+```
+
+业务 QPS、成功率、Latency SLO 以 logical call 为主；Attempt 用于诊断 Retry Amplification。
+
+## 4. OpenTelemetry
 
 依赖：
 
-~~~xml
+```xml
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-observability-opentelemetry</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 </dependency>
-~~~
+```
 
-Spring 中存在 `OpenTelemetry` Bean 时自动提供 `RpcTracingBridge`。
+真实 RPC 路径传播 W3C Trace Context/Baggage。
 
-### Trace 流程
-
-~~~mermaid
+```mermaid
 sequenceDiagram
     participant A as Application
-    participant C as PeachRpcClient
+    participant C as Consumer
     participant W as Wire Metadata
-    participant S as PeachRpcServer
-    participant B as Business
+    participant P as Provider
 
     A->>C: invoke
-    C->>C: create CLIENT span
-    C->>W: inject traceparent/tracestate/baggage
-    W->>S: RPC request
-    S->>S: extract remote context
-    S->>B: activate SERVER span context
-    B-->>S: result
-    S-->>C: response
-    S->>S: end SERVER span
+    C->>C: CLIENT span
+    C->>W: inject context
+    W->>P: REQUEST
+    P->>P: extract + SERVER span
+    P-->>C: RESPONSE
+    P->>P: end SERVER span
     C->>C: end CLIENT span
-~~~
-
-当前真实 RPC E2E 会验证：
-
-- Consumer/Provider 通过 Vert.x 真实 RPC 通信；
-- CLIENT/SERVER Span 具有相同 Trace ID；
-- SERVER Span parent 为 CLIENT Span。
-
-Trace metadata 使用现有 v1 metadata area，因此不改变固定 Header。
-
-## 4. Metadata 安全限制
-
-额外 Metadata：
-
-- key/value 不允许换行；
-- key 不允许 `=`；
-- key/value 有长度上限；
-- 总 metadata 最大 65535 bytes；
-- `deadlineEpochMillis` 和 `timeoutBudgetMillis` 为保留键，不允许扩展覆盖。
-
-默认没有 Trace Adapter 时不会创建额外 Trace Metadata。
+```
 
 ## 5. JFR
 
 依赖：
 
-~~~xml
+```xml
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-observability-jfr</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 </dependency>
-~~~
+```
 
-启用：
+启用示例：
 
-~~~yaml
+```yaml
 peach:
   rpc:
     observability:
       jfr:
         enabled: true
         slow-threshold: 100ms
-~~~
+```
 
-JFR 只记录低频高价值事件：
+JFR 用于低频高价值诊断：慢/失败调用、Retry、reconnect、heartbeat timeout、Registry recovery、TLS/证书事件。
 
-- 慢/失败 Client attempt；
-- Retry scheduled；
-- 慢/失败 Provider invocation；
-- reconnect；
-- heartbeat timeout；
-- Registry recovery；
-- TLS handshake failure/slow handshake；
-- certificate reload。
+## 6. Metadata 安全边界
 
-正常高频 RPC 不会无条件写 JFR Event。
-
-## 6. Registry Observability
-
-Etcd 记录：
-
-- register/unregister/lookup/subscribe；
-- Lease registration recovery；
-- subscription/watch recovery。
-
-Nacos 记录：
-
-- register/unregister/lookup/subscribe。
-
-Nacos SDK 内部 reconnect/redo 由 SDK 自己管理，因此 Peach RPC 不伪造无法精确观测的底层 reconnect 事件；其恢复正确性由独立 JVM + Nacos restart E2E 验证。
+- key/value 不允许换行；
+- key 不允许 `=`；
+- key/value 有长度限制；
+- 总 metadata 最大 65535 bytes；
+- Deadline/Timeout Budget 为保留键；
+- 未启用 Trace Adapter 时不创建额外 Trace Metadata。
 
 ## 7. 故障隔离
 
-Observer/Propagator Adapter 必须满足：
-
 > telemetry failure must not become RPC failure.
 
-Core Composite 会隔离 Adapter 回调异常。
+Observer/Propagator Adapter 回调异常必须被隔离，不得改变 RPC 业务成功与否。
 
-OpenTelemetry exporter、Micrometer registry、JFR recording 都不应成为数据面成功与否的决定条件。
+## 8. 生产入口
+
+- [生产可观测与 SLO](production-observability.md)
+- [Grafana Dashboard](../deploy/observability/grafana/peach-rpc-dashboard.json)
+- [Prometheus Alert Example](../deploy/observability/prometheus/peach-rpc-alerts.example.yml)
