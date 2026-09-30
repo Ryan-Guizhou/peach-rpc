@@ -250,6 +250,10 @@ public final class PeachRpcClient implements AutoCloseable {
                 observer.enabled()
                         ? System.nanoTime()
                         : 0L;
+        if (observer.enabled()) {
+            observer.onClientInflightChanged(1);
+            observeCircuitState(reference, method);
+        }
         CompletableFuture<Object> result =
                 new CompletableFuture<>();
         result.whenComplete((ignoredValue, error) -> {
@@ -257,6 +261,7 @@ public final class PeachRpcClient implements AutoCloseable {
             RpcStatus finalStatus;
             if (result.isCancelled()) {
                 method.circuitBreaker().onCancelled();
+                observeCircuitState(reference, method);
                 failure = new CancellationException(
                         "RPC call cancelled");
                 finalStatus = RpcStatus.UNAVAILABLE;
@@ -277,13 +282,17 @@ public final class PeachRpcClient implements AutoCloseable {
                                 - logicalStartedAtNanos,
                         finalStatus,
                         failure);
+                observer.onClientInflightChanged(-1);
             }
             trace.end(
                     finalStatus,
                     failure);
         });
 
-        if (!method.circuitBreaker().tryAcquire()) {
+        boolean circuitAcquired =
+                method.circuitBreaker().tryAcquire();
+        observeCircuitState(reference, method);
+        if (!circuitAcquired) {
             if (observer.enabled()) {
                 observer.onClientCircuitRejected(
                         reference.key(),
@@ -342,6 +351,7 @@ public final class PeachRpcClient implements AutoCloseable {
         long remainingNanos = deadlineNanos - System.nanoTime();
         if (remainingNanos <= 0L) {
             method.circuitBreaker().onFailure();
+            observeCircuitState(reference, method);
             var timeoutError = new io.peach.rpc.api.RpcTimeoutException(
                     "RPC request deadline exceeded");
             observeClientAttempt(
@@ -455,6 +465,7 @@ public final class PeachRpcClient implements AutoCloseable {
                 Object value = decodeResponse(method, rawResponse);
                 endpointStats.endSuccess(elapsed);
                 method.circuitBreaker().onSuccess();
+                observeCircuitState(reference, method);
                 observeClientAttempt(
                         reference,
                         method,
@@ -491,6 +502,7 @@ public final class PeachRpcClient implements AutoCloseable {
                 } else {
                     endpointStats.endSuccess(elapsed);
                     method.circuitBreaker().onSuccess();
+                observeCircuitState(reference, method);
                     observeClientAttempt(
                             reference,
                             method,
@@ -564,6 +576,7 @@ public final class PeachRpcClient implements AutoCloseable {
                 && retryBudget.tryAcquireRetry();
         if (!retry) {
             method.circuitBreaker().onFailure();
+            observeCircuitState(reference, method);
             result.completeExceptionally(failure);
             return;
         }
@@ -573,6 +586,7 @@ public final class PeachRpcClient implements AutoCloseable {
         if (remainingNanos
                 <= TimeUnit.MILLISECONDS.toNanos(delayMillis)) {
             method.circuitBreaker().onFailure();
+            observeCircuitState(reference, method);
             result.completeExceptionally(failure);
             return;
         }
@@ -595,6 +609,18 @@ public final class PeachRpcClient implements AutoCloseable {
                         deadlineNanos,
                         attempt + 1,
                         result));
+    }
+
+    private void observeCircuitState(
+            ClientReference reference,
+            ClientMethodBinding method) {
+        if (!observer.enabled()) {
+            return;
+        }
+        observer.onClientCircuitStateChanged(
+                reference.key(),
+                method.methodId(),
+                method.circuitBreaker().state());
     }
 
     private void observeClientAttempt(
