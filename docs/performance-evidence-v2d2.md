@@ -261,12 +261,13 @@ Performance Evidence workflow 支持：
 
 - `evidence_class=shared-ci|controlled`；
 - `runner_labels_json`，例如 `["self-hosted","linux","x64","peach-rpc-perf"]`；
-- `runner_id`，用于记录固定机器稳定标识。
+- `runner_id`，在 controlled GitHub Workflow 中表示**期望的 self-hosted Runner 名称**；实际证据使用 GitHub `runner.name`；
 
 当 `evidence_class=controlled` 时会 fail-fast 要求：
 
 - 不能使用 `ubuntu-latest`；
-- 必须使用稳定 `runner_id`；
+- 必须使用稳定 `runner_id`，并在 GitHub self-hosted Workflow 中校验 expected runner name == actual `runner.name`；
+- 必须生成非 `unknown` 的 `host_fingerprint_sha256`；该值只保存哈希，不保存原始 machine-id / DMI UUID；
 - 必须 `matrix_profile=full`；
 - Matrix 与 Soak 必须同时运行；
 - concurrency >= 10000；
@@ -287,8 +288,8 @@ bash scripts/run_v2d2_fixed_evidence.sh target/v2d2-fixed-evidence
 
 E1 增加真实固定 Runner 所需的执行约束：
 
-- `preflight_v2d2_runner.sh` 校验 Linux、JDK 21、Maven 3.9+、Git commit 与稳定 Runner ID，并支持约束 CPU/核心数/内存/governor；
-- `check_v2d2_runner_baseline.py` 在首轮锁定 commit、CPU、Memory、Kernel、JDK、JVM flags 等稳定字段，后续 Run 在重型测试前 fail-fast；
+- `preflight_v2d2_runner.sh` 校验 Linux、JDK 21、Maven 3.9+、Git commit、expected/actual Runner ID，并生成 hashed physical-host fingerprint；同时支持约束 CPU/核心数/内存/governor；
+- `check_v2d2_runner_baseline.py` 在首轮锁定 commit、Runner ID、host fingerprint、CPU、Memory、Kernel、JDK、JVM flags 等稳定字段，后续 Run 在重型测试前 fail-fast；
 - `manage_v2d2_evidence_manifest.py` 为 Evidence Bundle 生成并校验 SHA-256 Manifest；
 - `run_v2d2_e1_series.sh` 顺序执行至少 3 次完整 controlled run，并输出 REPORT_ONLY repeatability；
 - Evidence 目录不允许静默覆盖；
