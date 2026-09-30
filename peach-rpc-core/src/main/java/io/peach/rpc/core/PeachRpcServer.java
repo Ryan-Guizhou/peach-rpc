@@ -378,6 +378,9 @@ public final class PeachRpcServer implements AutoCloseable {
         }
 
         if (!admission.tryAcquire()) {
+            observeAdmissionRejected(
+                    request,
+                    "concurrency");
             return CompletableFuture.completedFuture(
                     errorResponse(
                             request,
@@ -455,6 +458,9 @@ public final class PeachRpcServer implements AutoCloseable {
                     result));
         } catch (RejectedExecutionException error) {
             admission.release();
+            observeAdmissionRejected(
+                    request,
+                    "cpu-queue");
             return CompletableFuture.completedFuture(
                     errorResponse(
                             request,
@@ -468,6 +474,18 @@ public final class PeachRpcServer implements AutoCloseable {
             }
         });
         return result;
+    }
+
+    private void observeAdmissionRejected(
+            RpcFrameView request,
+            String reason) {
+        if (!observer.enabled()) {
+            return;
+        }
+        observer.onServerAdmissionRejected(
+                request.serviceId(),
+                request.methodId(),
+                reason);
     }
 
     private void observeServerInvocation(
