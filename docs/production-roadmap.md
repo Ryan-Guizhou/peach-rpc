@@ -532,16 +532,16 @@ Peach RPC 从 Preview 提升为 Production Ready 前，建议以下门禁全部�
 
 ### 10.5 Compatibility
 
-- [ ] Fory Stable Type ID；
-- [ ] Schema fingerprint；
+- [x] Fory Stable Type ID；
+- [x] Schema fingerprint；
 - [ ] N/N+1 rolling upgrade；
 - [ ] rollback；
-- [ ] Protocol/Codec compatibility matrix。
+- [x] Protocol/Codec compatibility matrix。
 
 ### 10.6 Robustness
 
-- [ ] malformed frame matrix；
-- [ ] fuzz/property test；
+- [x] malformed frame matrix；
+- [x] deterministic property/truncation test；
 - [ ] race/concurrency test；
 - [ ] 长时间 soak test（10k soak 工具已具备，固定环境长跑证据未完成）；
 - [ ] chaos test；
@@ -549,12 +549,12 @@ Peach RPC 从 Preview 提升为 Production Ready 前，建议以下门禁全部�
 
 ### 10.7 Operations
 
-- [ ] Capacity Planning Guide（方法论已完成，固定硬件生产数值待填充）；
-- [ ] Upgrade Guide；
-- [ ] Rollback Guide；
-- [ ] Compatibility Matrix；
-- [ ] 生产推荐配置与安全默认值；
-- [ ] 明确 SLO/告警建议。
+- [x] Capacity Planning Guide 方法论（固定硬件生产数值仍待填充）；
+- [x] Upgrade Guide；
+- [x] Rollback Guide；
+- [x] Compatibility Matrix；
+- [x] Production Configuration / Hardening 与证据型推荐值规则；
+- [x] SLO Template / Dashboard / Alert Example（目标阈值由环境确认）。
 
 ---
 
