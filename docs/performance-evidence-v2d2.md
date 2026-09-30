@@ -319,6 +319,16 @@ python3 scripts/compare_v2d2_evidence.py \
 
 只有显式提供阈值且全部通过时，repeatability report 才为 **PASS**；未设置阈值时为 **REPORT_ONLY**，避免工具擅自定义 Production Gate。
 
+当 repeatability report 为 PASS 后，可以生成候选基线：
+
+~~~bash
+python3 scripts/promote_v2d2_baseline.py \
+  --repeatability-report target/v2d2-repeatability/repeatability-report.json \
+  --output-dir target/v2d2-baseline-candidate
+~~~
+
+输出 `baseline-candidate.json/.md`。状态始终是 **CANDIDATE**，不能直接等价为 Production SLO；仍需人工评审阈值策略、TLS/Fault 证据、allocation/GC、容量规划和 V2-D.3 优化决策。
+
 ## 8. 正式性能结论的环境要求
 
 任何进入 `performance.md`、Capacity Planning 或 SLO 的数字必须记录：
@@ -373,7 +383,8 @@ error rate:
 - [x] Evidence bundle 完整性与来源校验；
 - [x] Decision Inputs JSON/Markdown 自动生成；
 - [x] 单命令 fixed-runner evidence orchestrator；
-- [x] controlled evidence 跨运行环境一致性与 repeatability 分析器。
+- [x] controlled evidence 跨运行环境一致性与 repeatability 分析器；
+- [x] repeatability PASS -> baseline candidate 的显式晋级门禁。
 
 ### Evidence
 
