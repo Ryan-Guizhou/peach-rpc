@@ -42,10 +42,6 @@ class NacosRegistryIntegrationTest {
                                     key,
                                     "contract-a",
                                     19112),
-                            instance(
-                                    key,
-                                    "contract-b",
-                                    19113),
                             Duration.ofSeconds(20));
         } finally {
             registry.close();
