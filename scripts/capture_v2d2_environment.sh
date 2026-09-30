@@ -21,6 +21,13 @@ commit="${PEACH_RPC_BENCHMARK_COMMIT:-${GITHUB_SHA:-unknown}}"
 evidence_class="${PEACH_RPC_EVIDENCE_CLASS:-shared-ci}"
 runner_id="${PEACH_RPC_RUNNER_ID:-${RUNNER_NAME:-unknown}}"
 runner_labels="${PEACH_RPC_RUNNER_LABELS:-unknown}"
+host_identity_material=""
+if [[ -r /etc/machine-id ]]; then host_identity_material="$(cat /etc/machine-id)"; fi
+if [[ -r /sys/class/dmi/id/product_uuid ]]; then host_identity_material="${host_identity_material}|$(cat /sys/class/dmi/id/product_uuid)"; fi
+host_fingerprint_sha256=unknown
+if [[ -n "$host_identity_material" ]] && command -v sha256sum >/dev/null 2>&1; then
+  host_fingerprint_sha256="$(printf '%s' "$host_identity_material" | sha256sum | awk '{print $1}')"
+fi
 run_id="${PEACH_RPC_EVIDENCE_RUN_ID:-unknown}"
 hostname_value="$(hostname 2>/dev/null || echo unknown)"
 kernel="$(uname -a 2>/dev/null | single_line)"
@@ -32,6 +39,7 @@ commit=$commit
 evidence_class=$evidence_class
 runner_id=$runner_id
 runner_labels=$runner_labels
+host_fingerprint_sha256=$host_fingerprint_sha256
 run_id=$run_id
 hostname=$hostname_value
 kernel=$kernel
@@ -57,6 +65,7 @@ cat > "$MARKDOWN" <<EOF
 | Commit | `$commit` |
 | Runner ID | `$runner_id` |
 | Runner labels | `$runner_labels` |
+| Host fingerprint SHA-256 | `$host_fingerprint_sha256` |
 | Run ID | `$run_id` |
 | Hostname | `$hostname_value` |
 | CPU | `${cpu_model:-unknown}` |
