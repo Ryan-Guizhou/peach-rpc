@@ -63,6 +63,11 @@ jobs:
           PEACH_RPC_SOAK_OUTPUT: "target/v2d2-soak-smoke.json"
         run: bash scripts/run_v2d2_soak.sh
 
+      - name: Validate V2-D.2 smoke evidence
+        run: |
+          python3 scripts/validate_v2d2_evidence.py --environment target/v2d2-matrix-smoke/environment.properties --matrix-dir target/v2d2-matrix-smoke --soak target/v2d2-soak-smoke.json --profile smoke --require-matrix --require-soak --min-soak-seconds 3 --min-concurrency 10000 --output-dir target/v2d2-smoke-report
+          python3 scripts/generate_v2d2_decision_report.py --environment target/v2d2-matrix-smoke/environment.properties --matrix-summary target/v2d2-matrix-smoke/summary.csv --soak target/v2d2-soak-smoke.json --output-dir target/v2d2-smoke-report
+
       - name: Upload V2-D.2 smoke evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -71,6 +76,7 @@ jobs:
           path: |
             target/v2d2-matrix-smoke
             target/v2d2-soak-smoke.json
+            target/v2d2-smoke-report
           if-no-files-found: warn
           retention-days: 14
 
