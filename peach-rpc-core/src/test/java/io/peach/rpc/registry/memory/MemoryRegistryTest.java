@@ -48,7 +48,6 @@ class MemoryRegistryTest {
                             registry,
                             key,
                             first,
-                            second,
                             Duration.ofSeconds(2));
         }
     }
