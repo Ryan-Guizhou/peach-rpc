@@ -602,6 +602,15 @@ public final class RpcProtocolCodec {
                     "Unsupported header length: "
                             + headerLength);
         }
+        if (bytes[4] != 0 || bytes[5] != 0) {
+            throw new RpcProtocolException(
+                    "Reserved protocol flags must be zero");
+        }
+        if (bytes[8] != RpcCompressionIds.NONE) {
+            throw new RpcProtocolException(
+                    "Unsupported compression id: "
+                            + Byte.toUnsignedInt(bytes[8]));
+        }
     }
 
     private static void requireHeader(byte[] bytes) {
