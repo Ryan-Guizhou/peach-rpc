@@ -22,7 +22,11 @@ for (( index=1; index<=RUNS; index++ )); do
   run_id="run-$index"
   run_dir="$ROOT_DIR/$run_id"
   echo "Starting V2-D.2-E1 $run_id of $RUNS"
-  PEACH_RPC_EVIDENCE_RUN_ID="$run_id"   PEACH_RPC_RUNNER_BASELINE="$BASELINE"     bash scripts/run_v2d2_fixed_evidence.sh "$run_dir"
+
+  PEACH_RPC_EVIDENCE_RUN_ID="$run_id" \
+  PEACH_RPC_RUNNER_BASELINE="$BASELINE" \
+    bash scripts/run_v2d2_fixed_evidence.sh "$run_dir"
+
   RUN_ARGS+=(--run "$run_dir")
 
   if (( index < RUNS && COOLDOWN_SECONDS > 0 )); then
@@ -31,15 +35,18 @@ for (( index=1; index<=RUNS; index++ )); do
   fi
 done
 
-python3 scripts/compare_v2d2_evidence.py   "${RUN_ARGS[@]}"   --output-dir "$ROOT_DIR/repeatability-report-only"
+python3 scripts/finalize_v2d2_e1.py \
+  "${RUN_ARGS[@]}" \
+  --output-dir "$ROOT_DIR/e1-handoff"
 
 cat > "$ROOT_DIR/series.properties" <<EOF
 schema_version=1
-status=COLLECTED
+status=PASS
 runs=$RUNS
 runner_baseline=$BASELINE
+handoff=$ROOT_DIR/e1-handoff/e1-handoff.json
 repeatability_mode=REPORT_ONLY
 EOF
 
 echo "V2-D.2-E1 controlled evidence series completed: $ROOT_DIR"
-echo "Repeatability remains REPORT_ONLY until V2-D.2-E2 defines evidence-backed thresholds."
+echo "E1 handoff PASS closes evidence collection only; V2-D.2-E2 still defines repeatability thresholds and baseline promotion."
