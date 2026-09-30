@@ -202,7 +202,7 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 | Header/length/handshake 基础校验 | **Current** | bad magic/version/type/status/flags/compression/length、metadata、首帧顺序、Request ID、控制帧语义和 duplicate Request ID 均有校验/回归 | RC 前继续长时间 fuzz corpus |
 | CANCEL/Drain/Retry/Circuit 单元与 Transport 测试 | **Current** | 覆盖 response/timeout、response/cancel、cancel/disconnect、drain/new request、close/heartbeat、HALF_OPEN single-probe；GO_AWAY->UNAVAILABLE 与幂等 Retry 契约闭环 | 长时间网络故障稳定性转入 F2/RC 环境验证 |
 | Etcd 真实集成测试 | **Current** | register/watch/namespace/lease/recovery/compaction/restart；3 节点 leader transfer 在独立 Chaos workflow 验证 | 继续补网络黑洞/partition 与 soak |
-| Nacos 真实集成测试 | **Current** | register/query/subscribe/unregister + RPC round-trip；独立 JVM E2E 覆盖 Nacos restart、Provider re-registration、Consumer re-subscribe | 继续补 auth-enabled 与网络分区 |
+| Nacos 真实集成测试 | **Current** | shared Contract + 独立 Provider/Consumer Client 生命周期 + RPC round-trip；独立 JVM E2E 覆盖 Nacos restart、Provider re-registration、Consumer re-subscribe；pause/unpause Chaos 使用三 Client 进程模型 | 继续补 auth-enabled、真实 network partition 与长时间 soak |
 | 独立进程 RPC E2E | **Current** | CI 真正启动 Provider/Consumer executable JAR；覆盖 Provider restart、同一 Consumer 恢复、Nacos restart、新 Consumer 发现恢复、Provider 迁移端口后的 subscription redo | 增加滚动多实例与长时间 soak |
 | Fuzz / property testing | **Engineering Ready** | 系统性 truncated frame/HELLO、非法 Version/Message/Status/Length、随机 fragmentation/coalescing 已进入自动化测试 | RC 前继续补长时间 fuzz corpus 与网络级慢帧 |
 | Soak test | **Partial** | 已有 10k Virtual Thread soak、CI 短时 smoke、30m controlled evidence gate 与环境指纹 | 固定硬件完成长时间运行、内存/GC/连接稳定性基线 |
