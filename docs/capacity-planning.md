@@ -21,6 +21,24 @@
 
 共享 GitHub Runner 的结果只能验证工具链，不能进入生产容量基线。
 
+正式容量数据包应先通过：
+
+~~~bash
+python3 scripts/validate_v2d2_evidence.py \
+  --environment target/v2d2-fixed-evidence/environment.properties \
+  --matrix-dir target/v2d2-fixed-evidence/matrix \
+  --soak target/v2d2-fixed-evidence/soak.json \
+  --profile full \
+  --require-matrix \
+  --require-soak \
+  --require-controlled \
+  --min-soak-seconds 1800 \
+  --min-concurrency 10000 \
+  --output-dir target/v2d2-fixed-evidence
+~~~
+
+随后用 `generate_v2d2_decision_report.py` 生成 `decision-inputs.json/.md`。这些输出是容量评审和后续性能内核决策输入，不是自动 SLO。
+
 ## 2. 证据分层
 
 | 层级 | 输入 | 用途 |
