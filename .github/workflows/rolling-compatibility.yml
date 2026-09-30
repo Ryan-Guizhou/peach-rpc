@@ -71,7 +71,7 @@ jobs:
         working-directory: target/compat-n
         run: >
           mvn -B -ntp
-          -pl peach-rpc-examples
+          -pl peach-rpc-examples/peach-rpc-example-provider,peach-rpc-examples/peach-rpc-example-consumer
           -am
           package
           -DskipTests
@@ -79,7 +79,7 @@ jobs:
       - name: Build version N+1 examples
         run: >
           mvn -B -ntp
-          -pl peach-rpc-examples
+          -pl peach-rpc-examples/peach-rpc-example-provider,peach-rpc-examples/peach-rpc-example-consumer
           -am
           package
           -DskipTests
