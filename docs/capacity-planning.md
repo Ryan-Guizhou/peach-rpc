@@ -41,6 +41,8 @@ python3 scripts/validate_v2d2_evidence.py \
 
 生产容量数字还必须通过跨运行重复性检查。至少保留 3 份同 commit、同固定硬件、同 JDK/JVM 参数的 controlled evidence，然后使用 `compare_v2d2_evidence.py` 计算 run-to-run CV / spread。没有 repeatability report 的单次高分结果不得写入容量基线。
 
+repeatability 显式阈值全部通过后，只能通过 `promote_v2d2_baseline.py` 生成 **CANDIDATE**。候选基线仍需工程评审后才能进入正式容量数字，工具不会自动修改 Production SLO 或推荐配置。
+
 ## 2. 证据分层
 
 | 层级 | 输入 | 用途 |
