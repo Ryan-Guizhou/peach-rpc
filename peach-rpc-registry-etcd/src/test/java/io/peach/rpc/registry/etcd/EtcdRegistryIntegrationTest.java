@@ -54,10 +54,6 @@ class EtcdRegistryIntegrationTest {
                                     key,
                                     "contract-a",
                                     19110),
-                            instance(
-                                    key,
-                                    "contract-b",
-                                    19111),
                             Duration.ofSeconds(15));
         }
     }
