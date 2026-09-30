@@ -36,6 +36,7 @@ REQUIRED_FILES = (
     "docs/security.md",
     "docs/release-notes-1.0.0-RC1.md",
     "docs/release-notes-1.0.0.md",
+    "docs/release-status.properties",
     "deploy/observability/grafana/peach-rpc-dashboard.json",
     "deploy/observability/prometheus/peach-rpc-alerts.example.yml",
     "peach-rpc-core/src/main/java/io/peach/rpc/api/RpcTypeIds.java",
