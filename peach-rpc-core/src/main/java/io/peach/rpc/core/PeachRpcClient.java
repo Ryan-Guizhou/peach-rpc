@@ -267,6 +267,11 @@ public final class PeachRpcClient implements AutoCloseable {
         });
 
         if (!method.circuitBreaker().tryAcquire()) {
+            if (observer.enabled()) {
+                observer.onClientCircuitRejected(
+                        reference.key(),
+                        method.methodId());
+            }
             result.completeExceptionally(
                     new RpcUnavailableException(
                             "RPC circuit is open for "
@@ -404,7 +409,11 @@ public final class PeachRpcClient implements AutoCloseable {
                     endpointStats.endCancelled(elapsed);
                     return;
                 }
-                endpointStats.endFailure(elapsed, resilienceOptions);
+                recordEndpointFailure(
+                        reference,
+                        selected,
+                        endpointStats,
+                        elapsed);
                 observeClientAttempt(
                         reference,
                         method,
@@ -440,7 +449,11 @@ public final class PeachRpcClient implements AutoCloseable {
                 result.complete(value);
             } catch (RpcRemoteException remoteError) {
                 if (isRetryable(remoteError)) {
-                    endpointStats.endFailure(elapsed, resilienceOptions);
+                    recordEndpointFailure(
+                        reference,
+                        selected,
+                        endpointStats,
+                        elapsed);
                     observeClientAttempt(
                             reference,
                             method,
@@ -472,7 +485,11 @@ public final class PeachRpcClient implements AutoCloseable {
                     result.completeExceptionally(remoteError);
                 }
             } catch (Throwable error) {
-                endpointStats.endFailure(elapsed, resilienceOptions);
+                recordEndpointFailure(
+                        reference,
+                        selected,
+                        endpointStats,
+                        elapsed);
                 observeClientAttempt(
                         reference,
                         method,
@@ -492,6 +509,24 @@ public final class PeachRpcClient implements AutoCloseable {
                         error);
             }
         });
+    }
+
+    private void recordEndpointFailure(
+            ClientReference reference,
+            ServiceInstance selected,
+            EndpointStats endpointStats,
+            long elapsedNanos) {
+        boolean ejected = endpointStats.endFailure(
+                elapsedNanos,
+                resilienceOptions);
+        if (ejected && observer.enabled()) {
+            observer.onEndpointEjected(
+                    reference.key(),
+                    selected.endpoint(),
+                    resilienceOptions
+                            .outlierEjectionDuration()
+                            .toMillis());
+        }
     }
 
     private void retryOrComplete(
