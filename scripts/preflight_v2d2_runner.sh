@@ -23,6 +23,8 @@ EVIDENCE_CLASS="${PEACH_RPC_EVIDENCE_CLASS:-controlled}"
 RUNNER_ID="${PEACH_RPC_RUNNER_ID:-}"
 [[ "$EVIDENCE_CLASS" == "controlled" ]] || fail "PEACH_RPC_EVIDENCE_CLASS must be controlled"
 [[ -n "$RUNNER_ID" ]] || fail "PEACH_RPC_RUNNER_ID is required"
+JVM_FLAGS="${PEACH_RPC_JVM_FLAGS:-}"
+[[ -n "$JVM_FLAGS" ]] || fail "PEACH_RPC_JVM_FLAGS must explicitly define the controlled JVM configuration"
 [[ "$RUNNER_ID" != "github-hosted-ephemeral" ]] || fail "A stable runner ID is required"
 EXPECTED_RUNNER_ID="${PEACH_RPC_EXPECT_RUNNER_ID:-}"
 if [[ -n "$EXPECTED_RUNNER_ID" && "$RUNNER_ID" != "$EXPECTED_RUNNER_ID" ]]; then
@@ -122,6 +124,7 @@ cpu_governor=$CPU_GOVERNOR
 containerized=$CONTAINERIZED
 java_major=$JAVA_MAJOR
 maven_version=$MAVEN_VERSION
+jvm_flags=$JVM_FLAGS
 EOF
 
 cat > "$OUTPUT_DIR/preflight.md" <<EOF
@@ -140,6 +143,7 @@ cat > "$OUTPUT_DIR/preflight.md" <<EOF
 - Containerized: `$CONTAINERIZED`
 - Java major: `$JAVA_MAJOR`
 - Maven: `$MAVEN_VERSION`
+- JVM flags: `$JVM_FLAGS`
 - Captured at: `$CAPTURED_AT`
 EOF
 
