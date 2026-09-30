@@ -1,8 +1,6 @@
 # Peach RPC 生产可观测与 SLO 模板
 
-<!-- capability-status:v2-g1=engineering-ready -->
-
-> 状态：**Engineering Current / SLO Values Environment-specific**  
+> 状态：**1.0.0 GA / SLO Values Environment-specific**  
 > 本文提供指标语义、Dashboard、告警模板和 SLO 建模方式。项目不预设 Production SLO 数字。
 
 ## 1. Golden Signals
@@ -198,7 +196,7 @@ maxConcurrent / connections / replicas
 Load & chaos validation
 ~~~
 
-具体容量数字仍由 V2-D.2-E2 / V2-D.4 的真实 Evidence 决定。
+具体容量数字仍由目标环境的受控 Performance Evidence 决定。
 
 ## 10. 故障排查顺序
 
