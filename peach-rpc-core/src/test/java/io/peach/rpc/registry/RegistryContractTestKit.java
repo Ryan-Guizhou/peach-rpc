@@ -1,6 +1,5 @@
 package io.peach.rpc.registry;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.peach.rpc.api.ServiceInstance;
