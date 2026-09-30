@@ -23,6 +23,7 @@
         <dependency>
             <groupId>io.peach.rpc</groupId>
             <artifactId>peach-rpc-core</artifactId>
+            <version>${revision}</version>
             <type>test-jar</type>
             <classifier>tests</classifier>
             <scope>test</scope>
