@@ -17,7 +17,7 @@ on:
         default: '["ubuntu-latest"]'
         type: string
       runner_id:
-        description: Stable runner identifier for controlled evidence
+        description: Expected GitHub self-hosted runner name for controlled evidence
         required: true
         default: github-hosted-ephemeral
         type: string
@@ -76,7 +76,8 @@ jobs:
         env:
           EVIDENCE_CLASS: ${{ inputs.evidence_class }}
           RUNNER_LABELS_JSON: ${{ inputs.runner_labels_json }}
-          RUNNER_ID: ${{ inputs.runner_id }}
+          EXPECTED_RUNNER_ID: ${{ inputs.runner_id }}
+          ACTUAL_RUNNER_ID: ${{ runner.name }}
           RUN_ID: ${{ inputs.run_id }}
           MATRIX_PROFILE: ${{ inputs.matrix_profile }}
           RUN_MATRIX: ${{ inputs.run_matrix }}
@@ -86,7 +87,8 @@ jobs:
         run: |
           if [[ "$EVIDENCE_CLASS" != "controlled" ]]; then exit 0; fi
           if [[ "$RUNNER_LABELS_JSON" == *"ubuntu-latest"* ]]; then echo "Controlled evidence cannot run on ubuntu-latest"; exit 1; fi
-          if [[ -z "$RUNNER_ID" || "$RUNNER_ID" == "github-hosted-ephemeral" ]]; then echo "Controlled evidence requires a stable runner_id"; exit 1; fi
+          if [[ -z "$EXPECTED_RUNNER_ID" || "$EXPECTED_RUNNER_ID" == "github-hosted-ephemeral" ]]; then echo "Controlled evidence requires an expected self-hosted runner name"; exit 1; fi
+          if [[ "$ACTUAL_RUNNER_ID" != "$EXPECTED_RUNNER_ID" ]]; then echo "Controlled evidence runner mismatch: expected '$EXPECTED_RUNNER_ID', actual '$ACTUAL_RUNNER_ID'"; exit 1; fi
           if [[ -z "$RUN_ID" || "$RUN_ID" == "manual-run" ]]; then echo "Controlled evidence requires a unique run_id such as run-1"; exit 1; fi
           if [[ "$MATRIX_PROFILE" != "full" || "$RUN_MATRIX" != "true" || "$RUN_SOAK" != "true" ]]; then echo "Controlled evidence requires full matrix and soak"; exit 1; fi
           if (( SOAK_CONCURRENCY < 10000 || SOAK_DURATION_SECONDS < 1800 )); then echo "Controlled evidence requires >=10000 concurrency and >=1800s soak"; exit 1; fi
@@ -104,7 +106,8 @@ jobs:
           PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
           PEACH_RPC_EVIDENCE_CLASS: controlled
           PEACH_RPC_EVIDENCE_RUN_ID: ${{ inputs.run_id }}
-          PEACH_RPC_RUNNER_ID: ${{ inputs.runner_id }}
+          PEACH_RPC_RUNNER_ID: ${{ runner.name }}
+          PEACH_RPC_EXPECT_RUNNER_ID: ${{ inputs.runner_id }}
           PEACH_RPC_RUNNER_LABELS: ${{ inputs.runner_labels_json }}
         run: bash scripts/preflight_v2d2_runner.sh "target/v2d2-evidence-${{ inputs.run_id }}"
 
@@ -113,7 +116,7 @@ jobs:
           PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
           PEACH_RPC_EVIDENCE_CLASS: ${{ inputs.evidence_class }}
           PEACH_RPC_EVIDENCE_RUN_ID: ${{ inputs.run_id }}
-          PEACH_RPC_RUNNER_ID: ${{ inputs.runner_id }}
+          PEACH_RPC_RUNNER_ID: ${{ runner.name }}
           PEACH_RPC_RUNNER_LABELS: ${{ inputs.runner_labels_json }}
         run: bash scripts/capture_v2d2_environment.sh "target/v2d2-evidence-${{ inputs.run_id }}"
 
