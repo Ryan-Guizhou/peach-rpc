@@ -267,6 +267,7 @@ Performance Evidence workflow 支持：
 
 - 不能使用 `ubuntu-latest`；
 - 必须使用稳定 `runner_id`，并在 GitHub self-hosted Workflow 中校验 expected runner name == actual `runner.name`；
+- 必须显式设置非空 `PEACH_RPC_JVM_FLAGS`；Matrix 与 Soak 会通过 `JAVA_TOOL_OPTIONS` 将其应用到实际 Java/JMH fork 进程，而不只是记录到环境文件；
 - 必须生成非 `unknown` 的 `host_fingerprint_sha256`；该值只保存哈希，不保存原始 machine-id / DMI UUID；
 - GitHub controlled Workflow 必须预先提供 expected `host_fingerprint_sha256`，并在 Full Matrix 前与当前机器计算值一致；
 - 必须 `matrix_profile=full`；
@@ -302,6 +303,7 @@ E1 增加真实固定 Runner 所需的执行约束：
 export PEACH_RPC_EVIDENCE_CLASS=controlled
 export PEACH_RPC_RUNNER_ID=peach-rpc-perf-01
 export PEACH_RPC_RUNNER_LABELS='self-hosted,linux,x64,peach-rpc-perf'
+export PEACH_RPC_JVM_FLAGS='<fixed JVM flags for this runner>'
 
 bash scripts/run_v2d2_e1_series.sh target/v2d2-e1-controlled
 ~~~
