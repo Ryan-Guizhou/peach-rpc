@@ -134,4 +134,4 @@ mvn -B -ntp -pl peach-rpc-registry-etcd -am test -Petcd-chaos
 <!-- doc-section:docs -->
 ## Documentation
 
-Repository documentation is maintained primarily in Simplified Chinese. Start with [Production Roadmap / Capability Matrix](docs/production-roadmap.md), [Architecture](docs/architecture.md), [Starter](docs/starter.md), [TLS/mTLS Security](docs/security.md), [Observability](docs/observability.md), [Performance](docs/performance.md), [V2-D.2 Performance Evidence & 10k Soak](docs/performance-evidence-v2d2.md), [Nacos Registry](docs/registry-nacos.md), and [Production readiness](docs/readiness.md).
+Repository documentation is maintained primarily in Simplified Chinese. Start with [Production Roadmap / Capability Matrix](docs/production-roadmap.md), [Architecture](docs/architecture.md), [Starter](docs/starter.md), [TLS/mTLS Security](docs/security.md), [Observability](docs/observability.md), [Performance](docs/performance.md), [V2-D.2 Performance Evidence & 10k Soak](docs/performance-evidence-v2d2.md), [Capacity Planning Guide](docs/capacity-planning.md), [Nacos Registry](docs/registry-nacos.md), and [Production readiness](docs/readiness.md).
