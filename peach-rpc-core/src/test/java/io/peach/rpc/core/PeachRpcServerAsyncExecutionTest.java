@@ -17,7 +17,6 @@ import io.peach.rpc.registry.ServiceRegistrar;
 import io.peach.rpc.transport.RpcRequestHandler;
 import io.peach.rpc.transport.RpcTransportServer;
 import java.lang.reflect.Method;
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -31,22 +30,11 @@ public class PeachRpcServerAsyncExecutionTest {
     void asyncStageShouldNotBlockCpuWorker() throws Exception {
         CapturingTransportServer transport = new CapturingTransportServer();
         AsyncServiceImpl service = new AsyncServiceImpl();
-        PeachRpcServer server = PeachRpcServer.builder()
-                .serviceRegistrar(new NoopRegistry())
-                .transportServer(transport)
-                .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
-                .bindEndpoint(new RpcEndpoint("127.0.0.1", 19093))
-                .maxConcurrent(2)
-                .executionOptions(new RpcProviderExecutionOptions(
-                        false,
-                        1,
-                        1))
-                .build()
-                .registerService(
-                        AsyncService.class,
-                        service,
-                        "1.0.0",
-                        "default");
+        PeachRpcServer server = createServer(
+                transport,
+                service,
+                2,
+                19093);
 
         try {
             server.start().toCompletableFuture().join();
@@ -72,6 +60,72 @@ public class PeachRpcServerAsyncExecutionTest {
         } finally {
             server.close();
         }
+    }
+
+    @Test
+    void asyncStageShouldRetainAdmissionUntilCompletion() throws Exception {
+        CapturingTransportServer transport = new CapturingTransportServer();
+        AsyncServiceImpl service = new AsyncServiceImpl();
+        PeachRpcServer server = createServer(
+                transport,
+                service,
+                1,
+                19094);
+
+        try {
+            server.start().toCompletableFuture().join();
+
+            CompletionStage<byte[]> slowResponse =
+                    transport.handle(request("slow"));
+            assertFalse(slowResponse.toCompletableFuture().isDone());
+
+            byte[] overloaded = transport.handle(request("fast"))
+                    .toCompletableFuture()
+                    .get(1, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OVERLOADED,
+                    RpcProtocolCodec.view(overloaded).status());
+
+            service.slow.complete("slow");
+            byte[] completedSlowResponse =
+                    slowResponse.toCompletableFuture()
+                            .get(1, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(completedSlowResponse).status());
+
+            byte[] recovered = transport.handle(request("fast"))
+                    .toCompletableFuture()
+                    .get(1, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(recovered).status());
+        } finally {
+            server.close();
+        }
+    }
+
+    private static PeachRpcServer createServer(
+            CapturingTransportServer transport,
+            AsyncServiceImpl service,
+            int maxConcurrent,
+            int port) {
+        return PeachRpcServer.builder()
+                .serviceRegistrar(new NoopRegistry())
+                .transportServer(transport)
+                .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
+                .bindEndpoint(new RpcEndpoint("127.0.0.1", port))
+                .maxConcurrent(maxConcurrent)
+                .executionOptions(new RpcProviderExecutionOptions(
+                        false,
+                        1,
+                        1))
+                .build()
+                .registerService(
+                        AsyncService.class,
+                        service,
+                        "1.0.0",
+                        "default");
     }
 
     private static byte[] request(String methodName) throws Exception {
