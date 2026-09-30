@@ -510,7 +510,7 @@ N+1        -> N rollback
 - [x] Etcd Adapter；
 - [x] Nacos Adapter；
 - [x] capability-specific assertions；
-- [x] registration/discovery/subscription/unregister 共用 TestKit；failure/recovery 由 Adapter Chaos 扩展。
+- [x] provider-process-neutral registration/discovery/subscription/unregister 共用 TestKit；多 Provider/failure/recovery 由独立 E2E 与 Adapter Chaos 扩展。
 
 ---
 
