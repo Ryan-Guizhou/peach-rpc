@@ -15,6 +15,12 @@ PAYLOAD_NAME = re.compile(
 SCENARIO_NAME = re.compile(
     r"scenario-(?P<scenario>[A-Z_]+)-(?P<mode>sample|thrpt)-c(?P<connections>\d+)-t(?P<threads>\d+)\.json"
 )
+SECURITY_NAME = re.compile(
+    r"security-(?P<security>PLAINTEXT|TLS)-(?P<mode>sample|thrpt)-p(?P<payload>\d+)-c(?P<connections>\d+)-t(?P<threads>\d+)\.json"
+)
+RESILIENCE_NAME = re.compile(
+    r"resilience-(?P<mode>sample|thrpt)-t(?P<threads>\d+)\.json"
+)
 
 
 def metric(data: dict, key: str) -> float | None:
@@ -42,47 +48,85 @@ def load_rows(root: Path) -> list[dict[str, object]]:
     for path in sorted(root.glob("*.json")):
         payload_match = PAYLOAD_NAME.fullmatch(path.name)
         scenario_match = SCENARIO_NAME.fullmatch(path.name)
-        match = payload_match or scenario_match
+        security_match = SECURITY_NAME.fullmatch(path.name)
+        resilience_match = RESILIENCE_NAME.fullmatch(path.name)
+        match = (
+            payload_match
+            or scenario_match
+            or security_match
+            or resilience_match
+        )
         if not match:
             continue
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        if not payload:
-            continue
-        result = payload[0]
-        primary = result["primaryMetric"]
-        rows.append(
-            {
-                "family": "payload" if payload_match else "scenario",
-                "scenario": "-" if payload_match else match.group("scenario"),
-                "mode": match.group("mode"),
-                "payload_bytes": (
-                    int(payload_match.group("payload"))
-                    if payload_match
-                    else 0
-                ),
-                "connections": int(match.group("connections")),
-                "threads": int(match.group("threads")),
-                "score": primary.get("score"),
-                "score_unit": primary.get("scoreUnit"),
-                "p50": percentile(primary, "50.0"),
-                "p99": percentile(primary, "99.0"),
-                "p999": percentile(primary, "99.9"),
-                "alloc_b_op": metric(result, "gc.alloc.rate.norm"),
-                "alloc_mb_s": metric(result, "gc.alloc.rate"),
-                "gc_count": metric(result, "gc.count"),
-                "gc_time_ms": metric(result, "gc.time"),
-                "successes": metric(result, "successes"),
-                "errors": metric(result, "errors"),
-            }
-        )
-    return rows
 
+        results = json.loads(path.read_text(encoding="utf-8"))
+        if not results:
+            continue
+
+        if payload_match:
+            family = "payload"
+            security = "PLAINTEXT"
+            scenario = "-"
+            payload_bytes = int(payload_match.group("payload"))
+            connections = int(payload_match.group("connections"))
+            threads = int(payload_match.group("threads"))
+        elif scenario_match:
+            family = "scenario"
+            security = "PLAINTEXT"
+            scenario = scenario_match.group("scenario")
+            payload_bytes = 0
+            connections = int(scenario_match.group("connections"))
+            threads = int(scenario_match.group("threads"))
+        elif security_match:
+            family = "security"
+            security = security_match.group("security")
+            scenario = "-"
+            payload_bytes = int(security_match.group("payload"))
+            connections = int(security_match.group("connections"))
+            threads = int(security_match.group("threads"))
+        else:
+            family = "resilience"
+            security = "N/A"
+            scenario = "-"
+            payload_bytes = 0
+            connections = 0
+            threads = int(resilience_match.group("threads"))
+
+        for result in results:
+            primary = result["primaryMetric"]
+            benchmark = result.get("benchmark", "").rsplit(".", 1)[-1]
+            rows.append(
+                {
+                    "family": family,
+                    "benchmark": benchmark,
+                    "scenario": scenario,
+                    "security": security,
+                    "mode": match.group("mode"),
+                    "payload_bytes": payload_bytes,
+                    "connections": connections,
+                    "threads": threads,
+                    "score": primary.get("score"),
+                    "score_unit": primary.get("scoreUnit"),
+                    "p50": percentile(primary, "50.0"),
+                    "p99": percentile(primary, "99.0"),
+                    "p999": percentile(primary, "99.9"),
+                    "alloc_b_op": metric(result, "gc.alloc.rate.norm"),
+                    "alloc_mb_s": metric(result, "gc.alloc.rate"),
+                    "gc_count": metric(result, "gc.count"),
+                    "gc_time_ms": metric(result, "gc.time"),
+                    "successes": metric(result, "successes"),
+                    "errors": metric(result, "errors"),
+                }
+            )
+    return rows
 
 def write_csv(root: Path, rows: list[dict[str, object]]) -> None:
     output = root / "summary.csv"
     fields = [
         "family",
+        "benchmark",
         "scenario",
+        "security",
         "mode",
         "payload_bytes",
         "connections",
@@ -118,12 +162,12 @@ def write_markdown(root: Path, rows: list[dict[str, object]]) -> None:
     lines = [
         "# V2-D.2 Benchmark Summary",
         "",
-        "| Family | Scenario | Mode | Payload | Connections | Threads | Score | Unit | p50 | p99 | p99.9 | B/op | Successes | Errors |",
-        "|---|---|---|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|",
+        "| Family | Benchmark | Scenario | Security | Mode | Payload | Connections | Threads | Score | Unit | p50 | p99 | p99.9 | B/op | Successes | Errors |",
+        "|---|---|---|---|---|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|",
     ]
     for row in rows:
         lines.append(
-            "| {family} | {scenario} | {mode} | {payload_bytes} | {connections} | {threads} | {score} | "
+            "| {family} | {benchmark} | {scenario} | {security} | {mode} | {payload_bytes} | {connections} | {threads} | {score} | "
             "{score_unit} | {p50} | {p99} | {p999} | {alloc_b_op} | {successes} | {errors} |".format(
                 **{key: value(item) for key, item in row.items()}
             )
