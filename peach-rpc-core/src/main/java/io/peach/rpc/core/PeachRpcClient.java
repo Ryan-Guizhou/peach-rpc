@@ -2,6 +2,7 @@ package io.peach.rpc.core;
 
 import io.peach.rpc.api.PeachRpcIdempotent;
 import io.peach.rpc.api.RpcEndpoint;
+import io.peach.rpc.api.RpcSchemaFingerprint;
 import io.peach.rpc.api.RpcException;
 import io.peach.rpc.api.RpcMethodDescriptor;
 import io.peach.rpc.api.RpcOverloadedException;
@@ -132,9 +133,16 @@ public final class PeachRpcClient implements AutoCloseable {
     public <T> T refer(Class<T> api, String version, String group) {
         Objects.requireNonNull(api, "api");
         ServiceKey key = new ServiceKey(api.getName(), version, group);
+        String schemaFingerprint =
+                RpcSchemaFingerprint.serviceFingerprint(
+                        key,
+                        api);
         ServiceDirectory directory = directories.computeIfAbsent(
                 key,
-                ignored -> new ServiceDirectory(discovery, key));
+                ignored -> new ServiceDirectory(
+                        discovery,
+                        key,
+                        schemaFingerprint));
         ClientReference reference = ClientReference.create(
                 key,
                 api,
