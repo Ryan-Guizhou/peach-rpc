@@ -1,7 +1,5 @@
 # Peach RPC 升级与回滚指南
 
-<!-- capability-status:v2-e2=engineering-ready -->
-<!-- capability-status:v2-g2=engineering-ready -->
 
 > 状态：**Engineering Current**  
 > 适用于 Wire Protocol v1 内的 N/N+1 滚动升级。若业务契约不兼容，必须使用新的 ServiceKey.version。
@@ -17,7 +15,7 @@
 - 本版本没有未声明的 Wire Protocol 修改；
 - 新旧版本 Compatibility Matrix 已更新；
 - Provider/Consumer 使用同一业务契约时 Schema Fingerprint 一致；
-- 若涉及性能内核修改，V2-D.4 回归门禁通过；
+- 若涉及性能内核修改，before/after 性能回归门禁通过；
 - 若涉及 Registry/Transport 恢复逻辑，相关 Chaos 门禁通过。
 
 ## 2. 推荐滚动顺序
