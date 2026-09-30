@@ -1,0 +1,52 @@
+name: Release Readiness
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'peach-rpc-*/**'
+      - 'docs/**'
+      - 'deploy/observability/**'
+      - 'scripts/check_project.py'
+      - 'scripts/check_release_readiness.py'
+      - '.github/workflows/release-readiness.yml'
+      - 'pom.xml'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Repository checks
+        run: python3 scripts/check_project.py
+
+      - name: Release-readiness static checks
+        run: python3 scripts/check_release_readiness.py
+
+      - name: Verify Maven reactor
+        run: mvn -B -ntp clean verify -Pquality
+
+      - name: Build release artifact inventory
+        shell: bash
+        run: |
+          mkdir -p target
+          find . -path '*/target/*.jar' -type f -print \
+            | sort > target/release-artifacts.txt
+          test -s target/release-artifacts.txt
+          cat target/release-artifacts.txt
+
+      - name: Upload release artifact inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: peach-rpc-release-readiness-${{ github.run_id }}
+          path: target/release-artifacts.txt
+          if-no-files-found: error
+          retention-days: 30
