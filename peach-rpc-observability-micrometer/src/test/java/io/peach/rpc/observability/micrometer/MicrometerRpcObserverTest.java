@@ -40,6 +40,28 @@ class MicrometerRpcObserverTest {
                 2000L,
                 RpcStatus.OK,
                 null);
+        observer.onClientCallCompleted(
+                new ServiceKey(
+                        "demo.Service",
+                        "1.0.0",
+                        "default"),
+                1,
+                2500L,
+                RpcStatus.OK,
+                null);
+        observer.onClientCircuitRejected(
+                new ServiceKey(
+                        "demo.Service",
+                        "1.0.0",
+                        "default"),
+                1);
+        observer.onEndpointEjected(
+                new ServiceKey(
+                        "demo.Service",
+                        "1.0.0",
+                        "default"),
+                endpoint,
+                30000L);
         observer.onConnectionClosed(
                 RpcConnectionRole.CLIENT,
                 endpoint,
@@ -48,6 +70,20 @@ class MicrometerRpcObserverTest {
 
         assertNotNull(registry.find(
                 "peach.rpc.client.attempts").timer());
+        assertNotNull(registry.find(
+                "peach.rpc.client.calls").timer());
+        assertEquals(
+                1.0,
+                registry.find(
+                                "peach.rpc.client.circuit.rejected")
+                        .counter()
+                        .count());
+        assertEquals(
+                1.0,
+                registry.find(
+                                "peach.rpc.client.outlier.ejected")
+                        .counter()
+                        .count());
         assertNull(
                 registry.find("peach.rpc.client.attempts")
                         .timer()
@@ -101,6 +137,10 @@ class MicrometerRpcObserverTest {
                 1000L,
                 RpcStatus.OVERLOADED,
                 null);
+        observer.onServerAdmissionRejected(
+                11,
+                7,
+                "cpu-queue");
 
         assertEquals(
                 1.0,
@@ -115,6 +155,12 @@ class MicrometerRpcObserverTest {
         assertEquals(
                 1.0,
                 registry.find("peach.rpc.server.overloaded")
+                        .counter()
+                        .count());
+        assertEquals(
+                1.0,
+                registry.find(
+                                "peach.rpc.server.admission.rejected")
                         .counter()
                         .count());
         assertNull(
