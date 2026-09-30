@@ -33,7 +33,7 @@ jobs:
         run: python3 scripts/check_project.py
 
       - name: Release-readiness static checks
-        run: python3 scripts/check_release_readiness.py
+        run: python3 scripts/check_release_readiness.py --stage ga --version 1.0.0
 
       - name: Verify Maven reactor
         run: mvn -B -ntp clean verify -Pquality
