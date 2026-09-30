@@ -35,6 +35,7 @@ Peach RPC 生产观测按四类信号组织：
 - peach.rpc.client.calls
 - peach.rpc.client.attempts
 - peach.rpc.client.retries
+- peach.rpc.client.retry.exhausted
 - peach.rpc.client.inflight
 - peach.rpc.client.timeouts
 - peach.rpc.client.circuit.rejected
