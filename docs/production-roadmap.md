@@ -34,6 +34,10 @@
 | **Proposed** | 已形成下一阶段方向，但当前代码尚未实现 |
 | **Future** | 属于长期生态或能力扩展，不应阻塞近期高可用/高性能主线 |
 | **Optional** | 是否实现取决于项目范围，不作为当前 Production GA 的必选门禁 |
+| **Engineering Ready** | 代码、测试、文档和 CI 入口已实现，但尚未完成目标环境/主线验收 |
+| **Validation Pending** | 工程入口已存在，仍等待独立 Chaos/E2E/目标环境验证 |
+| **Evidence Blocked** | 工具链已完成，但必须等待真实性能 Evidence 才能晋级 |
+| **Conditional** | 是否实施由前置 Evidence 决策，不允许无数据直接开发 |
 
 > V2-C.1、V2-C.2、V2-C.3 已进入主线。V2-D 第一批已进入主线，V2-D.2 当前正在建立完整性能矩阵、allocation/GC profiling 与 10k logical-concurrency soak；本文中的 **Current** 表示已经进入主线并有对应自动化验证，**In Progress** 表示工程入口已实现但生产证据仍在收集。
 
@@ -57,7 +61,7 @@
 | V2-G.1 | logical-call metrics、failure taxonomy、Dashboard/Alert/SLO 模板已完成 | 环境 SLO 数值由生产负责人确定 |
 | V2-G.2 | Upgrade/Rollback/Production Config/Release Readiness 已完成 | RC 前执行真实发布与回滚演练 |
 
-## 2. 当前总体判断
+### 2.2 当前基础能力
 
 Peach RPC 已经完成第一阶段的高可用和高性能内核骨架：
 
@@ -511,7 +515,7 @@ Peach RPC 从 Preview 提升为 Production Ready 前，建议以下门禁全部�
 - [x] mTLS；
 - [x] hostname/peer verification；
 - [x] 证书过期与轮换；
-- [ ] 凭据/证书错误脱敏。
+- [x] 凭据/证书错误脱敏。
 
 ### 10.3 Observability
 
@@ -519,7 +523,7 @@ Peach RPC 从 Preview 提升为 Production Ready 前，建议以下门禁全部�
 - [x] OpenTelemetry；
 - [x] JFR；
 - [x] 连接/Registry 生命周期指标；
-- [ ] 统一错误与状态语义。
+- [x] RpcStatus + Failure Category 统一错误与状态语义。
 
 ### 10.4 Performance
 
