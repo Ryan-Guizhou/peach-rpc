@@ -89,7 +89,7 @@ def main() -> int:
     if missing:
         fail("Missing release-readiness assets: " + ", ".join(missing))
 
-    status = properties(ROOT / "docs" / "capability-status.properties")
+    status = properties(ROOT / "docs" / "release-status.properties")
     if status.get("version") != "1.0.0":
         fail("GA status version must be 1.0.0")
     if status.get("release_candidate") != "1.0.0-RC1":
