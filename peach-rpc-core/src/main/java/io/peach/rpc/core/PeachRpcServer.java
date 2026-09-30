@@ -1,5 +1,6 @@
 package io.peach.rpc.core;
 
+import io.peach.rpc.api.RpcCompatibilityMetadata;
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.RpcException;
 import io.peach.rpc.api.RpcExecutionMode;
@@ -179,7 +180,9 @@ public final class PeachRpcServer implements AutoCloseable {
                 key,
                 bindEndpoint,
                 100,
-                Map.of()));
+                RpcCompatibilityMetadata.providerMetadata(
+                        key,
+                        api)));
         return this;
     }
 
