@@ -77,6 +77,54 @@ class RpcProtocolRobustnessTest {
     }
 
     @Test
+    void reservedFlagsAndUnsupportedCompressionShouldBeRejected() {
+        byte[] valid = RpcProtocolCodec.encode(
+                new RpcFrame(
+                        RpcMessageType.REQUEST,
+                        (byte) 1,
+                        RpcStatus.OK,
+                        1L,
+                        11,
+                        22,
+                        Map.of(),
+                        new byte[] {1}));
+
+        byte[] flags = valid.clone();
+        flags[4] = 1;
+        assertThrows(
+                RpcProtocolException.class,
+                () -> RpcProtocolCodec.view(flags));
+
+        byte[] compression = valid.clone();
+        compression[8] = RpcCompressionIds.LZ4;
+        assertThrows(
+                RpcProtocolException.class,
+                () -> RpcProtocolCodec.view(compression));
+    }
+
+    @Test
+    void malformedMetadataShouldBeRejectedOnDecode() {
+        byte[] valid = RpcProtocolCodec.encode(
+                new RpcFrame(
+                        RpcMessageType.REQUEST,
+                        (byte) 1,
+                        RpcStatus.OK,
+                        1L,
+                        11,
+                        22,
+                        Map.of("key", "value"),
+                        new byte[] {1}));
+        byte[] malformed = valid.clone();
+
+        malformed[RpcProtocolCodec.HEADER_LENGTH + 3] =
+                (byte) ':';
+
+        assertThrows(
+                RpcProtocolException.class,
+                () -> RpcProtocolCodec.decode(malformed));
+    }
+
+    @Test
     void invalidBodyLengthsShouldBeRejected() {
         byte[] valid = RpcProtocolCodec.encode(
                 new RpcFrame(
