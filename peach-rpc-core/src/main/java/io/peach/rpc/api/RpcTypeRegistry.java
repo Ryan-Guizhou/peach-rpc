@@ -11,6 +11,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class RpcTypeRegistry {
 
+    /** 创建空的稳定类型注册表。 */
+    public RpcTypeRegistry() {
+    }
+
     private final Map<Integer, String> types =
             new ConcurrentHashMap<>();
 
