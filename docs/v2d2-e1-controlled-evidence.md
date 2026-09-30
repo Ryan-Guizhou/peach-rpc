@@ -49,7 +49,28 @@ export PEACH_RPC_REQUIRE_BARE_METAL=true
 
 这些值必须来源于实际 Runner，仓库不预设机器型号。
 
-## 3. 推荐执行
+## 3. Runner Qualification
+
+首次配置固定 Runner 时，先只执行轻量 Preflight，取得该机器的 host fingerprint：
+
+~~~bash
+export PEACH_RPC_EVIDENCE_CLASS=controlled
+export PEACH_RPC_RUNNER_ID=peach-rpc-perf-01
+export PEACH_RPC_BENCHMARK_COMMIT="$(git rev-parse HEAD)"
+
+bash scripts/preflight_v2d2_runner.sh target/v2d2-runner-qualification
+grep '^host_fingerprint_sha256=' \
+  target/v2d2-runner-qualification/preflight.properties
+~~~
+
+记录该 SHA-256 值。GitHub controlled Performance Evidence Workflow 要求同时提供：
+
+- 期望的 self-hosted `runner_id`；
+- 该 Runner 的 `host_fingerprint_sha256`。
+
+Workflow 在 Full Matrix 开始前同时验证真实 `runner.name` 和物理主机指纹，从而避免第二、三轮被调度到另一台同配置机器后才发现证据不可比较。
+
+## 4. 推荐执行
 
 ~~~bash
 export PEACH_RPC_EVIDENCE_CLASS=controlled
@@ -63,7 +84,7 @@ bash scripts/run_v2d2_e1_series.sh target/v2d2-e1-controlled
 
 GitHub self-hosted Runner 也可以手工触发 `.github/workflows/performance-evidence.yml`。Controlled 模式中的 `runner_id` 是**期望的 GitHub self-hosted Runner 名称**；Workflow 会读取真实 `runner.name` 并要求二者完全一致，不能用手填 ID 冒充固定 Runner。每次执行还必须设置不同的 `run_id`，例如 `run-1`、`run-2`、`run-3`。
 
-## 4. Evidence Bundle
+## 5. Evidence Bundle
 
 每次 Run 至少包含：
 
@@ -87,11 +108,11 @@ Manifest 校验：
 python3 scripts/manage_v2d2_evidence_manifest.py verify --bundle <bundle>
 ~~~
 
-## 5. Runner Baseline
+## 6. Runner Baseline
 
 Series 第一轮生成 `runner-baseline.json`，锁定 commit、Runner ID、**host fingerprint SHA-256**、CPU、核心数、NUMA、Memory、CPU governor、Kernel、Java、JVM flags 与 containerized 状态。后续 Run 在 Full Matrix 前比较，发生漂移立即终止。即使两台机器配置完全相同，只要主机指纹不同，也不会被当成同一固定 Runner。
 
-## 6. E1 Handoff Gate
+## 7. E1 Handoff Gate
 
 `finalize_v2d2_e1.py` 是 E1 的显式退出门禁。它要求：
 
@@ -116,11 +137,11 @@ e1-handoff/
 
 `e1-handoff.status=PASS` 只表示 **V2-D.2-E1 原始证据采集完成**。它不会定义 CV 阈值、不会晋级 Baseline，也不会建立 Production SLO；这些属于 V2-D.2-E2。
 
-## 7. Artifact 安全
+## 8. Artifact 安全
 
 TLS Matrix 使用测试用自签名证书。E1 后测试私钥只存在于系统临时目录，Benchmark 退出时删除，不上传到 Evidence Artifact。
 
-## 8. 验收清单
+## 9. 验收清单
 
 ### 工程能力
 
@@ -129,6 +150,7 @@ TLS Matrix 使用测试用自签名证书。E1 后测试私钥只存在于系统
 - [x] Environment Baseline；
 - [x] GitHub actual `runner.name` 与 expected runner name 一致性校验；
 - [x] hashed physical-host fingerprint；
+- [x] expected host fingerprint fail-fast gate；
 - [x] 唯一 Run ID；
 - [x] Evidence 防覆盖；
 - [x] SHA-256 Manifest / verify；
