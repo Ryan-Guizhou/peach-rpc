@@ -119,7 +119,7 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 | 显式幂等重试 | **Current** | 仅 `@PeachRpcIdempotent` 可自动 Retry | 持续保持非幂等默认不重试 |
 | Retry Budget | **Current** | 全局预算 + maxAttempts + jitter backoff | 增加大规模故障时 retry storm 压测 |
 | Outlier Ejection | **Current** | Endpoint 连续基础设施失败临时剔除 | 增加恢复和大规模 endpoint fault matrix |
-| Circuit Breaker | **Current** | 方法级 CLOSED/OPEN/HALF_OPEN | 增加长时间 half-open / concurrent probe 验证 |
+| Circuit Breaker | **Current** | 方法级 CLOSED/OPEN/HALF_OPEN；并发 HALF_OPEN 只允许单 probe 已有自动化测试 | 长时间故障/恢复 soak 继续作为 RC 环境验证 |
 | P2C/EWMA 与故障状态融合 | **Current** | 被剔除实例不进入默认候选 | 增加大量实例/部分故障基准 |
 | Last-known-good Directory | **Current** | 数据面持续读取本地快照；Nacos restart 的独立 JVM E2E 已验证控制面重启期间既有数据连接继续可用，恢复后再更新目录 | 继续补网络黑洞/分区与长时间 soak |
 | Relative timeout budget | **Current** | 新 Request 同时携带 `timeoutBudgetMillis` 与旧 `deadlineEpochMillis`，新 Provider 优先相对预算语义 | Provider 运行中硬超时仍主要依赖 Consumer CANCEL；后续可评估服务端执行计时器 |
@@ -177,7 +177,7 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 | 能力 | 状态 | 当前实现 | 生产缺口 / 下一步 |
 |---|---|---|---|
 | Core `RpcObserver` | **Current** | Client/Provider、Connection、Registry、TLS、Certificate 生命周期事件；Composite 隔离 Adapter 异常，NOOP 低开销 | 后续根据 Production SLO 扩展少量稳定事件 |
-| Micrometer Adapter | **Current** | logical client call / attempt / retry、Circuit/Outlier、Provider admission、connection、Registry、TLS 指标；保持低基数标签 | 目标环境只需决定 Histogram/SLO/Alert 阈值 |
+| Micrometer Adapter | **Current** | logical call/attempt/retry、client/server inflight、timeout、Circuit state/reject、Outlier、Provider admission、connection、Registry、TLS 指标；保持低基数标签 | 目标环境只需决定 Histogram/SLO/Alert 阈值 |
 | OpenTelemetry Adapter | **Current** | Consumer/Provider Span + W3C traceparent/tracestate/baggage；真实 Peach RPC E2E 验证跨 wire parent-child | 后续补更多 semantic conventions |
 | JFR Adapter | **Current** | 慢/失败 RPC、reconnect、heartbeat、Registry recovery、TLS/reload 低频事件 | 后续结合线上 profiling 指南 |
 | 运行时诊断基线 | **Current** | Metrics + distributed tracing + JFR 三层诊断能力；Dashboard/Alert Example/SLO Template 已具备 | 目标环境确认实际 SLO 与告警阈值 |
@@ -200,7 +200,7 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 | 能力 | 状态 | 当前实现 | 生产缺口 / 下一步 |
 |---|---|---|---|
 | Header/length/handshake 基础校验 | **Current** | 已有正常与部分异常路径测试 | 增加系统性 malformed/fuzz matrix |
-| CANCEL/Drain/Retry/Circuit 单元与 Transport 测试 | **Current** | 已覆盖核心行为 | 增加并发竞态与长时间稳定性 |
+| CANCEL/Drain/Retry/Circuit 单元与 Transport 测试 | **Current** | 覆盖 CANCEL 传播、Graceful Drain、Retry、Circuit；新增 response/CANCEL race 与 HALF_OPEN single-probe 并发验证 | 继续补长时间网络故障稳定性 |
 | Etcd 真实集成测试 | **Current** | register/watch/namespace/lease/recovery/compaction/restart；3 节点 leader transfer 在独立 Chaos workflow 验证 | 继续补网络黑洞/partition 与 soak |
 | Nacos 真实集成测试 | **Current** | register/query/subscribe/unregister + RPC round-trip；独立 JVM E2E 覆盖 Nacos restart、Provider re-registration、Consumer re-subscribe | 继续补 auth-enabled 与网络分区 |
 | 独立进程 RPC E2E | **Current** | CI 真正启动 Provider/Consumer executable JAR；覆盖 Provider restart、同一 Consumer 恢复、Nacos restart、新 Consumer 发现恢复、Provider 迁移端口后的 subscription redo | 增加滚动多实例与长时间 soak |
@@ -546,7 +546,7 @@ Peach RPC 从 Preview 提升为 Production Ready 前，建议以下门禁全部�
 
 - [x] malformed frame matrix；
 - [x] deterministic property/truncation test；
-- [ ] race/concurrency test；
+- [x] 关键 race/concurrency test（CANCEL/response、HALF_OPEN single-probe、Drain/inflight）；
 - [ ] 长时间 soak test（10k soak 工具已具备，固定环境长跑证据未完成）；
 - [ ] chaos test；
 - [ ] Maven/CI/Javadoc 全门禁持续通过。
