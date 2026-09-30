@@ -31,6 +31,11 @@ on:
         required: false
         default: ""
         type: string
+      jvm_flags:
+        description: Exact JVM flags applied to JMH forks and the soak JVM; required for controlled evidence
+        required: false
+        default: ""
+        type: string
       matrix_profile:
         description: Benchmark matrix profile
         required: true
@@ -84,6 +89,7 @@ jobs:
           EXPECTED_RUNNER_ID: ${{ inputs.runner_id }}
           ACTUAL_RUNNER_ID: ${{ runner.name }}
           EXPECTED_HOST_FINGERPRINT_SHA256: ${{ inputs.host_fingerprint_sha256 }}
+          JVM_FLAGS: ${{ inputs.jvm_flags }}
           RUN_ID: ${{ inputs.run_id }}
           MATRIX_PROFILE: ${{ inputs.matrix_profile }}
           RUN_MATRIX: ${{ inputs.run_matrix }}
@@ -96,6 +102,7 @@ jobs:
           if [[ -z "$EXPECTED_RUNNER_ID" || "$EXPECTED_RUNNER_ID" == "github-hosted-ephemeral" ]]; then echo "Controlled evidence requires an expected self-hosted runner name"; exit 1; fi
           if [[ "$ACTUAL_RUNNER_ID" != "$EXPECTED_RUNNER_ID" ]]; then echo "Controlled evidence runner mismatch: expected '$EXPECTED_RUNNER_ID', actual '$ACTUAL_RUNNER_ID'"; exit 1; fi
           if [[ -z "$EXPECTED_HOST_FINGERPRINT_SHA256" ]]; then echo "Controlled evidence requires the expected host fingerprint from runner preflight"; exit 1; fi
+          if [[ -z "$JVM_FLAGS" ]]; then echo "Controlled evidence requires explicit JVM flags"; exit 1; fi
           if [[ -z "$RUN_ID" || "$RUN_ID" == "manual-run" ]]; then echo "Controlled evidence requires a unique run_id such as run-1"; exit 1; fi
           if [[ "$MATRIX_PROFILE" != "full" || "$RUN_MATRIX" != "true" || "$RUN_SOAK" != "true" ]]; then echo "Controlled evidence requires full matrix and soak"; exit 1; fi
           if (( SOAK_CONCURRENCY < 10000 || SOAK_DURATION_SECONDS < 1800 )); then echo "Controlled evidence requires >=10000 concurrency and >=1800s soak"; exit 1; fi
@@ -116,6 +123,7 @@ jobs:
           PEACH_RPC_RUNNER_ID: ${{ runner.name }}
           PEACH_RPC_EXPECT_RUNNER_ID: ${{ inputs.runner_id }}
           PEACH_RPC_EXPECT_HOST_FINGERPRINT_SHA256: ${{ inputs.host_fingerprint_sha256 }}
+          PEACH_RPC_JVM_FLAGS: ${{ inputs.jvm_flags }}
           PEACH_RPC_RUNNER_LABELS: ${{ inputs.runner_labels_json }}
         run: bash scripts/preflight_v2d2_runner.sh "target/v2d2-evidence-${{ inputs.run_id }}"
 
@@ -126,6 +134,7 @@ jobs:
           PEACH_RPC_EVIDENCE_RUN_ID: ${{ inputs.run_id }}
           PEACH_RPC_RUNNER_ID: ${{ runner.name }}
           PEACH_RPC_RUNNER_LABELS: ${{ inputs.runner_labels_json }}
+          PEACH_RPC_JVM_FLAGS: ${{ inputs.jvm_flags }}
         run: bash scripts/capture_v2d2_environment.sh "target/v2d2-evidence-${{ inputs.run_id }}"
 
       - name: Build benchmark runtime
@@ -135,6 +144,7 @@ jobs:
         if: ${{ inputs.run_matrix }}
         env:
           PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
+          PEACH_RPC_JVM_FLAGS: ${{ inputs.jvm_flags }}
         run: >
           bash scripts/run_v2d2_benchmark_matrix.sh
           "${{ inputs.matrix_profile }}"
@@ -151,6 +161,7 @@ jobs:
           PEACH_RPC_SOAK_WARMUP_SECONDS: "30"
           PEACH_RPC_SOAK_CLIENT_TIMEOUT_MS: "15000"
           PEACH_RPC_SOAK_OUTPUT: target/v2d2-evidence-${{ inputs.run_id }}/soak.json
+          PEACH_RPC_JVM_FLAGS: ${{ inputs.jvm_flags }}
         run: bash scripts/run_v2d2_soak.sh
 
       - name: Validate evidence bundle
