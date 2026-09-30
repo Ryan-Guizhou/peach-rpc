@@ -1,10 +1,7 @@
 # Peach RPC Wire Compatibility
 
-<!-- capability-status:v2-e1=engineering-ready -->
-<!-- capability-status:v2-e2=engineering-ready -->
-
-> 状态：**Engineering Current / Production Evidence Pending**  
-> 本文定义 V2-E.1 / V2-E.2 的稳定标识、Schema Fingerprint 与滚动升级语义。
+> 状态：**1.0.x GA Contract / Wire v1 Frozen**  
+> 本文定义 1.0.x 的稳定标识、Schema Fingerprint 与滚动升级语义。
 
 ## 1. 兼容模型
 
@@ -123,7 +120,7 @@ HELLO 继续负责 Protocol Version、Codec、Compression、Feature 与 Max Fram
 
 - 当前不是跨语言 IDL；
 - Fory Native 仍是 Java Codec；
-- 未实现字段级宽松兼容；
+- 1.0.x 不提供字段级宽松兼容；
 - 不允许根据 Classpath 顺序分配 Type ID；
 - 缺失 Fingerprint 的旧 Provider 只标记为 LEGACY。
 
