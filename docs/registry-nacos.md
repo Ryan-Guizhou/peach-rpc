@@ -47,7 +47,9 @@ Provider 用户元数据覆盖该前缀会在注册前失败。
 6. 实例按 endpoint 与 instanceId 稳定排序并去重；
 7. 相同视图不重复刷新 Core；
 8. 变化视图使用 Adapter 进程内 AtomicLong 生成单调 revision；
-9. 关闭时使用原 EventListener 实例 unsubscribe。
+9. 同一 Registry Client 主动注销本地 Provider 后，会立即从该 Client 的 subscription 快照中移除对应 endpoint，避免最后一个实例注销时目录悬挂；
+10. 远端 Provider 生命周期仍以 Nacos NamingEvent 为主通道，并由独立 Provider/Consumer Client 集成测试验证；
+11. 关闭时使用原 EventListener 实例 unsubscribe。
 
 ## 5. 线程与资源
 
@@ -98,6 +100,6 @@ peach:
 
 ## 8. 测试
 
-CI 启动固定版本 Nacos 3.2.4，并设置 `NACOS_TEST_ENDPOINT`。当前自动化覆盖 SPI 加载、服务名映射、权重与元数据映射、健康实例过滤、真实注册/查询/订阅/注销，以及拆分 Provider/Consumer 的 RPC round-trip。
+CI 启动固定版本 Nacos 3.2.4，并设置 `NACOS_TEST_ENDPOINT`。当前自动化覆盖 SPI 加载、服务名映射、权重与元数据映射、健康实例过滤、共享 Registry Contract、独立 Provider/Consumer Client 的远端注册/注销订阅收敛、真实注册/查询/订阅/注销，以及拆分 Provider/Consumer 的 RPC round-trip。独立 Nacos Chaos 使用 Consumer、Provider A、Provider B 三个 Registry Client 模拟容器 pause/unpause 下的注册与订阅恢复。
 
 本地未提供 `NACOS_TEST_ENDPOINT` 时，真实 Nacos 集成测试会跳过；普通单元测试仍正常执行。
