@@ -246,23 +246,40 @@ public final class PeachRpcClient implements AutoCloseable {
                 : RpcTraceContext.noop();
         Map<String, String> propagatedMetadata =
                 propagatedMetadata(trace);
+        long logicalStartedAtNanos =
+                observer.enabled()
+                        ? System.nanoTime()
+                        : 0L;
         CompletableFuture<Object> result =
                 new CompletableFuture<>();
         result.whenComplete((ignoredValue, error) -> {
+            Throwable failure;
+            RpcStatus finalStatus;
             if (result.isCancelled()) {
                 method.circuitBreaker().onCancelled();
-                trace.end(
-                        RpcStatus.UNAVAILABLE,
-                        new CancellationException(
-                                "RPC call cancelled"));
-                return;
+                failure = new CancellationException(
+                        "RPC call cancelled");
+                finalStatus = RpcStatus.UNAVAILABLE;
+            } else {
+                failure =
+                        error == null
+                                ? null
+                                : unwrap(error);
+                finalStatus = failure == null
+                        ? RpcStatus.OK
+                        : statusOf(failure);
             }
-            Throwable failure =
-                    error == null ? null : unwrap(error);
+            if (observer.enabled()) {
+                observer.onClientCallCompleted(
+                        reference.key(),
+                        method.methodId(),
+                        System.nanoTime()
+                                - logicalStartedAtNanos,
+                        finalStatus,
+                        failure);
+            }
             trace.end(
-                    failure == null
-                            ? RpcStatus.OK
-                            : statusOf(failure),
+                    finalStatus,
                     failure);
         });
 
