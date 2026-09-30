@@ -156,7 +156,7 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 | Etcd register/discovery/watch | **Current** | Lease + Range/Watch；真实 compaction 后 Range+Watch 恢复、稳定逻辑目标 restart、独立 3 节点 leader transfer Chaos 均已验证 | 继续补网络黑洞/分区与长时间 soak |
 | Etcd Lease recovery | **Current** | keepalive error/completed 为主信号；TTL watchdog 兜底识别 Lease 静默失效，grant 有界，stale lease callback 不会误伤新 Lease；restart 测试验证 active registrations 恢复 | 继续补长时间断链/黑洞 soak |
 | Etcd Watch backoff | **Current** | 指数退避 + jitter；真实 stale revision + compaction 路径验证 error 后重新 Range 并从新 revision 建 Watch | 继续补网络分区与慢控制面场景 |
-| Nacos register/lookup/subscribe | **Current** | Nacos 3.2.4，临时实例、Group/Cluster/metadata/weight；独立 JVM E2E 重启 Nacos 后验证既有数据面、Provider 临时实例重注册和 Consumer 重订阅/Endpoint 更新 | 继续补 auth-enabled、网络分区与 soak |
+| Nacos register/lookup/subscribe | **Current** | Nacos 3.2.4，临时实例、Group/Cluster/metadata/weight；Adapter 身份键 fail-fast，Core protocol/schema compatibility metadata 原样透传；独立 JVM E2E 验证重启恢复 | 继续补 auth-enabled、网络分区与 soak |
 | Nacos SDK 隔离 | **Current** | 私有有界控制面线程池，不占用 Vert.x Event Loop | 增加 queue saturation 与 Registry 慢调用指标 |
 | Registry Capability | **Current** | REGISTRATION/SUBSCRIPTION/... 能力模型 | 建立跨 Adapter Contract TestKit |
 | Registry Contract TestKit | **Engineering Ready** | Core test-jar 提供 Provider-process-neutral 的 register/discovery/subscription/unregister 契约；Memory/Etcd/Nacos 复用同一 TestKit | 多 Provider 行为由独立进程 E2E/Chaos 验证；failure/recovery 仍由 Adapter Chaos 补充 |
