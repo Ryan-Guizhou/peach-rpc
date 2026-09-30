@@ -49,10 +49,35 @@ jobs:
       - name: Verify Maven reactor
         run: mvn -B -ntp clean verify -Pquality
 
+      - name: Verify V2-D.2-E1 runner preflight
+        env:
+          PEACH_RPC_EVIDENCE_CLASS: controlled
+          PEACH_RPC_EVIDENCE_RUN_ID: ci-self-test
+          PEACH_RPC_RUNNER_ID: ci-self-test
+          PEACH_RPC_EXPECT_RUNNER_ID: ci-self-test
+          PEACH_RPC_JVM_FLAGS: "-Xms128m -Xmx128m"
+          PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
+        run: |
+          bash scripts/preflight_v2d2_runner.sh target/v2d2-preflight-self-test
+
+          if PEACH_RPC_EXPECT_RUNNER_ID=wrong-runner \
+            bash scripts/preflight_v2d2_runner.sh target/v2d2-preflight-wrong-runner; then
+            echo "Preflight unexpectedly accepted the wrong runner ID"
+            exit 1
+          fi
+
+          if PEACH_RPC_EXPECT_HOST_FINGERPRINT_SHA256=0000000000000000000000000000000000000000000000000000000000000000 \
+            bash scripts/preflight_v2d2_runner.sh target/v2d2-preflight-wrong-host; then
+            echo "Preflight unexpectedly accepted the wrong host fingerprint"
+            exit 1
+          fi
+
       - name: Verify V2-D.2 evidence tooling
         run: python3 scripts/test_v2d2_evidence_tools.py
 
       - name: Verify V2-D.2 benchmark harness
+        env:
+          PEACH_RPC_JVM_FLAGS: "-Xms256m -Xmx256m"
         run: bash scripts/run_v2d2_benchmark_matrix.sh smoke target/v2d2-matrix-smoke
 
       - name: Verify 10k virtual-thread soak harness
@@ -64,6 +89,7 @@ jobs:
           PEACH_RPC_SOAK_DURATION_SECONDS: "3"
           PEACH_RPC_SOAK_CLIENT_TIMEOUT_MS: "15000"
           PEACH_RPC_SOAK_OUTPUT: "target/v2d2-soak-smoke.json"
+          PEACH_RPC_JVM_FLAGS: "-Xms256m -Xmx256m"
         run: bash scripts/run_v2d2_soak.sh
 
       - name: Validate V2-D.2 smoke evidence

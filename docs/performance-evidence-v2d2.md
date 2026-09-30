@@ -261,12 +261,15 @@ Performance Evidence workflow 支持：
 
 - `evidence_class=shared-ci|controlled`；
 - `runner_labels_json`，例如 `["self-hosted","linux","x64","peach-rpc-perf"]`；
-- `runner_id`，用于记录固定机器稳定标识。
+- `runner_id`，在 controlled GitHub Workflow 中表示**期望的 self-hosted Runner 名称**；实际证据使用 GitHub `runner.name`；
 
 当 `evidence_class=controlled` 时会 fail-fast 要求：
 
 - 不能使用 `ubuntu-latest`；
-- 必须使用稳定 `runner_id`；
+- 必须使用稳定 `runner_id`，并在 GitHub self-hosted Workflow 中校验 expected runner name == actual `runner.name`；
+- 必须显式设置非空 `PEACH_RPC_JVM_FLAGS`；Matrix 与 Soak 会通过 `JAVA_TOOL_OPTIONS` 将其应用到实际 Java/JMH fork 进程，而不只是记录到环境文件；
+- 必须生成非 `unknown` 的 `host_fingerprint_sha256`；该值只保存哈希，不保存原始 machine-id / DMI UUID；
+- GitHub controlled Workflow 必须预先提供 expected `host_fingerprint_sha256`，并在 Full Matrix 前与当前机器计算值一致；
 - 必须 `matrix_profile=full`；
 - Matrix 与 Soak 必须同时运行；
 - concurrency >= 10000；
@@ -283,7 +286,43 @@ bash scripts/run_v2d2_fixed_evidence.sh target/v2d2-fixed-evidence
 
 该入口依次完成 Build -> 环境指纹 -> Full Matrix -> 30m Soak -> Evidence Validation -> Decision Inputs。
 
-### 7.2 重复性验证
+### 7.2 V2-D.2-E1 固定证据执行
+
+E1 增加真实固定 Runner 所需的执行约束：
+
+- `preflight_v2d2_runner.sh` 校验 Linux、JDK 21、Maven 3.9+、Git commit、expected/actual Runner ID，并生成 hashed physical-host fingerprint；同时支持约束 CPU/核心数/内存/governor；
+- `check_v2d2_runner_baseline.py` 在首轮锁定 commit、Runner ID、host fingerprint、CPU、Memory、Kernel、JDK、JVM flags 等稳定字段，后续 Run 在重型测试前 fail-fast；
+- `manage_v2d2_evidence_manifest.py` 为 Evidence Bundle 生成并校验 SHA-256 Manifest；
+- `run_v2d2_e1_series.sh` 顺序执行至少 3 次完整 controlled run，并输出 REPORT_ONLY repeatability；
+- Evidence 目录不允许静默覆盖；
+- TLS benchmark 测试私钥使用系统临时目录并在退出时删除，不进入 Artifact。
+
+固定 Runner 推荐入口：
+
+~~~bash
+export PEACH_RPC_EVIDENCE_CLASS=controlled
+export PEACH_RPC_RUNNER_ID=peach-rpc-perf-01
+export PEACH_RPC_RUNNER_LABELS='self-hosted,linux,x64,peach-rpc-perf'
+export PEACH_RPC_JVM_FLAGS='<fixed JVM flags for this runner>'
+
+bash scripts/run_v2d2_e1_series.sh target/v2d2-e1-controlled
+~~~
+
+可选严格硬件约束必须来自实际 Runner：
+
+~~~bash
+export PEACH_RPC_EXPECT_CPU_MODEL='<exact model>'
+export PEACH_RPC_EXPECT_PHYSICAL_CORES='<count>'
+export PEACH_RPC_EXPECT_LOGICAL_CORES='<count>'
+export PEACH_RPC_EXPECT_CPU_GOVERNOR='<governor>'
+export PEACH_RPC_MIN_MEMORY_BYTES='<bytes>'
+~~~
+
+E1 的 repeatability 保持 **REPORT_ONLY**；CV 阈值与 Baseline Promotion 属于 V2-D.2-E2。
+
+三次真实证据收集完成后必须执行 `finalize_v2d2_e1.py`。只有 `e1-handoff.json` 状态为 PASS 时，E1 才能向 E2 移交；该 PASS 只代表证据采集完整，不代表性能稳定性阈值或 Production Baseline 已建立。
+
+### 7.3 重复性验证
 
 单次 controlled run 只能形成“可比较证据”，不能直接形成生产基线。正式基线至少执行 3 次独立 controlled run，然后执行：
 

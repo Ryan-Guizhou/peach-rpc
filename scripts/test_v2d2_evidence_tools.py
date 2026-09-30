@@ -38,7 +38,11 @@ def run(*args: str, expect_success: bool = True) -> subprocess.CompletedProcess[
     return result
 
 
-def environment(commit: str = "test-commit") -> str:
+def environment(
+    commit: str = "test-commit",
+    host_fingerprint: str = "host-fingerprint-a",
+    run_id: str = "test-run",
+) -> str:
     return "\n".join(
         [
             "schema_version=1",
@@ -46,7 +50,9 @@ def environment(commit: str = "test-commit") -> str:
             f"commit={commit}",
             "evidence_class=controlled",
             "runner_id=peach-rpc-perf-01",
+            f"host_fingerprint_sha256={host_fingerprint}",
             "runner_labels=self-hosted,linux,x64,peach-rpc-perf",
+            f"run_id={run_id}",
             "hostname=perf-host",
             "kernel=Linux test",
             "cpu_model=Test CPU",
@@ -185,10 +191,16 @@ def write_summary(path: Path, score_scale: float) -> None:
         writer.writerows(rows)
 
 
-def write_bundle(root: Path, score_scale: float, commit: str = "test-commit") -> None:
+def write_bundle(
+    root: Path,
+    score_scale: float,
+    commit: str = "test-commit",
+    host_fingerprint: str = "host-fingerprint-a",
+    run_id: str = "test-run",
+) -> None:
     root.mkdir(parents=True, exist_ok=True)
     (root / "environment.properties").write_text(
-        environment(commit),
+        environment(commit, host_fingerprint, run_id),
         encoding="utf-8",
     )
     write_summary(root / "matrix" / "summary.csv", score_scale)
@@ -216,6 +228,10 @@ def write_bundle(root: Path, score_scale: float, commit: str = "test-commit") ->
         json.dumps({"status": "PASS"}),
         encoding="utf-8",
     )
+    (root / "decision-inputs.json").write_text(
+        json.dumps({"schemaVersion": 1, "evidenceClass": "controlled"}),
+        encoding="utf-8",
+    )
 
 
 def main() -> int:
@@ -224,8 +240,38 @@ def main() -> int:
         runs = []
         for index, scale in enumerate((1.00, 1.01, 0.99), start=1):
             root = temp / f"run-{index}"
-            write_bundle(root, scale)
+            write_bundle(root, scale, run_id=f"run-{index}")
             runs.append(root)
+
+        for root in runs:
+            run(
+                "scripts/manage_v2d2_evidence_manifest.py",
+                "create",
+                "--bundle",
+                str(root),
+            )
+
+        e1_output = temp / "e1-handoff"
+        run(
+            "scripts/finalize_v2d2_e1.py",
+            "--run",
+            str(runs[0]),
+            "--run",
+            str(runs[1]),
+            "--run",
+            str(runs[2]),
+            "--output-dir",
+            str(e1_output),
+        )
+        e1_handoff = json.loads(
+            (e1_output / "e1-handoff.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        if e1_handoff.get("status") != "PASS":
+            raise AssertionError(e1_handoff)
+        if e1_handoff.get("nextStage") != "V2-D.2-E2":
+            raise AssertionError(e1_handoff)
 
         output = temp / "repeatability"
         args = [
@@ -289,8 +335,86 @@ def main() -> int:
         if candidate.get("status") != "CANDIDATE":
             raise AssertionError(candidate)
 
+        baseline_path = temp / "runner-baseline.json"
+        run(
+            "scripts/check_v2d2_runner_baseline.py",
+            "--environment",
+            str(runs[0] / "environment.properties"),
+            "--baseline",
+            str(baseline_path),
+            "--initialize-if-missing",
+        )
+        run(
+            "scripts/check_v2d2_runner_baseline.py",
+            "--environment",
+            str(runs[1] / "environment.properties"),
+            "--baseline",
+            str(baseline_path),
+        )
+
+        manifest_bundle = temp / "manifest-bundle"
+        write_bundle(manifest_bundle, 1.0)
+        run(
+            "scripts/manage_v2d2_evidence_manifest.py",
+            "create",
+            "--bundle",
+            str(manifest_bundle),
+        )
+        run(
+            "scripts/manage_v2d2_evidence_manifest.py",
+            "verify",
+            "--bundle",
+            str(manifest_bundle),
+        )
+        (manifest_bundle / "soak.json").write_text(
+            "{}",
+            encoding="utf-8",
+        )
+        run(
+            "scripts/manage_v2d2_evidence_manifest.py",
+            "verify",
+            "--bundle",
+            str(manifest_bundle),
+            expect_success=False,
+        )
+
+        host_mismatch = temp / "run-host-mismatch"
+        write_bundle(
+            host_mismatch,
+            1.0,
+            host_fingerprint="host-fingerprint-b",
+        )
+        run(
+            "scripts/check_v2d2_runner_baseline.py",
+            "--environment",
+            str(host_mismatch / "environment.properties"),
+            "--baseline",
+            str(baseline_path),
+            expect_success=False,
+        )
+        run(
+            "scripts/compare_v2d2_evidence.py",
+            "--run",
+            str(runs[0]),
+            "--run",
+            str(runs[1]),
+            "--run",
+            str(host_mismatch),
+            "--output-dir",
+            str(temp / "host-mismatch-output"),
+            expect_success=False,
+        )
+
         mismatch = temp / "run-mismatch"
         write_bundle(mismatch, 1.0, commit="different-commit")
+        run(
+            "scripts/check_v2d2_runner_baseline.py",
+            "--environment",
+            str(mismatch / "environment.properties"),
+            "--baseline",
+            str(baseline_path),
+            expect_success=False,
+        )
         run(
             "scripts/compare_v2d2_evidence.py",
             "--run",

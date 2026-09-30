@@ -9,6 +9,8 @@ DURATION_SECONDS="${PEACH_RPC_SOAK_DURATION_SECONDS:-600}"
 CLIENT_TIMEOUT_MS="${PEACH_RPC_SOAK_CLIENT_TIMEOUT_MS:-5000}"
 OUTPUT="${PEACH_RPC_SOAK_OUTPUT:-target/v2d2-soak.json}"
 JAR="${PEACH_RPC_BENCHMARK_JAR:-peach-rpc-benchmarks/target/benchmarks.jar}"
+JVM_FLAGS="${PEACH_RPC_JVM_FLAGS:-}"
+export JAVA_TOOL_OPTIONS="$JVM_FLAGS"
 
 if [[ ! -f "$JAR" ]]; then
   echo "Benchmark JAR not found: $JAR" >&2

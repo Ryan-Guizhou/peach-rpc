@@ -40,7 +40,7 @@ flowchart LR
 
 Third-party framework types do not belong in Core contracts, and control-plane work must not enter the per-request hot path.
 
-See the Chinese-first [architecture document](docs/architecture.md), [Production Roadmap / Capability Matrix](docs/production-roadmap.md), and [V2 high-performance kernel plan](docs/high-performance-kernel-v2-plan.md).
+See the Chinese-first [architecture document](docs/architecture.md), [Production Roadmap / Capability Matrix](docs/production-roadmap.md), [V2-D.2 to 1.0 GA version execution roadmap](docs/version-roadmap-to-ga.md), [V2-D.2-E1 controlled evidence execution](docs/v2d2-e1-controlled-evidence.md), and [V2 high-performance kernel plan](docs/high-performance-kernel-v2-plan.md).
 
 <!-- doc-section:modules -->
 ## Modules

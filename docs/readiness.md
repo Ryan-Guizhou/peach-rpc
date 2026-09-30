@@ -97,6 +97,8 @@ V2-D.2 当前正在建立性能证据闭环：
 
 详细运行方式见 [V2-D.2 Performance Evidence & 10k Soak](performance-evidence-v2d2.md)。容量规划方法论、QPS/Core 计算、连接分片选择和生产记录模板见 [Capacity Planning Guide](capacity-planning.md)；其中生产数值仍需固定硬件证据。
 
+当前已进入 **V2-D.2-E1 Controlled Performance Evidence Execution**。固定 Runner 预检、环境 Baseline、Run ID、Evidence Manifest 与三次运行编排已经具备；E1 仍需真实固定硬件完成至少三次 Full Matrix + >=30 分钟 10k Soak。完整后续版本链见 [V2-D.2 → 1.0 GA 版本执行路线](version-roadmap-to-ga.md)。
+
 ## 仍需完成的生产门禁
 
 正式成为中型项目默认 RPC 层之前，至少还需要。详细状态以 [Production Roadmap / Capability Matrix](production-roadmap.md) 为准：

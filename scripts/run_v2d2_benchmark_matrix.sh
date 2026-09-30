@@ -4,6 +4,7 @@ set -euo pipefail
 PROFILE="${1:-full}"
 OUTPUT_DIR="${2:-target/v2d2-matrix}"
 JAR="${PEACH_RPC_BENCHMARK_JAR:-peach-rpc-benchmarks/target/benchmarks.jar}"
+JVM_FLAGS="${PEACH_RPC_JVM_FLAGS:-}"
 
 if [[ ! -f "$JAR" ]]; then
   echo "Benchmark JAR not found: $JAR" >&2
@@ -12,9 +13,17 @@ fi
 
 mkdir -p "$OUTPUT_DIR"
 
+TLS_TEMP_DIR=""
+cleanup_tls_material() {
+  if [[ -n "$TLS_TEMP_DIR" && -d "$TLS_TEMP_DIR" ]]; then
+    rm -rf "$TLS_TEMP_DIR"
+  fi
+}
+trap cleanup_tls_material EXIT
+
 prepare_tls_material() {
-  local tls_dir="$OUTPUT_DIR/tls-material"
-  mkdir -p "$tls_dir"
+  TLS_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/peach-rpc-v2d2-tls.XXXXXX")"
+  local tls_dir="$TLS_TEMP_DIR"
   if ! command -v openssl >/dev/null 2>&1; then
     echo "openssl is required for TLS benchmark matrix" >&2
     exit 1
@@ -97,6 +106,10 @@ esac
 
 bash scripts/capture_v2d2_environment.sh "$OUTPUT_DIR"
 echo "profile=$PROFILE" >> "$OUTPUT_DIR/environment.properties"
+
+# Apply the recorded controlled JVM configuration only to benchmark JVMs.
+# JAVA_TOOL_OPTIONS is inherited by JMH fork JVMs as well as the launcher.
+export JAVA_TOOL_OPTIONS="$JVM_FLAGS"
 
 for payload in "${payloads[@]}"; do
   for shard in "${shards[@]}"; do

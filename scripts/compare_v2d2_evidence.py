@@ -20,6 +20,7 @@ REQUIRED_ENVIRONMENT_KEYS = {
     "commit",
     "evidence_class",
     "runner_id",
+    "host_fingerprint_sha256",
     "cpu_model",
     "logical_cores",
     "physical_cores",

@@ -4,7 +4,7 @@
 
 ## Phase 1：早期工程收敛
 
-- 模块从早期 17 个概念粒度模块收敛；当前 Reactor 已演进为 12 个具备真实依赖隔离价值的顶层模块。
+- 模块从早期 17 个概念粒度模块收敛；当前 Reactor 已演进为 15 个具备真实依赖隔离价值的顶层模块。
 - 完成 Spring Boot Starter/AutoConfiguration。
 - 文档改为中文主导，README 中英文切换。
 - Maven 版本和插件统一管理。
@@ -63,4 +63,6 @@
 
 ## 下一阶段
 
-后续不再在本文件重复维护详细状态。V2-C.1、V2-C.2、V2-C.3、V2-D、V2-E 与 Production GA Gate 统一见 [Production Roadmap / Capability Matrix](production-roadmap.md)。
+本文件继续保留早期实施历史。当前生产状态见 [Production Roadmap / Capability Matrix](production-roadmap.md)，后续逐版本 Scope 与 Exit Gate 见 [V2-D.2 → 1.0 GA 版本执行路线](version-roadmap-to-ga.md)。
+
+当前执行阶段为 **V2-D.2-E1 Controlled Performance Evidence Execution**；固定 Runner 操作说明见 [V2-D.2-E1 固定性能证据执行](v2d2-e1-controlled-evidence.md)。
