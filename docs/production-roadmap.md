@@ -76,7 +76,7 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 | Buffer ownership | **Partial** | 已有 frame view / slice 基础 | 尚未形成 OwnedBuffer/retain/release 或等价 Buffer API；是否进入默认路径必须由基准决定 |
 | 消除参数 Object[] | **Partial** | Generated CallSite 已减少动态调用 | Fory Codec ID 1 仍使用 Object[] 参数对象图 |
 | Compression 数据面 | **Proposed** | Wire ID 已预留 NONE/LZ4/ZSTD | 当前实际只启用 NONE；必须以 payload/CPU/带宽基准决定策略 |
-| 完整性能矩阵 | **Partial** | 已有 payload × connection shard × concurrency Matrix Runner、sample/throughput 与 GC profiler；普通 CI 跑 smoke | 仍需固定硬件执行 full matrix，并补 overload/slow endpoint/fault 场景 |
+| 完整性能矩阵 | **Partial** | 已有 payload/security/provider-scenario/resilience 四类 Matrix、sample/throughput、GC profiler、证据校验与 CI smoke | 固定硬件执行 full matrix，并形成可重复数值基线 |
 | 性能容量模型 | **Partial** | 已形成 Capacity Planning 方法论、QPS/Core/实例数公式、Payload/TLS 分桶与决策模板；暂无固定硬件生产数值 | 在固定硬件填充 p50/p99/p99.9、CPU、Allocation、GC、错误率与连接数基线 |
 
 ### 3.2 Consumer 高可用与容错
@@ -174,7 +174,7 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 | Nacos 真实集成测试 | **Current** | register/query/subscribe/unregister + RPC round-trip；独立 JVM E2E 覆盖 Nacos restart、Provider re-registration、Consumer re-subscribe | 继续补 auth-enabled 与网络分区 |
 | 独立进程 RPC E2E | **Current** | CI 真正启动 Provider/Consumer executable JAR；覆盖 Provider restart、同一 Consumer 恢复、Nacos restart、新 Consumer 发现恢复、Provider 迁移端口后的 subscription redo | 增加滚动多实例与长时间 soak |
 | Fuzz / property testing | **Proposed** | 尚未系统建立 | 覆盖长度溢出、截断、未知类型、重复帧、慢帧等 |
-| Soak test | **Proposed** | 尚未形成固定门禁 | 长时间运行、内存泄漏、连接恢复、GC 稳定性 |
+| Soak test | **Partial** | 已有 10k Virtual Thread soak、CI 短时 smoke、30m controlled evidence gate 与环境指纹 | 固定硬件完成长时间运行、内存/GC/连接稳定性基线 |
 | Chaos test | **Partial** | 已有 Etcd 3 节点 leader-transfer Chaos workflow 与 Nacos restart process E2E | 仍缺网络黑洞/分区、长时间 soak 与更大规模并发故障矩阵 |
 
 ### 3.10 运维与发布
@@ -365,7 +365,9 @@ V2-D 第一批已经进入主线：
 9. 独立 Performance Evidence workflow 支持 full matrix 与长时间 10k soak Artifact；
 10. TLS/PLAINTEXT security matrix tooling；
 11. Retry Budget / Circuit Breaker / Outlier Ejection resilience primitive matrix tooling；
-12. `capacity-planning.md` 容量规划方法论与数据记录模板。
+12. `capacity-planning.md` 容量规划方法论与数据记录模板；
+13. fixed Runner controlled evidence gate、硬件环境指纹与证据完整性校验；
+14. `decision-inputs.json/.md` 自动生成，为 Buffer ownership / Future/PendingRequest / Capacity Planning 提供描述性决策输入。
 
 当前仍未把共享 CI Runner 上的数值写成 Production SLO。固定硬件 full matrix、至少 30 分钟 10k soak、TLS/PLAINTEXT 数值对比、Provider fault 与 resilience 数值基线仍属于 V2-D.2 未完成证据。
 
@@ -494,7 +496,7 @@ Peach RPC 从 Preview 提升为 Production Ready 前，建议以下门禁全部�
 
 - [ ] 固定环境完整 benchmark matrix；
 - [ ] QPS/Core、p99/p99.9、Allocation、GC 基线；
-- [ ] overload / slow endpoint / fault benchmark；
+- [ ] 固定硬件 overload / slow endpoint / resilience fault 数值基线；
 - [ ] 是否进入 Buffer-oriented 默认路径有数据结论；
 - [ ] 容量规划参数有可重复实验支撑。
 
@@ -517,7 +519,7 @@ Peach RPC 从 Preview 提升为 Production Ready 前，建议以下门禁全部�
 
 ### 10.7 Operations
 
-- [ ] Capacity Planning Guide；
+- [ ] Capacity Planning Guide（方法论已完成，固定硬件生产数值待填充）；
 - [ ] Upgrade Guide；
 - [ ] Rollback Guide；
 - [ ] Compatibility Matrix；
