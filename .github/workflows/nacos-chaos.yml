@@ -7,6 +7,10 @@ on:
       - 'peach-rpc-registry-nacos/**'
       - '.github/workflows/nacos-chaos.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pause-recovery:
     runs-on: ubuntu-latest
