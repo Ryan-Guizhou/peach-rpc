@@ -159,7 +159,7 @@ V2-C.3 已经补齐 TLS/mTLS、PEM 证书生命周期、Micrometer、OpenTelemet
 | Nacos register/lookup/subscribe | **Current** | Nacos 3.2.4，临时实例、Group/Cluster/metadata/weight；独立 JVM E2E 重启 Nacos 后验证既有数据面、Provider 临时实例重注册和 Consumer 重订阅/Endpoint 更新 | 继续补 auth-enabled、网络分区与 soak |
 | Nacos SDK 隔离 | **Current** | 私有有界控制面线程池，不占用 Vert.x Event Loop | 增加 queue saturation 与 Registry 慢调用指标 |
 | Registry Capability | **Current** | REGISTRATION/SUBSCRIPTION/... 能力模型 | 建立跨 Adapter Contract TestKit |
-| Registry Contract TestKit | **Engineering Ready** | Core test-jar 提供共享 register/discovery/subscription/unregister 契约；Etcd/Nacos 真实 Adapter 集成测试复用同一 TestKit | 后续新 Adapter 必须复用同一契约；failure/recovery 仍由 Adapter Chaos 补充 |
+| Registry Contract TestKit | **Engineering Ready** | Core test-jar 提供 Provider-process-neutral 的 register/discovery/subscription/unregister 契约；Memory/Etcd/Nacos 复用同一 TestKit | 多 Provider 行为由独立进程 E2E/Chaos 验证；failure/recovery 仍由 Adapter Chaos 补充 |
 | ZooKeeper / Consul / Kubernetes / Eureka | **Future** | 尚未实现 | 不应早于 HA/Security/Compatibility 主线 |
 
 ### 3.6 安全
