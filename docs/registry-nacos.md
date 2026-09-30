@@ -58,8 +58,10 @@ Nacos group 与 RPC `ServiceKey.group` 不可混用：前者是 Registry 管理�
 7. 相同视图不重复刷新 Core；
 8. 变化视图使用 Adapter 进程内 AtomicLong 生成单调 revision；
 9. 同一 Registry Client 主动注销本地 Provider 后，会立即从该 Client 的 subscription 快照中移除对应 endpoint，避免最后一个实例注销时目录悬挂；
-10. 远端 Provider 生命周期仍以 Nacos NamingEvent 为主通道，并由独立 Provider/Consumer Client 集成测试验证；
-11. 关闭时使用原 EventListener 实例 unsubscribe。
+10. 远端 Provider 生命周期以 Nacos NamingEvent 为主通道；
+11. Registry 每 5 秒执行一次低频完整视图 reconcile 作为最终一致性兜底；只有事件队列空闲时才执行，避免旧查询结果覆盖正在排队的新事件；
+12. 独立 Provider/Consumer Client 集成测试验证“远端最后一个 Provider 注销 -> empty snapshot”最终收敛；
+13. 关闭时取消 reconcile task，并使用原 EventListener 实例 unsubscribe。
 
 ## 5. 线程与资源
 
@@ -70,7 +72,8 @@ Nacos Java SDK 的注册、注销、查询和订阅初始化可能阻塞。Adapt
 - queue：256；
 - 拒绝时快速失败；
 - 不使用 ForkJoinPool.commonPool；
-- 不占用 Vert.x Event Loop。
+- 不占用 Vert.x Event Loop；
+- 单线程 daemon scheduler 只负责触发低频 reconcile，真实 Nacos 查询仍提交到上述有界控制面执行器。
 
 Registry 关闭先取消订阅，再关闭 NamingService，最后关闭控制面执行器；重复关闭幂等。
 
