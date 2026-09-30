@@ -19,6 +19,7 @@ import io.peach.rpc.loadbalance.LoadBalanceMetrics;
 import io.peach.rpc.loadbalance.LoadBalancer;
 import io.peach.rpc.observability.RpcMetadataPropagator;
 import io.peach.rpc.observability.RpcObserver;
+import io.peach.rpc.observability.RpcRetryExhaustionReason;
 import io.peach.rpc.observability.RpcTraceContext;
 import io.peach.rpc.observability.RpcTracingBridge;
 import io.peach.rpc.protocol.RpcErrorCodec;
@@ -570,21 +571,48 @@ public final class PeachRpcClient implements AutoCloseable {
         if (result.isDone()) {
             return;
         }
-        boolean retry = method.idempotent()
-                && isRetryable(failure)
-                && attempt < resilienceOptions.maxAttempts()
-                && retryBudget.tryAcquireRetry();
-        if (!retry) {
+        boolean retryable =
+                method.idempotent()
+                        && isRetryable(failure);
+        if (!retryable) {
+            method.circuitBreaker().onFailure();
+            observeCircuitState(reference, method);
+            result.completeExceptionally(failure);
+            return;
+        }
+        if (attempt >= resilienceOptions.maxAttempts()) {
+            observeRetryExhausted(
+                    reference,
+                    method,
+                    RpcRetryExhaustionReason.MAX_ATTEMPTS,
+                    failure);
+            method.circuitBreaker().onFailure();
+            observeCircuitState(reference, method);
+            result.completeExceptionally(failure);
+            return;
+        }
+        if (!retryBudget.tryAcquireRetry()) {
+            observeRetryExhausted(
+                    reference,
+                    method,
+                    RpcRetryExhaustionReason.BUDGET,
+                    failure);
             method.circuitBreaker().onFailure();
             observeCircuitState(reference, method);
             result.completeExceptionally(failure);
             return;
         }
 
-        long remainingNanos = deadlineNanos - System.nanoTime();
+        long remainingNanos =
+                deadlineNanos - System.nanoTime();
         long delayMillis = retryDelayMillis(attempt);
         if (remainingNanos
                 <= TimeUnit.MILLISECONDS.toNanos(delayMillis)) {
+            observeRetryExhausted(
+                    reference,
+                    method,
+                    RpcRetryExhaustionReason.DEADLINE,
+                    failure);
             method.circuitBreaker().onFailure();
             observeCircuitState(reference, method);
             result.completeExceptionally(failure);
@@ -609,6 +637,21 @@ public final class PeachRpcClient implements AutoCloseable {
                         deadlineNanos,
                         attempt + 1,
                         result));
+    }
+
+    private void observeRetryExhausted(
+            ClientReference reference,
+            ClientMethodBinding method,
+            RpcRetryExhaustionReason reason,
+            Throwable failure) {
+        if (!observer.enabled()) {
+            return;
+        }
+        observer.onClientRetryExhausted(
+                reference.key(),
+                method.methodId(),
+                reason,
+                failure);
     }
 
     private void observeCircuitState(
