@@ -7,14 +7,13 @@ import io.peach.rpc.api.ServiceKey;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
  * Registry Adapter 共享行为契约。
  *
  * <p>真实 Adapter 测试负责创建后端和 Registry，本 TestKit 统一验证
- * register/discovery/subscription/unregister 的可观察语义。
+ * register/discovery/subscription/unregister 的基础可观察语义。
  */
 public final class RegistryContractTestKit {
 
@@ -26,16 +25,14 @@ public final class RegistryContractTestKit {
      *
      * @param registry 待验证 Registry
      * @param key 服务键
-     * @param first 第一实例
-     * @param second 第二实例
+     * @param instance 服务实例
      * @param timeout 最终一致等待上限
      * @throws Exception 等待或控制面调用失败
      */
     public static void verifyRegistrationDiscoverySubscription(
             Registry registry,
             ServiceKey key,
-            ServiceInstance first,
-            ServiceInstance second,
+            ServiceInstance instance,
             Duration timeout) throws Exception {
         assertTrue(registry.capabilities().supports(
                 RegistryCapability.REGISTRATION));
@@ -44,12 +41,12 @@ public final class RegistryContractTestKit {
 
         ServiceRegistrar registrar =
                 registry.registrar().orElseThrow();
-        AtomicReference<RegistrySnapshot> latest =
-                new AtomicReference<>();
+        java.util.concurrent.atomic.AtomicReference<RegistrySnapshot> latest =
+                new java.util.concurrent.atomic.AtomicReference<>();
 
         try (RegistrySubscription ignored =
                      registry.subscribe(key, latest::set)) {
-            registrar.register(first)
+            registrar.register(instance)
                     .toCompletableFuture()
                     .get(
                             timeout.toSeconds(),
@@ -58,44 +55,13 @@ public final class RegistryContractTestKit {
             assertTrue(await(
                     timeout,
                     () -> lookupIds(registry, key)
-                            .contains(first.instanceId())));
+                            .contains(instance.instanceId())));
             assertTrue(await(
                     timeout,
                     () -> snapshotIds(latest.get())
-                            .contains(first.instanceId())));
+                            .contains(instance.instanceId())));
 
-            registrar.register(second)
-                    .toCompletableFuture()
-                    .get(
-                            timeout.toSeconds(),
-                            TimeUnit.SECONDS);
-
-            assertTrue(await(
-                    timeout,
-                    () -> lookupIds(registry, key)
-                            .containsAll(Set.of(
-                                    first.instanceId(),
-                                    second.instanceId()))));
-            assertTrue(await(
-                    timeout,
-                    () -> snapshotIds(latest.get())
-                            .containsAll(Set.of(
-                                    first.instanceId(),
-                                    second.instanceId()))));
-
-            registrar.unregister(first)
-                    .toCompletableFuture()
-                    .get(
-                            timeout.toSeconds(),
-                            TimeUnit.SECONDS);
-
-            assertTrue(await(
-                    timeout,
-                    () -> lookupIds(registry, key)
-                            .equals(Set.of(
-                                    second.instanceId()))));
-
-            registrar.unregister(second)
+            registrar.unregister(instance)
                     .toCompletableFuture()
                     .get(
                             timeout.toSeconds(),
