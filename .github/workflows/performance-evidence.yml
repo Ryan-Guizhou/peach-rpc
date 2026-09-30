@@ -30,7 +30,7 @@ on:
       soak_duration_seconds:
         description: Soak measurement duration
         required: true
-        default: "600"
+        default: "1800"
         type: string
       soak_payload_size:
         description: Soak payload bytes
@@ -46,7 +46,7 @@ on:
 jobs:
   evidence:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v7
 

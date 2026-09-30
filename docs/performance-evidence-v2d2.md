@@ -49,7 +49,9 @@ flowchart LR
 矩阵由两部分组成：
 
 1. **Payload Matrix**：64B ~ 1MiB × connection shard × concurrency；
-2. **Execution/Fault Matrix**：NOOP / CPU / BLOCKING / SLOW_PROVIDER / OVERLOAD × connection shard × concurrency。
+2. **Execution/Fault Matrix**：NOOP / CPU / BLOCKING / SLOW_PROVIDER / OVERLOAD × connection shard × concurrency；
+3. **Security Matrix**：PLAINTEXT / TLS × payload × connection shard × concurrency；
+4. **Resilience Primitive Matrix**：Retry Budget / Circuit Breaker / Outlier Ejection 的成功、拒绝、失败记账与可用性读路径。
 
 OVERLOAD 场景通过 JMH AuxCounters 记录 success/error，不让预期过载异常直接终止整个 benchmark。
 
@@ -227,7 +229,7 @@ Latency 使用固定上限的 Reservoir，避免长时间 soak 因保存全部�
 - Soak 默认 10000 concurrency / 600s；
 - 最终上传 evidence artifact。
 
-建议固定专用 Runner 后，把 full matrix + 长时间 soak 作为发布前证据门禁。
+建议固定专用 Runner 后，把 full matrix + 长时间 soak 作为发布前证据门禁。Performance Evidence workflow 的 soak 默认时长为 1800 秒；共享 Runner 仍只用于工具链验证，不用于形成 Production SLO。
 
 ## 8. 正式性能结论的环境要求
 
@@ -282,11 +284,13 @@ error rate:
 - [ ] 固定硬件执行至少 30 分钟 10k soak；
 - [ ] 建立 p50/p99/p99.9 + allocation/op 基线；
 - [x] overload / slow Provider / CPU / blocking benchmark tooling；
-- [ ] retry / circuit / outlier fault-injection benchmark；
-- [ ] TLS vs plaintext overhead matrix；
+- [x] Retry Budget / Circuit Breaker / Outlier Ejection resilience primitive matrix tooling；
+- [x] TLS vs plaintext overhead matrix tooling；
+- [ ] 固定环境采集 retry / circuit / outlier 与 Provider fault 的完整数据；
 - [ ] 基于证据决定 Buffer ownership；
 - [ ] 基于证据决定 Future/PendingRequest 重构；
-- [ ] 形成 Capacity Planning Guide。
+- [x] Capacity Planning Guide 方法论与数据输入模板；
+- [ ] 用固定环境数据填充 Capacity Planning 的生产数值建议。
 
 因此当前状态必须保持：
 
@@ -314,3 +318,5 @@ docs/capability-status.properties
 `scripts/check_project.py` 会在状态不一致或出现已知过期表述时直接失败。
 
 Production Roadmap 继续作为面向人的权威能力总表；properties 文件用于 CI 防止多个文档发生状态漂移。
+
+容量规划方法、公式、证据输入与发布门禁见 [Capacity Planning Guide](capacity-planning.md)。该文档当前提供方法论，不包含未经固定硬件验证的生产数值。

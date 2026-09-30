@@ -3,7 +3,7 @@
 <!-- capability-status:v2-d=in-progress -->
 <!-- capability-status:v2-d2=in-progress -->
 
-V2-D.2 的完整矩阵、allocation profiling、10k logical-concurrency soak 和 evidence workflow 见 [V2-D.2 Performance Evidence & 10k Soak](performance-evidence-v2d2.md)。
+V2-D.2 的完整矩阵、allocation profiling、10k logical-concurrency soak 和 evidence workflow 见 [V2-D.2 Performance Evidence & 10k Soak](performance-evidence-v2d2.md)。容量计算、QPS/Core、连接分片、CPU/内存余量与发布门禁见 [Capacity Planning Guide](capacity-planning.md)。
 
 Peach RPC 不接受没有可重复环境信息的“高性能”结论。
 
