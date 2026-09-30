@@ -273,6 +273,22 @@ def main() -> int:
         if threshold_report.get("status") != "PASS":
             raise AssertionError(threshold_report)
 
+        candidate_output = temp / "baseline-candidate"
+        run(
+            "scripts/promote_v2d2_baseline.py",
+            "--repeatability-report",
+            str(threshold_output / "repeatability-report.json"),
+            "--output-dir",
+            str(candidate_output),
+        )
+        candidate = json.loads(
+            (candidate_output / "baseline-candidate.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        if candidate.get("status") != "CANDIDATE":
+            raise AssertionError(candidate)
+
         mismatch = temp / "run-mismatch"
         write_bundle(mismatch, 1.0, commit="different-commit")
         run(
