@@ -356,6 +356,218 @@ class VertxRpcTransportTest {
     }
 
     @Test
+    void cancellationAndDisconnectRaceShouldComplete()
+            throws Exception {
+        int port = findFreePort();
+        RpcTransportOptions options = options(
+                Set.of(RpcCodecIds.FORY_NATIVE),
+                1);
+        VertxRpcTransportServer server =
+                new VertxRpcTransportServer(options);
+        VertxRpcTransportClient client =
+                new VertxRpcTransportClient(options);
+        RpcEndpoint endpoint =
+                new RpcEndpoint("127.0.0.1", port);
+        CountDownLatch handled =
+                new CountDownLatch(1);
+        CompletableFuture<byte[]> provider =
+                new CompletableFuture<>();
+
+        try {
+            server.start(endpoint, (remote, requestBytes) -> {
+                        handled.countDown();
+                        return provider;
+                    })
+                    .toCompletableFuture()
+                    .join();
+
+            CompletableFuture<byte[]> call =
+                    client.request(
+                                    endpoint,
+                                    request(),
+                                    Duration.ofSeconds(2))
+                            .toCompletableFuture();
+            assertTrue(
+                    handled.await(
+                            2,
+                            TimeUnit.SECONDS));
+
+            CountDownLatch start =
+                    new CountDownLatch(1);
+            Thread cancelThread =
+                    Thread.ofVirtual().start(() -> {
+                        awaitUnchecked(start);
+                        call.cancel(true);
+                    });
+            Thread disconnectThread =
+                    Thread.ofVirtual().start(() -> {
+                        awaitUnchecked(start);
+                        server.close();
+                    });
+
+            start.countDown();
+            cancelThread.join();
+            disconnectThread.join();
+
+            long deadline =
+                    System.nanoTime()
+                            + TimeUnit.SECONDS.toNanos(2);
+            while (!call.isDone()
+                    && System.nanoTime() < deadline) {
+                Thread.sleep(10L);
+            }
+            assertTrue(call.isDone());
+        } finally {
+            provider.cancel(true);
+            client.close();
+            server.close();
+        }
+    }
+
+    @Test
+    void drainShouldRejectNewRequestWhileInflightCompletes()
+            throws Exception {
+        int port = findFreePort();
+        RpcTransportOptions options = options(
+                Set.of(RpcCodecIds.FORY_NATIVE),
+                1);
+        VertxRpcTransportServer server =
+                new VertxRpcTransportServer(options);
+        VertxRpcTransportClient client =
+                new VertxRpcTransportClient(options);
+        RpcEndpoint endpoint =
+                new RpcEndpoint("127.0.0.1", port);
+        CountDownLatch handled =
+                new CountDownLatch(1);
+        AtomicReference<byte[]> firstRequest =
+                new AtomicReference<>();
+        CompletableFuture<byte[]> firstProvider =
+                new CompletableFuture<>();
+
+        try {
+            server.start(endpoint, (remote, requestBytes) -> {
+                        firstRequest.compareAndSet(
+                                null,
+                                requestBytes);
+                        if (handled.getCount() > 0L) {
+                            handled.countDown();
+                            return firstProvider;
+                        }
+                        return CompletableFuture.completedFuture(
+                                response(
+                                        requestBytes,
+                                        new byte[] {9}));
+                    })
+                    .toCompletableFuture()
+                    .join();
+
+            CompletableFuture<byte[]> firstCall =
+                    client.request(
+                                    endpoint,
+                                    request(),
+                                    Duration.ofSeconds(3))
+                            .toCompletableFuture();
+            assertTrue(
+                    handled.await(
+                            2,
+                            TimeUnit.SECONDS));
+
+            CompletableFuture<Void> drain =
+                    server.drain(
+                                    Duration.ofSeconds(2))
+                            .toCompletableFuture();
+
+            CompletableFuture<byte[]> secondCall =
+                    client.request(
+                                    endpoint,
+                                    request(),
+                                    Duration.ofMillis(500))
+                            .toCompletableFuture();
+
+            boolean rejected;
+            try {
+                byte[] secondResponse =
+                        secondCall.join();
+                rejected = RpcProtocolCodec.decode(
+                                secondResponse)
+                        .status()
+                        == RpcStatus.UNAVAILABLE;
+            } catch (RuntimeException expected) {
+                rejected = true;
+            }
+            assertTrue(rejected);
+
+            firstProvider.complete(
+                    response(
+                            firstRequest.get(),
+                            new byte[] {4}));
+            assertArrayEquals(
+                    new byte[] {4},
+                    RpcProtocolCodec.decode(
+                                    firstCall.join())
+                            .payload());
+            drain.join();
+        } finally {
+            client.close();
+            server.close();
+        }
+    }
+
+    @Test
+    void closeDuringHeartbeatShouldBeSafe()
+            throws Exception {
+        int port = findFreePort();
+        RpcTransportOptions options =
+                haOptions();
+        VertxRpcTransportServer server =
+                new VertxRpcTransportServer(options);
+        VertxRpcTransportClient client =
+                new VertxRpcTransportClient(options);
+        RpcEndpoint endpoint =
+                new RpcEndpoint("127.0.0.1", port);
+
+        try {
+            server.start(
+                            endpoint,
+                            (remote, requestBytes) ->
+                                    CompletableFuture.completedFuture(
+                                            response(
+                                                    requestBytes,
+                                                    new byte[] {1})))
+                    .toCompletableFuture()
+                    .join();
+
+            client.request(
+                            endpoint,
+                            request(),
+                            Duration.ofSeconds(2))
+                    .toCompletableFuture()
+                    .join();
+
+            Thread.sleep(75L);
+
+            CountDownLatch start =
+                    new CountDownLatch(1);
+            Thread clientClose =
+                    Thread.ofVirtual().start(() -> {
+                        awaitUnchecked(start);
+                        client.close();
+                    });
+            Thread serverClose =
+                    Thread.ofVirtual().start(() -> {
+                        awaitUnchecked(start);
+                        server.close();
+                    });
+            start.countDown();
+            clientClose.join();
+            serverClose.join();
+        } finally {
+            client.close();
+            server.close();
+        }
+    }
+
+    @Test
     void serverShouldRejectRequestBeforeHello()
             throws Exception {
         int port = findFreePort();
@@ -841,6 +1053,21 @@ class VertxRpcTransportTest {
             }
         } finally {
             server.close();
+        }
+    }
+
+    private static void awaitUnchecked(
+            CountDownLatch latch) {
+        try {
+            if (!latch.await(
+                    2,
+                    TimeUnit.SECONDS)) {
+                throw new AssertionError(
+                        "Race barrier timed out");
+            }
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError(error);
         }
     }
 
