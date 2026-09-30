@@ -21,6 +21,7 @@ commit="${PEACH_RPC_BENCHMARK_COMMIT:-${GITHUB_SHA:-unknown}}"
 evidence_class="${PEACH_RPC_EVIDENCE_CLASS:-shared-ci}"
 runner_id="${PEACH_RPC_RUNNER_ID:-${RUNNER_NAME:-unknown}}"
 runner_labels="${PEACH_RPC_RUNNER_LABELS:-unknown}"
+run_id="${PEACH_RPC_EVIDENCE_RUN_ID:-unknown}"
 hostname_value="$(hostname 2>/dev/null || echo unknown)"
 kernel="$(uname -a 2>/dev/null | single_line)"
 captured_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -31,6 +32,7 @@ commit=$commit
 evidence_class=$evidence_class
 runner_id=$runner_id
 runner_labels=$runner_labels
+run_id=$run_id
 hostname=$hostname_value
 kernel=$kernel
 cpu_model=${cpu_model:-unknown}
@@ -55,6 +57,7 @@ cat > "$MARKDOWN" <<EOF
 | Commit | `$commit` |
 | Runner ID | `$runner_id` |
 | Runner labels | `$runner_labels` |
+| Run ID | `$run_id` |
 | Hostname | `$hostname_value` |
 | CPU | `${cpu_model:-unknown}` |
 | Physical / logical cores | `${physical_cores:-unknown} / ${logical_cores:-unknown}` |

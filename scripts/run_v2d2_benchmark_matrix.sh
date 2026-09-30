@@ -12,9 +12,17 @@ fi
 
 mkdir -p "$OUTPUT_DIR"
 
+TLS_TEMP_DIR=""
+cleanup_tls_material() {
+  if [[ -n "$TLS_TEMP_DIR" && -d "$TLS_TEMP_DIR" ]]; then
+    rm -rf "$TLS_TEMP_DIR"
+  fi
+}
+trap cleanup_tls_material EXIT
+
 prepare_tls_material() {
-  local tls_dir="$OUTPUT_DIR/tls-material"
-  mkdir -p "$tls_dir"
+  TLS_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/peach-rpc-v2d2-tls.XXXXXX")"
+  local tls_dir="$TLS_TEMP_DIR"
   if ! command -v openssl >/dev/null 2>&1; then
     echo "openssl is required for TLS benchmark matrix" >&2
     exit 1

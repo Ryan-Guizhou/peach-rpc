@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+OUTPUT_DIR="${1:-target/v2d2-preflight}"
+mkdir -p "$OUTPUT_DIR"
+
+fail() {
+  echo "ERROR: $*" >&2
+  exit 1
+}
+
+command_required() {
+  command -v "$1" >/dev/null 2>&1 || fail "Required command not found: $1"
+}
+
+for command_name in git java mvn python3 openssl lscpu awk getconf; do
+  command_required "$command_name"
+done
+
+[[ "$(uname -s)" == "Linux" ]] || fail "Controlled performance evidence currently requires Linux"
+
+EVIDENCE_CLASS="${PEACH_RPC_EVIDENCE_CLASS:-controlled}"
+RUNNER_ID="${PEACH_RPC_RUNNER_ID:-}"
+[[ "$EVIDENCE_CLASS" == "controlled" ]] || fail "PEACH_RPC_EVIDENCE_CLASS must be controlled"
+[[ -n "$RUNNER_ID" ]] || fail "PEACH_RPC_RUNNER_ID is required"
+[[ "$RUNNER_ID" != "github-hosted-ephemeral" ]] || fail "A stable runner ID is required"
+
+GIT_HEAD="$(git rev-parse HEAD)"
+EXPECTED_COMMIT="${PEACH_RPC_BENCHMARK_COMMIT:-$GIT_HEAD}"
+[[ "$EXPECTED_COMMIT" == "$GIT_HEAD" ]] || fail "Benchmark commit $EXPECTED_COMMIT does not match git HEAD $GIT_HEAD"
+
+if [[ "${PEACH_RPC_REQUIRE_CLEAN_GIT:-true}" == "true" ]] && [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+  fail "Controlled evidence requires a clean tracked working tree"
+fi
+
+JAVA_LINE="$(java -version 2>&1 | head -n 1)"
+JAVA_MAJOR="$(printf '%s' "$JAVA_LINE" | sed -n 's/.*version "\([0-9][0-9]*\).*/\1/p')"
+if [[ -z "$JAVA_MAJOR" ]]; then
+  JAVA_MAJOR="$(printf '%s' "$JAVA_LINE" | sed -n 's/.*openjdk \([0-9][0-9]*\).*/\1/p')"
+fi
+[[ "$JAVA_MAJOR" == "21" ]] || fail "JDK 21 is required, found: $JAVA_LINE"
+
+MAVEN_LINE="$(mvn -version 2>&1 | head -n 1)"
+MAVEN_VERSION="$(printf '%s' "$MAVEN_LINE" | awk '{print $3}')"
+MAVEN_MAJOR="$(printf '%s' "$MAVEN_VERSION" | cut -d. -f1)"
+MAVEN_MINOR="$(printf '%s' "$MAVEN_VERSION" | cut -d. -f2)"
+if ! [[ "$MAVEN_MAJOR" =~ ^[0-9]+$ && "$MAVEN_MINOR" =~ ^[0-9]+$ ]]; then
+  fail "Unable to parse Maven version: $MAVEN_LINE"
+fi
+if (( MAVEN_MAJOR < 3 || (MAVEN_MAJOR == 3 && MAVEN_MINOR < 9) )); then
+  fail "Maven 3.9+ is required, found: $MAVEN_VERSION"
+fi
+
+CPU_MODEL="$(lscpu | awk -F: '/Model name/ {sub(/^[[:space:]]+/, "", $2); print $2; exit}')"
+LOGICAL_CORES="$(getconf _NPROCESSORS_ONLN)"
+PHYSICAL_CORES="$(lscpu -p=CORE,SOCKET | grep -v '^#' | sort -u | wc -l | tr -d ' ')"
+MEMORY_BYTES="$(awk '/MemTotal:/ {printf "%.0f", $2 * 1024}' /proc/meminfo)"
+CPU_GOVERNOR="unknown"
+if [[ -r /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ]]; then
+  CPU_GOVERNOR="$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)"
+fi
+
+CONTAINERIZED=false
+if [[ -f /.dockerenv || -f /run/.containerenv ]]; then
+  CONTAINERIZED=true
+fi
+if [[ "${PEACH_RPC_REQUIRE_BARE_METAL:-false}" == "true" && "$CONTAINERIZED" == "true" ]]; then
+  fail "PEACH_RPC_REQUIRE_BARE_METAL=true but the runner is containerized"
+fi
+
+if [[ -n "${PEACH_RPC_EXPECT_CPU_MODEL:-}" && "$CPU_MODEL" != "$PEACH_RPC_EXPECT_CPU_MODEL" ]]; then
+  fail "CPU model mismatch: expected '$PEACH_RPC_EXPECT_CPU_MODEL', found '$CPU_MODEL'"
+fi
+if [[ -n "${PEACH_RPC_EXPECT_LOGICAL_CORES:-}" && "$LOGICAL_CORES" != "$PEACH_RPC_EXPECT_LOGICAL_CORES" ]]; then
+  fail "Logical core mismatch: expected $PEACH_RPC_EXPECT_LOGICAL_CORES, found $LOGICAL_CORES"
+fi
+if [[ -n "${PEACH_RPC_EXPECT_PHYSICAL_CORES:-}" && "$PHYSICAL_CORES" != "$PEACH_RPC_EXPECT_PHYSICAL_CORES" ]]; then
+  fail "Physical core mismatch: expected $PEACH_RPC_EXPECT_PHYSICAL_CORES, found $PHYSICAL_CORES"
+fi
+if [[ -n "${PEACH_RPC_EXPECT_CPU_GOVERNOR:-}" && "$CPU_GOVERNOR" != "$PEACH_RPC_EXPECT_CPU_GOVERNOR" ]]; then
+  fail "CPU governor mismatch: expected $PEACH_RPC_EXPECT_CPU_GOVERNOR, found $CPU_GOVERNOR"
+fi
+if [[ -n "${PEACH_RPC_MIN_MEMORY_BYTES:-}" ]] && (( MEMORY_BYTES < PEACH_RPC_MIN_MEMORY_BYTES )); then
+  fail "Memory is below PEACH_RPC_MIN_MEMORY_BYTES: $MEMORY_BYTES"
+fi
+
+RUN_ID="${PEACH_RPC_EVIDENCE_RUN_ID:-unknown}"
+CAPTURED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+cat > "$OUTPUT_DIR/preflight.properties" <<EOF
+schema_version=1
+status=PASS
+captured_at=$CAPTURED_AT
+run_id=$RUN_ID
+commit=$GIT_HEAD
+evidence_class=$EVIDENCE_CLASS
+runner_id=$RUNNER_ID
+cpu_model=$CPU_MODEL
+logical_cores=$LOGICAL_CORES
+physical_cores=$PHYSICAL_CORES
+memory_bytes=$MEMORY_BYTES
+cpu_governor=$CPU_GOVERNOR
+containerized=$CONTAINERIZED
+java_major=$JAVA_MAJOR
+maven_version=$MAVEN_VERSION
+EOF
+
+cat > "$OUTPUT_DIR/preflight.md" <<EOF
+# V2-D.2-E1 Runner Preflight
+
+**Status:** PASS
+
+- Run ID: `$RUN_ID`
+- Commit: `$GIT_HEAD`
+- Runner ID: `$RUNNER_ID`
+- CPU: `$CPU_MODEL`
+- Physical / logical cores: `$PHYSICAL_CORES / $LOGICAL_CORES`
+- Memory bytes: `$MEMORY_BYTES`
+- CPU governor: `$CPU_GOVERNOR`
+- Containerized: `$CONTAINERIZED`
+- Java major: `$JAVA_MAJOR`
+- Maven: `$MAVEN_VERSION`
+- Captured at: `$CAPTURED_AT`
+EOF
+
+echo "V2-D.2-E1 runner preflight passed"

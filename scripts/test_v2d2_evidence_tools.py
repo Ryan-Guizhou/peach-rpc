@@ -289,8 +289,59 @@ def main() -> int:
         if candidate.get("status") != "CANDIDATE":
             raise AssertionError(candidate)
 
+        baseline_path = temp / "runner-baseline.json"
+        run(
+            "scripts/check_v2d2_runner_baseline.py",
+            "--environment",
+            str(runs[0] / "environment.properties"),
+            "--baseline",
+            str(baseline_path),
+            "--initialize-if-missing",
+        )
+        run(
+            "scripts/check_v2d2_runner_baseline.py",
+            "--environment",
+            str(runs[1] / "environment.properties"),
+            "--baseline",
+            str(baseline_path),
+        )
+
+        manifest_bundle = temp / "manifest-bundle"
+        write_bundle(manifest_bundle, 1.0)
+        run(
+            "scripts/manage_v2d2_evidence_manifest.py",
+            "create",
+            "--bundle",
+            str(manifest_bundle),
+        )
+        run(
+            "scripts/manage_v2d2_evidence_manifest.py",
+            "verify",
+            "--bundle",
+            str(manifest_bundle),
+        )
+        (manifest_bundle / "soak.json").write_text(
+            "{}",
+            encoding="utf-8",
+        )
+        run(
+            "scripts/manage_v2d2_evidence_manifest.py",
+            "verify",
+            "--bundle",
+            str(manifest_bundle),
+            expect_success=False,
+        )
+
         mismatch = temp / "run-mismatch"
         write_bundle(mismatch, 1.0, commit="different-commit")
+        run(
+            "scripts/check_v2d2_runner_baseline.py",
+            "--environment",
+            str(mismatch / "environment.properties"),
+            "--baseline",
+            str(baseline_path),
+            expect_success=False,
+        )
         run(
             "scripts/compare_v2d2_evidence.py",
             "--run",
