@@ -76,6 +76,8 @@ jobs:
         run: python3 scripts/test_v2d2_evidence_tools.py
 
       - name: Verify V2-D.2 benchmark harness
+        env:
+          PEACH_RPC_JVM_FLAGS: "-Xms256m -Xmx256m"
         run: bash scripts/run_v2d2_benchmark_matrix.sh smoke target/v2d2-matrix-smoke
 
       - name: Verify 10k virtual-thread soak harness
@@ -87,6 +89,7 @@ jobs:
           PEACH_RPC_SOAK_DURATION_SECONDS: "3"
           PEACH_RPC_SOAK_CLIENT_TIMEOUT_MS: "15000"
           PEACH_RPC_SOAK_OUTPUT: "target/v2d2-soak-smoke.json"
+          PEACH_RPC_JVM_FLAGS: "-Xms256m -Xmx256m"
         run: bash scripts/run_v2d2_soak.sh
 
       - name: Validate V2-D.2 smoke evidence
