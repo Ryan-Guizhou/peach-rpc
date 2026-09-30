@@ -282,7 +282,7 @@ evidence-run-3/
 - [ ] EndpointStats；
 - [ ] inflight counter；
 - [ ] admission counter；
-- [ ] circuit state；
+- [x] circuit state；
 - [ ] retry budget；
 - [ ] false sharing / cache-line contention。
 
@@ -445,7 +445,7 @@ N+1        -> N rollback
 - [x] HELLO truncation/duplicate/trailing-byte property tests；
 - [x] metadata boundary/malformed tests；
 - [x] random fragmentation/coalescing；
-- [ ] random CANCEL race。
+- [x] response/CANCEL concurrent race with post-race connection reuse。
 
 ### 10.3 Race Matrix
 
@@ -456,7 +456,7 @@ N+1        -> N rollback
 - [ ] drain vs new request；
 - [ ] drain vs retry；
 - [ ] close vs heartbeat；
-- [ ] circuit half-open concurrent probe。
+- [x] circuit HALF_OPEN concurrent probe single-flight。
 
 ---
 
@@ -533,13 +533,13 @@ N+1        -> N rollback
 - [x] logical-call QPS；
 - [x] Timer histogram 支持 p50/p95/p99/p99.9 查询；
 - [x] final status/category error rate；
-- [ ] timeout rate；
+- [x] timeout rate；
 - [x] retry rate；
 - [ ] circuit state；
 - [x] outlier ejection count；
 - [x] active connections；
 - [x] reconnect；
-- [ ] inflight；
+- [x] client/server inflight；
 - [x] overload/admission reject；
 - [x] Registry operation/recovery/failure signals；
 - [x] TLS handshake failure。
