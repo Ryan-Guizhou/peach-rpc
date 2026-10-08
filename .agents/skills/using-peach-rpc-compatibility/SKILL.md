@@ -1,6 +1,6 @@
 ---
 name: using-peach-rpc-compatibility
-description: Peach RPC 1.0.x compatibility review for Wire v1, Schema Fingerprint, codec identifiers, stable type IDs, exported public APIs, SPI providers and Spring configuration. Use before modifying protocol, serialization, registry metadata, generated stubs, starters or any public contract.
+description: "Peach RPC 1.0.x compatibility review for Wire v1, Schema Fingerprint, codec identifiers, stable type IDs, exported public APIs, SPI providers and Spring configuration. Use before modifying protocol, serialization, registry metadata, generated stubs, starters or any public contract."
 ---
 
 # Compatibility Gate
