@@ -20,7 +20,20 @@ final class EndpointStats {
     }
 
     boolean available() {
-        return System.nanoTime() >= ejectedUntilNanos.get();
+        for (;;) {
+            long ejectedUntil = ejectedUntilNanos.get();
+            if (ejectedUntil == 0L) {
+                return true;
+            }
+            if (System.nanoTime() < ejectedUntil) {
+                return false;
+            }
+            if (ejectedUntilNanos.compareAndSet(
+                    ejectedUntil,
+                    0L)) {
+                return true;
+            }
+        }
     }
 
     void begin() {
@@ -29,7 +42,7 @@ final class EndpointStats {
 
     void endSuccess(long nanos) {
         end(nanos);
-        consecutiveFailures.set(0);
+        resetConsecutiveFailures();
     }
 
     void endCancelled(long nanos) {
@@ -52,6 +65,20 @@ final class EndpointStats {
                         + options.outlierEjectionDuration()
                                 .toNanos());
         return true;
+    }
+
+    private void resetConsecutiveFailures() {
+        for (;;) {
+            int failures = consecutiveFailures.get();
+            if (failures == 0) {
+                return;
+            }
+            if (consecutiveFailures.compareAndSet(
+                    failures,
+                    0)) {
+                return;
+            }
+        }
     }
 
     private void end(long nanos) {
