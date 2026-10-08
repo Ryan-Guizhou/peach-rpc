@@ -64,7 +64,7 @@ Provider 最大并发必须有边界。CPU 模式还具有独立有界队列；�
 
 对于业务方法返回的 `CompletionStage`，Provider 不在 CPU/Virtual Thread worker 上执行 `join()`。框架注册完成回调后立即归还执行 worker，但 **admission permit 会一直持有到异步业务真正完成、失败或取消**，因此异步化不会绕过 Provider 最大业务并发保护。
 
-异步 Stage 若稍后在业务线程、Netty/Vert.x EventLoop 或其他执行器上完成，框架不会直接在该线程执行响应序列化，而是重新调度到 Provider 管理的执行资源，并恢复 Trace/Metadata Scope 后再编码响应。CPU 方法回到有界 CPU Pool；异步 DIRECT 完成也通过 CPU Pool 隔离，避免业务 Future 的完成线程承担不可控的编码工作。
+异步 Stage 若稍后在业务线程、Netty/Vert.x EventLoop 或其他执行器上完成，框架不会直接在该线程执行响应序列化，而是重新调度到 Provider 管理的执行资源，并恢复 Trace/Metadata Scope 后再编码响应。CPU 方法回到有界 CPU Pool；异步 DIRECT 完成也通过 CPU Pool 隔离，避免业务 Future 的完成线程承担不可控的编码工作。若有界 CPU Pool 连异步完成任务也无法接收，当前 RPC fail-fast 为 `OVERLOADED` 并释放 admission，而不是回退到外部 completion thread 执行编码。
 
 ### Cancellation
 
