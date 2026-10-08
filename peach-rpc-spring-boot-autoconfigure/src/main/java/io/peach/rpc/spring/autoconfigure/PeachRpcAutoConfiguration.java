@@ -85,6 +85,7 @@ public class PeachRpcAutoConfiguration {
     /**
      * 创建 Codec 注册表。
      *
+     * @param properties Codec 安全配置
      * @return Codec 注册表
      */
     @Bean
