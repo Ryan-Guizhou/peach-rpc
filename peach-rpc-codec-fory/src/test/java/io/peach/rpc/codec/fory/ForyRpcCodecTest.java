@@ -81,6 +81,52 @@ class ForyRpcCodecTest {
     }
 
     @Test
+    void strictModeAcceptsApprovedApplicationRecordFromLegacyPayload() {
+        ForyRpcCodec legacy = new ForyRpcCodec();
+        ForyRpcCodec strict = new ForyRpcCodec(
+                ForyRpcSecurityOptions.strictAllowlist(
+                        Set.of(ForbiddenPayload.class.getName())));
+        ForbiddenPayload source = new ForbiddenPayload("approved");
+
+        byte[] legacyWireBytes = legacy.encode(source);
+
+        assertEquals(source, strict.decode(legacyWireBytes, ForbiddenPayload.class));
+        assertArrayEquals(legacyWireBytes, strict.encode(source));
+    }
+
+    @Test
+    void rejectPayloadWithExcessiveObjectGraphDepth() {
+        ForyRpcCodec legacy = new ForyRpcCodec();
+        Object nested = "leaf";
+        for (int i = 0; i < 12; i++) {
+            nested = new Object[] {nested};
+        }
+        byte[] bytes = legacy.encode(nested);
+        ForyRpcCodec bounded = new ForyRpcCodec(
+                new ForyRpcSecurityOptions(
+                        ForyRpcSecurityOptions.Mode.TRUSTED_COMPATIBILITY,
+                        Set.of(),
+                        3,
+                        64L * 1024 * 1024,
+                        16 * 1024 * 1024));
+        assertThrows(RuntimeException.class,
+                () -> bounded.decode(bytes, Object.class));
+    }
+
+    @Test
+    void rejectMalformedSliceBounds() throws Exception {
+        ForyRpcCodec codec = new ForyRpcCodec();
+        RpcMethodCodec binding = codec.bind(RpcMethodDescriptor.from(
+                new ServiceKey(
+                        SampleService.class.getName(), "1.0.0", "default"),
+                SampleService.class.getMethod("echo", String.class)));
+        assertThrows(IllegalArgumentException.class,
+                () -> binding.decodeResult(new byte[8], -1, 4));
+        assertThrows(IllegalArgumentException.class,
+                () -> binding.decodeArguments(new byte[8], 4, 16));
+    }
+
+    @Test
     void rejectTooLargePayloadBeforeDeserialization() {
         ForyRpcSecurityOptions security =
                 new ForyRpcSecurityOptions(
