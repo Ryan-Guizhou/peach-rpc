@@ -1,5 +1,7 @@
 package io.peach.rpc.examples.consumer;
 
+import io.peach.rpc.api.RpcRemoteException;
+import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.api.RpcUnavailableException;
 import io.peach.rpc.examples.api.GreetingReply;
 import io.peach.rpc.examples.api.GreetingRequest;
@@ -47,7 +49,7 @@ public class GreetingRunner implements ApplicationRunner {
     private void invokeWithDiscoveryWait() {
         long deadline =
                 System.nanoTime() + DISCOVERY_TIMEOUT.toNanos();
-        RpcUnavailableException lastFailure = null;
+        RuntimeException lastFailure = null;
         while (System.nanoTime() < deadline) {
             try {
                 GreetingReply reply = greetingService.hello(
@@ -57,12 +59,10 @@ public class GreetingRunner implements ApplicationRunner {
                         reply.message());
                 return;
             } catch (RuntimeException error) {
-                RpcUnavailableException unavailable =
-                        unavailableFailure(error);
-                if (unavailable == null) {
+                if (!isTransientUnavailable(error)) {
                     throw error;
                 }
-                lastFailure = unavailable;
+                lastFailure = error;
                 sleep(100L);
             }
         }
@@ -72,17 +72,26 @@ public class GreetingRunner implements ApplicationRunner {
                 lastFailure);
     }
 
-    private static RpcUnavailableException unavailableFailure(
-            RuntimeException error) {
-        if (error instanceof RpcUnavailableException unavailable) {
-            return unavailable;
+    /**
+     * 判断示例中的服务发现或 Provider 启动窗口是否暂时不可用。
+     *
+     * <p>只重试明确的 UNAVAILABLE 状态；业务、协议及其他框架错误
+     * 必须原样向上抛出，避免示例掩盖真实故障。
+     *
+     * @param error RPC 调用抛出的异常
+     * @return 为可重试的暂时不可用状态时返回 true
+     */
+    static boolean isTransientUnavailable(RuntimeException error) {
+        Throwable cause = error;
+        while (cause instanceof CompletionException
+                && cause.getCause() != null) {
+            cause = cause.getCause();
         }
-        if (error instanceof CompletionException
-                && error.getCause()
-                        instanceof RpcUnavailableException unavailable) {
-            return unavailable;
+        if (cause instanceof RpcUnavailableException) {
+            return true;
         }
-        return null;
+        return cause instanceof RpcRemoteException remote
+                && remote.status() == RpcStatus.UNAVAILABLE;
     }
 
     private static void sleep(long millis) {
