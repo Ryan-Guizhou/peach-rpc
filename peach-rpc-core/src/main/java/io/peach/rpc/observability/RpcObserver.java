@@ -502,6 +502,12 @@ public interface RpcObserver {
             }
 
             @Override
+            public void onServerInflightBytesChanged(long delta) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onServerInflightBytesChanged(delta)));
+            }
+
+            @Override
             public void onClientCircuitStateChanged(
                     ServiceKey serviceKey,
                     int methodId,
