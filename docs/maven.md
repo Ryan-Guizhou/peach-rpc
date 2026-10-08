@@ -4,10 +4,10 @@
 
 根 POM 使用 `${revision}` 统一版本。
 
-当前稳定基线：
+当前 release-prep 基线：
 
 ```xml
-<revision>1.0.0</revision>
+<revision>1.0.1</revision>
 ```
 
 1.0.x Patch Release 在 release-prep PR 中同步提升：
@@ -217,7 +217,7 @@ Workflow 会等待 `PUBLISHED`，随后创建一个全新的 Maven local reposit
 
 ## 9. 本地使用
 
-当前公开文档仍以实际稳定版本为准。若对应版本尚未发布到目标 Maven Repository，可先在源码根目录：
+当前源码 release-prep 版本为 `1.0.1`。若该版本尚未发布到目标 Maven Repository，可先在源码根目录：
 
 ```bash
 mvn -B -ntp clean install -DskipTests
