@@ -35,6 +35,7 @@ public class ResiliencePathBenchmark {
     private RpcCircuitBreaker openCircuit;
     private EndpointStats healthyEndpoint;
     private EndpointStats ejectedEndpoint;
+    private EndpointStats successAccountingEndpoint;
     private EndpointStats failureAccountingEndpoint;
 
     /** 创建 Benchmark 状态。 */
@@ -89,6 +90,7 @@ public class ResiliencePathBenchmark {
             ejectedEndpoint.begin();
             ejectedEndpoint.endFailure(1_000L, options);
         }
+        successAccountingEndpoint = new EndpointStats();
         failureAccountingEndpoint = new EndpointStats();
     }
 
@@ -151,6 +153,18 @@ public class ResiliencePathBenchmark {
     @Benchmark
     public boolean outlierEjectedRead() {
         return ejectedEndpoint.available();
+    }
+
+    /**
+     * 测量健康 Endpoint 成功请求的记账路径。
+     *
+     * @return 本次完成后的 inflight 数量
+     */
+    @Benchmark
+    public int outlierSuccessAccounting() {
+        successAccountingEndpoint.begin();
+        successAccountingEndpoint.endSuccess(1_000L);
+        return successAccountingEndpoint.inflight();
     }
 
     /**
