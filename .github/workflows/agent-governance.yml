@@ -1,0 +1,39 @@
+name: Agent Governance
+
+on:
+  pull_request:
+    paths:
+      - "AGENTS.md"
+      - ".agents/**"
+      - ".cursor/**"
+      - ".codex/**"
+      - "config/agent-mcp.json"
+      - "scripts/sync_agent_mcp.py"
+      - "scripts/test_agent_mcp.py"
+      - "docs/engineering/**"
+      - ".github/workflows/agent-governance.yml"
+  push:
+    branches: [main]
+    paths:
+      - "AGENTS.md"
+      - ".agents/**"
+      - ".cursor/**"
+      - ".codex/**"
+      - "config/agent-mcp.json"
+      - "scripts/sync_agent_mcp.py"
+      - "scripts/test_agent_mcp.py"
+      - "docs/engineering/**"
+      - ".github/workflows/agent-governance.yml"
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check Cursor and Codex generated config drift
+        run: python3 scripts/sync_agent_mcp.py --check
+      - name: Check source schema and default least privilege
+        run: python3 scripts/test_agent_mcp.py
+      - name: Check repository documents and links
+        run: python3 scripts/check_project.py
