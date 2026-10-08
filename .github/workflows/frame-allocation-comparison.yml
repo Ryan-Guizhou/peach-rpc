@@ -19,7 +19,7 @@ jobs:
       - name: Checkout exact PR head and full history
         uses: actions/checkout@v7
         with:
-          ref: ${ github.event.pull_request.head.sha }
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: Set up Java 21
@@ -34,8 +34,8 @@ jobs:
 
       - name: Compare base and candidate JMH allocation / sample latency
         env:
-          BASE_SHA: ${ github.event.pull_request.base.sha }
-          HEAD_SHA: ${ github.event.pull_request.head.sha }
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PEACH_RPC_ALLOCATION_JVM_FLAGS: "-Xms256m -Xmx256m"
         run: bash scripts/run_frame_allocation_comparison.sh "$BASE_SHA" "$HEAD_SHA"
 
@@ -43,7 +43,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: frame-allocation-smoke-${ github.run_id }
+          name: frame-allocation-smoke-${{ github.run_id }}
           path: |
             target/frame-allocation-comparison/baseline/*.json
             target/frame-allocation-comparison/candidate/*.json
