@@ -55,10 +55,16 @@ metadata = {
     "candidate_sha": os.environ["HEAD_SHA"],
     "evidence_class": "shared-ci-smoke",
     "runner_id": os.environ.get("RUNNER_NAME", "local-uncontrolled"),
-    "java_version": subprocess.run(
-        ["java", "-version"],
-        capture_output=True, text=True, check=True,
-    ).stderr.splitlines()[0],
+    "java_version": next(
+        (
+            line for line in subprocess.run(
+                ["java", "-version"], capture_output=True,
+                text=True, check=True,
+            ).stderr.splitlines()
+            if line.startswith(("openjdk version", "java version"))
+        ),
+        "unknown",
+    ),
     "jvm_flags": os.environ["JAVA_TOOL_OPTIONS"],
     "os": platform.platform(),
     "processor": platform.processor(),
