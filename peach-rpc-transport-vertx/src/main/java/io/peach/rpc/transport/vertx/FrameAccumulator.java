@@ -48,6 +48,15 @@ final class FrameAccumulator {
         if (pending.length() == 0) {
             // 常见路径：已对齐的完整 Frame，跳过中间 appendBuffer。
             int consumed = consumeFrames(incoming, consumer);
+            if (consumed == 0 && incoming.length() != 0) {
+                // 首包只有半帧：复用旧 appendBuffer，避免额外 byte[]。
+                if (incoming.length() > maxFrameBytes) {
+                    throw new RpcProtocolException(
+                            "Buffered partial frame exceeds transport maxFrameBytes");
+                }
+                pending.appendBuffer(incoming);
+                return;
+            }
             retainIncompleteTail(incoming, consumed);
             return;
         }
