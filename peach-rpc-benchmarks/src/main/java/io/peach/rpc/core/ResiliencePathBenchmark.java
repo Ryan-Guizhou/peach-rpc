@@ -30,6 +30,7 @@ public class ResiliencePathBenchmark {
 
     private RpcClientResilienceOptions options;
     private RetryBudget retryBudget;
+    private RetryBudget saturatedRetryBudget;
     private RpcCircuitBreaker closedCircuit;
     private RpcCircuitBreaker openCircuit;
     private EndpointStats healthyEndpoint;
@@ -55,6 +56,20 @@ public class ResiliencePathBenchmark {
                 3,
                 Duration.ofSeconds(30));
         retryBudget = new RetryBudget(options);
+        RpcClientResilienceOptions saturatedBudgetOptions =
+                new RpcClientResilienceOptions(
+                        2,
+                        1.0d,
+                        1024,
+                        1024,
+                        Duration.ZERO,
+                        Duration.ZERO,
+                        3,
+                        Duration.ofSeconds(30),
+                        3,
+                        Duration.ofSeconds(30));
+        saturatedRetryBudget =
+                new RetryBudget(saturatedBudgetOptions);
         closedCircuit = new RpcCircuitBreaker(
                 options.circuitConsecutiveFailureThreshold(),
                 options.circuitOpenDuration());
@@ -86,6 +101,14 @@ public class ResiliencePathBenchmark {
     public boolean retryBudgetAcquire() {
         retryBudget.onRequest();
         return retryBudget.tryAcquireRetry();
+    }
+
+    /**
+     * 测量 Retry Budget 已达到上限时的健康请求记账路径。
+     */
+    @Benchmark
+    public void retryBudgetSaturatedOnRequest() {
+        saturatedRetryBudget.onRequest();
     }
 
     /**

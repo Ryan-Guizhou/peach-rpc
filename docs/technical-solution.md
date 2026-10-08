@@ -130,7 +130,8 @@ FrameAccumulator
 
 - `BLOCKING_VIRTUAL`：默认；
 - `CPU`：有界平台线程池；
-- `DIRECT`：默认禁止，只允许明确的极短非阻塞逻辑。
+- `DIRECT`：默认禁止，只允许明确的极短非阻塞逻辑；
+- 业务方法返回 `CompletionStage` 时采用 continuation 完成响应，不在 Provider worker 上 `join()`；异步阶段完成前仍占用 admission 配额，避免异步业务绕过并发上限。
 
 ## 5. 控制面设计
 

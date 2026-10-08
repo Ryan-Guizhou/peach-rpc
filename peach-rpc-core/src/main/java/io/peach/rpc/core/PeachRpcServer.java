@@ -539,6 +539,7 @@ public final class PeachRpcServer implements AutoCloseable {
             Map<String, String> propagatedMetadata,
             RpcTraceContext trace,
             CompletableFuture<byte[]> result) {
+        boolean asynchronous = false;
         try (RpcMetadataScope traceScope =
                      trace.makeCurrent();
              RpcMetadataScope propagationScope =
@@ -554,7 +555,13 @@ public final class PeachRpcServer implements AutoCloseable {
                     request.methodId(),
                     arguments);
             if (value instanceof CompletionStage<?> stage) {
-                value = stage.toCompletableFuture().join();
+                asynchronous = true;
+                completeAsyncInvocation(
+                        request,
+                        methodCodec,
+                        stage,
+                        result);
+                return;
             }
             result.complete(response(
                     request,
@@ -562,23 +569,92 @@ public final class PeachRpcServer implements AutoCloseable {
                     RpcStatus.OK,
                     methodCodec.encodeResult(value)));
         } catch (Throwable error) {
-            if (result.isCancelled()) {
-                return;
-            }
-            LOGGER.warn(
-                    "RPC service invocation failed: requestId={}, serviceId={}, methodId={}",
-                    request.requestId(),
-                    request.serviceId(),
-                    request.methodId(),
-                    error);
-            result.complete(errorResponse(
+            completeInvocationFailure(
                     request,
-                    RpcStatus.BUSINESS_ERROR,
-                    error.getClass().getName(),
-                    "Remote service invocation failed"));
+                    result,
+                    error);
         } finally {
+            if (!asynchronous) {
+                admission.release();
+            }
+        }
+    }
+
+    private void completeAsyncInvocation(
+            RpcFrameView request,
+            RpcMethodCodec methodCodec,
+            CompletionStage<?> stage,
+            CompletableFuture<byte[]> result) {
+        try {
+            CompletableFuture<?> asyncFuture =
+                    stage.toCompletableFuture();
+            result.whenComplete((ignoredValue, ignoredError) -> {
+                if (result.isCancelled()) {
+                    asyncFuture.cancel(true);
+                }
+            });
+            asyncFuture.whenComplete((value, error) -> {
+                try {
+                    if (result.isCancelled()) {
+                        return;
+                    }
+                    if (error != null) {
+                        completeInvocationFailure(
+                                request,
+                                result,
+                                unwrapCompletionFailure(error));
+                        return;
+                    }
+                    result.complete(response(
+                            request,
+                            methodCodec.codecId(),
+                            RpcStatus.OK,
+                            methodCodec.encodeResult(value)));
+                } catch (Throwable completionError) {
+                    completeInvocationFailure(
+                            request,
+                            result,
+                            completionError);
+                } finally {
+                    admission.release();
+                }
+            });
+        } catch (Throwable setupError) {
+            completeInvocationFailure(
+                    request,
+                    result,
+                    setupError);
             admission.release();
         }
+    }
+
+    private static Throwable unwrapCompletionFailure(Throwable error) {
+        Throwable current = error;
+        while (current instanceof java.util.concurrent.CompletionException
+                && current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current;
+    }
+
+    private static void completeInvocationFailure(
+            RpcFrameView request,
+            CompletableFuture<byte[]> result,
+            Throwable error) {
+        if (result.isCancelled()) {
+            return;
+        }
+        LOGGER.warn(
+                "RPC service invocation failed: requestId={}, serviceId={}, methodId={}",
+                request.requestId(),
+                request.serviceId(),
+                request.methodId(),
+                error);
+        result.complete(errorResponse(
+                request,
+                RpcStatus.BUSINESS_ERROR,
+                error.getClass().getName(),
+                "Remote service invocation failed"));
     }
 
     private static byte[] frameworkError(

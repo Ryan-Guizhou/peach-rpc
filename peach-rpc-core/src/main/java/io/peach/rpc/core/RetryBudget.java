@@ -20,9 +20,18 @@ final class RetryBudget {
         if (refillPerRequest == 0L || maxCredits == 0L) {
             return;
         }
-        credits.updateAndGet(current -> Math.min(
-                maxCredits,
-                current + refillPerRequest));
+        for (;;) {
+            long current = credits.get();
+            if (current >= maxCredits) {
+                return;
+            }
+            long next = Math.min(
+                    maxCredits,
+                    current + refillPerRequest);
+            if (credits.compareAndSet(current, next)) {
+                return;
+            }
+        }
     }
 
     boolean tryAcquireRetry() {

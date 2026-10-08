@@ -31,6 +31,11 @@ final class RpcCircuitBreaker {
     }
 
     void onSuccess() {
+        if (consecutiveFailures.get() == 0
+                && openUntilNanos.get() == 0L
+                && !halfOpenProbe.get()) {
+            return;
+        }
         consecutiveFailures.set(0);
         openUntilNanos.set(0L);
         halfOpenProbe.set(false);

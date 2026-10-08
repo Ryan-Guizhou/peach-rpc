@@ -23,7 +23,9 @@ Peach RPC 不以“理论零分配”为目标，而以可重复证据驱动：
 - P2C/EWMA 直接读取本地数组快照；
 - 接收端使用 `RpcFrameView` 避免不必要 Metadata/Payload copy；
 - timeout budget 原地更新；
-- 正常高频路径 Observer 可为 NOOP。
+- 正常高频路径 Observer 可为 NOOP；
+- Provider 对业务 `CompletionStage` 使用完成回调，不让未完成的异步结果长期占用 CPU/Virtual Thread worker；
+- Retry Budget 在额度已满时只读检查，不再执行无意义的 CAS 写回；Circuit Breaker 在健康 CLOSED 状态的成功路径避免重复原子写。
 
 ## 3. 当前仍存在的分配
 
