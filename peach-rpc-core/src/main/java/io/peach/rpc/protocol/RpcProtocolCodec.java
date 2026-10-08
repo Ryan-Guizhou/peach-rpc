@@ -6,7 +6,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Peach RPC v1 二进制协议编解码器。 */
+/**
+ * Peach RPC Wire v1 二进制协议编解码器。
+ *
+ * <p>负责编码和解析固定长度 Header、RPC 状态和 Payload 边界，
+ * 并拒绝不符合协议长度、Magic 或版本约束的输入。
+ *
+ * <p>Wire v1 已冻结：不得以重构、格式化或代码生成便利为由改变
+ * Header 布局、Codec/Message Type ID 或 Metadata 编码语义。
+ * 所有兼容性变更需要配套现有 Rolling Compatibility 验证。
+ */
 public final class RpcProtocolCodec {
 
     /** Peach RPC 协议魔数。 */
