@@ -93,7 +93,7 @@ python3 scripts/check_central_publication.py \
 以下条件无法由仓库 CI 代替：
 
 - Central Publisher Portal 账号可用；
-- `io.peach.rpc` namespace 已验证；
+- Central Portal 已验证能够覆盖 `io.peach.rpc` 的 namespace（例如 `io.peach` 或精确 `io.peach.rpc`）；
 - Portal User Token 已生成；
 - 发布签名私钥可用；
 - GitHub Repository Secrets 已配置。
