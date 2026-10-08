@@ -9,6 +9,7 @@ import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.api.ServiceKey;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
 class RpcObserverTest {
@@ -108,6 +109,29 @@ class RpcObserverTest {
 
         assertEquals(1, established.get());
         assertEquals(1, closed.get());
+    }
+
+    @Test
+    void compositeMustForwardProviderInflightBytesAndIsolateFailures() {
+        AtomicLong inFlightBytes = new AtomicLong();
+        RpcObserver failing = new RpcObserver() {
+            @Override
+            public void onServerInflightBytesChanged(long delta) {
+                throw new IllegalStateException("monitoring unavailable");
+            }
+        };
+        RpcObserver counting = new RpcObserver() {
+            @Override
+            public void onServerInflightBytesChanged(long delta) {
+                inFlightBytes.addAndGet(delta);
+            }
+        };
+        RpcObserver observers = RpcObserver.composite(
+                List.of(failing, counting));
+        observers.onServerInflightBytesChanged(128L);
+        assertEquals(128L, inFlightBytes.get());
+        observers.onServerInflightBytesChanged(-128L);
+        assertEquals(0L, inFlightBytes.get());
     }
 
     @Test
