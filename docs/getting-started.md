@@ -93,23 +93,23 @@ Provider 和 Consumer 是两个独立 JVM；Contract 位于共享 API 模块。
 
 ## 9. 在 Spring Boot 项目中引入
 
-GA 坐标：
+当前 1.0.1 Release Prep 坐标：
 
 ```xml
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-spring-boot-starter</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
-如果 GA Artifact 尚未发布到你的 Maven Repository，可以从源码执行：
+如果 1.0.1 Artifact 尚未发布到你的 Maven Repository，可以从源码执行：
 
 ```bash
 mvn -B -ntp clean install -DskipTests
 ```
 
-然后本地 Maven Repository 即可解析同样的 `1.0.0` 坐标。
+然后本地 Maven Repository 即可解析同样的 `1.0.1` 坐标。
 
 ## 10. Provider 最小代码
 

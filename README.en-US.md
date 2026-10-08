@@ -3,15 +3,15 @@
 [简体中文](README.md) | English
 
 <!-- release-status:project=ga -->
-<!-- release-status:version=1.0.0 -->
+<!-- release-status:version=1.0.1 -->
 <!-- release-status:wire=v1 -->
 
 <!-- doc-section:overview -->
 ## Overview
 
-Peach RPC is a lightweight, high-performance, extensible RPC framework for **Java service-to-service communication**. Version 1.0.0 provides a complete Unary RPC stack with service discovery, load balancing, timeout/retry/circuit breaking, TLS/mTLS, observability, N/N+1 rolling compatibility, chaos testing, and release engineering.
+Peach RPC is a lightweight, high-performance, extensible RPC framework for **Java service-to-service communication**. Version 1.0.1 keeps the Wire v1 and Public Core API compatibility boundary established by 1.0.0 GA while hardening asynchronous Provider completion, reducing healthy-path hot-spot overhead, and adding Maven Central patch-release engineering.
 
-**Stable version: 1.0.0 GA**  
+**Current source version: 1.0.1 Release Prep**  
 **Java: 21**  
 **Spring Boot: 3.5.4**  
 **Wire: v1 (frozen for 1.0.x)**  
@@ -142,23 +142,23 @@ See [Getting Started](docs/getting-started.md).
 <!-- doc-section:dependency -->
 ## Spring Boot dependency
 
-GA coordinates:
+1.0.1 coordinates (available from Maven Central after publication; install from source before publication):
 
 ```xml
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-spring-boot-starter</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
-If 1.0.0 is not yet available in the Maven repository you use, install from source first:
+If 1.0.1 is not yet available in the Maven repository you use, install from source first:
 
 ```bash
 mvn -B -ntp clean install -DskipTests
 ```
 
-The same 1.0.0 coordinates will then resolve from your local Maven repository.
+The same 1.0.1 coordinates will then resolve from your local Maven repository.
 
 <!-- doc-section:configuration -->
 ## Minimal usage
@@ -222,6 +222,7 @@ See [Spring Boot Starter](docs/starter.md) for complete configuration, execution
 - [Release readiness](docs/release-readiness.md)
 - [1.0.0-RC1 Release Notes](docs/release-notes-1.0.0-RC1.md)
 - [1.0.0 Release Notes](docs/release-notes-1.0.0.md)
+- [1.0.1 Release Notes](docs/release-notes-1.0.1.md)
 - [CHANGELOG](CHANGELOG.md)
 - [Roadmap](ROADMAP.md)
 

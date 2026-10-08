@@ -40,40 +40,42 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Resolve current patch version
+        id: release
+        shell: bash
+        run: |
+          VERSION="$(awk -F= '$1 == "version" {print $2}' docs/release-status.properties)"
+          if [[ -z "$VERSION" ]]; then
+            echo "Unable to resolve release version."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Repository checks
         run: python3 scripts/check_project.py
 
       - name: Verify Maven Central publication configuration
         run: python3 scripts/check_central_publication.py
 
-      - name: Verify patch version contract
-        run: python3 scripts/check_release_version.py --stage patch --version 1.0.1
-
-      - name: Verify RC1 release contract
-        run: |
-          python3 scripts/check_release_version.py --stage rc1 --version 1.0.0-RC1
-          python3 scripts/check_release_readiness.py --stage rc1 --version 1.0.0-RC1
-
-      - name: Verify RC1 release packaging
+      - name: Verify current patch release contract
         run: >
-          mvn -B -ntp
-          -Drevision=1.0.0-RC1
-          clean verify
-          -DskipTests
-          -Prelease
+          python3 scripts/check_release_version.py
+          --stage patch
+          --version ${{ steps.release.outputs.version }}
 
-      - name: Verify GA release contract
-        run: |
-          python3 scripts/check_release_version.py --stage ga --version 1.0.0
-          python3 scripts/check_release_readiness.py --stage ga --version 1.0.0
+      - name: Verify current patch release readiness
+        run: >
+          python3 scripts/check_release_readiness.py
+          --stage patch
+          --version ${{ steps.release.outputs.version }}
 
-      - name: Verify GA Maven reactor
+      - name: Verify current patch Maven reactor
         run: mvn -B -ntp clean verify -Pquality,release
 
       - name: Verify Maven Central artifact shape
         run: >
           python3 scripts/check_central_publication.py
-          --version 1.0.0
+          --version ${{ steps.release.outputs.version }}
           --require-artifacts
 
       - name: Build release artifact inventory
@@ -88,7 +90,7 @@ jobs:
       - name: Upload release artifact inventory
         uses: actions/upload-artifact@v4
         with:
-          name: peach-rpc-release-readiness-${{ github.run_id }}
+          name: peach-rpc-release-readiness-${{ steps.release.outputs.version }}-${{ github.run_id }}
           path: target/release-artifacts.txt
           if-no-files-found: error
           retention-days: 30

@@ -14,6 +14,8 @@ on:
       - 'peach-rpc-codec-fory/**'
       - 'peach-rpc-registry-*/**'
       - 'peach-rpc-examples/**'
+      - 'pom.xml'
+      - 'docs/release-status.properties'
       - 'scripts/run_rolling_compatibility_e2e.sh'
       - '.github/workflows/rolling-compatibility.yml'
 

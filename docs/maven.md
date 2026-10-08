@@ -4,10 +4,10 @@
 
 根 POM 使用 `${revision}` 统一版本。
 
-当前稳定基线：
+当前 release-prep 基线：
 
 ```xml
-<revision>1.0.0</revision>
+<revision>1.0.1</revision>
 ```
 
 1.0.x Patch Release 在 release-prep PR 中同步提升：
@@ -134,7 +134,7 @@ python3 scripts/check_central_publication.py \
 真正发布前必须由项目维护者完成：
 
 1. 在 Central Publisher Portal 注册组织/账号；
-2. 验证 `io.peach.rpc` namespace 的所有权；
+2. 验证能够覆盖 `io.peach.rpc` 的 Central namespace 权限；例如拥有 `peach.io` 时可验证 `io.peach`，并在其下发布子组 `io.peach.rpc`；
 3. 生成 Portal User Token；
 4. 准备用于 Maven Central 的 PGP/GPG signing key；
 5. 在 GitHub Repository Secrets 配置：
@@ -143,7 +143,7 @@ python3 scripts/check_central_publication.py \
    - `MAVEN_GPG_PRIVATE_KEY`；
    - `MAVEN_GPG_PASSPHRASE`。
 
-> **Namespace 阻塞条件**：Central 的 DNS namespace 按 groupId 反向解析。若首次申请 `io.peach.rpc`，需要证明对精确域名 `peach.rpc` 的控制权（DNS TXT 验证）。如果项目维护者并不控制该域名，则在第一次公开 Central Release 之前必须重新决定 groupId，例如使用已验证的自有域名，或使用 GitHub 个人 namespace。这个决定属于发布坐标兼容性决策，不能由 CI 自动替代，也不应在未确认的情况下自动修改现有 `io.peach.rpc` 坐标。
+> **Namespace 阻塞条件**：Central 使用反向 DNS 规则。若维护者控制 `peach.io`，可验证 `io.peach` 并发布其子组 `io.peach.rpc`；如果申请精确 namespace `io.peach.rpc`，对应 DNS 域名是 `rpc.peach.io`。如果两者都无法证明所有权，则第一次公开 Central Release 前必须重新决定 groupId，例如使用 Central Portal 已验证的自有域名 namespace，或 GitHub 登录后自动/手动验证的 `io.github.<username>` namespace。这个决定属于公开坐标兼容性决策，不能由 CI 自动替代，也不应在未确认的情况下自动修改现有 `io.peach.rpc` 坐标。
 
 Token、私钥和 passphrase 禁止写入 POM、workflow 文件、Release Bundle 或日志。
 
@@ -217,7 +217,7 @@ Workflow 会等待 `PUBLISHED`，随后创建一个全新的 Maven local reposit
 
 ## 9. 本地使用
 
-当前公开文档仍以实际稳定版本为准。若对应版本尚未发布到目标 Maven Repository，可先在源码根目录：
+当前源码 release-prep 版本为 `1.0.1`。若该版本尚未发布到目标 Maven Repository，可先在源码根目录：
 
 ```bash
 mvn -B -ntp clean install -DskipTests

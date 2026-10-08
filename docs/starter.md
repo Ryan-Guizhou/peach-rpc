@@ -8,7 +8,7 @@
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-spring-boot-starter</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
@@ -173,7 +173,7 @@ Core 的 `RpcObserver`、`RpcTracingBridge`、`RpcMetadataPropagator` 不依赖�
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-observability-micrometer</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ~~~
 
@@ -181,7 +181,7 @@ Core 的 `RpcObserver`、`RpcTracingBridge`、`RpcMetadataPropagator` 不依赖�
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-observability-opentelemetry</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ~~~
 
@@ -189,7 +189,7 @@ Core 的 `RpcObserver`、`RpcTracingBridge`、`RpcMetadataPropagator` 不依赖�
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-observability-jfr</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ~~~
 

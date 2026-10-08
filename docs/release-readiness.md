@@ -7,10 +7,10 @@
 | 阶段 | 版本 | 状态 |
 |---|---|---|
 | RC1 | 1.0.0-RC1 | 历史兼容冻结基线 |
-| GA | 1.0.0 | 当前稳定基线 |
-| Patch | 1.0.x | 后续兼容修复版本 |
+| GA | 1.0.0 | 历史 GA 基线 |
+| Patch | 1.0.1 | 当前 Release Prep |
 
-Patch Release 不允许重新使用 `1.0.0` 或任何已发布版本。
+当前源码版本为 `1.0.1` Release Prep。Patch Release 不允许重新使用 `1.0.0` 或任何已发布版本。
 
 ## 2. 自动化门禁
 
@@ -93,7 +93,7 @@ python3 scripts/check_central_publication.py \
 以下条件无法由仓库 CI 代替：
 
 - Central Publisher Portal 账号可用；
-- `io.peach.rpc` namespace 已验证；
+- Central Portal 已验证能够覆盖 `io.peach.rpc` 的 namespace（例如 `io.peach` 或精确 `io.peach.rpc`）；
 - Portal User Token 已生成；
 - 发布签名私钥可用；
 - GitHub Repository Secrets 已配置。

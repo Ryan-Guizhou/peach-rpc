@@ -1,6 +1,6 @@
 # Peach RPC 生产配置与安全加固
 
-> 状态：**1.0.0 GA / Numeric Capacity Values Require Environment Evidence**
+> 状态：**1.0.1 Release Prep / Numeric Capacity Values Require Environment Evidence**
 
 ## 1. 配置原则
 

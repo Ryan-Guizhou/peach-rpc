@@ -145,7 +145,6 @@ def check_release_status() -> None:
     status = properties(ROOT / "docs" / "release-status.properties")
     expected = {
         "project": "ga",
-        "version": "1.0.0",
         "release_candidate": "1.0.0-RC1",
         "wire": "v1",
         "java": "21",
@@ -154,10 +153,27 @@ def check_release_status() -> None:
         if status.get(key) != value:
             fail(f"Unexpected release status: {key}={status.get(key)!r}, expected {value!r}")
 
+    version = status.get("version", "")
+    if not re.fullmatch(r"1\.0\.\d+", version):
+        fail(
+            "Stable source version must be a 1.0.x release, "
+            f"got {version!r}"
+        )
+
+    notes = ROOT / "docs" / f"release-notes-{version}.md"
+    if not notes.is_file():
+        fail(
+            "Missing release notes for current source version: "
+            f"{notes.relative_to(ROOT)}"
+        )
+
     pom = ET.parse(ROOT / "pom.xml").getroot()
     revision = pom.findtext("m:properties/m:revision", namespaces=NS)
-    if revision != status["version"]:
-        fail(f"Maven revision {revision!r} does not match GA version {status['version']!r}")
+    if revision != version:
+        fail(
+            f"Maven revision {revision!r} does not match "
+            f"release status version {version!r}"
+        )
 
     for relative in ("README.md", "README.en-US.md"):
         text = (ROOT / relative).read_text(encoding="utf-8")
@@ -261,7 +277,7 @@ def main() -> int:
     check_maven_reactor()
     check_core_boundaries()
     check_java_hygiene()
-    print("Peach RPC 1.0 repository checks passed.")
+    print("Peach RPC 1.0.x repository checks passed.")
     return 0
 
 
