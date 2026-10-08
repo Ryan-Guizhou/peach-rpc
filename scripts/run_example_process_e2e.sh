@@ -48,7 +48,8 @@ start_provider() {
       cat "$PROVIDER_LOG" >&2
       exit 1
     fi
-    if grep -Fq "Peach RPC server started: bind=127.0.0.1:$port" "$PROVIDER_LOG" \
+    if grep -F "Peach RPC server started:" "$PROVIDER_LOG" | \
+        grep -Fq "advertised=127.0.0.1:$port" \
         && timeout 1 bash -c "</dev/tcp/127.0.0.1/$port" 2>/dev/null; then
       return
     fi
