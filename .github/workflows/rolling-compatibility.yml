@@ -12,6 +12,7 @@ on:
     paths:
       - 'peach-rpc-core/**'
       - 'peach-rpc-codec-fory/**'
+      - 'peach-rpc-transport-vertx/**'
       - 'peach-rpc-registry-*/**'
       - 'peach-rpc-examples/**'
       - 'pom.xml'
