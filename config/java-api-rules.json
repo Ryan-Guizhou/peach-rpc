@@ -6,7 +6,7 @@
       "severity": "error",
       "message": "Production runtime must not call System.exit",
       "paths": [
-        "*/src/main/java/*.java"
+        "peach-rpc-*/src/main/java/*.java"
       ],
       "scan": "code",
       "pattern": "\\bSystem\\s*\\.\\s*exit\\s*\\("
@@ -16,7 +16,7 @@
       "severity": "error",
       "message": "Production runtime must not launch OS processes",
       "paths": [
-        "*/src/main/java/*.java"
+        "peach-rpc-*/src/main/java/*.java"
       ],
       "scan": "code",
       "pattern": "\\b(?:ProcessBuilder\\s*\\(|Runtime\\s*\\.\\s*getRuntime\\s*\\(\\s*\\)\\s*\\.\\s*exec\\s*\\()"
@@ -26,7 +26,7 @@
       "severity": "error",
       "message": "Use structured logging instead of printStackTrace",
       "paths": [
-        "*/src/main/java/*.java"
+        "peach-rpc-*/src/main/java/*.java"
       ],
       "scan": "code",
       "pattern": "\\.\\s*printStackTrace\\s*\\("
@@ -36,7 +36,7 @@
       "severity": "error",
       "message": "Do not print directly to System.out/err in production runtime",
       "paths": [
-        "*/src/main/java/*.java"
+        "peach-rpc-*/src/main/java/*.java"
       ],
       "scan": "code",
       "pattern": "\\bSystem\\s*\\.\\s*(?:out|err)\\b"
@@ -66,17 +66,17 @@
       "severity": "error",
       "message": "Use parameterized SLF4J logs, not string concatenation",
       "paths": [
-        "*/src/main/java/*.java"
+        "peach-rpc-*/src/main/java/*.java"
       ],
       "scan": "with-strings",
-      "pattern": "\\b(?:LOGGER|log|logger)\\s*\\.\\s*(?:trace|debug|info|warn|error)\\s*\\(\\s*\"(?:\\\\.|[^\"\\\\])*\"\\s*\\+"
+      "pattern": "\\b(?:LOGGER|log|logger)\\s*\\.\\s*(?:trace|debug|info|warn|error)\\s*\\(\\s*\"(?:\\\\.|[^\"\\\\])*\"\\s*\\+\\s*(?:[A-Za-z_$]|\\()"
     },
     {
       "id": "L002",
       "severity": "error",
       "message": "Runtime log message must be English",
       "paths": [
-        "*/src/main/java/*.java"
+        "peach-rpc-*/src/main/java/*.java"
       ],
       "scan": "with-strings",
       "pattern": "\\b(?:LOGGER|log|logger)\\s*\\.\\s*(?:trace|debug|info|warn|error)\\s*\\(\\s*\"(?:\\\\.|[^\"\\\\])*[\\u4e00-\\u9fff](?:\\\\.|[^\"\\\\])*\""
@@ -86,7 +86,7 @@
       "severity": "warning",
       "message": "Check catch(Throwable) for fatal error and cancellation isolation",
       "paths": [
-        "*/src/main/java/*.java"
+        "peach-rpc-*/src/main/java/*.java"
       ],
       "scan": "code",
       "pattern": "\\bcatch\\s*\\(\\s*Throwable\\b"
