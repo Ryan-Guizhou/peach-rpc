@@ -2,6 +2,7 @@ package io.peach.rpc.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.peach.rpc.api.PeachRpcExecution;
 import io.peach.rpc.api.RpcEndpoint;
@@ -63,6 +64,43 @@ public class PeachRpcServerAsyncExecutionTest {
     }
 
     @Test
+    void asyncCompletionShouldEncodeOnProviderExecutor() throws Exception {
+        CapturingTransportServer transport = new CapturingTransportServer();
+        AsyncServiceImpl service = new AsyncServiceImpl();
+        TrackingCodec codec = new TrackingCodec();
+        PeachRpcServer server = createServer(
+                transport,
+                service,
+                2,
+                19095,
+                codec);
+
+        try {
+            server.start().toCompletableFuture().join();
+
+            CompletionStage<byte[]> response =
+                    transport.handle(request("slow"));
+            assertFalse(response.toCompletableFuture().isDone());
+
+            Thread completer = Thread.ofPlatform()
+                    .name("foreign-async-completion")
+                    .start(() -> service.slow.complete("slow"));
+            completer.join();
+
+            byte[] completed = response.toCompletableFuture()
+                    .get(1, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(completed).status());
+            assertTrue(
+                    codec.encodeThreadName.get()
+                            .startsWith("peach-rpc-cpu-"));
+        } finally {
+            server.close();
+        }
+    }
+
+    @Test
     void asyncStageShouldRetainAdmissionUntilCompletion() throws Exception {
         CapturingTransportServer transport = new CapturingTransportServer();
         AsyncServiceImpl service = new AsyncServiceImpl();
@@ -110,10 +148,24 @@ public class PeachRpcServerAsyncExecutionTest {
             AsyncServiceImpl service,
             int maxConcurrent,
             int port) {
+        return createServer(
+                transport,
+                service,
+                maxConcurrent,
+                port,
+                new NoopCodec());
+    }
+
+    private static PeachRpcServer createServer(
+            CapturingTransportServer transport,
+            AsyncServiceImpl service,
+            int maxConcurrent,
+            int port,
+            RpcCodec codec) {
         return PeachRpcServer.builder()
                 .serviceRegistrar(new NoopRegistry())
                 .transportServer(transport)
-                .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
+                .codecRegistry(RpcCodecRegistry.of(codec))
                 .bindEndpoint(new RpcEndpoint("127.0.0.1", port))
                 .maxConcurrent(maxConcurrent)
                 .executionOptions(new RpcProviderExecutionOptions(
@@ -166,6 +218,30 @@ public class PeachRpcServerAsyncExecutionTest {
         @Override
         public String fast() {
             return "fast";
+        }
+    }
+
+    private static final class TrackingCodec implements RpcCodec {
+        private final AtomicReference<String> encodeThreadName =
+                new AtomicReference<>();
+
+        @Override
+        public byte code() {
+            return 1;
+        }
+
+        @Override
+        public byte[] encode(Object value) {
+            encodeThreadName.set(Thread.currentThread().getName());
+            return new byte[0];
+        }
+
+        @Override
+        public <T> T decode(byte[] bytes, Class<T> type) {
+            if (type == Object[].class) {
+                return type.cast(new Object[0]);
+            }
+            return null;
         }
     }
 
