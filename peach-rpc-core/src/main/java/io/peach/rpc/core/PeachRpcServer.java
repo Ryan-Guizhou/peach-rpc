@@ -542,7 +542,6 @@ public final class PeachRpcServer implements AutoCloseable {
             RpcTraceContext trace,
             CompletableFuture<byte[]> result,
             ExecutorService asyncCompletionExecutor) {
-        boolean asynchronous = false;
         try (RpcMetadataScope traceScope =
                      trace.makeCurrent();
              RpcMetadataScope propagationScope =
@@ -558,7 +557,6 @@ public final class PeachRpcServer implements AutoCloseable {
                     request.methodId(),
                     arguments);
             if (value instanceof CompletionStage<?> stage) {
-                asynchronous = true;
                 completeAsyncInvocation(
                         request,
                         methodCodec,
@@ -569,20 +567,19 @@ public final class PeachRpcServer implements AutoCloseable {
                         trace);
                 return;
             }
-            result.complete(response(
+            byte[] responseBytes = response(
                     request,
                     methodCodec.codecId(),
                     RpcStatus.OK,
-                    methodCodec.encodeResult(value)));
+                    methodCodec.encodeResult(value));
+            completeResponseAndReleaseAdmission(
+                    result,
+                    responseBytes);
         } catch (Throwable error) {
-            completeInvocationFailure(
+            completeInvocationFailureAndReleaseAdmission(
                     request,
                     result,
                     error);
-        } finally {
-            if (!asynchronous) {
-                admission.release();
-            }
         }
     }
 
@@ -627,11 +624,10 @@ public final class PeachRpcServer implements AutoCloseable {
                             value,
                             error));
         } catch (Throwable setupError) {
-            completeInvocationFailure(
+            completeInvocationFailureAndReleaseAdmission(
                     request,
                     result,
                     setupError);
-            admission.release();
         }
     }
 
@@ -662,20 +658,24 @@ public final class PeachRpcServer implements AutoCloseable {
             observeAdmissionRejected(
                     request,
                     "async-completion-queue");
-            if (!result.isCancelled()) {
-                LOGGER.warn(
-                        "RPC async completion was rejected: requestId={}, serviceId={}, methodId={}",
-                        request.requestId(),
-                        request.serviceId(),
-                        request.methodId(),
-                        rejection);
-                result.complete(errorResponse(
-                        request,
-                        RpcStatus.OVERLOADED,
-                        RpcException.class.getName(),
-                        "Provider async completion queue is full"));
+            if (result.isCancelled()) {
+                admission.release();
+                return;
             }
-            admission.release();
+            LOGGER.warn(
+                    "RPC async completion was rejected: requestId={}, serviceId={}, methodId={}",
+                    request.requestId(),
+                    request.serviceId(),
+                    request.methodId(),
+                    rejection);
+            byte[] responseBytes = errorResponse(
+                    request,
+                    RpcStatus.OVERLOADED,
+                    RpcException.class.getName(),
+                    "Provider async completion queue is full");
+            completeResponseAndReleaseAdmission(
+                    result,
+                    responseBytes);
         }
     }
 
@@ -695,27 +695,29 @@ public final class PeachRpcServer implements AutoCloseable {
                                      propagatedMetadata)
                              : RpcMetadataScope.noop()) {
             if (result.isCancelled()) {
+                admission.release();
                 return;
             }
             if (error != null) {
-                completeInvocationFailure(
+                completeInvocationFailureAndReleaseAdmission(
                         request,
                         result,
                         unwrapCompletionFailure(error));
                 return;
             }
-            result.complete(response(
+            byte[] responseBytes = response(
                     request,
                     methodCodec.codecId(),
                     RpcStatus.OK,
-                    methodCodec.encodeResult(value)));
+                    methodCodec.encodeResult(value));
+            completeResponseAndReleaseAdmission(
+                    result,
+                    responseBytes);
         } catch (Throwable completionError) {
-            completeInvocationFailure(
+            completeInvocationFailureAndReleaseAdmission(
                     request,
                     result,
                     completionError);
-        } finally {
-            admission.release();
         }
     }
 
@@ -728,11 +730,12 @@ public final class PeachRpcServer implements AutoCloseable {
         return current;
     }
 
-    private static void completeInvocationFailure(
+    private void completeInvocationFailureAndReleaseAdmission(
             RpcFrameView request,
             CompletableFuture<byte[]> result,
             Throwable error) {
         if (result.isCancelled()) {
+            admission.release();
             return;
         }
         LOGGER.warn(
@@ -741,11 +744,28 @@ public final class PeachRpcServer implements AutoCloseable {
                 request.serviceId(),
                 request.methodId(),
                 error);
-        result.complete(errorResponse(
-                request,
-                RpcStatus.BUSINESS_ERROR,
-                error.getClass().getName(),
-                "Remote service invocation failed"));
+        byte[] responseBytes;
+        try {
+            responseBytes = errorResponse(
+                    request,
+                    RpcStatus.BUSINESS_ERROR,
+                    error.getClass().getName(),
+                    "Remote service invocation failed");
+        } catch (Throwable responseError) {
+            admission.release();
+            result.completeExceptionally(responseError);
+            return;
+        }
+        completeResponseAndReleaseAdmission(
+                result,
+                responseBytes);
+    }
+
+    private void completeResponseAndReleaseAdmission(
+            CompletableFuture<byte[]> result,
+            byte[] responseBytes) {
+        admission.release();
+        result.complete(responseBytes);
     }
 
     private static byte[] frameworkError(
