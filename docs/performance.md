@@ -42,6 +42,10 @@ Consumer 的 Transport 响应完成不直接执行 Fory 解码和业务 Future c
 
 这些不是自动等于 Bug。只有 Evidence 显示它们成为主要瓶颈时才进入优化。
 
+## 3.1 PR-E：帧重组热路径候选优化
+
+PR-E（Draft）在 `FrameAccumulator` 无尾帧的完整帧路径绕过中间 `pending.appendBuffer`，仍保持独立 `byte[]` 的 Core 所有权边界；分片输入继续采用原有重组逻辑。独立基线与候选 Worktree 通过 JMH `-prof gc` 比较 B/op 与 sample p99，并上传原始 JSON。详见 [Frame Allocation Profiling 方案](transport-allocation-profiling.md)。共享 CI 结果仅作 Smoke，不能替代受控端到端 p99/吞吐复核。
+
 ## 4. Benchmark
 
 Benchmark 模块：
