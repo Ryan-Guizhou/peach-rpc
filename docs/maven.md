@@ -133,6 +133,8 @@ python3 scripts/check_central_publication.py \
    - `MAVEN_GPG_PRIVATE_KEY`；
    - `MAVEN_GPG_PASSPHRASE`。
 
+> **Namespace 阻塞条件**：Central 的 DNS namespace 按 groupId 反向解析。若首次申请 `io.peach.rpc`，需要证明对精确域名 `peach.rpc` 的控制权（DNS TXT 验证）。如果项目维护者并不控制该域名，则在第一次公开 Central Release 之前必须重新决定 groupId，例如使用已验证的自有域名，或使用 GitHub 个人 namespace。这个决定属于发布坐标兼容性决策，不能由 CI 自动替代，也不应在未确认的情况下自动修改现有 `io.peach.rpc` 坐标。
+
 Token、私钥和 passphrase 禁止写入 POM、workflow 文件、Release Bundle 或日志。
 
 ## 7. Patch Release Workflow
