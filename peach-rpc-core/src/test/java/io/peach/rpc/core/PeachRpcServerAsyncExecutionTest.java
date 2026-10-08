@@ -82,6 +82,10 @@ public class PeachRpcServerAsyncExecutionTest {
             CompletionStage<byte[]> response =
                     transport.handle(request("slow"));
             assertFalse(response.toCompletableFuture().isDone());
+            assertTrue(
+                    service.slowInvoked.await(
+                            1,
+                            TimeUnit.SECONDS));
 
             Thread completer = Thread.ofPlatform()
                     .name("foreign-async-completion")
@@ -118,6 +122,10 @@ public class PeachRpcServerAsyncExecutionTest {
             CompletionStage<byte[]> slowResponse =
                     transport.handle(request("slow"));
             assertFalse(slowResponse.toCompletableFuture().isDone());
+            assertTrue(
+                    service.slowInvoked.await(
+                            1,
+                            TimeUnit.SECONDS));
 
             CompletionStage<byte[]> blockingResponse =
                     transport.handle(request("blocking"));
@@ -279,6 +287,8 @@ public class PeachRpcServerAsyncExecutionTest {
     public static final class AsyncServiceImpl implements AsyncService {
         private final CompletableFuture<String> slow =
                 new CompletableFuture<>();
+        private final CountDownLatch slowInvoked =
+                new CountDownLatch(1);
         private final CountDownLatch blockingEntered =
                 new CountDownLatch(1);
         private final CountDownLatch releaseBlocking =
@@ -286,6 +296,7 @@ public class PeachRpcServerAsyncExecutionTest {
 
         @Override
         public CompletionStage<String> slow() {
+            slowInvoked.countDown();
             return slow;
         }
 
