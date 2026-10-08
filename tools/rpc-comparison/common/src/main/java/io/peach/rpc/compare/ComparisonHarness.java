@@ -119,7 +119,7 @@ public final class ComparisonHarness {
                                     success.increment();
                                     latencies.record(System.nanoTime() - requestedAt);
                                 }
-                            } catch (Throwable error) {
+                            } catch (RuntimeException error) {
                                 if (measuring) {
                                     errors.increment();
                                     errorTypes.computeIfAbsent(
@@ -144,11 +144,12 @@ public final class ComparisonHarness {
             measurementEndNanos.set(
                     startNanos + TimeUnit.SECONDS.toNanos(
                             (long) warmupSeconds + measurementSeconds));
+            start.countDown();
+            Thread.sleep(TimeUnit.SECONDS.toMillis(warmupSeconds));
             cpuBefore = processCpuNanos();
             gcCountBefore = gcCount();
             gcMillisBefore = gcTimeMillis();
             heapBefore = heapUsedBytes();
-            start.countDown();
             long awaitSeconds = (long) warmupSeconds + measurementSeconds + 45L;
             if (!finished.await(awaitSeconds, TimeUnit.SECONDS)) {
                 throw new IllegalStateException("Comparison workers did not finish");
@@ -161,8 +162,7 @@ public final class ComparisonHarness {
         long heapAfter = heapUsedBytes();
         double throughput = success.sum() / (double) measurementSeconds;
         double cpuCores = (cpuAfter - cpuBefore)
-                / (double) TimeUnit.SECONDS.toNanos(
-                        (long) warmupSeconds + measurementSeconds);
+                / (double) TimeUnit.SECONDS.toNanos(measurementSeconds);
         long total = success.sum() + errors.sum();
 
         Map<String, Object> report = new LinkedHashMap<>();
@@ -189,7 +189,9 @@ public final class ComparisonHarness {
         report.put("errors", errors.sum());
         report.put("error_rate", total == 0L ? 0.0d : errors.sum() / (double) total);
         report.put("throughput_qps", throughput);
-        report.put("qps_per_cpu_core", cpuCores <= 0.0d ? null : throughput / cpuCores);
+        report.put("qps_per_cpu_core", null);
+        report.put("qps_per_client_cpu_core",
+                cpuCores <= 0.0d ? null : throughput / cpuCores);
         report.put("client_process_cpu_cores", cpuCores);
         report.put("client_gc_count_delta", gcCountAfter - gcCountBefore);
         report.put("client_gc_millis_delta", gcMillisAfter - gcMillisBefore);
@@ -269,7 +271,7 @@ public final class ComparisonHarness {
                 output.append(',');
             }
             first = false;
-            output.append('"').append(escape(entry.getKey())).append("":");
+            output.append('"').append(escape(entry.getKey())).append("\":");
             Object value = entry.getValue();
             if (value == null) {
                 output.append("null");
