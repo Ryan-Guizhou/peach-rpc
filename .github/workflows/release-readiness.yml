@@ -16,6 +16,7 @@ on:
       - 'docs/**'
       - 'deploy/observability/**'
       - 'scripts/check_project.py'
+      - 'scripts/check_central_publication.py'
       - 'scripts/check_release_version.py'
       - 'scripts/check_release_readiness.py'
       - '.github/workflows/release-readiness.yml'
@@ -42,6 +43,12 @@ jobs:
       - name: Repository checks
         run: python3 scripts/check_project.py
 
+      - name: Verify Maven Central publication configuration
+        run: python3 scripts/check_central_publication.py
+
+      - name: Verify patch version contract
+        run: python3 scripts/check_release_version.py --stage patch --version 1.0.1
+
       - name: Verify RC1 release contract
         run: |
           python3 scripts/check_release_version.py --stage rc1 --version 1.0.0-RC1
@@ -62,6 +69,12 @@ jobs:
 
       - name: Verify GA Maven reactor
         run: mvn -B -ntp clean verify -Pquality,release
+
+      - name: Verify Maven Central artifact shape
+        run: >
+          python3 scripts/check_central_publication.py
+          --version 1.0.0
+          --require-artifacts
 
       - name: Build release artifact inventory
         shell: bash

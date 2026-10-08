@@ -62,6 +62,10 @@
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
         <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
         <maven-shade-plugin.version>3.6.2</maven-shade-plugin.version>
+        <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
+        <central-publishing-maven-plugin.version>0.11.0</central-publishing-maven-plugin.version>
+        <central.autoPublish>false</central.autoPublish>
+        <central.waitUntil>validated</central.waitUntil>
     </properties>
 
     <modules>
@@ -400,6 +404,47 @@
                                 </goals>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>central-release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-release-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>${central-publishing-maven-plugin.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <deploymentName>Peach RPC ${revision}</deploymentName>
+                            <autoPublish>${central.autoPublish}</autoPublish>
+                            <waitUntil>${central.waitUntil}</waitUntil>
+                            <checksums>all</checksums>
+                            <excludeArtifacts>
+                                <excludeArtifact>peach-rpc-examples</excludeArtifact>
+                                <excludeArtifact>peach-rpc-example-api</excludeArtifact>
+                                <excludeArtifact>peach-rpc-example-provider</excludeArtifact>
+                                <excludeArtifact>peach-rpc-example-consumer</excludeArtifact>
+                                <excludeArtifact>peach-rpc-benchmarks</excludeArtifact>
+                            </excludeArtifacts>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

@@ -93,6 +93,7 @@ REQUIRED_FILES = (
     ".github/workflows/rolling-compatibility.yml",
     ".github/workflows/etcd-chaos.yml",
     ".github/workflows/nacos-chaos.yml",
+    "scripts/check_central_publication.py",
 )
 
 DEPRECATED_DOCS = (
