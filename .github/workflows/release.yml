@@ -3,16 +3,23 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      stage:
-        description: Release stage
+      version:
+        description: Stable 1.0.x patch version to release
         required: true
-        default: ga
-        type: choice
-        options:
-          - rc1
-          - ga
-      publish:
-        description: Create the GitHub Release after all gates pass
+        default: 1.0.1
+        type: string
+      publish_github:
+        description: Create the immutable GitHub Release and tag
+        required: true
+        default: false
+        type: boolean
+      publish_central:
+        description: Upload the signed Maven artifacts to Central Portal
+        required: true
+        default: false
+        type: boolean
+      central_auto_publish:
+        description: Automatically publish after Central validation
         required: true
         default: false
         type: boolean
@@ -21,13 +28,13 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-${{ inputs.stage }}
+  group: release-${{ inputs.version }}
   cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
         with:
@@ -43,30 +50,75 @@ jobs:
         id: release
         shell: bash
         run: |
-          if [[ "${{ inputs.stage }}" == "rc1" ]]; then
-            echo "version=1.0.0-RC1" >> "$GITHUB_OUTPUT"
-            echo "notes=docs/release-notes-1.0.0-RC1.md" >> "$GITHUB_OUTPUT"
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          VERSION="${{ inputs.version }}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "notes=docs/release-notes-$VERSION.md" >> "$GITHUB_OUTPUT"
+
+          if [[ "${{ inputs.central_auto_publish }}" == "true" ]]; then
+            echo "central_wait_until=published" >> "$GITHUB_OUTPUT"
           else
-            echo "version=1.0.0" >> "$GITHUB_OUTPUT"
-            echo "notes=docs/release-notes-1.0.0.md" >> "$GITHUB_OUTPUT"
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "central_wait_until=validated" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Guard immutable release source
+        if: ${{ inputs.publish_github || inputs.publish_central }}
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Publishing is allowed only from the main branch."
+            exit 1
           fi
 
       - name: Verify repository
         run: python3 scripts/check_project.py
 
-      - name: Verify release version
+      - name: Verify patch release version
         run: >
           python3 scripts/check_release_version.py
-          --stage ${{ inputs.stage }}
+          --stage patch
           --version ${{ steps.release.outputs.version }}
 
-      - name: Verify release readiness
+      - name: Verify patch release readiness
         run: >
           python3 scripts/check_release_readiness.py
-          --stage ${{ inputs.stage }}
+          --stage patch
           --version ${{ steps.release.outputs.version }}
+
+      - name: Verify Maven Central publication configuration
+        run: python3 scripts/check_central_publication.py
+
+      - name: Guard immutable GitHub version
+        if: ${{ inputs.publish_github }}
+        shell: bash
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          if git show-ref --tags --verify --quiet "refs/tags/v$VERSION"; then
+            echo "Git tag v$VERSION already exists and must not be overwritten."
+            exit 1
+          fi
+
+      - name: Guard immutable Maven Central version
+        if: ${{ inputs.publish_central }}
+        shell: bash
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          POM_URL="https://repo1.maven.org/maven2/io/peach/rpc/peach-rpc-parent/$VERSION/peach-rpc-parent-$VERSION.pom"
+          STATUS="$(curl --silent --show-error --location --output /dev/null --write-out '%{http_code}' "$POM_URL")"
+          case "$STATUS" in
+            404)
+              echo "Maven Central version is available: $VERSION"
+              ;;
+            200)
+              echo "Maven Central already contains io.peach.rpc:peach-rpc-parent:$VERSION."
+              exit 1
+              ;;
+            *)
+              echo "Unable to verify Maven Central immutability; HTTP status: $STATUS"
+              exit 1
+              ;;
+          esac
 
       - name: Build release reactor
         run: >
@@ -75,28 +127,40 @@ jobs:
           clean verify
           -Pquality,release
 
+      - name: Verify Maven Central artifact shape
+        run: >
+          python3 scripts/check_central_publication.py
+          --version ${{ steps.release.outputs.version }}
+          --require-artifacts
+
       - name: Build release bundle
         shell: bash
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          NOTES: ${{ steps.release.outputs.notes }}
         run: |
-          VERSION="${{ steps.release.outputs.version }}"
           BUNDLE="target/release-bundle"
           mkdir -p "$BUNDLE"
 
-          find . -path '*/target/*.jar' -type f             ! -name 'original-*.jar'             ! -name '*-tests.jar'             -print | sort > "$BUNDLE/artifact-inventory.txt"
+          find . -path '*/target/*.jar' -type f \
+            ! -name 'original-*.jar' \
+            ! -name '*-tests.jar' \
+            -print | sort > "$BUNDLE/artifact-inventory.txt"
 
           while IFS= read -r artifact; do
             cp "$artifact" "$BUNDLE/"
           done < "$BUNDLE/artifact-inventory.txt"
 
           cp LICENSE CHANGELOG.md "$BUNDLE/"
-          cp "${{ steps.release.outputs.notes }}" "$BUNDLE/RELEASE_NOTES.md"
+          cp "$NOTES" "$BUNDLE/RELEASE_NOTES.md"
 
           (
             cd "$BUNDLE"
-            sha256sum ./*.jar LICENSE CHANGELOG.md RELEASE_NOTES.md               > SHA256SUMS
+            sha256sum ./*.jar LICENSE CHANGELOG.md RELEASE_NOTES.md > SHA256SUMS
           )
 
-          tar -czf "target/peach-rpc-${VERSION}-artifacts.tar.gz"             -C "$BUNDLE" .
+          tar -czf "target/peach-rpc-$VERSION-artifacts.tar.gz" \
+            -C "$BUNDLE" .
 
       - name: Upload verified release bundle
         uses: actions/upload-artifact@v4
@@ -109,18 +173,113 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Verify Maven Central secrets
+        if: ${{ inputs.publish_central }}
+        shell: bash
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          MAVEN_GPG_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: |
+          for name in \
+            CENTRAL_USERNAME \
+            CENTRAL_PASSWORD \
+            MAVEN_GPG_KEY \
+            MAVEN_GPG_PASSPHRASE; do
+            if [[ -z "${!name}" ]]; then
+              echo "Required release secret is missing: $name"
+              exit 1
+            fi
+          done
+
+      - name: Configure Maven Central credentials
+        if: ${{ inputs.publish_central }}
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          server-id: central
+          server-username-env-var: CENTRAL_USERNAME
+          server-password-env-var: CENTRAL_PASSWORD
+
+      - name: Publish signed artifacts to Maven Central
+        if: ${{ inputs.publish_central }}
+        shell: bash
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          MAVEN_GPG_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          CENTRAL_AUTO_PUBLISH: ${{ inputs.central_auto_publish }}
+          CENTRAL_WAIT_UNTIL: ${{ steps.release.outputs.central_wait_until }}
+        run: |
+          mvn -B -ntp \
+            -Drevision="$VERSION" \
+            -DskipTests \
+            -Dgpg.signer=bc \
+            -Dcentral.autoPublish="$CENTRAL_AUTO_PUBLISH" \
+            -Dcentral.waitUntil="$CENTRAL_WAIT_UNTIL" \
+            deploy \
+            -Pquality,release,central-release
+
+      - name: Verify clean Maven Central consumption
+        if: ${{ inputs.publish_central && inputs.central_auto_publish }}
+        shell: bash
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          CONSUMER_DIR="$RUNNER_TEMP/peach-rpc-central-consumer"
+          LOCAL_REPO="$RUNNER_TEMP/peach-rpc-central-consumer-m2"
+          mkdir -p "$CONSUMER_DIR"
+
+          cat > "$CONSUMER_DIR/pom.xml" <<EOF
+          <project xmlns="http://maven.apache.org/POM/4.0.0"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>io.peach.rpc.verification</groupId>
+            <artifactId>central-consumer</artifactId>
+            <version>1.0.0</version>
+            <dependencies>
+              <dependency>
+                <groupId>io.peach.rpc</groupId>
+                <artifactId>peach-rpc-spring-boot-starter</artifactId>
+                <version>$VERSION</version>
+              </dependency>
+            </dependencies>
+          </project>
+          EOF
+
+          for attempt in {1..30}; do
+            rm -rf "$LOCAL_REPO/io/peach/rpc"
+            if mvn -B -ntp -U \
+              -Dmaven.repo.local="$LOCAL_REPO" \
+              -f "$CONSUMER_DIR/pom.xml" \
+              org.apache.maven.plugins:maven-dependency-plugin:3.11.0:resolve; then
+              test -f "$LOCAL_REPO/io/peach/rpc/peach-rpc-spring-boot-starter/$VERSION/peach-rpc-spring-boot-starter-$VERSION.jar"
+              exit 0
+            fi
+            echo "Maven Central propagation not visible yet; attempt $attempt/30"
+            sleep 10
+          done
+
+          echo "Published Peach RPC artifacts were not consumable from a clean Maven repository."
+          exit 1
+
       - name: Publish GitHub Release
-        if: ${{ inputs.publish }}
+        if: ${{ inputs.publish_github }}
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.release.outputs.version }}
           NOTES: ${{ steps.release.outputs.notes }}
-          PRERELEASE: ${{ steps.release.outputs.prerelease }}
         shell: bash
         run: |
-          FLAGS=()
-          if [[ "$PRERELEASE" == "true" ]]; then
-            FLAGS+=(--prerelease)
-          fi
-
-          gh release create "v$VERSION"             --target "$GITHUB_SHA"             --title "Peach RPC $VERSION"             --notes-file "$NOTES"             "${FLAGS[@]}"             "target/peach-rpc-${VERSION}-artifacts.tar.gz"             "target/release-bundle/SHA256SUMS"
+          gh release create "v$VERSION" \
+            --target "$GITHUB_SHA" \
+            --title "Peach RPC $VERSION" \
+            --notes-file "$NOTES" \
+            "target/peach-rpc-$VERSION-artifacts.tar.gz" \
+            "target/release-bundle/SHA256SUMS"
