@@ -3,15 +3,15 @@
 简体中文 | [English](README.en-US.md)
 
 <!-- release-status:project=ga -->
-<!-- release-status:version=1.0.0 -->
+<!-- release-status:version=1.0.1 -->
 <!-- release-status:wire=v1 -->
 
 <!-- doc-section:overview -->
 ## 项目简介
 
-Peach RPC 是一个面向 **Java 服务间通信** 的轻量、高性能、可扩展 RPC 框架。1.0.0 提供完整的 Unary RPC、服务注册发现、负载均衡、超时/重试/熔断、TLS/mTLS、可观测、N/N+1 滚动兼容、Chaos 与 Release 工程能力。
+Peach RPC 是一个面向 **Java 服务间通信** 的轻量、高性能、可扩展 RPC 框架。1.0.1 在 1.0.0 GA 的 Wire v1 与 Public Core API 兼容边界上，补齐 Provider 异步完成线程隔离、健康路径热区优化以及 Maven Central Patch Release 工程。
 
-**当前稳定版本：1.0.0 GA**  
+**当前源码版本：1.0.1 Release Prep**  
 **Java：21**  
 **Spring Boot：3.5.4**  
 **Wire：v1（1.0.x 冻结）**  
@@ -142,23 +142,23 @@ RPC demo completed successfully: Hello, Peach RPC!
 <!-- doc-section:dependency -->
 ## Spring Boot 依赖
 
-GA 坐标：
+1.0.1 坐标（正式发布后由 Maven Central 提供；发布前可从源码安装）：
 
 ```xml
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-spring-boot-starter</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
-如果 1.0.0 尚未发布到你使用的 Maven Repository，可先从源码安装：
+如果 1.0.1 尚未出现在你使用的 Maven Repository，可先从源码安装：
 
 ```bash
 mvn -B -ntp clean install -DskipTests
 ```
 
-然后本地 Maven Repository 即可解析同样的 1.0.0 坐标。
+然后本地 Maven Repository 即可解析同样的 1.0.1 坐标。
 
 <!-- doc-section:configuration -->
 ## 最小使用方式
@@ -222,6 +222,7 @@ private OrderService orderService;
 - [发布就绪](docs/release-readiness.md)
 - [1.0.0-RC1 Release Notes](docs/release-notes-1.0.0-RC1.md)
 - [1.0.0 Release Notes](docs/release-notes-1.0.0.md)
+- [1.0.1 Release Notes](docs/release-notes-1.0.1.md)
 - [CHANGELOG](CHANGELOG.md)
 - [Roadmap](ROADMAP.md)
 
