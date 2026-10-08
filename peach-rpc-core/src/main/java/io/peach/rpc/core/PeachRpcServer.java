@@ -413,14 +413,17 @@ public final class PeachRpcServer implements AutoCloseable {
 
         CompletableFuture<byte[]> result =
                 new CompletableFuture<>();
-        result.whenComplete(
-                (ignoredValue, ignoredError) ->
-                        decision.lease().release());
-        if (observer.enabled()) {
+        boolean observed = observer.enabled();
+        result.whenComplete((ignoredValue, ignoredError) -> {
+            if (decision.lease().release() && observed) {
+                observer.onServerInflightBytesChanged(
+                        -request.bytes().length);
+                observer.onServerInflightChanged(-1);
+            }
+        });
+        if (observed) {
             observer.onServerInflightChanged(1);
-            result.whenComplete(
-                    (ignoredValue, ignoredError) ->
-                            observer.onServerInflightChanged(-1));
+            observer.onServerInflightBytesChanged(request.bytes().length);
         }
         RpcExecutionMode executionMode;
         try {
@@ -587,11 +590,11 @@ public final class PeachRpcServer implements AutoCloseable {
                     methodCodec.codecId(),
                     RpcStatus.OK,
                     methodCodec.encodeResult(value));
-            completeResponseAndReleaseAdmission(
+            completeResponse(
                     result,
                     responseBytes);
         } catch (Throwable error) {
-            completeInvocationFailureAndReleaseAdmission(
+            completeInvocationFailure(
                     request,
                     result,
                     error);
@@ -639,7 +642,7 @@ public final class PeachRpcServer implements AutoCloseable {
                             value,
                             error));
         } catch (Throwable setupError) {
-            completeInvocationFailureAndReleaseAdmission(
+            completeInvocationFailure(
                     request,
                     result,
                     setupError);
@@ -686,7 +689,7 @@ public final class PeachRpcServer implements AutoCloseable {
                     RpcStatus.OVERLOADED,
                     RpcException.class.getName(),
                     "Provider async completion queue is full");
-            completeResponseAndReleaseAdmission(
+            completeResponse(
                     result,
                     responseBytes);
         }
@@ -711,7 +714,7 @@ public final class PeachRpcServer implements AutoCloseable {
                 return;
             }
             if (error != null) {
-                completeInvocationFailureAndReleaseAdmission(
+                completeInvocationFailure(
                         request,
                         result,
                         unwrapCompletionFailure(error));
@@ -722,11 +725,11 @@ public final class PeachRpcServer implements AutoCloseable {
                     methodCodec.codecId(),
                     RpcStatus.OK,
                     methodCodec.encodeResult(value));
-            completeResponseAndReleaseAdmission(
+            completeResponse(
                     result,
                     responseBytes);
         } catch (Throwable completionError) {
-            completeInvocationFailureAndReleaseAdmission(
+            completeInvocationFailure(
                     request,
                     result,
                     completionError);
@@ -742,7 +745,7 @@ public final class PeachRpcServer implements AutoCloseable {
         return current;
     }
 
-    private void completeInvocationFailureAndReleaseAdmission(
+    private void completeInvocationFailure(
             RpcFrameView request,
             CompletableFuture<byte[]> result,
             Throwable error) {
@@ -766,12 +769,12 @@ public final class PeachRpcServer implements AutoCloseable {
             result.completeExceptionally(responseError);
             return;
         }
-        completeResponseAndReleaseAdmission(
+        completeResponse(
                 result,
                 responseBytes);
     }
 
-    private void completeResponseAndReleaseAdmission(
+    private void completeResponse(
             CompletableFuture<byte[]> result,
             byte[] responseBytes) {
         result.complete(responseBytes);
