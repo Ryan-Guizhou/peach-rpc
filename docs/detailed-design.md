@@ -1,6 +1,6 @@
 # Peach RPC 1.0 详细设计
 
-> 状态：**Current / 1.0.0 GA**
+> 状态：**Current / 1.0.1 Release Prep**
 
 ## 1. Consumer 调用链
 
