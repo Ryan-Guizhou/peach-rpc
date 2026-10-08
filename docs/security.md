@@ -1,5 +1,7 @@
 # Peach RPC TLS / mTLS 安全指南
 
+> Fory Native 反序列化安全模式、类型白名单与资源上限参见 [Fory 安全模式迁移指南](fory-security.md)。TLS/mTLS 不替代对象类型约束。
+
 > 适用版本：**Peach RPC 1.0.x**。  
 > TLS/mTLS 位于 Transport 层，不改变 Peach RPC v1 固定协议头，也不替代业务授权。
 

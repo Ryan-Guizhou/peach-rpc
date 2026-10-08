@@ -43,6 +43,24 @@ class RpcCodecRegistryTest {
     }
 
     @Test
+    void replacingDefaultCodecPreservesAdditionalCodecExtensions() {
+        TestCodec original = new TestCodec((byte) 42);
+        TestCodec additional = new TestCodec((byte) 43);
+        TestCodec replacement = new TestCodec((byte) 42);
+
+        RpcCodecRegistry before = RpcCodecRegistry.of(original, additional);
+        RpcCodecRegistry after = before.withReplacement(replacement);
+
+        assertSame(original, before.defaultCodec());
+        assertSame(replacement, after.defaultCodec());
+        assertSame(replacement, after.require((byte) 42));
+        assertSame(additional, after.require((byte) 43));
+        assertEquals(before.supportedCodecIds(), after.supportedCodecIds());
+        assertThrows(IllegalArgumentException.class,
+                () -> before.withReplacement(new TestCodec((byte) 44)));
+    }
+
+    @Test
     void shouldBindCodecAtMethodLevel() throws Exception {
         BindingCodec codec = new BindingCodec((byte) 44);
         Method method = SampleService.class.getMethod("echo", String.class);

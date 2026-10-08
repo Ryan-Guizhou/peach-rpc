@@ -237,6 +237,40 @@ public class PeachRpcAutoConfigurationTest {
     }
 
     @Test
+    void strictForySecurityPropertiesShouldBind() {
+        contextRunner
+                .withPropertyValues(
+                        "peach.rpc.codec.fory.mode=STRICT_ALLOWLIST",
+                        "peach.rpc.codec.fory.allowed-class-patterns[0]=io.peach.rpc.demo.*",
+                        "peach.rpc.codec.fory.max-depth=16",
+                        "peach.rpc.codec.fory.max-graph-memory-bytes=1048576",
+                        "peach.rpc.codec.fory.max-payload-bytes=16384")
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    PeachRpcProperties.ForySecurity security = context
+                            .getBean(PeachRpcProperties.class)
+                            .getCodec().getFory();
+                    assertThat(security.getMode().name())
+                            .isEqualTo("STRICT_ALLOWLIST");
+                    assertThat(security.getAllowedClassPatterns())
+                            .contains("io.peach.rpc.demo.*");
+                    assertThat(security.getMaxDepth()).isEqualTo(16);
+                    assertThat(security.getMaxGraphMemoryBytes())
+                            .isEqualTo(1048576L);
+                    assertThat(security.getMaxPayloadBytes())
+                            .isEqualTo(16384);
+                });
+    }
+
+    @Test
+    void strictForySecurityMustRejectMissingAllowlist() {
+        contextRunner
+                .withPropertyValues(
+                        "peach.rpc.codec.fory.mode=STRICT_ALLOWLIST")
+                .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
     void rawClientInjectionShouldCreateConsumerRuntime() {
         contextRunner
                 .withBean(RawClientBean.class)

@@ -1,0 +1,64 @@
+# Fory Native 安全模式与迁移（PR-B）
+
+> **状态：PR 待验收。** 本文描述 PR-B 开发分支上的能力，不代表已经合并至 main。
+> Wire v1 的 Payload 仍使用原有 Fory Native 编码、Codec ID 1、Object[] 参数形式；没有引入新的 Type ID 或变更固定协议头。
+
+## 安全边界
+
+| 模式 | 用途 | 类过滤 |
+|---|---|---|
+| TRUSTED_COMPATIBILITY | 既有可信应用平滑升级，默认值 | 保持既有可动态识别类型的语义，仅加资源限制 |
+| STRICT_ALLOWLIST | 生产配置，尤其是不完全可信的对端 | Fory 原生 AllowListChecker 严格拒绝未批准的类 |
+
+**注意：** TRUSTED_COMPATIBILITY 不是不可信数据的安全模式。TLS/mTLS 也不能替代反序列化类型约束。
+
+## Spring Boot 接入
+
+~~~yaml
+peach:
+  rpc:
+    codec:
+      fory:
+        mode: STRICT_ALLOWLIST
+        allowed-class-patterns:
+          - com.example.contract.*
+          - com.example.dto.*
+        max-depth: 32
+        max-graph-memory-bytes: 67108864
+        max-payload-bytes: 16777216
+~~~
+
+白名单要列出实际 RPC DTO 所在的应用包；不要使用 `*`、`java.*` 或 `jdk.*` 一类过宽规则。上例中的包名仅为占位，部署时必须改成真实契约包名。若缺少白名单或配置无效，启动失败。
+
+程序化配置示例：
+
+~~~java
+ForyRpcCodec codec = new ForyRpcCodec(
+    ForyRpcSecurityOptions.strictAllowlist(
+        Set.of("com.example.contract.*", "com.example.dto.*")));
+RpcCodecRegistry registry = RpcCodecRegistry.of(codec);
+~~~
+
+## 资源限制
+
+- max-payload-bytes：在 Fory 反序列化前检查输入区间，编码后也检查输出。
+- max-depth：使用 Fory 内置 `withMaxDepth` 限制反序列化嵌套层数。
+- max-graph-memory-bytes：使用 Fory 的对象图内存**估算**门限，不是 JVM 堆硬上限，不涵盖所有叶子对象及序列化临时分配。
+- Transport `max-frame-bytes` 仍然是独立限制；必须同步规划解码和帧的上限，建议 Payload 不高于 Frame 能容纳的范围。
+
+## 兼容迁移顺序
+
+1. 保持当前可信内网实例为 TRUSTED_COMPATIBILITY；先升级并校验滚动兼容。
+2. 统计真实 RPC 方法涉及的 DTO 类型，显式维护允许的应用类和包。
+3. 在隔离环境开启 STRICT_ALLOWLIST，运行字段结构、数组、集合、参数、返回值和滚动兼容性测试。
+4. 双方完成验证后，分批启用 STRICT_ALLOWLIST，保留单独的回退开关。不要将兼容模式当作永久生产安全保障。
+
+## 测试准入
+
+- [ ] 兼容模式对旧 Fory Payload 读写正常
+- [ ] 严格模式允许预期 DTO、阻止未知类
+- [ ] 拒绝超限 Payload、异常深对象图、过大集合/对象图
+- [ ] 旧新 Consumer/Provider 独立 JVM 滚动兼容
+- [ ] CI 完整通过，安全模式高负载下的吞吐与尾延迟有单独证据
+
+没有测到的性能与安全性质不得当作已验证事实。
