@@ -68,6 +68,18 @@ class JavaConventionsTest(unittest.TestCase):
         )
         self.assertFalse(self.findings(self.runtime, code))
 
+    def test_allows_compile_time_constant_log_segments(self):
+        code = (
+            'LOGGER.warn("Etcd lease expired; "'
+            ' + "recovering: leaseId={}", leaseId);'
+        )
+        self.assertFalse(self.findings(self.runtime, code))
+
+    def test_cli_harness_is_not_treated_as_runtime(self):
+        cli = "tools/rpc-comparison/common/src/main/java/ComparisonHarness.java"
+        self.assertFalse(self.findings(
+            cli, 'System.out.println("Benchmark completed");'))
+
     def test_warns_not_blocks_review_of_catch_throwable(self):
         out = lint.scan_source(
             self.runtime,
