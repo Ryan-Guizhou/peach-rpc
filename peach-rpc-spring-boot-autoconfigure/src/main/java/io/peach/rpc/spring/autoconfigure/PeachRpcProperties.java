@@ -120,52 +120,92 @@ public class PeachRpcProperties {
         public ForySecurity() {
         }
 
-        /** @return 安全模式 */
+        /**
+         * 返回安全模式。
+         *
+         * @return 安全模式
+         */
         public ForyRpcSecurityOptions.Mode getMode() {
             return mode;
         }
 
-        /** @param value 安全模式 */
+        /**
+         * 设置安全模式。
+         *
+         * @param value 安全模式
+         */
         public void setMode(ForyRpcSecurityOptions.Mode value) {
             this.mode = value;
         }
 
-        /** @return 可解码应用类名及应用包模式 */
+        /**
+         * 返回允许反序列化的应用类及包规则。
+         *
+         * @return 可解码应用类名及应用包模式
+         */
         public Set<String> getAllowedClassPatterns() {
             return allowedClassPatterns;
         }
 
-        /** @param value 允许的应用类型或包模式 */
+        /**
+         * 设置允许的应用类型或包模式。
+         *
+         * @param value 允许的应用类型或包模式
+         */
         public void setAllowedClassPatterns(Set<String> value) {
             this.allowedClassPatterns = value;
         }
 
-        /** @return 最大对象图嵌套深度 */
+        /**
+         * 返回反序列化对象图最大嵌套层数。
+         *
+         * @return 最大对象图嵌套深度
+         */
         public int getMaxDepth() {
             return maxDepth;
         }
 
-        /** @param value 最大对象图嵌套深度 */
+        /**
+         * 设置最大对象图嵌套深度。
+         *
+         * @param value 最大对象图嵌套深度
+         */
         public void setMaxDepth(int value) {
             this.maxDepth = value;
         }
 
-        /** @return 最大近似图内存字节数 */
+        /**
+         * 返回Fory 对象图内存估算上限（字节）。
+         *
+         * @return 最大近似图内存字节数
+         */
         public long getMaxGraphMemoryBytes() {
             return maxGraphMemoryBytes;
         }
 
-        /** @param value 最大近似图内存字节数 */
+        /**
+         * 设置最大近似图内存字节数。
+         *
+         * @param value 最大近似图内存字节数
+         */
         public void setMaxGraphMemoryBytes(long value) {
             this.maxGraphMemoryBytes = value;
         }
 
-        /** @return 最大 Fory Payload 字节数 */
+        /**
+         * 返回Fory Payload 长度限制（字节）。
+         *
+         * @return 最大 Fory Payload 字节数
+         */
         public int getMaxPayloadBytes() {
             return maxPayloadBytes;
         }
 
-        /** @param value 最大 Fory Payload 字节数 */
+        /**
+         * 设置最大 Fory Payload 字节数。
+         *
+         * @param value 最大 Fory Payload 字节数
+         */
         public void setMaxPayloadBytes(int value) {
             this.maxPayloadBytes = value;
         }
