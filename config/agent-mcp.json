@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "platform": "windows-cmd-npx",
+  "servers": [
+    {
+      "id": "mysql",
+      "package": "mcp-server-mysql@latest",
+      "args": [],
+      "env_vars": [
+        "MYSQL_HOST",
+        "MYSQL_PORT",
+        "MYSQL_USER",
+        "MYSQL_PASS",
+        "MYSQL_DB"
+      ],
+      "enabled_by_default": false
+    },
+    {
+      "id": "github",
+      "package": "@modelcontextprotocol/server-github",
+      "args": [],
+      "env_vars": [
+        "GITHUB_PERSONAL_ACCESS_TOKEN"
+      ],
+      "enabled_by_default": true
+    },
+    {
+      "id": "context7",
+      "package": "@upstash/context7-mcp@latest",
+      "args": [],
+      "env_vars": [
+        "CONTEXT7_API_KEY"
+      ],
+      "enabled_by_default": true
+    },
+    {
+      "id": "codegraph",
+      "package": "@colbymchenry/codegraph",
+      "args": [
+        "serve",
+        "--mcp",
+        "--path",
+        "{workspace}"
+      ],
+      "env_vars": [],
+      "enabled_by_default": true
+    },
+    {
+      "id": "agentmemory",
+      "package": "@agentmemory/mcp",
+      "args": [],
+      "env_vars": [
+        "AGENTMEMORY_SECRET"
+      ],
+      "static_env": {
+        "AGENTMEMORY_URL": "http://localhost:3111",
+        "AGENTMEMORY_TOOLS": "core"
+      },
+      "enabled_by_default": true
+    }
+  ]
+}
