@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static RC1 / GA release-readiness gate for Peach RPC."""
+"""Static RC1 / GA / patch release-readiness gate for Peach RPC."""
 
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ FIXED_VERSIONS = {
     "rc1": "1.0.0-RC1",
     "ga": "1.0.0",
 }
-PATCH_VERSION = re.compile(r"^1\\.0\\.([1-9][0-9]*)$")
+PATCH_VERSION = re.compile(r"^1\.0\.([1-9][0-9]*)$")
 
 
 def fail(message: str) -> None:
