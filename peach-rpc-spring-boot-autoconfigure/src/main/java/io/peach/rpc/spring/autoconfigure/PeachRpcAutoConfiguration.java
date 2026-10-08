@@ -98,7 +98,8 @@ public class PeachRpcAutoConfiguration {
                 security.getMaxDepth(),
                 security.getMaxGraphMemoryBytes(),
                 security.getMaxPayloadBytes());
-        return RpcCodecRegistry.of(new ForyRpcCodec(options));
+        return RpcCodecRegistry.fromSpi()
+                .withReplacement(new ForyRpcCodec(options));
     }
 
     /**
