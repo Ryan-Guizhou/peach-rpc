@@ -1,0 +1,3 @@
+interface:
+  display_name: "Peach RPC Performance"
+  short_description: "Peach RPC performance and reliability engineering for Vert.x event-loo"
