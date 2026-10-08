@@ -119,6 +119,16 @@ python3 scripts/check_central_publication.py \
 - `peach-rpc-example-consumer`；
 - `peach-rpc-benchmarks`。
 
+### 5.1 纯依赖 Starter 的 Source/Javadoc
+
+`peach-rpc-spring-boot-starter` 是依赖聚合 Starter，本身不承载实现类。Maven Central 对 JAR 包仍要求 `sources` / `javadoc` classifier，因此该模块在 `release` Profile 中：
+
+- 跳过标准 Source Plugin 的空源码归档；
+- 跳过 JDK Javadoc Tool；
+- 使用 Maven Jar Plugin 从 `src/central-placeholder/README.md` 生成 placeholder `-sources.jar` 与 `-javadoc.jar`。
+
+这样既满足 Central Artifact 形态要求，也不会为了生成 Javadoc 人为增加无业务意义的 public marker type。
+
 ## 6. Central Portal 前置条件
 
 真正发布前必须由项目维护者完成：
