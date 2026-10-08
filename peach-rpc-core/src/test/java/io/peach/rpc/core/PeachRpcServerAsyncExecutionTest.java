@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -96,6 +97,69 @@ public class PeachRpcServerAsyncExecutionTest {
                     codec.encodeThreadName.get()
                             .startsWith("peach-rpc-cpu-"));
         } finally {
+            server.close();
+        }
+    }
+
+    @Test
+    void asyncCompletionShouldFailFastWhenCpuCompletionQueueIsFull()
+            throws Exception {
+        CapturingTransportServer transport = new CapturingTransportServer();
+        AsyncServiceImpl service = new AsyncServiceImpl();
+        PeachRpcServer server = createServer(
+                transport,
+                service,
+                3,
+                19096);
+
+        try {
+            server.start().toCompletableFuture().join();
+
+            CompletionStage<byte[]> slowResponse =
+                    transport.handle(request("slow"));
+            assertFalse(slowResponse.toCompletableFuture().isDone());
+
+            CompletionStage<byte[]> blockingResponse =
+                    transport.handle(request("blocking"));
+            assertTrue(
+                    service.blockingEntered.await(
+                            1,
+                            TimeUnit.SECONDS));
+
+            CompletionStage<byte[]> queuedResponse =
+                    transport.handle(request("queued"));
+            assertFalse(queuedResponse.toCompletableFuture().isDone());
+
+            service.slow.complete("slow");
+            byte[] overloaded = slowResponse.toCompletableFuture()
+                    .get(1, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OVERLOADED,
+                    RpcProtocolCodec.view(overloaded).status());
+
+            service.releaseBlocking.countDown();
+
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(
+                            blockingResponse.toCompletableFuture()
+                                    .get(1, TimeUnit.SECONDS))
+                            .status());
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(
+                            queuedResponse.toCompletableFuture()
+                                    .get(1, TimeUnit.SECONDS))
+                            .status());
+
+            byte[] recovered = transport.handle(request("fast"))
+                    .toCompletableFuture()
+                    .get(1, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(recovered).status());
+        } finally {
+            service.releaseBlocking.countDown();
             server.close();
         }
     }
@@ -204,11 +268,21 @@ public class PeachRpcServerAsyncExecutionTest {
 
         @PeachRpcExecution(RpcExecutionMode.CPU)
         String fast();
+
+        @PeachRpcExecution(RpcExecutionMode.CPU)
+        String blocking();
+
+        @PeachRpcExecution(RpcExecutionMode.CPU)
+        String queued();
     }
 
     public static final class AsyncServiceImpl implements AsyncService {
         private final CompletableFuture<String> slow =
                 new CompletableFuture<>();
+        private final CountDownLatch blockingEntered =
+                new CountDownLatch(1);
+        private final CountDownLatch releaseBlocking =
+                new CountDownLatch(1);
 
         @Override
         public CompletionStage<String> slow() {
@@ -218,6 +292,28 @@ public class PeachRpcServerAsyncExecutionTest {
         @Override
         public String fast() {
             return "fast";
+        }
+
+        @Override
+        public String blocking() {
+            blockingEntered.countDown();
+            try {
+                if (!releaseBlocking.await(
+                        2,
+                        TimeUnit.SECONDS)) {
+                    throw new IllegalStateException(
+                            "Blocking test method timed out");
+                }
+            } catch (InterruptedException error) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(error);
+            }
+            return "blocking";
+        }
+
+        @Override
+        public String queued() {
+            return "queued";
         }
     }
 
