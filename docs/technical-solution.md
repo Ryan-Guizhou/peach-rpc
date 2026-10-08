@@ -131,7 +131,8 @@ FrameAccumulator
 - `BLOCKING_VIRTUAL`：默认；
 - `CPU`：有界平台线程池；
 - `DIRECT`：默认禁止，只允许明确的极短非阻塞逻辑；
-- 业务方法返回 `CompletionStage` 时采用 continuation 完成响应，不在 Provider worker 上 `join()`；异步阶段完成前仍占用 admission 配额，避免异步业务绕过并发上限。
+- 业务方法返回 `CompletionStage` 时采用 continuation 完成响应，不在 Provider worker 上 `join()`；异步阶段完成前仍占用 admission 配额，避免异步业务绕过并发上限；
+- 未完成的异步 Stage 后续完成时，响应编码会重新进入 Provider 管理的执行资源并恢复 Trace/Metadata Scope，避免在业务 Future 的完成线程或 Vert.x/Netty EventLoop 上直接执行序列化。
 
 ## 5. 控制面设计
 
