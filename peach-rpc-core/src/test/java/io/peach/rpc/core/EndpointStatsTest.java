@@ -1,0 +1,71 @@
+package io.peach.rpc.core;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.time.Duration;
+import org.junit.jupiter.api.Test;
+
+class EndpointStatsTest {
+
+    @Test
+    void healthyEndpointShouldRemainAvailable() {
+        EndpointStats stats = new EndpointStats();
+
+        assertTrue(stats.available());
+        assertTrue(stats.available());
+    }
+
+    @Test
+    void expiredEjectionShouldBecomeAvailableAgain() throws Exception {
+        RpcClientResilienceOptions options =
+                new RpcClientResilienceOptions(
+                        2,
+                        0.1d,
+                        1,
+                        8,
+                        Duration.ZERO,
+                        Duration.ZERO,
+                        3,
+                        Duration.ofSeconds(1),
+                        1,
+                        Duration.ofMillis(20));
+        EndpointStats stats = new EndpointStats();
+
+        stats.begin();
+        assertTrue(stats.endFailure(1_000L, options));
+        assertFalse(stats.available());
+
+        Thread.sleep(40L);
+
+        assertTrue(stats.available());
+        assertTrue(stats.available());
+    }
+
+    @Test
+    void successShouldResetPreviousFailureSequence() {
+        RpcClientResilienceOptions options =
+                new RpcClientResilienceOptions(
+                        2,
+                        0.1d,
+                        1,
+                        8,
+                        Duration.ZERO,
+                        Duration.ZERO,
+                        3,
+                        Duration.ofSeconds(1),
+                        2,
+                        Duration.ofSeconds(1));
+        EndpointStats stats = new EndpointStats();
+
+        stats.begin();
+        assertFalse(stats.endFailure(1_000L, options));
+
+        stats.begin();
+        stats.endSuccess(1_000L);
+
+        stats.begin();
+        assertFalse(stats.endFailure(1_000L, options));
+        assertTrue(stats.available());
+    }
+}
