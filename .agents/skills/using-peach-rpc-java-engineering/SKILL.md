@@ -1,6 +1,6 @@
 ---
 name: using-peach-rpc-java-engineering
-description: Peach RPC Java code authoring and review: apply naming conventions, package boundaries, standard Chinese Javadoc, English structured logs, exception handling and resource lifecycle rules. Use when creating, editing or reviewing Java source, Spring Boot configuration, or API documentation.
+description: "Peach RPC Java code authoring and review: apply naming conventions, package boundaries, standard Chinese Javadoc, English structured logs, exception handling and resource lifecycle rules. Use when creating, editing or reviewing Java source, Spring Boot configuration, or API documentation."
 ---
 
 # Java Engineering Workflow
