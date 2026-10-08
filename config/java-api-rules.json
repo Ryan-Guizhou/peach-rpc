@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "rules": [
+    {
+      "id": "J001",
+      "severity": "error",
+      "message": "Production runtime must not call System.exit",
+      "paths": [
+        "*/src/main/java/*.java"
+      ],
+      "scan": "code",
+      "pattern": "\\bSystem\\s*\\.\\s*exit\\s*\\("
+    },
+    {
+      "id": "J002",
+      "severity": "error",
+      "message": "Production runtime must not launch OS processes",
+      "paths": [
+        "*/src/main/java/*.java"
+      ],
+      "scan": "code",
+      "pattern": "\\b(?:ProcessBuilder\\s*\\(|Runtime\\s*\\.\\s*getRuntime\\s*\\(\\s*\\)\\s*\\.\\s*exec\\s*\\()"
+    },
+    {
+      "id": "J003",
+      "severity": "error",
+      "message": "Use structured logging instead of printStackTrace",
+      "paths": [
+        "*/src/main/java/*.java"
+      ],
+      "scan": "code",
+      "pattern": "\\.\\s*printStackTrace\\s*\\("
+    },
+    {
+      "id": "J004",
+      "severity": "error",
+      "message": "Do not print directly to System.out/err in production runtime",
+      "paths": [
+        "*/src/main/java/*.java"
+      ],
+      "scan": "code",
+      "pattern": "\\bSystem\\s*\\.\\s*(?:out|err)\\b"
+    },
+    {
+      "id": "T001",
+      "severity": "error",
+      "message": "Transport hot path must not block with Thread.sleep",
+      "paths": [
+        "peach-rpc-transport-vertx/src/main/java/*.java"
+      ],
+      "scan": "code",
+      "pattern": "\\bThread\\s*\\.\\s*sleep\\s*\\("
+    },
+    {
+      "id": "T002",
+      "severity": "error",
+      "message": "Transport hot path must not block with TimeUnit.sleep",
+      "paths": [
+        "peach-rpc-transport-vertx/src/main/java/*.java"
+      ],
+      "scan": "code",
+      "pattern": "\\bTimeUnit\\s*\\.\\s*\\w+\\s*\\.\\s*sleep\\s*\\("
+    },
+    {
+      "id": "L001",
+      "severity": "error",
+      "message": "Use parameterized SLF4J logs, not string concatenation",
+      "paths": [
+        "*/src/main/java/*.java"
+      ],
+      "scan": "with-strings",
+      "pattern": "\\b(?:LOGGER|log|logger)\\s*\\.\\s*(?:trace|debug|info|warn|error)\\s*\\(\\s*\"(?:\\\\.|[^\"\\\\])*\"\\s*\\+"
+    },
+    {
+      "id": "L002",
+      "severity": "error",
+      "message": "Runtime log message must be English",
+      "paths": [
+        "*/src/main/java/*.java"
+      ],
+      "scan": "with-strings",
+      "pattern": "\\b(?:LOGGER|log|logger)\\s*\\.\\s*(?:trace|debug|info|warn|error)\\s*\\(\\s*\"(?:\\\\.|[^\"\\\\])*[\\u4e00-\\u9fff](?:\\\\.|[^\"\\\\])*\""
+    },
+    {
+      "id": "R001",
+      "severity": "warning",
+      "message": "Check catch(Throwable) for fatal error and cancellation isolation",
+      "paths": [
+        "*/src/main/java/*.java"
+      ],
+      "scan": "code",
+      "pattern": "\\bcatch\\s*\\(\\s*Throwable\\b"
+    }
+  ]
+}
