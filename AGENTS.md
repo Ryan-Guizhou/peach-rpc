@@ -13,7 +13,7 @@ Task Intake → Source/Impact Analysis → Complexity Gate → Implementation Co
 
 ## 工程和兼容性红线
 
-- JDK 21、Maven 多模块、Spring Boot 3.5.4；以实际 POM 为准。4 空格、UTF-8、LF、无通配符 import，参见 .editorconfig 与 CONTRIBUTING.md。
+- JDK 21、Maven 多模块、Spring Boot 3.5.4；以实际 POM 为准。4 空格、UTF-8、LF、无通配符 import，参见 .editorconfig、[Java 编码规范](docs/engineering/java-coding-standard.md) 与 CONTRIBUTING.md。
 - 1.0.x 冻结 Wire Protocol v1、Public Core API、Stable Type ID、Schema Fingerprint v1、Codec/Message IDs、Registry Compatibility Metadata。**禁止以风格/命名修复为由改变公开签名、Record 字段、序列化行为及兼容键。**
 - 中文 Javadoc/必要行内注释、英文 SLF4J 参数化日志；Peach RPC 仅使用标准 Javadoc 标签（`@since` 必须真实），不复制 Peach Cloud 自定义 `@Author/@Version/@CreateTime`。
 - 公开 API/SPI、Starter、Registry、Codec、Transport 的契约必须明确 null、异常、生命周期、线程归属、背压/取消、资源所有权。不要为注释覆盖率制造无意义注释。
