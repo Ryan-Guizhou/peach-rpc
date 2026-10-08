@@ -105,12 +105,21 @@ def main() -> int:
         fail("Missing release-readiness assets: " + ", ".join(missing))
 
     status = properties(ROOT / "docs" / "release-status.properties")
-    if status.get("version") != "1.0.0":
-        fail("GA status version must be 1.0.0")
     if status.get("release_candidate") != "1.0.0-RC1":
         fail("RC status version must be 1.0.0-RC1")
     if status.get("wire") != "v1":
         fail("Wire v1 must be frozen for 1.0.x")
+
+    if args.stage == "rc1" and status.get("version") != "1.0.0":
+        fail(
+            "Historical RC1 readiness must be evaluated from the "
+            "1.0.0 release source tree"
+        )
+    if args.stage == "ga" and status.get("version") != "1.0.0":
+        fail(
+            "Historical GA readiness must be evaluated from the "
+            "1.0.0 release source tree"
+        )
     if args.stage in ("ga", "patch") and status.get("project") != "ga":
         fail(f"{args.stage} release requires project=ga")
     if args.stage == "patch" and status.get("version") != version:
