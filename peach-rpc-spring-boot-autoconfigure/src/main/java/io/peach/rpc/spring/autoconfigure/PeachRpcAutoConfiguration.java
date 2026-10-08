@@ -1,6 +1,8 @@
 package io.peach.rpc.spring.autoconfigure;
 
 import io.peach.rpc.codec.RpcCodecRegistry;
+import io.peach.rpc.codec.fory.ForyRpcCodec;
+import io.peach.rpc.codec.fory.ForyRpcSecurityOptions;
 import io.peach.rpc.core.PeachRpcClient;
 import io.peach.rpc.core.PeachRpcServer;
 import io.peach.rpc.core.RpcClientResilienceOptions;
@@ -87,8 +89,15 @@ public class PeachRpcAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public RpcCodecRegistry peachRpcCodecRegistry() {
-        return RpcCodecRegistry.fromSpi();
+    public RpcCodecRegistry peachRpcCodecRegistry(PeachRpcProperties properties) {
+        PeachRpcProperties.ForySecurity security = properties.getCodec().getFory();
+        ForyRpcSecurityOptions options = new ForyRpcSecurityOptions(
+                security.getMode(),
+                java.util.Set.copyOf(security.getAllowedClassPatterns()),
+                security.getMaxDepth(),
+                security.getMaxGraphMemoryBytes(),
+                security.getMaxPayloadBytes());
+        return RpcCodecRegistry.of(new ForyRpcCodec(options));
     }
 
     /**
