@@ -74,6 +74,8 @@ Order findById(Long id);
 
 该注解表示业务方确认“相同参数重复执行不会产生不可接受的重复副作用”。创建订单、扣款、转账等接口不应仅为了获得重试而添加该注解，除非业务本身已有可靠幂等键/幂等语义。
 
+Consumer 响应解码、同步 Future continuation 被调度到独立的有界 completion executor。程序化 Builder 可调整 `responseCompletionThreads(int)` 和 `responseCompletionQueueCapacity(int)`，饱和时快速拒绝而非阻塞 EventLoop。
+
 ## 4. 可选：编译期 Consumer Stub
 
 普通 Starter 不要求代码生成，因此现有业务可继续使用 JDK Proxy fallback。
