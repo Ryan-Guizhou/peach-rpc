@@ -259,6 +259,11 @@ public final class PeachRpcClient implements AutoCloseable {
             ClientReference reference,
             ClientMethodBinding method,
             byte[] encodedArguments) {
+        if (!responseCompletionPermits.tryAcquire()) {
+            return CompletableFuture.failedFuture(
+                    new RpcOverloadedException(
+                            "RPC consumer response completion capacity exceeded"));
+        }
         retryBudget.onRequest();
         RpcTraceContext trace = tracingBridge.enabled()
                 ? tracingBridge.startClient(
@@ -277,11 +282,6 @@ public final class PeachRpcClient implements AutoCloseable {
         }
         CompletableFuture<Object> result =
                 new CompletableFuture<>();
-        if (!responseCompletionPermits.tryAcquire()) {
-            return CompletableFuture.failedFuture(
-                    new RpcOverloadedException(
-                            "RPC consumer response completion capacity exceeded"));
-        }
         result.whenComplete((ignoredValue, error) ->
                 responseCompletionPermits.release());
         result.whenComplete((ignoredValue, error) -> {
