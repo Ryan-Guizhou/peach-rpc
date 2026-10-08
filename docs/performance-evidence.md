@@ -100,7 +100,7 @@ flowchart LR
 以下候选只有 Evidence 证明收益后才进入默认路径：
 
 - Buffer-oriented Codec；
-- FrameAccumulator copy reduction；
+- FrameAccumulator copy reduction（PR-E Draft 的 [定向 Allocation Profiling](transport-allocation-profiling.md)，Shared Runner 的 B/op 与采样延迟仅为 Smoke）；
 - Object[] elimination；
 - Future/PendingRequest allocation reduction；
 - EndpointStats/admission contention 优化；

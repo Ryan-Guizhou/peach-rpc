@@ -1,0 +1,53 @@
+name: Frame Allocation Comparison
+
+on:
+  pull_request:
+    paths:
+      - "peach-rpc-transport-vertx/src/main/java/io/peach/rpc/transport/vertx/FrameAccumulator.java"
+      - "peach-rpc-transport-vertx/src/test/java/io/peach/rpc/transport/vertx/FrameAccumulatorTest.java"
+      - "peach-rpc-benchmarks/src/main/java/io/peach/rpc/transport/vertx/FrameAccumulatorBenchmark.java"
+      - "scripts/run_frame_allocation_comparison.sh"
+      - "scripts/compare_frame_allocation.py"
+      - "scripts/test_frame_allocation_evidence.py"
+      - ".github/workflows/frame-allocation-comparison.yml"
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact PR head and full history
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Validate allocation evidence parser
+        run: python3 scripts/test_frame_allocation_evidence.py
+
+      - name: Compare base and candidate JMH allocation / sample latency
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PEACH_RPC_ALLOCATION_JVM_FLAGS: "-Xms256m -Xmx256m"
+        run: bash scripts/run_frame_allocation_comparison.sh "$BASE_SHA" "$HEAD_SHA"
+
+      - name: Upload raw JMH and comparison reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frame-allocation-smoke-${{ github.run_id }}
+          path: |
+            target/frame-allocation-comparison/baseline/*.json
+            target/frame-allocation-comparison/candidate/*.json
+            target/frame-allocation-comparison/environment.json
+            target/frame-allocation-comparison/comparison.md
+          if-no-files-found: warn
+          retention-days: 30
