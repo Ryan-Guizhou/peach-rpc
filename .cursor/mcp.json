@@ -1,0 +1,76 @@
+{
+  "mcpServers": {
+    "mysql": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "mcp-server-mysql@latest"
+      ],
+      "env": {
+        "MYSQL_HOST": "${env:MYSQL_HOST}",
+        "MYSQL_PORT": "${env:MYSQL_PORT}",
+        "MYSQL_USER": "${env:MYSQL_USER}",
+        "MYSQL_PASS": "${env:MYSQL_PASS}",
+        "MYSQL_DB": "${env:MYSQL_DB}"
+      }
+    },
+    "github": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+    "context7": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ],
+      "env": {
+        "CONTEXT7_API_KEY": "${env:CONTEXT7_API_KEY}"
+      }
+    },
+    "codegraph": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@colbymchenry/codegraph",
+        "serve",
+        "--mcp",
+        "--path",
+        "${workspaceFolder}"
+      ]
+    },
+    "agentmemory": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@agentmemory/mcp"
+      ],
+      "env": {
+        "AGENTMEMORY_URL": "http://localhost:3111",
+        "AGENTMEMORY_SECRET": "${env:AGENTMEMORY_SECRET}",
+        "AGENTMEMORY_TOOLS": "core"
+      }
+    }
+  }
+}

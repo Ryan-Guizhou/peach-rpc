@@ -1,0 +1,51 @@
+# Generated from mcp.json by scripts/sync_agent_mcp.py; edit the source instead.
+# Windows commands are preserved. Start Codex from the repository root.
+# Credentials are inherited from the client environment, never embedded here.
+
+[mcp_servers."mysql"]
+command = "cmd"
+args = ["/c", "npx", "-y", "mcp-server-mysql@latest"]
+enabled = true
+required = false
+startup_timeout_sec = 60
+tool_timeout_sec = 60
+env_vars = ["MYSQL_HOST", "MYSQL_PORT", "MYSQL_USER", "MYSQL_PASS", "MYSQL_DB"]
+
+[mcp_servers."github"]
+command = "cmd"
+args = ["/c", "npx", "-y", "@modelcontextprotocol/server-github"]
+enabled = true
+required = false
+startup_timeout_sec = 60
+tool_timeout_sec = 60
+env_vars = ["GITHUB_PERSONAL_ACCESS_TOKEN"]
+
+[mcp_servers."context7"]
+command = "cmd"
+args = ["/c", "npx", "-y", "@upstash/context7-mcp@latest"]
+enabled = true
+required = false
+startup_timeout_sec = 60
+tool_timeout_sec = 60
+env_vars = ["CONTEXT7_API_KEY"]
+
+[mcp_servers."codegraph"]
+command = "cmd"
+args = ["/c", "npx", "-y", "@colbymchenry/codegraph", "serve", "--mcp", "--path", "."]
+enabled = true
+required = false
+startup_timeout_sec = 60
+tool_timeout_sec = 60
+
+[mcp_servers."agentmemory"]
+command = "cmd"
+args = ["/c", "npx", "-y", "@agentmemory/mcp"]
+enabled = true
+required = false
+startup_timeout_sec = 60
+tool_timeout_sec = 60
+env_vars = ["AGENTMEMORY_SECRET"]
+
+[mcp_servers."agentmemory".env]
+"AGENTMEMORY_URL" = "http://localhost:3111"
+"AGENTMEMORY_TOOLS" = "core"
