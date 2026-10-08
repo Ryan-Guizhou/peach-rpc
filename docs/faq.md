@@ -1,6 +1,6 @@
 # Peach RPC FAQ
 
-## 1. 1.0.0 是否已经冻结 Wire？
+## 1. 1.0.x 是否继续冻结 Wire？
 
 是。1.0.x 使用 Wire v1。兼容边界见 [Wire Compatibility](wire-compatibility.md)。
 
@@ -56,7 +56,7 @@ Micrometer、OpenTelemetry 和 JFR。见 [可观测性](observability.md)。
 
 没有把 shared CI Runner 数字当作官方生产性能承诺。项目提供 JMH/Soak/Evidence 工具，使用者应在自己的固定硬件环境生成容量数据。
 
-## 15. 如何本地构建 1.0.0？
+## 15. 如何本地构建当前 1.0.1？
 
 ```bash
 mvn -B -ntp clean install
