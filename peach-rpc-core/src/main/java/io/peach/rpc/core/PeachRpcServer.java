@@ -436,17 +436,37 @@ public final class PeachRpcServer implements AutoCloseable {
             return result;
         }
 
-        Map<String, String> propagatedMetadata =
-                tracingBridge.enabled()
-                        || metadataPropagator.enabled()
-                ? request.metadataCopy()
-                : Map.of();
-        RpcTraceContext trace = tracingBridge.enabled()
-                ? tracingBridge.startServer(
-                        request.serviceId(),
-                        request.methodId(),
-                        propagatedMetadata)
-                : RpcTraceContext.noop();
+        Map<String, String> propagatedMetadata;
+        RpcTraceContext trace;
+        try {
+            propagatedMetadata = tracingBridge.enabled()
+                    || metadataPropagator.enabled()
+                    ? request.metadataCopy()
+                    : Map.of();
+            trace = tracingBridge.enabled()
+                    ? tracingBridge.startServer(
+                            request.serviceId(),
+                            request.methodId(),
+                            propagatedMetadata)
+                    : RpcTraceContext.noop();
+        } catch (RpcProtocolException invalidMetadata) {
+            result.complete(frameworkError(
+                    request,
+                    RpcStatus.BAD_REQUEST,
+                    "Invalid request metadata"));
+            return result;
+        } catch (RuntimeException setupError) {
+            LOGGER.warn(
+                    "RPC tracing setup failed: serviceId={}, methodId={}",
+                    request.serviceId(),
+                    request.methodId(),
+                    setupError);
+            result.complete(frameworkError(
+                    request,
+                    RpcStatus.INTERNAL_ERROR,
+                    "Provider request setup failed"));
+            return result;
+        }
         result.whenComplete((responseBytes, error) ->
                 trace.end(
                         responseStatus(
