@@ -185,6 +185,55 @@ class PeachRpcClientResilienceTest {
         }
     }
 
+    @Test
+    void shouldRejectNewCallWhenCompletionCapacityIsExhausted()
+            throws Exception {
+        java.util.concurrent.CopyOnWriteArrayList<byte[]> frames =
+                new java.util.concurrent.CopyOnWriteArrayList<>();
+        java.util.concurrent.CopyOnWriteArrayList<CompletableFuture<byte[]>> replies =
+                new java.util.concurrent.CopyOnWriteArrayList<>();
+        CountDownLatch admitted = new CountDownLatch(2);
+        try (PeachRpcClient client = PeachRpcClient.builder()
+                .serviceDiscovery(new StaticDiscovery())
+                .transportClient(new TestTransport(
+                        (endpoint, frame, timeout) -> {
+                            frames.add(frame);
+                            CompletableFuture<byte[]> response =
+                                    new CompletableFuture<>();
+                            replies.add(response);
+                            admitted.countDown();
+                            return response;
+                        }))
+                .codecRegistry(RpcCodecRegistry.of(new StringCodec()))
+                .timeout(Duration.ofSeconds(5))
+                .responseCompletionThreads(1)
+                .responseCompletionQueueCapacity(1)
+                .build()) {
+            RetryService service = client.refer(
+                    RetryService.class, "1.0.0", "test");
+            CompletableFuture<String> first =
+                    CompletableFuture.supplyAsync(() -> service.find("one"));
+            CompletableFuture<String> second =
+                    CompletableFuture.supplyAsync(() -> service.find("two"));
+            assertTrue(admitted.await(2, TimeUnit.SECONDS));
+
+            CompletionException rejected = assertThrows(
+                    CompletionException.class,
+                    () -> service.find("three"));
+            assertInstanceOf(
+                    io.peach.rpc.api.RpcOverloadedException.class,
+                    rejected.getCause());
+            assertEquals(2, frames.size());
+
+            for (int i = 0; i < replies.size(); i++) {
+                replies.get(i).complete(
+                        successResponse(frames.get(i), "ok"));
+            }
+            assertEquals("ok", first.get(2, TimeUnit.SECONDS));
+            assertEquals("ok", second.get(2, TimeUnit.SECONDS));
+        }
+    }
+
     private static PeachRpcClient client(
             RequestFunction request) {
         return client(
