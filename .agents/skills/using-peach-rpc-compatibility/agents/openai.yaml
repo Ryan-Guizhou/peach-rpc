@@ -1,0 +1,3 @@
+interface:
+  display_name: "Peach RPC Compatibility"
+  short_description: "Peach RPC 1.0.x compatibility review for Wire v1, Schema Fingerprint, "
