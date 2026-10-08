@@ -77,8 +77,11 @@ run_jmh() {
   local output_dir="$OUTPUT/$kind"
 
   echo "Building $kind benchmark in separate checkout at $(git -C "$checkout_dir" rev-parse HEAD)"
-  (cd "$checkout_dir" && mvn -B -ntp -pl peach-rpc-benchmarks -am \
-      -DskipTests package)
+  # Annotation processor artifacts are resolved from the local Maven repository,
+  # rather than the compile dependency reactor; install the exact checkout first.
+  (cd "$checkout_dir" && \
+    mvn -B -ntp -pl peach-rpc-codegen -am -DskipTests install && \
+    mvn -B -ntp -pl peach-rpc-benchmarks -am -DskipTests package)
 
   local jar="$checkout_dir/peach-rpc-benchmarks/target/benchmarks.jar"
   if [[ ! -s "$jar" ]]; then
