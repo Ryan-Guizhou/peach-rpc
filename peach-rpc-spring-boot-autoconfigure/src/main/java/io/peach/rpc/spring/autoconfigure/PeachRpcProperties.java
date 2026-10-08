@@ -1,6 +1,9 @@
 package io.peach.rpc.spring.autoconfigure;
 
 import io.peach.rpc.observability.RpcSecurityMode;
+import io.peach.rpc.codec.fory.ForyRpcSecurityOptions;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -21,6 +24,7 @@ public class PeachRpcProperties {
     private final Transport transport = new Transport();
     private final Client client = new Client();
     private final Server server = new Server();
+    private final Codec codec = new Codec();
 
     /**
      * 返回 Peach RPC 总开关。
@@ -74,6 +78,97 @@ public class PeachRpcProperties {
      */
     public Server getServer() {
         return server;
+    }
+
+    /**
+     * 返回编解码安全配置。
+     *
+     * @return Codec 配置
+     */
+    public Codec getCodec() {
+        return codec;
+    }
+
+    /** 编解码配置。 */
+    public static class Codec {
+        private final ForySecurity fory = new ForySecurity();
+
+        /** 创建 Codec 配置。 */
+        public Codec() {
+        }
+
+        /**
+         * 返回 Fory 安全配置。
+         *
+         * @return Fory 配置
+         */
+        public ForySecurity getFory() {
+            return fory;
+        }
+    }
+
+    /** Fory Native 反序列化安全配置。 */
+    public static class ForySecurity {
+        private ForyRpcSecurityOptions.Mode mode =
+                ForyRpcSecurityOptions.Mode.TRUSTED_COMPATIBILITY;
+        private Set<String> allowedClassPatterns = new LinkedHashSet<>();
+        private int maxDepth = 50;
+        private long maxGraphMemoryBytes = 64L * 1024 * 1024;
+        private int maxPayloadBytes = 16 * 1024 * 1024;
+
+        /** 创建 Fory 安全配置。 */
+        public ForySecurity() {
+        }
+
+        /** @return 安全模式 */
+        public ForyRpcSecurityOptions.Mode getMode() {
+            return mode;
+        }
+
+        /** @param value 安全模式 */
+        public void setMode(ForyRpcSecurityOptions.Mode value) {
+            this.mode = value;
+        }
+
+        /** @return 可解码应用类名及应用包模式 */
+        public Set<String> getAllowedClassPatterns() {
+            return allowedClassPatterns;
+        }
+
+        /** @param value 允许的应用类型或包模式 */
+        public void setAllowedClassPatterns(Set<String> value) {
+            this.allowedClassPatterns = value;
+        }
+
+        /** @return 最大对象图嵌套深度 */
+        public int getMaxDepth() {
+            return maxDepth;
+        }
+
+        /** @param value 最大对象图嵌套深度 */
+        public void setMaxDepth(int value) {
+            this.maxDepth = value;
+        }
+
+        /** @return 最大近似图内存字节数 */
+        public long getMaxGraphMemoryBytes() {
+            return maxGraphMemoryBytes;
+        }
+
+        /** @param value 最大近似图内存字节数 */
+        public void setMaxGraphMemoryBytes(long value) {
+            this.maxGraphMemoryBytes = value;
+        }
+
+        /** @return 最大 Fory Payload 字节数 */
+        public int getMaxPayloadBytes() {
+            return maxPayloadBytes;
+        }
+
+        /** @param value 最大 Fory Payload 字节数 */
+        public void setMaxPayloadBytes(int value) {
+            this.maxPayloadBytes = value;
+        }
     }
 
     /**
