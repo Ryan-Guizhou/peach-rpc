@@ -1,6 +1,6 @@
 # Peach RPC 1.0 发布策略
 
-> 状态：**1.0.0 GA / 1.0.x Maintenance**
+> 状态：**1.0.1 Release Prep / 1.0.x Maintenance**
 
 ## 1. 版本阶段
 
@@ -209,6 +209,7 @@ POM 中的 `central-release` Profile 包含：
 
 - [1.0.0-RC1](release-notes-1.0.0-RC1.md)
 - [1.0.0](release-notes-1.0.0.md)
+- [1.0.1](release-notes-1.0.1.md)
 
 新的 Patch Release Notes 在对应 release-prep PR 中新增，不能提前声明尚未进入 `main` 的代码已经发布。
 
