@@ -55,6 +55,33 @@ public final class RpcCodecRegistry {
     }
 
     /**
+     * 替换已注册的指定 Codec，同时保留其他 SPI 扩展和默认 Codec 语义。
+     *
+     * <p>仅允许替换已存在的 Codec ID，以免意外扩大线协议协商范围。
+     * 返回新的只读注册表；原注册表不会发生变化。
+     *
+     * @param codec 替换后的 Codec
+     * @return 保留其余 SPI 扩展的新注册表
+     */
+    public RpcCodecRegistry withReplacement(RpcCodec codec) {
+        if (codec == null) {
+            throw new IllegalArgumentException("codec must not be null");
+        }
+        if (!byCode.containsKey(codec.code())) {
+            throw new IllegalArgumentException(
+                    "Cannot replace unregistered codec code: "
+                            + Byte.toUnsignedInt(codec.code()));
+        }
+        Map<Byte, RpcCodec> updated = new HashMap<>(byCode);
+        updated.put(codec.code(), codec);
+        return new RpcCodecRegistry(
+                updated,
+                defaultCodec.code() == codec.code()
+                        ? codec
+                        : defaultCodec);
+    }
+
+    /**
      * 根据线协议编号获取 Codec。
      *
      * @param code Codec 编号
