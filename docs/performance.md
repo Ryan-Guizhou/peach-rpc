@@ -27,6 +27,12 @@ Peach RPC 不以“理论零分配”为目标，而以可重复证据驱动：
 - Provider 对业务 `CompletionStage` 使用完成回调，不让未完成的异步结果长期占用 CPU/Virtual Thread worker；Stage 稍后完成时，响应编码重新调度到 Provider 管理的执行资源，避免占用外部 Future completion thread / EventLoop；
 - Retry Budget 在额度已满时只读检查，不再执行无意义的 CAS 写回；Circuit Breaker 在健康 CLOSED 状态的成功路径避免重复原子写。
 
+## 2.1 Consumer 响应完成隔离（PR-A）
+
+Consumer 的 Transport 响应完成不直接执行 Fory 解码和业务 Future continuation，而是提交到独立有界执行器。默认线程数为 `max(2, min(16, availableProcessors))`，队列大小 4096，可以通过 `PeachRpcClient.Builder` 调整。队列饱和快速返回 `OVERLOADED`；拒绝处理不得回退到 EventLoop 上执行用户回调。
+
+线程切换可能影响轻量报文的 p99，必须通过固定环境性能对比来确认；当前不能宣称没有回归。
+
 ## 3. 当前仍存在的分配
 
 - `CompletableFuture` / PendingRequest；
