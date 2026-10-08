@@ -215,6 +215,89 @@ public class PeachRpcServerAsyncExecutionTest {
         }
     }
 
+    @Test
+    void busyServiceCannotBlockAnotherServiceAndCancellationReleasesAdmission()
+            throws Exception {
+        CapturingTransportServer transport = new CapturingTransportServer();
+        AsyncServiceImpl busy = new AsyncServiceImpl();
+        PeachRpcServer server = PeachRpcServer.builder()
+                .serviceRegistrar(new NoopRegistry())
+                .transportServer(transport)
+                .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
+                .bindEndpoint(new RpcEndpoint("127.0.0.1", 19097))
+                .maxConcurrent(2)
+                .admissionOptions(new RpcProviderAdmissionOptions(
+                        1024L, 0, 0, 0L, 0L))
+                .executionOptions(new RpcProviderExecutionOptions(
+                        false, 1, 4))
+                .build()
+                .registerService(
+                        AsyncService.class,
+                        busy,
+                        "1.0.0",
+                        "default")
+                .registerService(
+                        AnotherService.class,
+                        new AnotherServiceImpl(),
+                        "1.0.0",
+                        "default");
+        try {
+            server.start().toCompletableFuture().join();
+
+            CompletableFuture<byte[]> outstanding =
+                    transport.handle(request("slow")).toCompletableFuture();
+            assertTrue(busy.slowInvoked.await(1, TimeUnit.SECONDS));
+            assertFalse(outstanding.isDone());
+
+            byte[] firstServiceOverload = transport.handle(request("fast"))
+                    .toCompletableFuture()
+                    .get(1, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OVERLOADED,
+                    RpcProtocolCodec.view(firstServiceOverload).status());
+
+            ServiceKey otherKey = new ServiceKey(
+                    AnotherService.class.getName(), "1.0.0", "default");
+            byte[] secondServiceRequest = RpcProtocolCodec.encodeRequest(
+                    (byte) 1,
+                    RpcIds.serviceId(otherKey),
+                    RpcIds.methodId(AnotherService.class.getMethod("fast")),
+                    0L,
+                    0L,
+                    Map.of(),
+                    new byte[0]);
+            byte[] otherResponse = transport.handle(secondServiceRequest)
+                    .toCompletableFuture()
+                    .get(1, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(otherResponse).status());
+
+            assertTrue(outstanding.cancel(true));
+            busy.slow.complete("cancelled");
+            byte[] recovered = transport.handle(request("fast"))
+                    .toCompletableFuture()
+                    .get(1, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(recovered).status());
+        } finally {
+            busy.releaseBlocking.countDown();
+            server.close();
+        }
+    }
+
+    public interface AnotherService {
+        String fast();
+    }
+
+    public static final class AnotherServiceImpl implements AnotherService {
+        @Override
+        public String fast() {
+            return "other";
+        }
+    }
+
     private static PeachRpcServer createServer(
             CapturingTransportServer transport,
             AsyncServiceImpl service,
