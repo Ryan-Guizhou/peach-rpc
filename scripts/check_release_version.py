@@ -4,29 +4,54 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 
-EXPECTED = {
+FIXED_VERSIONS = {
     "rc1": "1.0.0-RC1",
     "ga": "1.0.0",
 }
+PATCH_VERSION = re.compile(r"^1\.0\.([1-9][0-9]*)$")
+
+
+def validate(stage: str, version: str) -> str | None:
+    """Return an error message when the release version is invalid."""
+    if stage in FIXED_VERSIONS:
+        expected = FIXED_VERSIONS[stage]
+        if version != expected:
+            return (
+                f"stage {stage!r} requires version {expected!r}, "
+                f"got {version!r}"
+            )
+        return None
+
+    if stage == "patch" and not PATCH_VERSION.fullmatch(version):
+        return (
+            "stage 'patch' requires a stable 1.0.x version greater than "
+            f"1.0.0, got {version!r}"
+        )
+    return None
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--stage", choices=tuple(EXPECTED), required=True)
+    parser.add_argument(
+        "--stage",
+        choices=("rc1", "ga", "patch"),
+        required=True,
+    )
     parser.add_argument("--version", required=True)
     args = parser.parse_args()
 
-    expected = EXPECTED[args.stage]
-    if args.version != expected:
-        print(
-            f"ERROR: stage {args.stage!r} requires version {expected!r}, "
-            f"got {args.version!r}"
-        )
+    error = validate(args.stage, args.version)
+    if error:
+        print(f"ERROR: {error}")
         return 1
 
-    print(f"Peach RPC release version accepted: stage={args.stage}, version={args.version}")
+    print(
+        "Peach RPC release version accepted: "
+        f"stage={args.stage}, version={args.version}"
+    )
     return 0
 
 
