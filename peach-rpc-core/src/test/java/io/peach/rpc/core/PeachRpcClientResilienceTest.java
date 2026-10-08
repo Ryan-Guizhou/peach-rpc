@@ -1,6 +1,8 @@
 package io.peach.rpc.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -30,6 +32,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -123,6 +127,110 @@ class PeachRpcClientResilienceTest {
                     RpcUnavailableException.class,
                     error.getCause());
             assertEquals(1, attempts.get());
+        }
+    }
+
+    @Test
+    void responseDecoderRunsOutsideTransportCompletionThread() throws Exception {
+        CompletableFuture<byte[]> transportResponse = new CompletableFuture<>();
+        AtomicReference<byte[]> capturedRequest = new AtomicReference<>();
+        CountDownLatch requestSent = new CountDownLatch(1);
+        CountDownLatch decodeEntered = new CountDownLatch(1);
+        CountDownLatch releaseDecode = new CountDownLatch(1);
+        AtomicReference<String> decodeThread = new AtomicReference<>();
+
+        RpcCodec codec = new StringCodec(() -> {
+            decodeThread.set(Thread.currentThread().getName());
+            decodeEntered.countDown();
+            try {
+                if (!releaseDecode.await(3, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("Decoder timed out");
+                }
+            } catch (InterruptedException error) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(error);
+            }
+        });
+
+        try (PeachRpcClient client = PeachRpcClient.builder()
+                .serviceDiscovery(new StaticDiscovery())
+                .transportClient(new TestTransport((endpoint, frame, timeout) -> {
+                    capturedRequest.set(frame);
+                    requestSent.countDown();
+                    return transportResponse;
+                }))
+                .codecRegistry(RpcCodecRegistry.of(codec))
+                .timeout(Duration.ofSeconds(3))
+                .build()) {
+            RetryService service = client.refer(RetryService.class, "1.0.0", "test");
+            CompletableFuture<String> call =
+                    CompletableFuture.supplyAsync(() -> service.find("42"));
+            assertTrue(requestSent.await(2, TimeUnit.SECONDS));
+
+            Thread eventLoop = Thread.ofPlatform()
+                    .name("simulated-transport-eventloop")
+                    .start(() -> transportResponse.complete(
+                            successResponse(capturedRequest.get(), "ok")));
+            try {
+                assertTrue(decodeEntered.await(2, TimeUnit.SECONDS));
+                eventLoop.join(250);
+                assertFalse(eventLoop.isAlive(),
+                        "Transport completion must not block on decode");
+                assertTrue(decodeThread.get()
+                        .startsWith("peach-rpc-client-completion-"));
+            } finally {
+                releaseDecode.countDown();
+            }
+            assertEquals("ok", call.get(2, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    void shouldRejectNewCallWhenCompletionCapacityIsExhausted()
+            throws Exception {
+        java.util.concurrent.CopyOnWriteArrayList<byte[]> frames =
+                new java.util.concurrent.CopyOnWriteArrayList<>();
+        java.util.concurrent.CopyOnWriteArrayList<CompletableFuture<byte[]>> replies =
+                new java.util.concurrent.CopyOnWriteArrayList<>();
+        CountDownLatch admitted = new CountDownLatch(2);
+        try (PeachRpcClient client = PeachRpcClient.builder()
+                .serviceDiscovery(new StaticDiscovery())
+                .transportClient(new TestTransport(
+                        (endpoint, frame, timeout) -> {
+                            frames.add(frame);
+                            CompletableFuture<byte[]> response =
+                                    new CompletableFuture<>();
+                            replies.add(response);
+                            admitted.countDown();
+                            return response;
+                        }))
+                .codecRegistry(RpcCodecRegistry.of(new StringCodec()))
+                .timeout(Duration.ofSeconds(5))
+                .responseCompletionThreads(1)
+                .responseCompletionQueueCapacity(1)
+                .build()) {
+            RetryService service = client.refer(
+                    RetryService.class, "1.0.0", "test");
+            CompletableFuture<String> first =
+                    CompletableFuture.supplyAsync(() -> service.find("one"));
+            CompletableFuture<String> second =
+                    CompletableFuture.supplyAsync(() -> service.find("two"));
+            assertTrue(admitted.await(2, TimeUnit.SECONDS));
+
+            CompletionException rejected = assertThrows(
+                    CompletionException.class,
+                    () -> service.find("three"));
+            assertInstanceOf(
+                    io.peach.rpc.api.RpcOverloadedException.class,
+                    rejected.getCause());
+            assertEquals(2, frames.size());
+
+            for (int i = 0; i < replies.size(); i++) {
+                replies.get(i).complete(
+                        successResponse(frames.get(i), "ok"));
+            }
+            assertEquals("ok", first.get(2, TimeUnit.SECONDS));
+            assertEquals("ok", second.get(2, TimeUnit.SECONDS));
         }
     }
 
@@ -241,6 +349,16 @@ class PeachRpcClientResilienceTest {
     private static final class StringCodec
             implements RpcCodec {
 
+        private final Runnable onDecode;
+
+        private StringCodec() {
+            this(() -> { });
+        }
+
+        private StringCodec(Runnable onDecode) {
+            this.onDecode = onDecode;
+        }
+
         @Override
         public byte code() {
             return 1;
@@ -288,6 +406,7 @@ class PeachRpcClientResilienceTest {
 
                 @Override
                 public Object decodeResult(byte[] payload) {
+                    onDecode.run();
                     return new String(
                             payload,
                             StandardCharsets.UTF_8);

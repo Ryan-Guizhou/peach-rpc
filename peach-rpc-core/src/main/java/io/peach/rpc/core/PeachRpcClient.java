@@ -35,12 +35,16 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -55,6 +59,8 @@ public final class PeachRpcClient implements AutoCloseable {
     private final Duration timeout;
     private final RpcClientResilienceOptions resilienceOptions;
     private final RetryBudget retryBudget;
+    private final ThreadPoolExecutor responseCompletionExecutor;
+    private final Semaphore responseCompletionPermits;
     private final RpcObserver observer;
     private final RpcMetadataPropagator metadataPropagator;
     private final RpcTracingBridge tracingBridge;
@@ -99,6 +105,20 @@ public final class PeachRpcClient implements AutoCloseable {
                 builder.resilienceOptions,
                 "resilienceOptions");
         this.retryBudget = new RetryBudget(resilienceOptions);
+        this.responseCompletionPermits = new Semaphore(
+                builder.responseCompletionThreads
+                        + builder.responseCompletionQueueCapacity);
+        this.responseCompletionExecutor = new ThreadPoolExecutor(
+                builder.responseCompletionThreads,
+                builder.responseCompletionThreads,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(
+                        builder.responseCompletionQueueCapacity),
+                Thread.ofPlatform()
+                        .name("peach-rpc-client-completion-", 0)
+                        .factory(),
+                new ThreadPoolExecutor.AbortPolicy());
         this.observer = Objects.requireNonNull(
                 builder.observer,
                 "observer");
@@ -239,6 +259,11 @@ public final class PeachRpcClient implements AutoCloseable {
             ClientReference reference,
             ClientMethodBinding method,
             byte[] encodedArguments) {
+        if (!responseCompletionPermits.tryAcquire()) {
+            return CompletableFuture.failedFuture(
+                    new RpcOverloadedException(
+                            "RPC consumer response completion capacity exceeded"));
+        }
         retryBudget.onRequest();
         RpcTraceContext trace = tracingBridge.enabled()
                 ? tracingBridge.startClient(
@@ -257,6 +282,8 @@ public final class PeachRpcClient implements AutoCloseable {
         }
         CompletableFuture<Object> result =
                 new CompletableFuture<>();
+        result.whenComplete((ignoredValue, error) ->
+                responseCompletionPermits.release());
         result.whenComplete((ignoredValue, error) -> {
             Throwable failure;
             RpcStatus finalStatus;
@@ -426,6 +453,45 @@ public final class PeachRpcClient implements AutoCloseable {
         });
 
         transportFuture.whenComplete((rawResponse, transportError) -> {
+            try {
+                responseCompletionExecutor.execute(() ->
+                        completeTransportResponse(
+                                reference,
+                                method,
+                                encodedArguments,
+                                propagatedMetadata,
+                                deadlineNanos,
+                                attempt,
+                                result,
+                                selected,
+                                endpointStats,
+                                startedAtNanos,
+                                rawResponse,
+                                transportError));
+            } catch (RejectedExecutionException rejected) {
+                // 容量在发起请求前预留。只有执行器关闭或竞争才可能触发这里。
+                endpointStats.endCancelled(
+                        System.nanoTime() - startedAtNanos);
+                result.completeExceptionally(
+                        new RpcOverloadedException(
+                                "RPC response completion executor unavailable"));
+            }
+        });
+    }
+
+    private void completeTransportResponse(
+            ClientReference reference,
+            ClientMethodBinding method,
+            byte[] encodedArguments,
+            Map<String, String> propagatedMetadata,
+            long deadlineNanos,
+            int attempt,
+            CompletableFuture<Object> result,
+            ServiceInstance selected,
+            EndpointStats endpointStats,
+            long startedAtNanos,
+            byte[] rawResponse,
+            Throwable transportError) {
             long elapsed = System.nanoTime() - startedAtNanos;
             if (result.isCancelled()) {
                 endpointStats.endCancelled(elapsed);
@@ -538,7 +604,7 @@ public final class PeachRpcClient implements AutoCloseable {
                         result,
                         error);
             }
-        });
+
     }
 
     private void recordEndpointFailure(
@@ -773,6 +839,7 @@ public final class PeachRpcClient implements AutoCloseable {
     public void close() {
         directories.values().forEach(ServiceDirectory::close);
         transport.close();
+        responseCompletionExecutor.shutdown();
     }
 
     private record ClientReference(
@@ -933,6 +1000,9 @@ public final class PeachRpcClient implements AutoCloseable {
         private Duration timeout = Duration.ofSeconds(3);
         private RpcClientResilienceOptions resilienceOptions =
                 RpcClientResilienceOptions.DEFAULT;
+        private int responseCompletionThreads = Math.max(
+                2, Math.min(16, Runtime.getRuntime().availableProcessors()));
+        private int responseCompletionQueueCapacity = 4096;
         private RpcObserver observer = RpcObserver.noop();
         private RpcMetadataPropagator metadataPropagator =
                 RpcMetadataPropagator.noop();
@@ -1022,6 +1092,36 @@ public final class PeachRpcClient implements AutoCloseable {
             this.resilienceOptions = Objects.requireNonNull(
                     value,
                     "resilienceOptions");
+            return this;
+        }
+
+        /**
+         * 配置 Consumer 响应解码和回调隔离执行器线程数。
+         *
+         * @param value 正数线程数
+         * @return Consumer Builder
+         */
+        public Builder responseCompletionThreads(int value) {
+            if (value <= 0) {
+                throw new IllegalArgumentException(
+                        "responseCompletionThreads must be positive");
+            }
+            this.responseCompletionThreads = value;
+            return this;
+        }
+
+        /**
+         * 配置 Consumer 响应完成任务的有界队列容量。
+         *
+         * @param value 正数队列容量
+         * @return Consumer Builder
+         */
+        public Builder responseCompletionQueueCapacity(int value) {
+            if (value <= 0) {
+                throw new IllegalArgumentException(
+                        "responseCompletionQueueCapacity must be positive");
+            }
+            this.responseCompletionQueueCapacity = value;
             return this;
         }
 
