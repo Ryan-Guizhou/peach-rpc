@@ -1,6 +1,6 @@
 ---
 name: review-peach-rpc-changes
-description: Evidence-grounded Peach RPC pull request code review. Use when reviewing Java source changes, Agent-generated code, CI regressions, naming/Javadoc/log rules, forbidden APIs, compatibility, performance or security before submitting or merging a PR.
+description: "Evidence-grounded Peach RPC pull request code review. Use when reviewing Java source changes, Agent-generated code, CI regressions, naming/Javadoc/log rules, forbidden APIs, compatibility, performance or security before submitting or merging a PR."
 ---
 
 # Diff Review Procedure
