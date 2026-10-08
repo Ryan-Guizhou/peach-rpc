@@ -17,6 +17,10 @@ import org.apache.fory.ThreadSafeFory;
  *
  * <p>Codec ID 1 的 wire payload 与 V2-A 保持兼容。V2-B 的方法级绑定
  * 只优化本机解码路径，不改变参数在线上的 Object[] 表示。
+ *
+ * <p>无参构造器保留历史可信环境的兼容模式；处理不可信输入前需明确启用
+ * 严格类型白名单和对象图/长度预算。类型允许规则以及滚动部署兼容性
+ * 不能由本 Codec 自动推断，应由应用配置和测试验证。
  */
 @Extension("fory")
 public final class ForyRpcCodec implements RpcCodec {
