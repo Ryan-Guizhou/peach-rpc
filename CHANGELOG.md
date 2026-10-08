@@ -2,6 +2,19 @@
 
 Peach RPC 使用语义化版本。1.0.x 保持 Wire v1、Stable Type ID、Schema Fingerprint v1 和 Public Core API 的兼容边界。
 
+## Unreleased
+
+### Fixed
+
+- Provider 对业务 `CompletionStage` 使用 continuation 完成响应，不再通过 `join()` 占用 Provider worker；异步阶段完成前继续持有 admission permit。
+- 异步业务 Future 在外部线程或 EventLoop 完成时，响应序列化重新进入 Provider 管理的执行资源并恢复 Trace/Metadata Scope，避免大型响应编码阻塞 Future completion thread。
+- Provider 在对外完成响应 Future 之前先释放 admission，消除“响应已完成但并发许可尚未归还”的瞬时过载竞态。
+
+### Performance
+
+- Retry Budget 达到额度上限时避免无意义 CAS 写回。
+- Circuit Breaker 在健康 CLOSED 成功路径避免重复原子写。
+
 ## 1.0.0
 
 ### Added

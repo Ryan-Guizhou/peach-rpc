@@ -2,6 +2,7 @@ package io.peach.rpc.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.peach.rpc.api.PeachRpcExecution;
 import io.peach.rpc.api.RpcEndpoint;
@@ -20,6 +21,7 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -58,6 +60,114 @@ public class PeachRpcServerAsyncExecutionTest {
                     RpcStatus.OK,
                     RpcProtocolCodec.view(completedSlowResponse).status());
         } finally {
+            server.close();
+        }
+    }
+
+    @Test
+    void asyncCompletionShouldEncodeOnProviderExecutor() throws Exception {
+        CapturingTransportServer transport = new CapturingTransportServer();
+        AsyncServiceImpl service = new AsyncServiceImpl();
+        TrackingCodec codec = new TrackingCodec();
+        PeachRpcServer server = createServer(
+                transport,
+                service,
+                2,
+                19095,
+                codec);
+
+        try {
+            server.start().toCompletableFuture().join();
+
+            CompletionStage<byte[]> response =
+                    transport.handle(request("slow"));
+            assertFalse(response.toCompletableFuture().isDone());
+            assertTrue(
+                    service.slowInvoked.await(
+                            1,
+                            TimeUnit.SECONDS));
+
+            Thread completer = Thread.ofPlatform()
+                    .name("foreign-async-completion")
+                    .start(() -> service.slow.complete("slow"));
+            completer.join();
+
+            byte[] completed = response.toCompletableFuture()
+                    .get(1, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(completed).status());
+            assertTrue(
+                    codec.encodeThreadName.get()
+                            .startsWith("peach-rpc-cpu-"));
+        } finally {
+            server.close();
+        }
+    }
+
+    @Test
+    void asyncCompletionShouldFailFastWhenCpuCompletionQueueIsFull()
+            throws Exception {
+        CapturingTransportServer transport = new CapturingTransportServer();
+        AsyncServiceImpl service = new AsyncServiceImpl();
+        PeachRpcServer server = createServer(
+                transport,
+                service,
+                3,
+                19096);
+
+        try {
+            server.start().toCompletableFuture().join();
+
+            CompletionStage<byte[]> slowResponse =
+                    transport.handle(request("slow"));
+            assertFalse(slowResponse.toCompletableFuture().isDone());
+            assertTrue(
+                    service.slowInvoked.await(
+                            1,
+                            TimeUnit.SECONDS));
+
+            CompletionStage<byte[]> blockingResponse =
+                    transport.handle(request("blocking"));
+            assertTrue(
+                    service.blockingEntered.await(
+                            1,
+                            TimeUnit.SECONDS));
+
+            CompletionStage<byte[]> queuedResponse =
+                    transport.handle(request("queued"));
+            assertFalse(queuedResponse.toCompletableFuture().isDone());
+
+            service.slow.complete("slow");
+            byte[] overloaded = slowResponse.toCompletableFuture()
+                    .get(1, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OVERLOADED,
+                    RpcProtocolCodec.view(overloaded).status());
+
+            service.releaseBlocking.countDown();
+
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(
+                            blockingResponse.toCompletableFuture()
+                                    .get(1, TimeUnit.SECONDS))
+                            .status());
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(
+                            queuedResponse.toCompletableFuture()
+                                    .get(1, TimeUnit.SECONDS))
+                            .status());
+
+            byte[] recovered = transport.handle(request("fast"))
+                    .toCompletableFuture()
+                    .get(1, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(recovered).status());
+        } finally {
+            service.releaseBlocking.countDown();
             server.close();
         }
     }
@@ -110,10 +220,24 @@ public class PeachRpcServerAsyncExecutionTest {
             AsyncServiceImpl service,
             int maxConcurrent,
             int port) {
+        return createServer(
+                transport,
+                service,
+                maxConcurrent,
+                port,
+                new NoopCodec());
+    }
+
+    private static PeachRpcServer createServer(
+            CapturingTransportServer transport,
+            AsyncServiceImpl service,
+            int maxConcurrent,
+            int port,
+            RpcCodec codec) {
         return PeachRpcServer.builder()
                 .serviceRegistrar(new NoopRegistry())
                 .transportServer(transport)
-                .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
+                .codecRegistry(RpcCodecRegistry.of(codec))
                 .bindEndpoint(new RpcEndpoint("127.0.0.1", port))
                 .maxConcurrent(maxConcurrent)
                 .executionOptions(new RpcProviderExecutionOptions(
@@ -152,20 +276,79 @@ public class PeachRpcServerAsyncExecutionTest {
 
         @PeachRpcExecution(RpcExecutionMode.CPU)
         String fast();
+
+        @PeachRpcExecution(RpcExecutionMode.CPU)
+        String blocking();
+
+        @PeachRpcExecution(RpcExecutionMode.CPU)
+        String queued();
     }
 
     public static final class AsyncServiceImpl implements AsyncService {
         private final CompletableFuture<String> slow =
                 new CompletableFuture<>();
+        private final CountDownLatch slowInvoked =
+                new CountDownLatch(1);
+        private final CountDownLatch blockingEntered =
+                new CountDownLatch(1);
+        private final CountDownLatch releaseBlocking =
+                new CountDownLatch(1);
 
         @Override
         public CompletionStage<String> slow() {
+            slowInvoked.countDown();
             return slow;
         }
 
         @Override
         public String fast() {
             return "fast";
+        }
+
+        @Override
+        public String blocking() {
+            blockingEntered.countDown();
+            try {
+                if (!releaseBlocking.await(
+                        2,
+                        TimeUnit.SECONDS)) {
+                    throw new IllegalStateException(
+                            "Blocking test method timed out");
+                }
+            } catch (InterruptedException error) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(error);
+            }
+            return "blocking";
+        }
+
+        @Override
+        public String queued() {
+            return "queued";
+        }
+    }
+
+    private static final class TrackingCodec implements RpcCodec {
+        private final AtomicReference<String> encodeThreadName =
+                new AtomicReference<>();
+
+        @Override
+        public byte code() {
+            return 1;
+        }
+
+        @Override
+        public byte[] encode(Object value) {
+            encodeThreadName.set(Thread.currentThread().getName());
+            return new byte[0];
+        }
+
+        @Override
+        public <T> T decode(byte[] bytes, Class<T> type) {
+            if (type == Object[].class) {
+                return type.cast(new Object[0]);
+            }
+            return null;
         }
     }
 

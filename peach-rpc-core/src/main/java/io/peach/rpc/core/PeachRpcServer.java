@@ -449,7 +449,8 @@ public final class PeachRpcServer implements AutoCloseable {
                     methodCodec,
                     propagatedMetadata,
                     trace,
-                    result);
+                    result,
+                    cpuExecutor);
             return result;
         }
 
@@ -465,7 +466,8 @@ public final class PeachRpcServer implements AutoCloseable {
                     methodCodec,
                     propagatedMetadata,
                     trace,
-                    result));
+                    result,
+                    selectedExecutor));
         } catch (RejectedExecutionException error) {
             admission.release();
             if (observer.enabled()) {
@@ -538,8 +540,8 @@ public final class PeachRpcServer implements AutoCloseable {
             RpcMethodCodec methodCodec,
             Map<String, String> propagatedMetadata,
             RpcTraceContext trace,
-            CompletableFuture<byte[]> result) {
-        boolean asynchronous = false;
+            CompletableFuture<byte[]> result,
+            ExecutorService asyncCompletionExecutor) {
         try (RpcMetadataScope traceScope =
                      trace.makeCurrent();
              RpcMetadataScope propagationScope =
@@ -555,28 +557,29 @@ public final class PeachRpcServer implements AutoCloseable {
                     request.methodId(),
                     arguments);
             if (value instanceof CompletionStage<?> stage) {
-                asynchronous = true;
                 completeAsyncInvocation(
                         request,
                         methodCodec,
                         stage,
-                        result);
+                        result,
+                        asyncCompletionExecutor,
+                        propagatedMetadata,
+                        trace);
                 return;
             }
-            result.complete(response(
+            byte[] responseBytes = response(
                     request,
                     methodCodec.codecId(),
                     RpcStatus.OK,
-                    methodCodec.encodeResult(value)));
+                    methodCodec.encodeResult(value));
+            completeResponseAndReleaseAdmission(
+                    result,
+                    responseBytes);
         } catch (Throwable error) {
-            completeInvocationFailure(
+            completeInvocationFailureAndReleaseAdmission(
                     request,
                     result,
                     error);
-        } finally {
-            if (!asynchronous) {
-                admission.release();
-            }
         }
     }
 
@@ -584,7 +587,10 @@ public final class PeachRpcServer implements AutoCloseable {
             RpcFrameView request,
             RpcMethodCodec methodCodec,
             CompletionStage<?> stage,
-            CompletableFuture<byte[]> result) {
+            CompletableFuture<byte[]> result,
+            ExecutorService completionExecutor,
+            Map<String, String> propagatedMetadata,
+            RpcTraceContext trace) {
         try {
             CompletableFuture<?> asyncFuture =
                     stage.toCompletableFuture();
@@ -593,38 +599,125 @@ public final class PeachRpcServer implements AutoCloseable {
                     asyncFuture.cancel(true);
                 }
             });
-            asyncFuture.whenComplete((value, error) -> {
-                try {
-                    if (result.isCancelled()) {
-                        return;
-                    }
-                    if (error != null) {
-                        completeInvocationFailure(
+
+            if (asyncFuture.isDone()) {
+                asyncFuture.whenComplete((value, error) ->
+                        completeAsyncInvocationResult(
                                 request,
+                                methodCodec,
                                 result,
-                                unwrapCompletionFailure(error));
-                        return;
-                    }
-                    result.complete(response(
+                                propagatedMetadata,
+                                trace,
+                                value,
+                                error));
+                return;
+            }
+
+            asyncFuture.whenComplete((value, error) ->
+                    dispatchAsyncCompletion(
                             request,
-                            methodCodec.codecId(),
-                            RpcStatus.OK,
-                            methodCodec.encodeResult(value)));
-                } catch (Throwable completionError) {
-                    completeInvocationFailure(
-                            request,
+                            methodCodec,
                             result,
-                            completionError);
-                } finally {
-                    admission.release();
-                }
-            });
+                            completionExecutor,
+                            propagatedMetadata,
+                            trace,
+                            value,
+                            error));
         } catch (Throwable setupError) {
-            completeInvocationFailure(
+            completeInvocationFailureAndReleaseAdmission(
                     request,
                     result,
                     setupError);
+        }
+    }
+
+    private void dispatchAsyncCompletion(
+            RpcFrameView request,
+            RpcMethodCodec methodCodec,
+            CompletableFuture<byte[]> result,
+            ExecutorService completionExecutor,
+            Map<String, String> propagatedMetadata,
+            RpcTraceContext trace,
+            Object value,
+            Throwable error) {
+        if (result.isCancelled()) {
             admission.release();
+            return;
+        }
+        try {
+            completionExecutor.execute(() ->
+                    completeAsyncInvocationResult(
+                            request,
+                            methodCodec,
+                            result,
+                            propagatedMetadata,
+                            trace,
+                            value,
+                            error));
+        } catch (RejectedExecutionException rejection) {
+            observeAdmissionRejected(
+                    request,
+                    "async-completion-queue");
+            if (result.isCancelled()) {
+                admission.release();
+                return;
+            }
+            LOGGER.warn(
+                    "RPC async completion was rejected: requestId={}, serviceId={}, methodId={}",
+                    request.requestId(),
+                    request.serviceId(),
+                    request.methodId(),
+                    rejection);
+            byte[] responseBytes = errorResponse(
+                    request,
+                    RpcStatus.OVERLOADED,
+                    RpcException.class.getName(),
+                    "Provider async completion queue is full");
+            completeResponseAndReleaseAdmission(
+                    result,
+                    responseBytes);
+        }
+    }
+
+    private void completeAsyncInvocationResult(
+            RpcFrameView request,
+            RpcMethodCodec methodCodec,
+            CompletableFuture<byte[]> result,
+            Map<String, String> propagatedMetadata,
+            RpcTraceContext trace,
+            Object value,
+            Throwable error) {
+        try (RpcMetadataScope traceScope =
+                     trace.makeCurrent();
+             RpcMetadataScope propagationScope =
+                     metadataPropagator.enabled()
+                             ? metadataPropagator.extract(
+                                     propagatedMetadata)
+                             : RpcMetadataScope.noop()) {
+            if (result.isCancelled()) {
+                admission.release();
+                return;
+            }
+            if (error != null) {
+                completeInvocationFailureAndReleaseAdmission(
+                        request,
+                        result,
+                        unwrapCompletionFailure(error));
+                return;
+            }
+            byte[] responseBytes = response(
+                    request,
+                    methodCodec.codecId(),
+                    RpcStatus.OK,
+                    methodCodec.encodeResult(value));
+            completeResponseAndReleaseAdmission(
+                    result,
+                    responseBytes);
+        } catch (Throwable completionError) {
+            completeInvocationFailureAndReleaseAdmission(
+                    request,
+                    result,
+                    completionError);
         }
     }
 
@@ -637,11 +730,12 @@ public final class PeachRpcServer implements AutoCloseable {
         return current;
     }
 
-    private static void completeInvocationFailure(
+    private void completeInvocationFailureAndReleaseAdmission(
             RpcFrameView request,
             CompletableFuture<byte[]> result,
             Throwable error) {
         if (result.isCancelled()) {
+            admission.release();
             return;
         }
         LOGGER.warn(
@@ -650,11 +744,28 @@ public final class PeachRpcServer implements AutoCloseable {
                 request.serviceId(),
                 request.methodId(),
                 error);
-        result.complete(errorResponse(
-                request,
-                RpcStatus.BUSINESS_ERROR,
-                error.getClass().getName(),
-                "Remote service invocation failed"));
+        byte[] responseBytes;
+        try {
+            responseBytes = errorResponse(
+                    request,
+                    RpcStatus.BUSINESS_ERROR,
+                    error.getClass().getName(),
+                    "Remote service invocation failed");
+        } catch (Throwable responseError) {
+            admission.release();
+            result.completeExceptionally(responseError);
+            return;
+        }
+        completeResponseAndReleaseAdmission(
+                result,
+                responseBytes);
+    }
+
+    private void completeResponseAndReleaseAdmission(
+            CompletableFuture<byte[]> result,
+            byte[] responseBytes) {
+        admission.release();
+        result.complete(responseBytes);
     }
 
     private static byte[] frameworkError(
