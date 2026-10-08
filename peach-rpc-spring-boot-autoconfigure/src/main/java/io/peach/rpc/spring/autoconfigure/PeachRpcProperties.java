@@ -1067,6 +1067,7 @@ public class PeachRpcProperties {
         private Duration drainTimeout = Duration.ofSeconds(30);
         private Duration controlPlaneTimeout = Duration.ofSeconds(3);
         private final Execution execution = new Execution();
+        private final Admission admission = new Admission();
 
         /**
          * 返回是否启用 Provider。
@@ -1219,6 +1220,123 @@ public class PeachRpcProperties {
          */
         public Execution getExecution() {
             return execution;
+        }
+
+        /**
+         * 返回 Provider 并发与在途请求字节准入策略。
+         *
+         * @return Provider Admission 参数
+         */
+        public Admission getAdmission() {
+            return admission;
+        }
+    }
+
+    /**
+     * Provider 分层请求并发及 Frame 字节预算配置。
+     *
+     * <p>默认每个服务在启动阶段获得独立的固定并发/字节份额。
+     * 服务和方法硬上限中的 0 表示自动使用分配的上限。
+     */
+    public static class Admission {
+        private long maxInflightBytes = 256L * 1024L * 1024L;
+        private int maxConcurrentPerService;
+        private int maxConcurrentPerMethod;
+        private long maxInflightBytesPerService;
+        private long maxInflightBytesPerMethod;
+
+        /** 创建 Provider Admission 配置。 */
+        public Admission() {
+        }
+
+        /**
+         * 返回全局已准入请求 Frame 总字节预算。
+         *
+         * @return 全局在途 Frame 字节上限
+         */
+        public long getMaxInflightBytes() {
+            return maxInflightBytes;
+        }
+
+        /**
+         * 设置全局请求 Frame 字节预算。
+         *
+         * @param value 全局在途 Frame 字节上限
+         */
+        public void setMaxInflightBytes(long value) {
+            this.maxInflightBytes = value;
+        }
+
+        /**
+         * 返回每个服务的并发上限。
+         *
+         * @return 并发上限，0 表示按启动服务数自动分配
+         */
+        public int getMaxConcurrentPerService() {
+            return maxConcurrentPerService;
+        }
+
+        /**
+         * 设置每个服务的并发上限。
+         *
+         * @param value 并发上限，0 表示自动分配
+         */
+        public void setMaxConcurrentPerService(int value) {
+            this.maxConcurrentPerService = value;
+        }
+
+        /**
+         * 返回单个服务方法的并发上限。
+         *
+         * @return 方法并发上限，0 表示沿用服务上限
+         */
+        public int getMaxConcurrentPerMethod() {
+            return maxConcurrentPerMethod;
+        }
+
+        /**
+         * 设置单个服务方法的并发上限。
+         *
+         * @param value 方法并发上限，0 表示沿用服务上限
+         */
+        public void setMaxConcurrentPerMethod(int value) {
+            this.maxConcurrentPerMethod = value;
+        }
+
+        /**
+         * 返回每个服务的 Frame 字节预算上限。
+         *
+         * @return 字节上限，0 表示自动分配
+         */
+        public long getMaxInflightBytesPerService() {
+            return maxInflightBytesPerService;
+        }
+
+        /**
+         * 设置每个服务的 Frame 字节预算上限。
+         *
+         * @param value 字节上限，0 表示自动分配
+         */
+        public void setMaxInflightBytesPerService(long value) {
+            this.maxInflightBytesPerService = value;
+        }
+
+        /**
+         * 返回每个方法的 Frame 字节预算上限。
+         *
+         * @return 字节上限，0 表示沿用服务上限
+         */
+        public long getMaxInflightBytesPerMethod() {
+            return maxInflightBytesPerMethod;
+        }
+
+        /**
+         * 设置每个方法的 Frame 字节预算上限。
+         *
+         * @param value 字节上限，0 表示沿用服务上限
+         */
+        public void setMaxInflightBytesPerMethod(long value) {
+            this.maxInflightBytesPerMethod = value;
         }
     }
 

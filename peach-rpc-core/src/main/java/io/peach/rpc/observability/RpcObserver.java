@@ -191,6 +191,16 @@ public interface RpcObserver {
     }
 
     /**
+     * Provider 已准入请求的原始 Frame 总字节数发生变化。
+     *
+     * <p>不包含 Transport 尚未提交的请求、返回字节及 Fory 反序列化对象。
+     *
+     * @param delta 正值表示已接纳，负值表示请求完成释放
+     */
+    default void onServerInflightBytesChanged(long delta) {
+    }
+
+    /**
      * Consumer 方法级 Circuit Breaker 状态。
      *
      * @param serviceKey 服务键
@@ -489,6 +499,12 @@ public interface RpcObserver {
             public void onServerInflightChanged(int delta) {
                 immutable.forEach(observer -> safely(() ->
                         observer.onServerInflightChanged(delta)));
+            }
+
+            @Override
+            public void onServerInflightBytesChanged(long delta) {
+                immutable.forEach(observer -> safely(() ->
+                        observer.onServerInflightBytesChanged(delta)));
             }
 
             @Override

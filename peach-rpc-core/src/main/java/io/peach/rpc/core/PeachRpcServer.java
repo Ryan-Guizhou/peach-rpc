@@ -26,9 +26,11 @@ import io.peach.rpc.registry.ServiceRegistrar;
 import io.peach.rpc.transport.RpcTransportServer;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -40,7 +42,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,7 +58,9 @@ public final class PeachRpcServer implements AutoCloseable {
     private final RpcEndpoint bindEndpoint;
     private final String advertisedHost;
     private final int advertisedPort;
-    private final Semaphore admission;
+    private final int maxConcurrent;
+    private final RpcProviderAdmissionOptions admissionOptions;
+    private volatile ProviderAdmissionController admission;
     private final Duration drainTimeout;
     private final Duration controlPlaneTimeout;
     private final RpcProviderExecutionOptions executionOptions;
@@ -92,7 +95,10 @@ public final class PeachRpcServer implements AutoCloseable {
                 "bindEndpoint");
         this.advertisedHost = builder.advertisedHost;
         this.advertisedPort = builder.advertisedPort;
-        this.admission = new Semaphore(builder.maxConcurrent);
+        this.maxConcurrent = builder.maxConcurrent;
+        this.admissionOptions = Objects.requireNonNull(
+                builder.admissionOptions,
+                "admissionOptions");
         this.drainTimeout = Objects.requireNonNull(
                 builder.drainTimeout,
                 "drainTimeout");
@@ -196,6 +202,19 @@ public final class PeachRpcServer implements AutoCloseable {
             return CompletableFuture.failedFuture(
                     new IllegalStateException(
                             "RPC server has already been started or closed"));
+        }
+
+        try {
+            Map<Integer, Set<Integer>> methodsByService = new HashMap<>();
+            bindings.forEach((serviceId, binding) ->
+                    methodsByService.put(serviceId, binding.methodIds()));
+            admission = new ProviderAdmissionController(
+                    maxConcurrent,
+                    admissionOptions,
+                    methodsByService);
+        } catch (RuntimeException error) {
+            state.set(State.CLOSED);
+            return CompletableFuture.failedFuture(error);
         }
 
         CompletableFuture<RpcEndpoint> started = new CompletableFuture<>();
@@ -377,52 +396,77 @@ public final class PeachRpcServer implements AutoCloseable {
                             "Unsupported codec"));
         }
 
-        if (!admission.tryAcquire()) {
-            observeAdmissionRejected(
-                    request,
-                    "concurrency");
+        ProviderAdmissionController.Decision decision =
+                admission.tryAcquire(
+                        request.serviceId(),
+                        request.methodId(),
+                        request.bytes().length);
+        if (!decision.accepted()) {
+            observeAdmissionRejected(request, decision.reason());
             return CompletableFuture.completedFuture(
                     errorResponse(
                             request,
                             RpcStatus.OVERLOADED,
                             RpcException.class.getName(),
-                            "Server overloaded"));
+                            "Provider admission rejected: " + decision.reason()));
         }
 
         CompletableFuture<byte[]> result =
                 new CompletableFuture<>();
-        if (observer.enabled()) {
+        boolean observed = observer.enabled();
+        result.whenComplete((ignoredValue, ignoredError) -> {
+            if (decision.lease().release() && observed) {
+                observer.onServerInflightBytesChanged(
+                        -request.bytes().length);
+                observer.onServerInflightChanged(-1);
+            }
+        });
+        if (observed) {
             observer.onServerInflightChanged(1);
-            result.whenComplete(
-                    (ignoredValue, ignoredError) ->
-                            observer.onServerInflightChanged(-1));
+            observer.onServerInflightBytesChanged(request.bytes().length);
         }
         RpcExecutionMode executionMode;
         try {
             executionMode = binding.executionMode(request.methodId());
         } catch (NoSuchMethodException error) {
-            admission.release();
-            if (observer.enabled()) {
-                observer.onServerInflightChanged(-1);
-            }
-            return CompletableFuture.completedFuture(
-                    frameworkError(
-                            request,
-                            RpcStatus.METHOD_NOT_FOUND,
-                            "Method not found"));
+            result.complete(frameworkError(
+                    request,
+                    RpcStatus.METHOD_NOT_FOUND,
+                    "Method not found"));
+            return result;
         }
 
-        Map<String, String> propagatedMetadata =
-                tracingBridge.enabled()
-                        || metadataPropagator.enabled()
-                ? request.metadataCopy()
-                : Map.of();
-        RpcTraceContext trace = tracingBridge.enabled()
-                ? tracingBridge.startServer(
-                        request.serviceId(),
-                        request.methodId(),
-                        propagatedMetadata)
-                : RpcTraceContext.noop();
+        Map<String, String> propagatedMetadata;
+        RpcTraceContext trace;
+        try {
+            propagatedMetadata = tracingBridge.enabled()
+                    || metadataPropagator.enabled()
+                    ? request.metadataCopy()
+                    : Map.of();
+            trace = tracingBridge.enabled()
+                    ? tracingBridge.startServer(
+                            request.serviceId(),
+                            request.methodId(),
+                            propagatedMetadata)
+                    : RpcTraceContext.noop();
+        } catch (RpcProtocolException invalidMetadata) {
+            result.complete(frameworkError(
+                    request,
+                    RpcStatus.BAD_REQUEST,
+                    "Invalid request metadata"));
+            return result;
+        } catch (RuntimeException setupError) {
+            LOGGER.warn(
+                    "RPC tracing setup failed: serviceId={}, methodId={}",
+                    request.serviceId(),
+                    request.methodId(),
+                    setupError);
+            result.complete(frameworkError(
+                    request,
+                    RpcStatus.INTERNAL_ERROR,
+                    "Provider request setup failed"));
+            return result;
+        }
         result.whenComplete((responseBytes, error) ->
                 trace.end(
                         responseStatus(
@@ -469,19 +513,13 @@ public final class PeachRpcServer implements AutoCloseable {
                     result,
                     selectedExecutor));
         } catch (RejectedExecutionException error) {
-            admission.release();
-            if (observer.enabled()) {
-                observer.onServerInflightChanged(-1);
-            }
-            observeAdmissionRejected(
+            observeAdmissionRejected(request, "cpu-queue");
+            result.complete(errorResponse(
                     request,
-                    "cpu-queue");
-            return CompletableFuture.completedFuture(
-                    errorResponse(
-                            request,
-                            RpcStatus.OVERLOADED,
-                            RpcException.class.getName(),
-                            "Provider execution queue is full"));
+                    RpcStatus.OVERLOADED,
+                    RpcException.class.getName(),
+                    "Provider execution queue is full"));
+            return result;
         }
         result.whenComplete((ignoredValue, ignoredError) -> {
             if (result.isCancelled()) {
@@ -572,11 +610,11 @@ public final class PeachRpcServer implements AutoCloseable {
                     methodCodec.codecId(),
                     RpcStatus.OK,
                     methodCodec.encodeResult(value));
-            completeResponseAndReleaseAdmission(
+            completeResponse(
                     result,
                     responseBytes);
         } catch (Throwable error) {
-            completeInvocationFailureAndReleaseAdmission(
+            completeInvocationFailure(
                     request,
                     result,
                     error);
@@ -624,7 +662,7 @@ public final class PeachRpcServer implements AutoCloseable {
                             value,
                             error));
         } catch (Throwable setupError) {
-            completeInvocationFailureAndReleaseAdmission(
+            completeInvocationFailure(
                     request,
                     result,
                     setupError);
@@ -641,7 +679,6 @@ public final class PeachRpcServer implements AutoCloseable {
             Object value,
             Throwable error) {
         if (result.isCancelled()) {
-            admission.release();
             return;
         }
         try {
@@ -659,7 +696,6 @@ public final class PeachRpcServer implements AutoCloseable {
                     request,
                     "async-completion-queue");
             if (result.isCancelled()) {
-                admission.release();
                 return;
             }
             LOGGER.warn(
@@ -673,7 +709,7 @@ public final class PeachRpcServer implements AutoCloseable {
                     RpcStatus.OVERLOADED,
                     RpcException.class.getName(),
                     "Provider async completion queue is full");
-            completeResponseAndReleaseAdmission(
+            completeResponse(
                     result,
                     responseBytes);
         }
@@ -695,11 +731,10 @@ public final class PeachRpcServer implements AutoCloseable {
                                      propagatedMetadata)
                              : RpcMetadataScope.noop()) {
             if (result.isCancelled()) {
-                admission.release();
                 return;
             }
             if (error != null) {
-                completeInvocationFailureAndReleaseAdmission(
+                completeInvocationFailure(
                         request,
                         result,
                         unwrapCompletionFailure(error));
@@ -710,11 +745,11 @@ public final class PeachRpcServer implements AutoCloseable {
                     methodCodec.codecId(),
                     RpcStatus.OK,
                     methodCodec.encodeResult(value));
-            completeResponseAndReleaseAdmission(
+            completeResponse(
                     result,
                     responseBytes);
         } catch (Throwable completionError) {
-            completeInvocationFailureAndReleaseAdmission(
+            completeInvocationFailure(
                     request,
                     result,
                     completionError);
@@ -730,12 +765,11 @@ public final class PeachRpcServer implements AutoCloseable {
         return current;
     }
 
-    private void completeInvocationFailureAndReleaseAdmission(
+    private void completeInvocationFailure(
             RpcFrameView request,
             CompletableFuture<byte[]> result,
             Throwable error) {
         if (result.isCancelled()) {
-            admission.release();
             return;
         }
         LOGGER.warn(
@@ -752,19 +786,17 @@ public final class PeachRpcServer implements AutoCloseable {
                     error.getClass().getName(),
                     "Remote service invocation failed");
         } catch (Throwable responseError) {
-            admission.release();
             result.completeExceptionally(responseError);
             return;
         }
-        completeResponseAndReleaseAdmission(
+        completeResponse(
                 result,
                 responseBytes);
     }
 
-    private void completeResponseAndReleaseAdmission(
+    private void completeResponse(
             CompletableFuture<byte[]> result,
             byte[] responseBytes) {
-        admission.release();
         result.complete(responseBytes);
     }
 
@@ -884,6 +916,8 @@ public final class PeachRpcServer implements AutoCloseable {
         private String advertisedHost;
         private int advertisedPort;
         private int maxConcurrent = 4096;
+        private RpcProviderAdmissionOptions admissionOptions =
+                RpcProviderAdmissionOptions.DEFAULT;
         private Duration drainTimeout = Duration.ofSeconds(30);
         private Duration controlPlaneTimeout = Duration.ofSeconds(3);
         private RpcProviderExecutionOptions executionOptions =
@@ -982,6 +1016,19 @@ public final class PeachRpcServer implements AutoCloseable {
                         "maxConcurrent must be positive");
             }
             this.maxConcurrent = value;
+            return this;
+        }
+
+        /**
+         * 设置 Provider 分层并发与在途请求 Frame 字节预算。
+         *
+         * @param value Provider Admission 策略
+         * @return Provider Builder
+         */
+        public Builder admissionOptions(RpcProviderAdmissionOptions value) {
+            this.admissionOptions = Objects.requireNonNull(
+                    value,
+                    "admissionOptions");
             return this;
         }
 

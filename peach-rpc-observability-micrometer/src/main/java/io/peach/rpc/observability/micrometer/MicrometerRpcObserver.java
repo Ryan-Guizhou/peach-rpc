@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 将 Peach RPC 低依赖 Observer 事件映射为 Micrometer 指标。
@@ -37,6 +38,8 @@ public final class MicrometerRpcObserver implements RpcObserver {
             new AtomicInteger();
     private final AtomicInteger serverInflight =
             new AtomicInteger();
+    private final AtomicLong serverInflightBytes =
+            new AtomicLong();
     private final AtomicInteger circuitClosed =
             new AtomicInteger();
     private final AtomicInteger circuitOpen =
@@ -72,6 +75,13 @@ public final class MicrometerRpcObserver implements RpcObserver {
                         serverInflight,
                         AtomicInteger::get)
                 .description("Inflight Peach RPC provider invocations")
+                .register(registry);
+        Gauge.builder(
+                        "peach.rpc.server.inflight.bytes",
+                        serverInflightBytes,
+                        AtomicLong::get)
+                .baseUnit("bytes")
+                .description("Accepted Peach RPC provider request Frame bytes")
                 .register(registry);
         registerCircuitGauge(
                 RpcCircuitState.CLOSED,
@@ -276,6 +286,12 @@ public final class MicrometerRpcObserver implements RpcObserver {
     public void onServerInflightChanged(int delta) {
         serverInflight.updateAndGet(
                 current -> Math.max(0, current + delta));
+    }
+
+    @Override
+    public void onServerInflightBytesChanged(long delta) {
+        serverInflightBytes.updateAndGet(current ->
+                Math.max(0L, current + delta));
     }
 
     @Override

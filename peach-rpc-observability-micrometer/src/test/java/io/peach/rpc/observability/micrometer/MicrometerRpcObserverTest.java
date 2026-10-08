@@ -222,6 +222,13 @@ class MicrometerRpcObserverTest {
                 RpcStatus.OVERLOADED,
                 null);
         observer.onServerInflightChanged(-1);
+        observer.onServerInflightBytesChanged(128L);
+        assertEquals(
+                128.0,
+                registry.find("peach.rpc.server.inflight.bytes")
+                        .gauge()
+                        .value());
+        observer.onServerInflightBytesChanged(-128L);
         observer.onServerAdmissionRejected(
                 11,
                 7,
@@ -252,6 +259,12 @@ class MicrometerRpcObserverTest {
                 0.0,
                 registry.find(
                                 "peach.rpc.server.inflight")
+                        .gauge()
+                        .value());
+        assertEquals(
+                0.0,
+                registry.find(
+                                "peach.rpc.server.inflight.bytes")
                         .gauge()
                         .value());
         assertNull(

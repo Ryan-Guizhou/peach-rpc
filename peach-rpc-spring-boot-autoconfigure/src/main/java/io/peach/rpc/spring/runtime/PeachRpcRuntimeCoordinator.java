@@ -4,6 +4,7 @@ import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.codec.RpcCodecRegistry;
 import io.peach.rpc.core.PeachRpcClient;
 import io.peach.rpc.core.PeachRpcServer;
+import io.peach.rpc.core.RpcProviderAdmissionOptions;
 import io.peach.rpc.core.RpcClientResilienceOptions;
 import io.peach.rpc.core.RpcProviderExecutionOptions;
 import io.peach.rpc.loadbalance.LoadBalancer;
@@ -214,6 +215,8 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
                 .advertisedHost(serverProperties.getAdvertisedHost())
                 .advertisedPort(serverProperties.getAdvertisedPort())
                 .maxConcurrent(serverProperties.getMaxConcurrent())
+                .admissionOptions(providerAdmissionOptions(
+                        serverProperties.getAdmission()))
                 .drainTimeout(serverProperties.getDrainTimeout())
                 .controlPlaneTimeout(serverProperties.getControlPlaneTimeout())
                 .executionOptions(executionOptions)
@@ -221,6 +224,16 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
                 .metadataPropagator(metadataPropagator())
                 .tracingBridge(tracingBridge())
                 .build();
+    }
+
+    private static RpcProviderAdmissionOptions providerAdmissionOptions(
+            PeachRpcProperties.Admission policy) {
+        return new RpcProviderAdmissionOptions(
+                policy.getMaxInflightBytes(),
+                policy.getMaxConcurrentPerService(),
+                policy.getMaxConcurrentPerMethod(),
+                policy.getMaxInflightBytesPerService(),
+                policy.getMaxInflightBytesPerMethod());
     }
 
     private RpcObserver observer() {

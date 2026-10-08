@@ -60,7 +60,7 @@ flowchart TD
 
 ### Admission
 
-Provider 最大并发必须有边界。CPU 模式还具有独立有界队列；满时返回 OVERLOADED。
+Provider 最大并发必须有边界。CPU 模式还具有独立有界队列；满时返回 OVERLOADED。PR-D（Draft）新增全局、服务、方法三级并发额度和已准入请求 Frame 字节预算，详见 [Provider 分层 Admission 设计](provider-admission.md)。预算通过幂等 Lease 在响应 Future 终态释放，不提供整体 JVM Heap 硬界限。
 
 对于业务方法返回的 `CompletionStage`，Provider 不在 CPU/Virtual Thread worker 上执行 `join()`。框架注册完成回调后立即归还执行 worker，但 **admission permit 会一直持有到异步业务真正完成、失败或取消**，因此异步化不会绕过 Provider 最大业务并发保护。
 

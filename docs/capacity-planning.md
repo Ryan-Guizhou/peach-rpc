@@ -71,6 +71,8 @@ QPS/Core = successful requests per second / available CPU cores
 
 Admission 应保护 Provider，而不是把过载隐藏为无限排队。
 
+PR-D（Draft）新增 [Provider 分层 Admission 与 Frame 字节预算](provider-admission.md)。多服务下静态配额按服务数量等分，保证某个服务无法抢占其他服务的保留额度；代价是空闲服务的额度不会被借用。需要验证每服务并发/字节预算、方法级上限、取消资源释放以及真实 p99/GC 影响，不可把全局请求 Frame 配额当作 JVM Heap 上限。
+
 ## 7. Consumer
 
 需要验证：

@@ -14,6 +14,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /** Provider 启动阶段预解析的服务分派表。 */
 final class ServiceBinding {
@@ -65,6 +66,11 @@ final class ServiceBinding {
             }
         }
         this.methods = Map.copyOf(resolved);
+    }
+
+    /** 返回启动阶段完成解析的服务方法 ID 集合。 */
+    Set<Integer> methodIds() {
+        return methods.keySet();
     }
 
     RpcMethodCodec codec(
