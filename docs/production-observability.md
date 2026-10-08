@@ -41,6 +41,7 @@ Peach RPC 生产观测按四类信号组织：
 - peach.rpc.client.outlier.ejected
 - peach.rpc.server.invocations
 - peach.rpc.server.inflight
+- peach.rpc.server.inflight.bytes（PR-D：Core 已准入请求的 Frame 字节数，不含 Transport 队列与对象图）
 - peach.rpc.server.admission.rejected
 - peach.rpc.server.overloaded
 - peach.rpc.connection.active
