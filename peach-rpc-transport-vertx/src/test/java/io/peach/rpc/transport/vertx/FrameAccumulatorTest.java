@@ -218,6 +218,27 @@ class FrameAccumulatorTest {
     }
 
     @Test
+    void fragmentedFirstChunkMustNotAliasReusedInboundBuffer() {
+        byte[] expected = frame(86L, new byte[256]);
+        int split = RpcProtocolCodec.HEADER_LENGTH / 2;
+        Buffer initial = Buffer.buffer(
+                java.util.Arrays.copyOfRange(expected, 0, split));
+        FrameAccumulator accumulator = new FrameAccumulator(expected.length);
+        List<byte[]> received = new ArrayList<>();
+
+        accumulator.accept(initial, received::add);
+        initial.setByte(0, (byte) 0x00);
+
+        accumulator.accept(
+                Buffer.buffer(java.util.Arrays.copyOfRange(
+                        expected, split, expected.length)),
+                received::add);
+
+        assertEquals(1, received.size());
+        assertArrayEquals(expected, received.get(0));
+    }
+
+    @Test
     void fragmentedOversizedHeaderMustFailBeforeReceivingPayload() {
         byte[] bigFrame = frame(84L, new byte[128]);
         FrameAccumulator accumulator = new FrameAccumulator(
