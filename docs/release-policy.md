@@ -130,7 +130,7 @@ POM 中的 `central-release` Profile 包含：
 
 正式 Central 发布要求项目维护者完成：
 
-- `io.peach.rpc` namespace verification；
+- Central namespace verification 能够覆盖 `io.peach.rpc`（例如验证 `io.peach` 后发布其子组）；
 - Central Portal User Token；
 - PGP/GPG signing key；
 - GitHub Repository Secrets。
