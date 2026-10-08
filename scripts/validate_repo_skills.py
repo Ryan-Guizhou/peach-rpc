@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check checked-in Peach RPC skill entrypoints and Agent routing consistency."""
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -31,6 +32,13 @@ def validate(root=ROOT):
         )
         if not match or match.group(1) != name:
             errors.append(f"Invalid Skill frontmatter: {name}")
+        else:
+            try:
+                description = json.loads(match.group(2))
+                if not isinstance(description, str) or len(description) < 30:
+                    errors.append(f"Invalid Skill description: {name}")
+            except (json.JSONDecodeError, TypeError):
+                errors.append(f"Skill description must be a quoted YAML scalar: {name}")
         if re.search(r"\[TODO(?::|\])|\bEXAMPLE_ASSET\b", content):
             errors.append(f"Unedited scaffold: {name}")
         if len(content.splitlines()) > 500:
