@@ -160,6 +160,13 @@ def check_release_status() -> None:
             f"got {version!r}"
         )
 
+    notes = ROOT / "docs" / f"release-notes-{version}.md"
+    if not notes.is_file():
+        fail(
+            "Missing release notes for current source version: "
+            f"{notes.relative_to(ROOT)}"
+        )
+
     pom = ET.parse(ROOT / "pom.xml").getroot()
     revision = pom.findtext("m:properties/m:revision", namespaces=NS)
     if revision != version:
@@ -270,7 +277,7 @@ def main() -> int:
     check_maven_reactor()
     check_core_boundaries()
     check_java_hygiene()
-    print("Peach RPC 1.0 repository checks passed.")
+    print("Peach RPC 1.0.x repository checks passed.")
     return 0
 
 
