@@ -330,9 +330,11 @@ final class VertxRpcTransportServer implements RpcTransportServer {
             }
             if (response.length > negotiated.maxFrameBytes()) {
                 LOGGER.warn(
-                        "Closing RPC connection because response frame "
-                                + "exceeds negotiated max size: {}",
-                        remote.authority());
+                        "Closing RPC connection: oversized response frame. "
+                                + "remote={}, frameBytes={}, maxFrameBytes={}",
+                        remote.authority(),
+                        response.length,
+                        negotiated.maxFrameBytes());
                 goAwayAndClose(
                         RpcStatus.OVERLOADED,
                         "RPC response exceeds negotiated max frame size");
@@ -340,7 +342,7 @@ final class VertxRpcTransportServer implements RpcTransportServer {
             }
             if (socket.writeQueueFull()) {
                 LOGGER.warn(
-                        "Closing RPC connection because write queue is full: {}",
+                        "Closing RPC connection: response write queue is full. remote={}",
                         remote.authority());
                 goAwayAndClose(
                         RpcStatus.OVERLOADED,
