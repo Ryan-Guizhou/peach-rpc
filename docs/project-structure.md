@@ -1,6 +1,6 @@
 # Peach RPC 项目构造思路与模块结构
 
-> 状态：**1.0.0 GA**
+> 状态：**1.0.1 Release Prep**
 
 ## 1. 构造原则
 
@@ -124,7 +124,7 @@ Runtime
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-spring-boot-starter</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
