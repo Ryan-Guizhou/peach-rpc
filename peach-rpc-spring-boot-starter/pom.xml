@@ -13,6 +13,18 @@
     <name>peach-rpc-spring-boot-starter</name>
     <description>Peach RPC Spring Boot starter.</description>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <generateIfEmpty>true</generateIfEmpty>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>io.peach.rpc</groupId>
