@@ -26,10 +26,10 @@ class EndpointStatsTest {
                         8,
                         Duration.ZERO,
                         Duration.ZERO,
-                        3,
-                        Duration.ofSeconds(1),
                         1,
-                        Duration.ofMillis(20));
+                        Duration.ofMillis(20),
+                        3,
+                        Duration.ofSeconds(1));
         EndpointStats stats = new EndpointStats();
 
         stats.begin();
@@ -52,9 +52,9 @@ class EndpointStatsTest {
                         8,
                         Duration.ZERO,
                         Duration.ZERO,
-                        3,
-                        Duration.ofSeconds(1),
                         2,
+                        Duration.ofSeconds(1),
+                        3,
                         Duration.ofSeconds(1));
         EndpointStats stats = new EndpointStats();
 
