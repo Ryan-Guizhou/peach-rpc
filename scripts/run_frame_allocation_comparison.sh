@@ -23,8 +23,8 @@ cleanup() {
 trap cleanup EXIT
 
 cd "$ROOT"
-if [[ ! "$BASE_SHA" =~ ^[a-f0-9]{40}$$ ||
-      ! "$HEAD_SHA" =~ ^[a-f0-9]{40}$$ ]]; then
+if [[ ! "$BASE_SHA" =~ ^[a-f0-9]{40}$ ||
+      ! "$HEAD_SHA" =~ ^[a-f0-9]{40}$ ]]; then
   echo "Both revisions must be full commit SHA-1 identifiers" >&2
   exit 1
 fi
