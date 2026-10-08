@@ -1,6 +1,6 @@
 # Peach RPC 可观测性
 
-> 状态：**1.0.0 GA**  
+> 状态：**1.0.1 Release Prep**  
 > Core 不直接依赖 Micrometer、OpenTelemetry 或 JFR。
 
 ## 1. 架构边界
@@ -33,7 +33,7 @@ flowchart LR
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-observability-micrometer</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
@@ -88,7 +88,7 @@ client.retries = attempts - 1
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-observability-opentelemetry</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
@@ -119,7 +119,7 @@ sequenceDiagram
 <dependency>
     <groupId>io.peach.rpc</groupId>
     <artifactId>peach-rpc-observability-jfr</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
