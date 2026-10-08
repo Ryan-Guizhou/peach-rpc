@@ -89,7 +89,7 @@ PeachRpcServer.builder()
 - `global-inflight-bytes` / `service-inflight-bytes` / `method-inflight-bytes`
 - 原有执行器 `cpu-queue` / `async-completion-queue`
 
-`RpcObserver.onServerInflightChanged(int)` 记录逻辑在途请求量，新增 `onServerInflightBytesChanged(long)` 记录已接纳 Frame 字节增减。复合 Observer 会把事件安全分发给所有启用的采集适配器；具体 Micrometer/JFR 指标映射需要使用方适配，**不能把事件 API 当作现成仪表盘指标**。
+`RpcObserver.onServerInflightChanged(int)` 记录逻辑在途请求量，新增 `onServerInflightBytesChanged(long)` 记录已接纳 Frame 字节增减。复合 Observer 会把事件安全分发给所有启用的采集适配器；Micrometer Adapter 已映射 `peach.rpc.server.inflight.bytes` Gauge（无高基数标签）；JFR 尚未增加该事件的专门映射，不应将 Observer API 当作 JFR 指标已完成。
 
 ### 必须披露的取消语义
 
