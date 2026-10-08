@@ -184,6 +184,72 @@ def check_profiles(root: ET.Element) -> None:
         )
 
 
+
+def check_dependency_only_starter() -> None:
+    starter_pom_path = ROOT / "peach-rpc-spring-boot-starter" / "pom.xml"
+    starter = ET.parse(starter_pom_path).getroot()
+    release = profile(starter, "release")
+
+    source = plugin(
+        release,
+        "org.apache.maven.plugins",
+        "maven-source-plugin",
+    )
+    if source.findtext(
+        "m:configuration/m:skipSource",
+        namespaces=NS,
+    ) != "true":
+        fail(
+            "Dependency-only starter must skip standard source JAR "
+            "generation in the release profile"
+        )
+
+    javadoc = plugin(
+        release,
+        "org.apache.maven.plugins",
+        "maven-javadoc-plugin",
+    )
+    if javadoc.findtext(
+        "m:configuration/m:skip",
+        namespaces=NS,
+    ) != "true":
+        fail(
+            "Dependency-only starter must skip standard Javadoc "
+            "generation in the release profile"
+        )
+
+    jar = plugin(
+        release,
+        "org.apache.maven.plugins",
+        "maven-jar-plugin",
+    )
+    classifiers = {
+        node.text.strip()
+        for node in jar.findall(
+            "m:executions/m:execution/m:configuration/m:classifier",
+            NS,
+        )
+        if node.text and node.text.strip()
+    }
+    if classifiers != {"sources", "javadoc"}:
+        fail(
+            "Dependency-only starter must attach placeholder "
+            "sources and javadoc JARs"
+        )
+
+    placeholder = (
+        ROOT
+        / "peach-rpc-spring-boot-starter"
+        / "src"
+        / "central-placeholder"
+        / "README.md"
+    )
+    if not placeholder.is_file():
+        fail(
+            "Missing Maven Central placeholder document for "
+            "dependency-only starter"
+        )
+
 def check_modules() -> None:
     for module in PUBLIC_MODULES:
         pom_path = ROOT / module / "pom.xml"
@@ -238,6 +304,7 @@ def main() -> int:
     root = ET.parse(ROOT / "pom.xml").getroot()
     check_metadata(root)
     check_profiles(root)
+    check_dependency_only_starter()
     check_modules()
     if args.require_artifacts:
         check_artifacts(args.version)
