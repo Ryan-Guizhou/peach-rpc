@@ -48,7 +48,16 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-/** Peach RPC Consumer 运行时。 */
+/**
+ * Peach RPC Consumer 运行时，负责从本地服务目录选取端点并执行请求。
+ *
+ * <p>重试、Circuit Breaker、Deadline 和完成回调的资源由该运行时管理。
+ * 响应解码和用户完成回调不得阻塞 Vert.x EventLoop；异步完成通过
+ * 有界执行器隔离，拒绝时以明确失败通知调用方。
+ *
+ * <p>实例由 Builder 构建，使用者应在不再发起调用时调用 {@link #close()}，
+ * 避免遗留连接、服务发现订阅和执行资源。
+ */
 public final class PeachRpcClient implements AutoCloseable {
     private final ServiceDiscovery discovery;
     private final RpcTransportClient transport;
