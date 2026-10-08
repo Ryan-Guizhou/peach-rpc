@@ -108,7 +108,7 @@ io.peach.rpc
 
 第一次公开发布前必须在 Central Publisher Portal 完成 namespace ownership 验证。
 
-若维护者不能证明对 `peach.rpc` DNS namespace 的控制权，则需要在首次 Central 发布前重新确定 groupId。因为 groupId 属于公开依赖坐标，这个决定不能由 CI 自动完成，也不能在发布后无成本修改。
+若维护者控制 `peach.io`，可以验证 `io.peach` 并在其下发布 `io.peach.rpc`；如果精确验证 `io.peach.rpc`，DNS 对应为 `rpc.peach.io`。如果现有域名 namespace 无法验证，则首次 Central 发布前需要重新确定 groupId，例如使用 Central Portal 已验证的自有 namespace 或 `io.github.<username>`。因为 groupId 属于公开依赖坐标，这个决定不能由 CI 自动完成，也不能在发布后无成本修改。
 
 ### 纯依赖 Starter
 
