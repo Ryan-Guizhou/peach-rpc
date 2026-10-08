@@ -1,6 +1,6 @@
 ---
 name: using-peach-rpc-performance
-description: Peach RPC performance and reliability engineering for Vert.x event-loop, async completion, backpressure, bounded admission, buffer ownership, memory allocation, JMH/JFR profiling and 10k concurrency. Use for transport, scheduling, codec hot paths or claimed throughput/p99 improvements.
+description: "Peach RPC performance and reliability engineering for Vert.x event-loop, async completion, backpressure, bounded admission, buffer ownership, memory allocation, JMH/JFR profiling and 10k concurrency. Use for transport, scheduling, codec hot paths or claimed throughput/p99 improvements."
 ---
 
 # Performance & Reliability Gate
