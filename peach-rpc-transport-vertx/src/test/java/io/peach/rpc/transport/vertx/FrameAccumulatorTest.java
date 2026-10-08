@@ -2,11 +2,13 @@ package io.peach.rpc.transport.vertx;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.protocol.RpcFrame;
 import io.peach.rpc.protocol.RpcMessageType;
 import io.peach.rpc.protocol.RpcProtocolCodec;
+import io.peach.rpc.protocol.RpcProtocolException;
 import io.vertx.core.buffer.Buffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -159,6 +161,112 @@ class FrameAccumulatorTest {
                     expected.get(index),
                     decoded.get(index));
         }
+    }
+
+    @Test
+    void completeFrameFastPathMustNotRetainCallerBuffer() {
+        byte[] frame = frame(71L, new byte[] {4, 3, 2, 1});
+        Buffer input = Buffer.buffer(frame.clone());
+        List<byte[]> received = new ArrayList<>();
+        FrameAccumulator accumulator = new FrameAccumulator(frame.length);
+
+        accumulator.accept(input, received::add);
+        assertEquals(1, received.size());
+        assertArrayEquals(frame, received.get(0));
+
+        // 收到的帧拥有独立 byte[]，之后可安全复用原有 Netty Buffer。
+        input.setByte(RpcProtocolCodec.HEADER_LENGTH, (byte) 0);
+        assertArrayEquals(frame, received.get(0));
+
+        byte[] next = frame(72L, new byte[] {9});
+        accumulator.accept(Buffer.buffer(next), received::add);
+        assertEquals(2, received.size());
+        assertArrayEquals(next, received.get(1));
+    }
+
+    @Test
+    void fastPathShouldRetainOnlyIncompleteCoalescedTail() {
+        byte[] first = frame(80L, new byte[] {1, 2});
+        byte[] second = frame(81L, new byte[] {3, 4});
+        byte[] third = frame(82L, new byte[120]);
+        byte[] fourth = frame(83L, new byte[] {5});
+
+        int split = RpcProtocolCodec.HEADER_LENGTH - 3;
+        Buffer coalesced = Buffer.buffer()
+                .appendBytes(first)
+                .appendBytes(second)
+                .appendBytes(java.util.Arrays.copyOfRange(
+                        third, 0, split));
+        FrameAccumulator accumulator = new FrameAccumulator(third.length);
+        List<byte[]> decoded = new ArrayList<>();
+
+        accumulator.accept(coalesced, decoded::add);
+        assertEquals(2, decoded.size());
+        assertArrayEquals(first, decoded.get(0));
+        assertArrayEquals(second, decoded.get(1));
+
+        accumulator.accept(
+                Buffer.buffer(java.util.Arrays.copyOfRange(
+                        third, split, third.length)),
+                decoded::add);
+        assertEquals(3, decoded.size());
+        assertArrayEquals(third, decoded.get(2));
+
+        accumulator.accept(Buffer.buffer(fourth), decoded::add);
+        assertEquals(4, decoded.size());
+        assertArrayEquals(fourth, decoded.get(3));
+    }
+
+    @Test
+    void fragmentedOversizedHeaderMustFailBeforeReceivingPayload() {
+        byte[] bigFrame = frame(84L, new byte[128]);
+        FrameAccumulator accumulator = new FrameAccumulator(
+                RpcProtocolCodec.HEADER_LENGTH + 64);
+        List<byte[]> received = new ArrayList<>();
+        int split = RpcProtocolCodec.HEADER_LENGTH / 2;
+        accumulator.accept(
+                Buffer.buffer(java.util.Arrays.copyOfRange(
+                        bigFrame, 0, split)),
+                received::add);
+
+        assertThrows(
+                RpcProtocolException.class,
+                () -> accumulator.accept(
+                        Buffer.buffer(java.util.Arrays.copyOfRange(
+                                bigFrame, split, RpcProtocolCodec.HEADER_LENGTH)),
+                        received::add));
+        assertEquals(0, received.size());
+    }
+
+    @Test
+    void exactFrameLimitShouldBeAllowedAndOversizedFrameRejected() {
+        byte[] valid = frame(85L, new byte[32]);
+        List<byte[]> output = new ArrayList<>();
+        new FrameAccumulator(valid.length)
+                .accept(Buffer.buffer(valid), output::add);
+        assertEquals(1, output.size());
+        assertArrayEquals(valid, output.get(0));
+
+        assertThrows(
+                RpcProtocolException.class,
+                () -> new FrameAccumulator(valid.length - 1)
+                        .accept(Buffer.buffer(valid), ignored -> { }));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new FrameAccumulator(
+                        RpcProtocolCodec.HEADER_LENGTH - 1));
+    }
+
+    @Test
+    void malformedHeaderMustNotBeEmitted() {
+        FrameAccumulator accumulator = new FrameAccumulator(1024);
+        List<byte[]> received = new ArrayList<>();
+        assertThrows(
+                RpcProtocolException.class,
+                () -> accumulator.accept(
+                        Buffer.buffer(new byte[RpcProtocolCodec.HEADER_LENGTH]),
+                        received::add));
+        assertEquals(0, received.size());
     }
 
     private static byte[] frame(long requestId, byte[] payload) {
