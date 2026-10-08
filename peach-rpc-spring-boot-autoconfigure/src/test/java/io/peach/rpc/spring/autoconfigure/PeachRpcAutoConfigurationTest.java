@@ -271,6 +271,37 @@ public class PeachRpcAutoConfigurationTest {
     }
 
     @Test
+    void providerAdmissionBudgetPropertiesShouldBind() {
+        contextRunner.withPropertyValues(
+                "peach.rpc.server.max-concurrent=64",
+                "peach.rpc.server.admission.max-inflight-bytes=4194304",
+                "peach.rpc.server.admission.max-concurrent-per-service=16",
+                "peach.rpc.server.admission.max-concurrent-per-method=8",
+                "peach.rpc.server.admission.max-inflight-bytes-per-service=1048576",
+                "peach.rpc.server.admission.max-inflight-bytes-per-method=262144")
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    PeachRpcProperties.Server options = context
+                            .getBean(PeachRpcProperties.class).getServer();
+                    assertThat(options.getMaxConcurrent()).isEqualTo(64);
+                    assertThat(options.getAdmission().getMaxInflightBytes())
+                            .isEqualTo(4194304L);
+                    assertThat(options.getAdmission()
+                                    .getMaxConcurrentPerService())
+                            .isEqualTo(16);
+                    assertThat(options.getAdmission()
+                                    .getMaxConcurrentPerMethod())
+                            .isEqualTo(8);
+                    assertThat(options.getAdmission()
+                                    .getMaxInflightBytesPerService())
+                            .isEqualTo(1048576L);
+                    assertThat(options.getAdmission()
+                                    .getMaxInflightBytesPerMethod())
+                            .isEqualTo(262144L);
+                });
+    }
+
+    @Test
     void rawClientInjectionShouldCreateConsumerRuntime() {
         contextRunner
                 .withBean(RawClientBean.class)
