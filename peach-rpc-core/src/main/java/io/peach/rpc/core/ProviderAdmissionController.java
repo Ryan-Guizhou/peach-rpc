@@ -308,10 +308,15 @@ final class ProviderAdmissionController {
         }
 
         private void release(long amount) {
-            long previous = used.getAndAdd(-amount);
-            if (previous < amount) {
-                throw new IllegalStateException(
-                        "Inflight-byte budget was released more than once");
+            for (;;) {
+                long previous = used.get();
+                if (previous < amount) {
+                    throw new IllegalStateException(
+                            "Inflight-byte budget was released more than once");
+                }
+                if (used.compareAndSet(previous, previous - amount)) {
+                    return;
+                }
             }
         }
     }
