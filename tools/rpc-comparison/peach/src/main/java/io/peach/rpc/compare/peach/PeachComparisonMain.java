@@ -78,6 +78,8 @@ public final class PeachComparisonMain {
                      .transportServer(transport.createServer(options()))
                      .codecRegistry(codecs)
                      .bindEndpoint(new RpcEndpoint("0.0.0.0", port))
+                     .advertisedHost(System.getenv().getOrDefault(
+                             "RPC_COMPARISON_ADVERTISED_HOST", "127.0.0.1"))
                      .maxConcurrent(20000)
                      .build()
                      .registerService(
