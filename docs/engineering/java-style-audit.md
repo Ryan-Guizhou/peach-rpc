@@ -48,6 +48,18 @@ Checkstyle 原始 XML 位于各 Maven 子模块的 `target/checkstyle-result.xml
 
 Checkstyle 的所有 Style Audit 检查统一使用 **warning** 级别，避免历史建议性问题被 GitHub Actions 注记为红色 Error 而误导开发者；真正禁止的 API、EventLoop 不安全行为和 Core 依赖边界仍由 Java Agent Quality 和 ArchUnit 作为独立的硬性质量门禁。
 
+## 2.2 第二轮 Checkstyle 结果与 JMH 基准整改
+
+[PR-10 的新版审计](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37875213504) 再次扫描 **19 份 XML、208 个 Java 文件**，发现 **3 条 MissingJavadocMethod**。读取原始 `checkstyle-audit.json` 后，确认这 3 条**全部位于 `peach-rpc-benchmarks/src/main/java/io/peach/rpc/benchmarks/ProtocolCodecBenchmark.java`**，分别是：
+
+| 行号（整改前） | 方法 | 需要说明的契约 |
+|---|---|---|
+| 30 | `setup()` | Trial 开始前构造固定 RPC Frame 和预编码 bytes，初始化开销不计入吞吐 |
+| 44 | `encode()` | 仅计 Wire v1 编码吞吐，返回每次编码的字节数组 |
+| 49 | `decode()` | 仅计预编码字节的解码吞吐，不含传输/注册中心调用 |
+
+**重要边界：** JMH Benchmark 虽然位于 `src/main/java`，但不属于用户可直接依赖的 Peach RPC 公开运行时 API。不能把这 3 条描述为“RPC 用户公共接口缺少 Javadoc”。本阶段在不改变方法签名、`@Setup`、`@Benchmark`、Codec 或 Wire v1 的情况下补充了有价值的中文基准说明，待本 PR 最新 CI 验证。由于检查器默认豁免测试目录，它**不是所有 Java 源码的注释语义全面审计**。
+
 ## 3. 为什么当前不把历史违规全部设为 Error？
 
 Peach RPC 已经有 Public Core API、SPI、Wire v1 和自动生成代码，不能为了统一驼峰命名、Javadoc 或行长就批量更改 public 方法/字段。初次运行后的违规需要分成：
