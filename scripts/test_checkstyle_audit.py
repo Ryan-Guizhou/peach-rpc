@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Checkstyle audit schema and failure-path regression tests."""
 
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -45,6 +46,42 @@ class CheckstyleAuditTest(unittest.TestCase):
         }
         self.assertIn("advisory only", markdown(report))
         self.assertIn("not yet a blocking gate", markdown(report))
+
+    def test_production_javadocs_are_audited_without_test_fixture_noise(self):
+        config = (Path(__file__).resolve().parents[1] /
+                  "config/peach-rpc-checkstyle.xml")
+        root = ET.parse(config).getroot()
+        modules = list(root.iter("module"))
+        self.assertIn("MissingJavadocType",
+                      [m.get("name") for m in modules])
+        self.assertIn("MissingJavadocMethod",
+                      [m.get("name") for m in modules])
+        audited_checks = {
+            "FileTabCharacter", "LineLength", "AvoidStarImport",
+            "TypeName", "MethodName", "MemberName", "ParameterName",
+            "ConstantName", "MissingJavadocType",
+            "MissingJavadocMethod",
+        }
+        for check in modules:
+            if check.get("name") not in audited_checks:
+                continue
+            settings = {p.get("name"): p.get("value")
+                        for p in check.findall("property")}
+            self.assertEqual(
+                "warning", settings.get("severity"),
+                f"Advisory check {check.get('name')} must not emit errors")
+        filters = [m for m in modules
+                   if m.get("name") == "SuppressionSingleFilter"]
+        self.assertEqual(1, len(filters))
+        properties = {p.get("name"): p.get("value")
+                      for p in filters[0].findall("property")}
+        self.assertIn("MissingJavadoc", properties["checks"])
+        self.assertTrue(re.search(
+            properties["files"],
+            "/workspace/peach-rpc-core/src/test/java/Fixture.java"))
+        self.assertFalse(re.search(
+            properties["files"],
+            "/workspace/peach-rpc-core/src/main/java/PublicApi.java"))
 
     def test_missing_report_fails_closed(self):
         with self.assertRaisesRegex(ValueError, "No Checkstyle"):

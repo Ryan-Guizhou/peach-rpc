@@ -33,6 +33,21 @@ python3 scripts/summarize_checkstyle_audit.py \
 
 Checkstyle 原始 XML 位于各 Maven 子模块的 `target/checkstyle-result.xml`。汇总器对未知根节点、缺失文件名、缺失报告直接失败，并把来源路径正规化后写入 JSON，避免导出本机绝对路径。GitHub Actions `Java Style Audit` 上传全部原始 XML 和汇总结果供按模块分派整改。
 
+## 2.1 首轮结果与规则修正
+
+[PR-8 首轮 Java Style Audit](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37874810150) 成功，上传原始 XML 和聚合报告，扫描 **208 个 Java 文件、19 份 Checkstyle XML**；发现 **31 条 MissingJavadocType**，全部定位到 `src/test/java` 下的公开测试类或测试 fixture，`src/main/java` 没有该规则的缺失记录。此数字是**特定规则、特定提交、特定扫描范围**的历史基线，不意味着全仓 Javadoc 合格。
+
+这些测试夹具存在 Public 类更多是为了 mock/反射/编译测试，机械补上“测试类”Javadoc 将制造大量无信息价值的注释。因此 PR-10 的规则调整为：
+
+- `MissingJavadocType` **继续检查生产源码的 public 类型**；
+- 新增 `MissingJavadocMethod` **检查生产源码的 public 方法和构造函数**，默认 `@Override` 继承语义与简单 Bean 属性访问器适用合理豁免；
+- 仅对 `MissingJavadocType|MissingJavadocMethod` 在 `src/test/java` 中豁免，**测试代码的命名、Import、行长等其他检查继续执行**；
+- 使用 Python 单测验证豁免正则能够命中测试目录而不命中 `src/main/java`。新的生产 API 统计必须等待 PR-10 Checkstyle Job 实际执行后填写。
+
+测试代码确实需要解释复杂生命周期、协议样例或不安全的故障注入时，依然应写有意义的中文 Javadoc/注释；豁免的是**强制覆盖率**，不是豁免可读性要求。
+
+Checkstyle 的所有 Style Audit 检查统一使用 **warning** 级别，避免历史建议性问题被 GitHub Actions 注记为红色 Error 而误导开发者；真正禁止的 API、EventLoop 不安全行为和 Core 依赖边界仍由 Java Agent Quality 和 ArchUnit 作为独立的硬性质量门禁。
+
 ## 3. 为什么当前不把历史违规全部设为 Error？
 
 Peach RPC 已经有 Public Core API、SPI、Wire v1 和自动生成代码，不能为了统一驼峰命名、Javadoc 或行长就批量更改 public 方法/字段。初次运行后的违规需要分成：

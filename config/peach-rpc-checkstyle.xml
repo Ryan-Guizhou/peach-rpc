@@ -4,20 +4,47 @@
         "https://checkstyle.org/dtds/configuration_1_3.dtd">
 <module name="Checker">
     <property name="charset" value="UTF-8"/>
-    <module name="FileTabCharacter"/>
+    <module name="FileTabCharacter">
+            <property name="severity" value="warning"/>
+        </module>
     <module name="LineLength">
+        <property name="severity" value="warning"/>
         <property name="max" value="120"/>
         <property name="ignorePattern" value="^\s*(package|import)\s+.*"/>
     </module>
     <module name="TreeWalker">
-        <module name="AvoidStarImport"/>
-        <module name="TypeName"/>
-        <module name="MethodName"/>
-        <module name="MemberName"/>
-        <module name="ParameterName"/>
-        <module name="ConstantName"/>
+        <module name="AvoidStarImport">
+            <property name="severity" value="warning"/>
+        </module>
+        <module name="TypeName">
+            <property name="severity" value="warning"/>
+        </module>
+        <module name="MethodName">
+            <property name="severity" value="warning"/>
+        </module>
+        <module name="MemberName">
+            <property name="severity" value="warning"/>
+        </module>
+        <module name="ParameterName">
+            <property name="severity" value="warning"/>
+        </module>
+        <module name="ConstantName">
+            <property name="severity" value="warning"/>
+        </module>
         <module name="MissingJavadocType">
+            <property name="severity" value="warning"/>
             <property name="scope" value="public"/>
         </module>
+        <module name="MissingJavadocMethod">
+            <property name="severity" value="warning"/>
+            <property name="scope" value="public"/>
+            <property name="allowMissingPropertyJavadoc" value="true"/>
+        </module>
+    </module>
+    <!-- Public API Javadoc is required in production; test fixtures are
+         intentionally excluded to prevent meaningless comments. -->
+    <module name="SuppressionSingleFilter">
+        <property name="checks" value="MissingJavadoc(Type|Method)Check"/>
+        <property name="files" value=".*[\\/]src[\\/]test[\\/]java[\\/].*"/>
     </module>
 </module>
