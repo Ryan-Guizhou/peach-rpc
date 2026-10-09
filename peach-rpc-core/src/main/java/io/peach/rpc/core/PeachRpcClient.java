@@ -8,6 +8,7 @@ import io.peach.rpc.api.RpcMethodDescriptor;
 import io.peach.rpc.api.RpcOverloadedException;
 import io.peach.rpc.api.RpcRemoteException;
 import io.peach.rpc.api.RpcStatus;
+import io.peach.rpc.api.RpcTimeoutException;
 import io.peach.rpc.api.RpcUnavailableException;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
@@ -44,6 +45,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
@@ -71,6 +74,7 @@ public final class PeachRpcClient implements AutoCloseable {
     private final RetryBudget retryBudget;
     private final ThreadPoolExecutor responseCompletionExecutor;
     private final Semaphore responseCompletionPermits;
+    private final ScheduledThreadPoolExecutor deadlineScheduler;
     private final RpcObserver observer;
     private final RpcMetadataPropagator metadataPropagator;
     private final RpcTracingBridge tracingBridge;
@@ -129,6 +133,13 @@ public final class PeachRpcClient implements AutoCloseable {
                         .name("peach-rpc-client-completion-", 0)
                         .factory(),
                 new ThreadPoolExecutor.AbortPolicy());
+        this.deadlineScheduler = new ScheduledThreadPoolExecutor(
+                2,
+                Thread.ofPlatform()
+                        .daemon(true)
+                        .name("peach-rpc-client-deadline-", 0)
+                        .factory());
+        this.deadlineScheduler.setRemoveOnCancelPolicy(true);
         // 自定义 Observer 即使只有一个，也不能通过异常中断 RPC 完成链。
         // NOOP 配置仍走不产生事件对象的原有快路径。
         this.observer = RpcObserver.composite(
@@ -199,20 +210,24 @@ public final class PeachRpcClient implements AutoCloseable {
     private CompletionStage<Object> invoke0(
             ClientReference reference,
             ClientMethodBinding method) {
+        long startedAtNanos = System.nanoTime();
         return invokeEncoded(
                 reference,
                 method,
-                method.codec().encode0());
+                method.codec().encode0(),
+                startedAtNanos);
     }
 
     private CompletionStage<Object> invoke1(
             ClientReference reference,
             ClientMethodBinding method,
             Object argument0) {
+        long startedAtNanos = System.nanoTime();
         return invokeEncoded(
                 reference,
                 method,
-                method.codec().encode1(argument0));
+                method.codec().encode1(argument0),
+                startedAtNanos);
     }
 
     private CompletionStage<Object> invoke2(
@@ -220,10 +235,12 @@ public final class PeachRpcClient implements AutoCloseable {
             ClientMethodBinding method,
             Object argument0,
             Object argument1) {
+        long startedAtNanos = System.nanoTime();
         return invokeEncoded(
                 reference,
                 method,
-                method.codec().encode2(argument0, argument1));
+                method.codec().encode2(argument0, argument1),
+                startedAtNanos);
     }
 
     private CompletionStage<Object> invoke3(
@@ -232,13 +249,15 @@ public final class PeachRpcClient implements AutoCloseable {
             Object argument0,
             Object argument1,
             Object argument2) {
+        long startedAtNanos = System.nanoTime();
         return invokeEncoded(
                 reference,
                 method,
                 method.codec().encode3(
                         argument0,
                         argument1,
-                        argument2));
+                        argument2),
+                startedAtNanos);
     }
 
     private CompletionStage<Object> invoke4(
@@ -248,6 +267,7 @@ public final class PeachRpcClient implements AutoCloseable {
             Object argument1,
             Object argument2,
             Object argument3) {
+        long startedAtNanos = System.nanoTime();
         return invokeEncoded(
                 reference,
                 method,
@@ -255,110 +275,132 @@ public final class PeachRpcClient implements AutoCloseable {
                         argument0,
                         argument1,
                         argument2,
-                        argument3));
+                        argument3),
+                startedAtNanos);
     }
 
     private CompletionStage<Object> invokeN(
             ClientReference reference,
             ClientMethodBinding method,
             Object[] arguments) {
+        long startedAtNanos = System.nanoTime();
         return invokeEncoded(
                 reference,
                 method,
-                method.codec().encodeArguments(arguments));
+                method.codec().encodeArguments(arguments),
+                startedAtNanos);
     }
 
     private CompletionStage<Object> invokeEncoded(
             ClientReference reference,
             ClientMethodBinding method,
-            byte[] encodedArguments) {
+            byte[] encodedArguments,
+            long callStartedAtNanos) {
         if (!responseCompletionPermits.tryAcquire()) {
             return CompletableFuture.failedFuture(
                     new RpcOverloadedException(
                             "RPC consumer response completion capacity exceeded"));
         }
-        retryBudget.onRequest();
-        RpcTraceContext trace = tracingBridge.enabled()
-                ? tracingBridge.startClient(
-                        reference.key(),
-                        method.methodId())
-                : RpcTraceContext.noop();
-        Map<String, String> propagatedMetadata =
-                propagatedMetadata(trace);
-        long logicalStartedAtNanos =
-                observer.enabled()
-                        ? System.nanoTime()
-                        : 0L;
-        if (observer.enabled()) {
-            observer.onClientInflightChanged(1);
-            observeCircuitState(reference, method);
-        }
         CompletableFuture<Object> result =
                 new CompletableFuture<>();
         result.whenComplete((ignoredValue, error) ->
                 responseCompletionPermits.release());
-        result.whenComplete((ignoredValue, error) -> {
-            Throwable failure;
-            RpcStatus finalStatus;
-            if (result.isCancelled()) {
-                method.circuitBreaker().onCancelled();
-                observeCircuitState(reference, method);
-                failure = new CancellationException(
-                        "RPC call cancelled");
-                finalStatus = RpcStatus.UNAVAILABLE;
-            } else {
-                failure =
-                        error == null
-                                ? null
-                                : unwrap(error);
-                finalStatus = failure == null
-                        ? RpcStatus.OK
-                        : statusOf(failure);
-            }
+        try {
+            retryBudget.onRequest();
+            RpcTraceContext trace = tracingBridge.enabled()
+                    ? tracingBridge.startClient(
+                            reference.key(),
+                            method.methodId())
+                    : RpcTraceContext.noop();
+            long logicalStartedAtNanos =
+                    observer.enabled()
+                            ? System.nanoTime()
+                            : 0L;
             if (observer.enabled()) {
-                observer.onClientCallCompleted(
-                        reference.key(),
-                        method.methodId(),
-                        System.nanoTime()
-                                - logicalStartedAtNanos,
+                observer.onClientInflightChanged(1);
+                observeCircuitState(reference, method);
+            }
+            result.whenComplete((ignoredValue, error) -> {
+                Throwable failure;
+                RpcStatus finalStatus;
+                if (result.isCancelled()) {
+                    method.circuitBreaker().onCancelled();
+                    observeCircuitState(reference, method);
+                    failure = new CancellationException(
+                            "RPC call cancelled");
+                    finalStatus = RpcStatus.UNAVAILABLE;
+                } else {
+                    failure =
+                            error == null
+                                    ? null
+                                    : unwrap(error);
+                    finalStatus = failure == null
+                            ? RpcStatus.OK
+                            : statusOf(failure);
+                }
+                if (observer.enabled()) {
+                    observer.onClientCallCompleted(
+                            reference.key(),
+                            method.methodId(),
+                            System.nanoTime()
+                                    - logicalStartedAtNanos,
+                            finalStatus,
+                            failure);
+                    observer.onClientInflightChanged(-1);
+                }
+                trace.end(
                         finalStatus,
                         failure);
-                observer.onClientInflightChanged(-1);
-            }
-            trace.end(
-                    finalStatus,
-                    failure);
-        });
+            });
+            Map<String, String> propagatedMetadata =
+                    propagatedMetadata(trace);
 
-        boolean circuitAcquired =
-                method.circuitBreaker().tryAcquire();
-        observeCircuitState(reference, method);
-        if (!circuitAcquired) {
-            if (observer.enabled()) {
-                observer.onClientCircuitRejected(
-                        reference.key(),
-                        method.methodId());
+            boolean circuitAcquired =
+                    method.circuitBreaker().tryAcquire();
+            observeCircuitState(reference, method);
+            if (!circuitAcquired) {
+                if (observer.enabled()) {
+                    observer.onClientCircuitRejected(
+                            reference.key(),
+                            method.methodId());
+                }
+                result.completeExceptionally(
+                        new RpcUnavailableException(
+                                "RPC circuit is open for "
+                                        + reference.key().canonicalName()
+                                        + '#'
+                                        + method.methodId()));
+                return result;
             }
-            result.completeExceptionally(
-                    new RpcUnavailableException(
-                            "RPC circuit is open for "
-                                    + reference.key().canonicalName()
-                                    + '#'
-                                    + method.methodId()));
+
+            long deadlineNanos =
+                    callStartedAtNanos + timeout.toNanos();
+            long remainingDeadlineNanos = deadlineNanos - System.nanoTime();
+            if (remainingDeadlineNanos <= 0L) {
+                result.completeExceptionally(new RpcTimeoutException(
+                        "RPC request deadline exceeded before dispatch"));
+                return result;
+            }
+            ScheduledFuture<?> deadlineTask = deadlineScheduler.schedule(
+                    () -> result.completeExceptionally(new RpcTimeoutException(
+                            "RPC request deadline exceeded")),
+                    remainingDeadlineNanos,
+                    TimeUnit.NANOSECONDS);
+            result.whenComplete((ignoredValue, error) ->
+                    deadlineTask.cancel(false));
+            attempt(
+                    reference,
+                    method,
+                    encodedArguments,
+                    propagatedMetadata,
+                    deadlineNanos,
+                    1,
+                    result);
+            return result;
+        } catch (RuntimeException | Error setupError) {
+            result.completeExceptionally(setupError);
             return result;
         }
-
-        long deadlineNanos =
-                System.nanoTime() + timeout.toNanos();
-        attempt(
-                reference,
-                method,
-                encodedArguments,
-                propagatedMetadata,
-                deadlineNanos,
-                1,
-                result);
-        return result;
     }
 
     private Map<String, String> propagatedMetadata(
@@ -459,13 +501,18 @@ public final class PeachRpcClient implements AutoCloseable {
                         request,
                         Duration.ofNanos(remainingNanos))
                 .toCompletableFuture();
-        result.whenComplete((ignoredValue, ignoredError) -> {
-            if (result.isCancelled()) {
+        result.whenComplete((ignoredValue, completionError) -> {
+            if (result.isCancelled()
+                    || unwrap(completionError) instanceof RpcTimeoutException) {
                 transportFuture.cancel(true);
             }
         });
 
         transportFuture.whenComplete((rawResponse, transportError) -> {
+            if (result.isDone()) {
+                endpointStats.endCancelled(System.nanoTime() - startedAtNanos);
+                return;
+            }
             try {
                 responseCompletionExecutor.execute(() ->
                         completeTransportResponse(
@@ -506,7 +553,7 @@ public final class PeachRpcClient implements AutoCloseable {
             byte[] rawResponse,
             Throwable transportError) {
             long elapsed = System.nanoTime() - startedAtNanos;
-            if (result.isCancelled()) {
+            if (result.isDone()) {
                 endpointStats.endCancelled(elapsed);
                 return;
             }
@@ -853,6 +900,7 @@ public final class PeachRpcClient implements AutoCloseable {
         directories.values().forEach(ServiceDirectory::close);
         transport.close();
         responseCompletionExecutor.shutdown();
+        deadlineScheduler.shutdownNow();
     }
 
     private record ClientReference(
