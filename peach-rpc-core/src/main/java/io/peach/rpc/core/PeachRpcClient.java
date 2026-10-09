@@ -218,11 +218,18 @@ public final class PeachRpcClient implements AutoCloseable {
             ClientReference reference,
             ClientMethodBinding method) {
         long startedAtNanos = System.nanoTime();
+        if (!responseCompletionPermits.tryAcquire()) {
+            return capacityExceeded();
+        }
+        byte[] encodedArguments;
+        try {
+            encodedArguments = method.codec().encode0();
+        } catch (RuntimeException | Error encodingError) {
+            responseCompletionPermits.release();
+            throw encodingError;
+        }
         return invokeEncoded(
-                reference,
-                method,
-                method.codec().encode0(),
-                startedAtNanos);
+                reference, method, encodedArguments, startedAtNanos);
     }
 
     private CompletionStage<Object> invoke1(
@@ -230,11 +237,18 @@ public final class PeachRpcClient implements AutoCloseable {
             ClientMethodBinding method,
             Object argument0) {
         long startedAtNanos = System.nanoTime();
+        if (!responseCompletionPermits.tryAcquire()) {
+            return capacityExceeded();
+        }
+        byte[] encodedArguments;
+        try {
+            encodedArguments = method.codec().encode1(argument0);
+        } catch (RuntimeException | Error encodingError) {
+            responseCompletionPermits.release();
+            throw encodingError;
+        }
         return invokeEncoded(
-                reference,
-                method,
-                method.codec().encode1(argument0),
-                startedAtNanos);
+                reference, method, encodedArguments, startedAtNanos);
     }
 
     private CompletionStage<Object> invoke2(
@@ -243,11 +257,18 @@ public final class PeachRpcClient implements AutoCloseable {
             Object argument0,
             Object argument1) {
         long startedAtNanos = System.nanoTime();
+        if (!responseCompletionPermits.tryAcquire()) {
+            return capacityExceeded();
+        }
+        byte[] encodedArguments;
+        try {
+            encodedArguments = method.codec().encode2(argument0, argument1);
+        } catch (RuntimeException | Error encodingError) {
+            responseCompletionPermits.release();
+            throw encodingError;
+        }
         return invokeEncoded(
-                reference,
-                method,
-                method.codec().encode2(argument0, argument1),
-                startedAtNanos);
+                reference, method, encodedArguments, startedAtNanos);
     }
 
     private CompletionStage<Object> invoke3(
@@ -257,14 +278,21 @@ public final class PeachRpcClient implements AutoCloseable {
             Object argument1,
             Object argument2) {
         long startedAtNanos = System.nanoTime();
-        return invokeEncoded(
-                reference,
-                method,
-                method.codec().encode3(
+        if (!responseCompletionPermits.tryAcquire()) {
+            return capacityExceeded();
+        }
+        byte[] encodedArguments;
+        try {
+            encodedArguments = method.codec().encode3(
                         argument0,
                         argument1,
-                        argument2),
-                startedAtNanos);
+                        argument2);
+        } catch (RuntimeException | Error encodingError) {
+            responseCompletionPermits.release();
+            throw encodingError;
+        }
+        return invokeEncoded(
+                reference, method, encodedArguments, startedAtNanos);
     }
 
     private CompletionStage<Object> invoke4(
@@ -275,15 +303,22 @@ public final class PeachRpcClient implements AutoCloseable {
             Object argument2,
             Object argument3) {
         long startedAtNanos = System.nanoTime();
-        return invokeEncoded(
-                reference,
-                method,
-                method.codec().encode4(
+        if (!responseCompletionPermits.tryAcquire()) {
+            return capacityExceeded();
+        }
+        byte[] encodedArguments;
+        try {
+            encodedArguments = method.codec().encode4(
                         argument0,
                         argument1,
                         argument2,
-                        argument3),
-                startedAtNanos);
+                        argument3);
+        } catch (RuntimeException | Error encodingError) {
+            responseCompletionPermits.release();
+            throw encodingError;
+        }
+        return invokeEncoded(
+                reference, method, encodedArguments, startedAtNanos);
     }
 
     private CompletionStage<Object> invokeN(
@@ -291,11 +326,24 @@ public final class PeachRpcClient implements AutoCloseable {
             ClientMethodBinding method,
             Object[] arguments) {
         long startedAtNanos = System.nanoTime();
+        if (!responseCompletionPermits.tryAcquire()) {
+            return capacityExceeded();
+        }
+        byte[] encodedArguments;
+        try {
+            encodedArguments = method.codec().encodeArguments(arguments);
+        } catch (RuntimeException | Error encodingError) {
+            responseCompletionPermits.release();
+            throw encodingError;
+        }
         return invokeEncoded(
-                reference,
-                method,
-                method.codec().encodeArguments(arguments),
-                startedAtNanos);
+                reference, method, encodedArguments, startedAtNanos);
+    }
+
+    private static CompletionStage<Object> capacityExceeded() {
+        return CompletableFuture.failedFuture(
+                new RpcOverloadedException(
+                        "RPC consumer response completion capacity exceeded"));
     }
 
     private CompletionStage<Object> invokeEncoded(
@@ -303,11 +351,6 @@ public final class PeachRpcClient implements AutoCloseable {
             ClientMethodBinding method,
             byte[] encodedArguments,
             long callStartedAtNanos) {
-        if (!responseCompletionPermits.tryAcquire()) {
-            return CompletableFuture.failedFuture(
-                    new RpcOverloadedException(
-                            "RPC consumer response completion capacity exceeded"));
-        }
         CompletableFuture<Object> result =
                 new CompletableFuture<>();
         long[] circuitGeneration = {RpcCircuitBreaker.REJECTED};
