@@ -1,60 +1,78 @@
-# Peach RPC Agent 工程治理：可续写断点台账
+# Peach RPC Agent 工程治理：可恢复断点
 
-> 检查点时间：2026-10-09（Asia/Singapore）。**本文件是已完成步骤与遗留任务快照，不能替代最新 GitHub PR/CI。** 用户要求：超过 10 分钟无进展立即中断当前等待，保留现场，下一轮从断点继续；任何 PR 未经授权禁止合并。
+> 更新时间：2026-10-09（Asia/Singapore）。**仅是提交时的快照。恢复任务须先查 GitHub 的最新 PR Head SHA、Base 和相同 SHA 的 CI。**
+>
+> 用户授权：仅 Peach RPC；全仓审计、编码规范/日志/注释/安全改进，按阶段提交 **Draft PR**。**未经额外指令严禁合并、删分支、发布、修改 main 或生产数据。** 单个外部等待超过十分钟无进展时停止当前等待，记录实际状态和下一步，不无限轮询。
 
-## 已获得用户明确授权的范围
+## 1. 核心约束
 
-仅 Peach RPC，全仓审计+按 PR 安全整改；中文标准 Javadoc 与英文参数化日志、命名/禁用 API、大项目架构规范和 Cursor/Codex 的同源配置。MySQL 默认不接入，只有经用户批准的独立只读账户（以实际 GRANT 为准）才能用。不可改动 1.0.x Wire v1、Codec/Type ID、Schema v1、Public Core API 和 Starter 兼容设置。
+- JDK21 / Maven / Spring Boot 3.5.4（以当前 POM 为准）。公开 1.0.x Java API、Wire v1、Codec 和 Message IDs、Stable Type IDs、Schema Fingerprint v1、SPI 与 Registry metadata 保持兼容。
+- 中文标准 Javadoc，不复制 Peach Cloud 的 `@Author/@Version/@CreateTime`；`@since` 必须由真实发行历史证明。
+- 英文 SLF4J 参数化日志，不输出 Token、Secret、完整请求或未经审查的业务 Throwable/堆栈；EventLoop 禁止阻塞；有界 Queue/Executor/Admission、取消和终态释放可验证。
+- Cursor/Codex 以 `AGENTS.md` 和 `.agents/skills` 为共用行为事实源；MySQL MCP 默认禁用；只读真正依赖数据库授予的用户 GRANT，不依赖提示词承诺。
+- **PR 只创建，不合并。** 研发事实、实际 CI、建议性质量审计、受控性能证据分开陈述。
 
-## PR 堆叠关系与当前状态（全部 Draft）
+## 2. 当前堆叠 PR 与验证事实
 
-| 阶段 | PR | Head branch | 本轮完成情况 |
+| 阶段 | PR | 主题与状态 | 证据/下一步 |
 |---|---|---|---|
-| 0：Provider readiness E2E 基线 | [#27](https://github.com/Ryan-Guizhou/peach-rpc/pull/27) | `chore/agent-quality-00-e2e-baseline` | 最新 CI / Rolling / Release SUCCESS；已修复 wildcard bind 误判 |
-| 1：AGENTS/MCP 工作边界 | [#28](https://github.com/Ryan-Guizhou/peach-rpc/pull/28) | `chore/agent-quality-01-governance` | Agent Governance、CI、Release SUCCESS |
-| 2：编码规范和 4 Skills | [#29](https://github.com/Ryan-Guizhou/peach-rpc/pull/29) | `chore/agent-quality-02-standards-skills` | Java Agent Quality、Governance、Release SUCCESS；单次主 CI 在 Transport 测试偶发失败，见 #31 |
-| 3：首批存量注释/日志 | [#30](https://github.com/Ryan-Guizhou/peach-rpc/pull/30) | `chore/agent-quality-03-java-remediation` | Java/Agent、Etcd Chaos、Rolling、Release SUCCESS；单次主 CI 在重连生命周期断言失败，见 #31 |
-| 4：Transport Drain/重连修复 | [#31](https://github.com/Ryan-Guizhou/peach-rpc/pull/31) | `fix/agent-quality-04-transport-drain-lifecycle` | **最新 CI、Rolling、Release、Java Agent Quality 全 SUCCESS**（Head `b27b531c`） |
-| 5：Core/资源/日志规则增强 | [#32](https://github.com/Ryan-Guizhou/peach-rpc/pull/32) | `chore/agent-quality-05-dependency-and-security-gates` | 已创建 B001/R002/R003/L003/L004/N001 规则及正反向测试，CI 以**最终 Head SHA**为准待复核 |
+| 0 | [#27](https://github.com/Ryan-Guizhou/peach-rpc/pull/27) | Provider 就绪竞态；Draft | 主 CI/滚动/Release 已通过 |
+| 1 | [#28](https://github.com/Ryan-Guizhou/peach-rpc/pull/28) | Agent/MCP 统一与权限；Draft | Agent Governance、CI 已通过 |
+| 2 | [#29](https://github.com/Ryan-Guizhou/peach-rpc/pull/29) | Java 规范/4 Skills/禁用 API；Draft | Java Agent Quality 已通过，旧 SHA 在 Transport 测试有过偶发失败，见 #31 |
+| 3 | [#30](https://github.com/Ryan-Guizhou/peach-rpc/pull/30) | Javadoc 和日志首批治理；Draft | 专项门禁通过，旧 SHA 重连测试偶发失败见 #31 |
+| 4 | [#31](https://github.com/Ryan-Guizhou/peach-rpc/pull/31) | Drain 竞态/重连生命周期；Draft | 主 CI、Rolling、Java Agent Quality、Release 成功 |
+| 5 | [#32](https://github.com/Ryan-Guizhou/peach-rpc/pull/32) | Core 边界/无界 Executor/日志规则；Draft | 主 CI、Java Agent Quality、Agent Governance、Release 成功 |
+| 6 | [#33](https://github.com/Ryan-Guizhou/peach-rpc/pull/33) | Nacos 控制面中断与 Throwable 终态；Draft | CI、Nacos Chaos、Rolling 等全部成功 |
+| 7 | [#34](https://github.com/Ryan-Guizhou/peach-rpc/pull/34) | ArchUnit 字节码依赖边界；Draft | CI、Rolling、Java Agent Quality 全部成功 |
+| 8 | [#35](https://github.com/Ryan-Guizhou/peach-rpc/pull/35) | Checkstyle AST 建议性审计；Draft | CI、Style Audit、Rolling 成功；首轮 208 Java/19 XML/31 条测试类 MissingJavadocType |
+| 9 | [#36](https://github.com/Ryan-Guizhou/peach-rpc/pull/36) | Provider 用户 Throwable WARN 脱敏；Draft | [Head aaa75b5d 的主 CI](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37874991795) 已成功（需恢复时确认新提交） |
+| 10 | [#37](https://github.com/Ryan-Guizhou/peach-rpc/pull/37) | 公共方法 Javadoc 规则与测试夹具豁免；Draft | [Head d0909f10 Style Audit](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37875213504)：208 文件/19 XML/3 条 JMH benchmark 方法缺失 |
+| 11 | [#38](https://github.com/Ryan-Guizhou/peach-rpc/pull/38) | 3 个 JMH 方法契约补充；Draft | [Head c05243c0 Style Audit](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37875476842)：208 文件/19 XML/**0 条当前规则匹配**；其他 CI 以该 SHA 为准 |
+| 12 | [#39](https://github.com/Ryan-Guizhou/peach-rpc/pull/39) | OpenTelemetry 原始 Exception Event 脱敏；Draft | 本断点记录所在分支；必须确认**最新 Head SHA** 的 OTel 测试、CI、Style、Rolling、Release |
 
-**重要**：这是堆叠 PR，各阶段从上一开发分支派生。不要为了让中间 PR 的瞬时 CI 绿而强行改写历史、自动合并或把不同阶段的纯文档和行为改动混在一个提交中。PR #31 的累计版本已解决上述测试失败，但 PR #29/#30 原 SHA 的单次记录仍真实保留。
+**严格强调：** #29/#30 的失败运行是历史事实，后续 #31 在继承分支上解决了实际竞态，不能把后者的成功错误算给旧 SHA。#38 的 0 条匹配只覆盖 Checkstyle 当前规则，而非整个 Java 语义审查或可观测性数据流安全的证明。
 
-## 可复用 Skills
+## 3. 11 处 catch(Throwable) 的治理边界
 
-`.agents/skills/using-peach-rpc-java-engineering`、`using-peach-rpc-compatibility`、`using-peach-rpc-performance`、`review-peach-rpc-changes`；都有独立 `SKILL.md` + `agents/openai.yaml`。Cursor/Codex 统一发现 `.agents/skills`，不要复制到各自文件夹导致漂移。
+[代码审计台账](java-existing-code-audit.md) 已对 Consumer 1、Provider 4、Nacos 控制面 1、Transport Client 3、Transport Server 2 逐项说明风险。
 
-## 全仓质量扫描结果与边界
+- 保留多数请求/连接边界捕获以保证 Future 终态结束，不机械改成 `catch(Exception)`。
+- PR #33 已修复 Nacos 计划任务 `join()` 不可响应中断、静默吞控制面错误问题，并补 User Error / CompletionStage Error 的终态回收测试。
+- 仍需：Consumer 解码/Observer 回调的故障隔离、Transport 异常握手/恶意控制帧、服务关闭/取消竞态的专项测试；**OOM/ThreadDeath 等 JVM 致命错误策略尚未决定**。
 
-PR #29 的 212 个 Java 文件审计（commit `230498fb`）：**0 条 error 和 11 条 warning**（均与 `catch(Throwable)` 的异常隔离审查有关）。**这只覆盖当时的 9 条规则**，不等于全仓代码/日志/Javadoc 全合规。PR #32 已扩展规则集，必须重新生成审计报告。
+## 4. 待完善工作（不能算作已完成）
 
-PR #30 主要为有明确源码证据的约 10 个 Runtime/Transport/Codec/Registry/Starter 文件补充中文契约和优化结构化日志。未改协议、公共签名与任意 `catch(Throwable)` 行为。详情见 `docs/engineering/java-existing-code-audit.md`。
+1. **PR #39 当前 Head 的 CI 结果**：检查 [GitHub PR #39](https://github.com/Ryan-Guizhou/peach-rpc/pull/39) 与实际 Run，若失败优先读 Job Logs 修复；一个外部步骤持续卡住超过十分钟应保存 SHA/Run/Job，结束当前等待。
+2. 复核 OpenTelemetry Span Event 脱敏及 Provider Warn 脱敏实际测试。**自定义 RpcObserver 仍接收原始 Throwable**，需要进一步用户自定义扩展审查和部署说明。
+3. 检查 Java Code Style Audit 对 src/main 的公共方法覆盖，按实际报告安全补注释。已知 #38 Checkstyle 为 0 匹配，但不证明 Javadoc 描述与代码一致；不为覆盖率生成重复无用注释。
+4. 对已有公共类型、Record、Spring 配置、Stable ID、历史命名做 **语义级契约审查**，有行为风险或破坏二进制兼容必须单独设计/PR。
+5. Windows Cursor 与 Codex 实机 MCP 握手、npm 版本锁定/供应链核查需要用户端设备与权限；本环境不能假装已验证。
+6. GitHub Branch Protection / Ruleset **未经用户授权不得修改**；若需让所有 Agent Quality Gate 成为强制合并条件，需要单独授权。
+7. 任何性能敏感改造的固定硬件 JMH/JFR、真实 p99/p99.9 与 10k soak 仍需受控证据，不可用 Shared Runner Smoke 替代。
 
-## 待开发和待验证（下一轮优先级）
+## 5. 恢复步骤与当前工具约束
 
-1. **核实 PR #32 Head 最新 CI**：`Java Agent Quality`、`Agent Governance`、Maven/Javadoc、Release；若失败立即按 Job 日志修复，不将任何旧提交绿色视为当前版本通过。
-2. 继续 Java 21 全仓注释/日志/命名审计，分模块形成 **带具体路径/行号** 的清单，区分 Public ABI 不可直接改名、private 可整理、低风险注释、可能涉及行为的重构。
-3. 11 处 `catch(Throwable)` 逐个补充有证据的取消/关闭/错误测试再审查。不能机械改成 `catch(Exception)` 造成 Future 未完成、资源泄露。
-4. 针对 SPI/Codegen/Registry/Starter 的依赖和命名，补 AST/Checkstyle/ArchUnit 等可靠规则，先运行 Advisory 模式查历史误报，再逐步纳入 PR 阻断。
-5. Windows Cursor/Codex 的 MCP **实际启动/权限测试仍没有用户机器环境凭据**；`config/agent-mcp.json` 沿用历史 npm package 名，需锁版本并审核供应链后才能称生产就绪。
-6. GitHub branch protection 仍未修改；如需将 Quality Gate 变为强制，必须另行获得修改仓库权限的明确授权。
-7. 全量整改完毕后执行 CI/Javadoc/Rolling Compatibility；涉及并发/性能的代码做相应 JMH/JFR 和受控证据。无受控证据不能声称 p99 无回归或吞吐提升。
+优先使用 GitHub Connector 查询：
+```text
+Repo: Ryan-Guizhou/peach-rpc
+Main: https://github.com/Ryan-Guizhou/peach-rpc
+PR stack: #27 → #28 → #29 → #30 → #31 → #32 → #33 → #34 → #35 → #36 → #37 → #38 → #39
+Latest: #39, branch fix/agent-quality-12-otel-exception-redaction
+```
 
-## 断点续写命令/证据
-
-从 GitHub 检查 `main`、PR #27-#32 的 Head/Base/Draft 状态和对应 SHA 的 Actions，再执行：
-
+在 JDK 21 Maven 环境运行：
 ```bash
-python3 scripts/check_project.py
 python3 scripts/sync_agent_mcp.py --check
 python3 scripts/test_agent_mcp.py
 python3 scripts/test_java_conventions.py
 python3 scripts/validate_repo_skills.py
+python3 scripts/test_checkstyle_audit.py
 python3 scripts/check_java_conventions.py --audit --report target/java-conventions-audit.json
 mvn -B -ntp clean verify -Pquality
+mvn -B -ntp -Pstyle-audit -DskipTests install
+python3 scripts/summarize_checkstyle_audit.py --json target/checkstyle-audit.json --markdown target/checkstyle-audit.md
 ```
 
-CI 正在运行时不要持续空循环。一个检查超过十分钟无进展，记录 Run ID、Job/Step、Head SHA、最后日志及是否可安全取消，然后停止当前等待并报告该断点。优先转向无依赖、可独立提交的审查，不重复开相同 PR。
+由于本地容器无法可靠连接 GitHub Maven 依赖仓库，真实可复现 Maven 构建结论以对应 Head SHA 的 GitHub Actions 为准；没有执行的测试必须明确写“未执行”，不声称通过。
 
-## 停止条件
-
-不能确定实现/版本/兼容性、CI 阻塞、外部环境无权限、工具网络不可达或者待处理变更超出上述授权范围时，不做猜测性大规模代码修改。将问题、影响、下一步可验证操作保存在 PR 或本台账。**不合并任何 PR。**
+**恢复时先核对最新 HEAD 与 CI；发现新提交/变基后以前通过的运行记录不计为本提交通过。** 任何等待超过十分钟不得无限轮询、重复创建 PR 或自动合并，保存断点并报告问题。
