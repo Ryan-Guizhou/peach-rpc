@@ -61,7 +61,7 @@ mvn -B -ntp -pl peach-rpc-benchmarks -am -DskipTests package
 bash scripts/run_fory_argument_allocation.sh
 ```
 
-原始证据位于 `target/fory-argument-allocation`。在固定 Runner 上至少三次独立重复后才能评估 B/op、采样 p99 和是否值得保留优化。共享 CI 数据只属于 Smoke，不得用于生产性能或对比声明。
+原始单版本证据位于 `target/fory-argument-allocation`。历史 Base 与 Candidate 的自动 A/B 多轮比较命令、强制来源校验、变异系数和 `REPORT_ONLY` 规则见 [性能证据与容量验证](performance-evidence.md#10-fory-参数编解码-ab-分配量测量)。共享 CI 数据只属于 Smoke，不得用于生产性能或对比声明。
 
 ## 4. Benchmark
 

@@ -101,7 +101,7 @@ flowchart LR
 以下候选只有 Evidence 证明收益后才进入默认路径：
 
 - Buffer-oriented Codec；
-- FrameAccumulator copy reduction（PR-E Draft 的 [定向 Allocation Profiling](transport-allocation-profiling.md)，Shared Runner 的 B/op 与采样延迟仅为 Smoke）；
+- FrameAccumulator copy reduction（已实现的 [定向 Allocation Profiling](transport-allocation-profiling.md)，Shared Runner 的 B/op 与采样延迟仅为 Smoke）；
 - Object[] elimination（当前仅零参数复用空数组；1～N 参数仍使用兼容表示）；
 - Future/PendingRequest allocation reduction；
 - EndpointStats/admission contention 优化；
@@ -117,7 +117,34 @@ flowchart LR
 
 但任何官方性能比较、生产容量推荐、QPS/Core 或 p99/p99.9 数字，都必须附带本流程产生的 Evidence。
 
-## 9. 相关文档
+## 10. Fory 参数编解码 A/B 分配量测量
+
+当前代码已经具有 `ForyArgumentEncodingBenchmark`，可以把**完全相同的 Benchmark 源码**复制到历史 Base worktree，再分别构建 Base 与当前 Candidate。这避免了“优化前没有相同基准代码”的比较偏差：
+
+```bash
+# 在仓库根目录，必须具备历史提交；Base 应选零参数优化前的稳定提交。
+BASE_SHA="dd2bfffb7423af332d0bb071bf5e9013f49afd01"
+HEAD_SHA="$(git rev-parse HEAD)"
+bash scripts/run_fory_allocation_comparison.sh "$BASE_SHA" "$HEAD_SHA"
+```
+
+脚本验证两个不同的完整 Git SHA，使用同一 JDK、JVM flags、参数矩阵、`-prof gc`，以 AB/BA 顺序执行。默认每侧三轮独立样本，保留 `avgt/sample` 原始 JSON，并通过 `scripts/compare_fory_allocation.py` 检查 JDK/JMH、场景完整度、B/op、sample p99 及来源。
+
+```mermaid
+flowchart LR
+    Base[Base SHA Fory] --> JMH[同一份 JMH 源码]
+    Head[Head SHA Fory] --> JMH
+    JMH --> Runs[AB BA AB 独立多轮]
+    Runs --> Parse[校验来源与分配指标]
+    Parse --> Report[REPORT_ONLY 报告]
+    Report --> Review[人工性能及兼容性评审]
+```
+
+共享 GitHub Runner 的 PR 自动检查强制标记为 `shared-ci-smoke`，只执行一对短基准用于证明工具可运行。受控微基准需在实际固定主机上显式配置 `PEACH_RPC_FORY_EVIDENCE_CLASS=controlled-micro`、`PEACH_RPC_RUNNER_ID`、`PEACH_RPC_HOST_FINGERPRINT`，至少三轮；GitHub Actions 不允许将自己声明为受控主机。**任何结果都只有 `REPORT_ONLY`，不自动给性能验收 PASS。**
+
+报告包含相对差值与分配 CV，仍需要结合 JFR/AsyncProfiler、端到端 RPC p99/p99.9、CPU、GC 和长稳试验评估。零参数 `Object[0]` 在 JIT 优化后不一定形成实际分配；不能预设 B/op 一定下降。结果输出：`target/fory-allocation-comparison/`。
+
+## 11. 相关文档
 
 - [性能指南](performance.md)
 - [容量规划](capacity-planning.md)
