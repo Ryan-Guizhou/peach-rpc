@@ -77,7 +77,7 @@ public class ResiliencePathBenchmark {
         openCircuit = new RpcCircuitBreaker(
                 1,
                 Duration.ofSeconds(30));
-        openCircuit.onFailure();
+        openCircuit.onFailure(openCircuit.tryAcquire());
 
         healthyEndpoint = new EndpointStats();
         healthyEndpoint.begin();
@@ -120,9 +120,9 @@ public class ResiliencePathBenchmark {
      */
     @Benchmark
     public boolean circuitClosedAcquireAndSuccess() {
-        boolean acquired = closedCircuit.tryAcquire();
-        closedCircuit.onSuccess();
-        return acquired;
+        long generation = closedCircuit.tryAcquire();
+        closedCircuit.onSuccess(generation);
+        return generation != RpcCircuitBreaker.REJECTED;
     }
 
     /**
@@ -132,7 +132,7 @@ public class ResiliencePathBenchmark {
      */
     @Benchmark
     public boolean circuitOpenReject() {
-        return openCircuit.tryAcquire();
+        return openCircuit.tryAcquire() != RpcCircuitBreaker.REJECTED;
     }
 
     /**
