@@ -33,10 +33,12 @@ import io.peach.rpc.transport.RpcTransportClient;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -140,6 +142,11 @@ public final class PeachRpcClient implements AutoCloseable {
                         .name("peach-rpc-client-deadline-", 0)
                         .factory());
         this.deadlineScheduler.setRemoveOnCancelPolicy(true);
+        this.deadlineScheduler.scheduleWithFixedDelay(
+                this::evictUnusedEndpointStats,
+                1L,
+                1L,
+                TimeUnit.MINUTES);
         // 自定义 Observer 即使只有一个，也不能通过异常中断 RPC 完成链。
         // NOOP 配置仍走不产生事件对象的原有快路径。
         this.observer = RpcObserver.composite(
@@ -856,6 +863,28 @@ public final class PeachRpcClient implements AutoCloseable {
             return error.getCause();
         }
         return error;
+    }
+
+    /**
+     * 依据注册中心最新快照清退已经不存在且无在途请求的端点统计。
+     *
+     * <p>延迟清退发生在控制面线程，不进入请求热路径。
+     */
+    void evictUnusedEndpointStats() {
+        Set<RpcEndpoint> activeEndpoints = new HashSet<>();
+        for (ServiceDirectory directory : directories.values()) {
+            for (ServiceInstance instance : directory.snapshot()) {
+                activeEndpoints.add(instance.endpoint());
+            }
+        }
+        stats.entrySet().removeIf(entry ->
+                !activeEndpoints.contains(entry.getKey())
+                        && entry.getValue().inflight() == 0);
+    }
+
+    /** 返回缓存的端点统计数量，用于生命周期诊断。 */
+    int trackedEndpointCount() {
+        return stats.size();
     }
 
     private EndpointStats endpointStats(
