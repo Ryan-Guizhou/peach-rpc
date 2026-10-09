@@ -119,9 +119,12 @@ public final class PeachRpcServer implements AutoCloseable {
         this.executionOptions = Objects.requireNonNull(
                 builder.executionOptions,
                 "executionOptions");
-        this.observer = Objects.requireNonNull(
-                builder.observer,
-                "observer");
+        // 单个自定义 Observer 也必须隔离异常，避免影响 Admission 归还和响应 Future。
+        // NOOP Observer 会由 composite 保持为无事件的轻量实现。
+        this.observer = RpcObserver.composite(
+                List.of(Objects.requireNonNull(
+                        builder.observer,
+                        "observer")));
         this.metadataPropagator = Objects.requireNonNull(
                 builder.metadataPropagator,
                 "metadataPropagator");
