@@ -131,6 +131,99 @@ class PeachRpcClientResilienceTest {
     }
 
     @Test
+    void singleFailingObserverMustNotBreakRpcSuccessOrInflightBalance() {
+        AtomicInteger attemptCount = new AtomicInteger();
+        AtomicInteger inflightBalance = new AtomicInteger();
+        RpcObserver failingObserver = new RpcObserver() {
+            @Override
+            public void onClientInflightChanged(int delta) {
+                inflightBalance.addAndGet(delta);
+                throw new IllegalStateException("Metrics backend unavailable");
+            }
+
+            @Override
+            public void onClientAttemptCompleted(
+                    ServiceKey serviceKey,
+                    int methodId,
+                    RpcEndpoint endpoint,
+                    int attempt,
+                    long durationNanos,
+                    RpcStatus status,
+                    Throwable error) {
+                throw new IllegalStateException("Attempt metrics failed");
+            }
+
+            @Override
+            public void onClientCallCompleted(
+                    ServiceKey serviceKey,
+                    int methodId,
+                    long durationNanos,
+                    RpcStatus status,
+                    Throwable error) {
+                throw new IllegalStateException("Completion metrics failed");
+            }
+        };
+
+        try (PeachRpcClient client = client(
+                (endpoint, frame, timeout) -> {
+                    attemptCount.incrementAndGet();
+                    return CompletableFuture.completedFuture(
+                            successResponse(frame, "ok"));
+                },
+                failingObserver)) {
+            RetryService service = client.refer(
+                    RetryService.class, "1.0.0", "test");
+            assertEquals("ok", service.find("one"));
+            assertEquals("ok", service.create("two"));
+            assertEquals(2, attemptCount.get());
+            assertEquals(0, inflightBalance.get());
+        }
+    }
+
+    @Test
+    void failingObserverMustNotSuppressRetryOrOriginalFailure() {
+        AtomicInteger attempts = new AtomicInteger();
+        RpcObserver failingObserver = new RpcObserver() {
+            @Override
+            public void onClientRetryScheduled(
+                    ServiceKey serviceKey,
+                    int methodId,
+                    int nextAttempt,
+                    long delayMillis,
+                    Throwable cause) {
+                throw new IllegalStateException("Retry metrics failed");
+            }
+
+            @Override
+            public void onClientRetryExhausted(
+                    ServiceKey serviceKey,
+                    int methodId,
+                    RpcRetryExhaustionReason reason,
+                    Throwable cause) {
+                throw new IllegalStateException("Exhaustion metrics failed");
+            }
+        };
+
+        try (PeachRpcClient client = client(
+                (endpoint, frame, timeout) -> {
+                    attempts.incrementAndGet();
+                    return CompletableFuture.failedFuture(
+                            new RpcUnavailableException("Endpoint unavailable"));
+                },
+                failingObserver)) {
+            RetryService service = client.refer(
+                    RetryService.class, "1.0.0", "test");
+            CompletionException failure = assertThrows(
+                    CompletionException.class,
+                    () -> service.find("retry"));
+            assertInstanceOf(
+                    RpcUnavailableException.class,
+                    failure.getCause());
+            assertEquals(2, attempts.get());
+        }
+    }
+
+    @Test
     void responseDecoderRunsOutsideTransportCompletionThread() throws Exception {
         CompletableFuture<byte[]> transportResponse = new CompletableFuture<>();
         AtomicReference<byte[]> capturedRequest = new AtomicReference<>();
