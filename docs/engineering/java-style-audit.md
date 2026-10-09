@@ -1,6 +1,6 @@
 # Peach RPC：Java 命名、Javadoc 与格式质量基线
 
-> 状态：PR-8 Checkstyle **建议性扫描（Advisory）**。在统一历史代码前，不将全部旧问题作为阻断条件。本文件描述命令和范围，不预填任何未运行的统计结果。
+> 状态：PR-8 建立建议性扫描；**PR-13 在已验证的零违规基线上将同一 Checkstyle 规则集升级为严格 CI Gate**。历史扫描证据保留，严格门禁只覆盖当前配置实际检查的规则与 Maven Reactor。
 
 ## 1. 目的
 
@@ -8,12 +8,12 @@
 
 | 自动检查 | 当前规则 | 验收模式 |
 |---|---|---|
-| 类型命名 | `TypeName`：`UpperCamelCase` | 全仓 Advisory |
-| 方法、普通字段、参数命名 | `MethodName`、`MemberName`、`ParameterName` | 全仓 Advisory |
-| 常量命名 | `ConstantName` | 全仓 Advisory |
-| Import | `AvoidStarImport` | 全仓 Advisory |
-| 公共类型 Javadoc | `MissingJavadocType`（仅 public） | 全仓 Advisory |
-| 文件可读性 | `LineLength` ≤120、`FileTabCharacter` | 全仓 Advisory |
+| 类型命名 | `TypeName`：`UpperCamelCase` | 全仓 CI Gate（PR-13） |
+| 方法、普通字段、参数命名 | `MethodName`、`MemberName`、`ParameterName` | 全仓 CI Gate（PR-13） |
+| 常量命名 | `ConstantName` | 全仓 CI Gate（PR-13） |
+| Import | `AvoidStarImport` | 全仓 CI Gate（PR-13） |
+| 公共类型和方法 Javadoc | `MissingJavadocType` / `MissingJavadocMethod`（仅 public，测试目录豁免文档覆盖检查） | 全仓 CI Gate（PR-13） |
+| 文件可读性 | `LineLength` ≤120、`FileTabCharacter` | 全仓 CI Gate（PR-13） |
 
 这不验证方法 Javadoc 语义是否与参数、返回值、异常、线程和生命周期一致，也不检查英文日志有没有泄漏敏感数据。相关问题继续按照 Java Engineering Skill 和代码审查规则处理。
 
@@ -28,10 +28,11 @@ python3 scripts/test_checkstyle_audit.py
 
 python3 scripts/summarize_checkstyle_audit.py \
     --json target/checkstyle-audit.json \
-    --markdown target/checkstyle-audit.md
+    --markdown target/checkstyle-audit.md \
+    --enforce-zero
 ~~~
 
-Checkstyle 原始 XML 位于各 Maven 子模块的 `target/checkstyle-result.xml`。汇总器对未知根节点、缺失文件名、缺失报告直接失败，并把来源路径正规化后写入 JSON，避免导出本机绝对路径。GitHub Actions `Java Style Audit` 上传全部原始 XML 和汇总结果供按模块分派整改。
+Checkstyle 原始 XML 位于各 Maven 子模块的 `target/checkstyle-result.xml`。PR-13 的汇总器会解析根 POM 和嵌套 `modules`，**要求每一个真实 Maven Reactor 模块都有对应 XML**；缺失或额外报告、未知 XML 根节点、缺失文件名均会导致失败。汇总器把来源路径正规化后写入 JSON；``--enforce-zero`` 在报告生成后拒绝**任何严重级别**的 Checkstyle 违规（包括 `warning`），仍保留原始 XML 供排查。独立 `tools/rpc-comparison` POM 不属于主 Maven Reactor，不被错误纳入该门禁。
 
 ## 2.1 首轮结果与规则修正
 
@@ -60,7 +61,17 @@ Checkstyle 的所有 Style Audit 检查统一使用 **warning** 级别，避免�
 
 **重要边界：** JMH Benchmark 虽然位于 `src/main/java`，但不属于用户可直接依赖的 Peach RPC 公开运行时 API。不能把这 3 条描述为“RPC 用户公共接口缺少 Javadoc”。本阶段在不改变方法签名、`@Setup`、`@Benchmark`、Codec 或 Wire v1 的情况下补充了有价值的中文基准说明，待本 PR 最新 CI 验证。由于检查器默认豁免测试目录，它**不是所有 Java 源码的注释语义全面审计**。
 
-## 3. 为什么当前不把历史违规全部设为 Error？
+## 2.3 PR-13：从零违规证据升级到严格门禁
+
+[PR-12 最新 Java Style Audit](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37875650253) 的聚合日志明确报告 **19 份 Checkstyle XML、208 个 Java 文件、0 条违规**。该数字来自固定提交和既有规则集，**不代表整个代码库不存在敏感信息泄露、线程竞争或 Java API 兼容问题**。
+
+利用上述零违规基线，PR-13 将 **Java Style Audit** 的结果由仅上传 Artifact 改为：Maven 仍先生成完整报告，随后由 Python Gate 验证 Reactor 报告覆盖率并在发现任何违规时将 CI 置为失败。新的生产公共类、方法、命名、Import、行长违规由此无法绕过该检查；测试源码的命名、Import 和行长照常检查，但公共测试 Fixture 的机械 Javadoc 覆盖检查仍被排除。
+
+Gate 只说明“Checkstyle 所配置且实际扫描到的规则无违规”。它不能替代 [Java Agent Quality](../engineering/java-coding-standard.md) 的禁止 API 检查、ArchUnit、编译测试、运行时/协议回归和人工代码审查；也**不能把未经证明的日志/注释语义正确性等同于无检查告警**。
+
+报告完整性通过遍历真实的 Maven `<modules>` 配置得到，而不是把“19 模块”永久写死为魔法常量。若新增模块却未执行 Checkstyle，对应 XML 缺失会使门禁直接失败。编译失败、Checkstyle 插件出错也不会伪装成“零违规”。
+
+## 3. 为什么早期不直接将所有历史违规升级为 Error？
 
 Peach RPC 已经有 Public Core API、SPI、Wire v1 和自动生成代码，不能为了统一驼峰命名、Javadoc 或行长就批量更改 public 方法/字段。初次运行后的违规需要分成：
 
@@ -75,15 +86,16 @@ Peach RPC 已经有 Public Core API、SPI、Wire v1 和自动生成代码，不�
 
 - `Java Agent Quality`：**已生效**的 changed-file 禁用 API/安全写法门禁与全仓 Regex/lexer Audit；
 - `PeachRpcCoreArchitectureTest`：**已提交 PR-7** 的 ArchUnit 字节码依赖方向测试；
-- `Java Style Audit`：本 PR 的 Java AST 命名/Javadoc/可读性测量，仅建议性；
+- `Java Style Audit`：PR-13 已启用的 Java AST 命名/Javadoc/可读性严格零违规门禁，并检查 Maven Reactor 报告完整性；
 - `mvn clean verify -Pquality`：真实代码编译、单元测试、严格 Javadoc 验证，继续是主质量门槛；
 - Rolling Compatibility / 受控性能测量：按涉及的 Wire/Codec/Transport/Registry 变更触发，不能被任何静态风格扫描替代。
 
-## 5. 验收与下一步
+## 5. PR-13 验收与下一步
 
-- [ ] 首次 GitHub Actions 执行成功，并上传非空结构的原始 XML / 聚合 JSON；
-- [ ] 按 Checkstyle Rule、模块、文件统计存量违规；不给没有执行结果的模块填零；
-- [ ] 评估每条误报和公开兼容限制；
-- [ ] 为确定性可修复的存量问题分别提交整改 PR，公开接口/并发行为修改不能混在同一个格式 PR 内。
+- [ ] 当前 PR Head 的 `Java Style Audit` 工作流及 Python 正反向测试通过；
+- [ ] 完整 Maven Reactor 每个模块都产出 XML，聚合 JSON 的 `violations=0`；
+- [ ] 检查门禁能拦截 `warning` 级别违规、模块缺失/额外报告与空报告；
+- [ ] 验证 CI 主构建与已有 ArchUnit、Nacos/Transport 测试没有回归；
+- [ ] 未来根据真实误报和公开兼容限制逐项调整规则并提供测试，不得直接放宽或跳过检查。
 
 Checkstyle 自身是 Java 语法树检查，不是 API 兼容证明、数据流审计或性能分析器。
