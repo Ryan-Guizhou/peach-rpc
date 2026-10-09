@@ -4,12 +4,13 @@
 
 ## 工作引擎与授权
 
-Task Intake → Source/Impact Analysis → Complexity Gate → Implementation Contract (复杂任务) → 用户确认 → Implement → Verify → Draft PR → 用户决定是否合并。
+Task Intake → Source/Impact Analysis → Complexity Gate → Implementation Contract（复杂任务）→ 用户确认 → Implement → Verify → Mainline PR → 检查通过后合并 main → 核验 main CI。
 
 - 简单、确定且不涉及公共契约的局部修复可直接实施。
 - 公共 API、Wire/Codec/Schema、SPI、配置、线程/资源、鉴权、安全、模块架构、兼容性重构属于复杂任务。实施前交付 Goal、Scope、Non-goals、Compatibility、Constraints、Migration、Verification、Risks，获用户确认方可执行。对已授权的当前任务不重复确认。
-- 本次任务授权开发并提交 Draft PR，不等于授权合并、直接修改 main、发布、删除远端资源、变更权限或执行数据库写操作。这些动作均需要另行明确授权。
-- 分阶段小 PR；逐阶段更新变更范围、运行证据、未完成项，禁止用已通过的旧提交 CI 代替新提交验证。
+- **本轮明确授权（2026-10-09）**：Peach RPC 既定 Agent 代码治理工作可以从 `main` 创建短生命周期分支，提交 PR，经该 Head SHA 对应的相关质量门禁全部通过后合并到 `main`，不再堆叠 Draft PR。此授权**不适用于**发布、删除远端资源、修改仓库权限、数据库写入或超出本轮实施契约的改动。
+- `stable/agent-quality-2026-10-09` 固定在 SHA `8f051b78d74978c5417394ed2cd22467e077c15f`，作为已验证的合并前基线。禁止在该分支追加提交、强制推送或将其用作日常开发分支，详见 [稳定基线与主线工作流](docs/engineering/stable-baseline.md)。
+- 分阶段小 PR，**只以 `main` 为 Base**。每次先核对原始 PR Head SHA、变更影响及新提交 CI，再合并，随后核验 `main` 上的 CI。未通过或未执行的必需门禁不得冒充成功。不能从历史绿色提交推断后续提交通过。
 
 ## 中断保护与断点续写
 
@@ -36,7 +37,7 @@ Task Intake → Source/Impact Analysis → Complexity Gate → Implementation Co
 MCP 为证据补全工具，不是无限授权。
 - CodeGraph 用于 symbol/caller/impact；Context7 仅用于依赖版本不确定的 API；GitHub 用于已授权 PR、Issue、CI 和远端读写；AgentMemory 不得覆盖仓库事实。
 - MySQL 默认**不连接**：只有使用数据库真正授权的独立只读账号，并经用户主动启用后才允许访问；prompt 或 MCP 配置本身不能强制只读。不得使用有生产写权限的用户。
-- GitHub 合并、删除分支、Release、数据库 DML/DDL、权限变更和生产配置写入，都必须取得对应操作的明确授权。
+- GitHub 合并：仅当前已授权的 Peach RPC Agent 工程治理范围，允许在相关检查全部通过后合并到 `main`；所有其他合并仍须明确授权。删除分支、Release、数据库 DML/DDL、权限变更和生产配置写入始终必须另行授权。
 - 不允许 Agent 自动批准未知第三方 MCP 或将凭据提交到源码。详见 docs/engineering/agent-mcp.md（本治理阶段加入）。
 
 ## Skills 与适配
@@ -58,4 +59,4 @@ MCP 为证据补全工具，不是无限授权。
 - Agent/MCP：`python3 scripts/sync_agent_mcp.py --check` 与 `python3 scripts/test_agent_mcp.py`。
 - Wire/Registry/Transport：相关单元与集成测试、Rolling Compatibility；性能改动另做 JMH/JFR 和可复现 Evidence。shared runner 的数值不等于生产容量结论。
 - 人工检查不可自动静态证明的规则，记录例外原因；不为保持 CI 绿色关闭必要检查。
-- 最终只陈述实际改动、PR、测试通过/失败与剩余风险。
+- 最终只陈述实际改动、PR、测试通过/失败与剩余风险。合并前核验准确的 PR Head，合并后分别核对 `main` 提交 SHA 与主分支 CI；若合并后 CI 失败，应停止继续合并并提交隔离修复或回滚方案。
