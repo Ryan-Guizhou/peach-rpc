@@ -9,6 +9,104 @@ import sys
 import xml.etree.ElementTree as ET
 
 
+def reactor_module_directories(root: Path) -> set[Path]:
+    """Resolve every Maven reactor module, excluding stand-alone tools.
+
+    The reactor is defined by nested pom.xml modules, not filesystem globs.
+    """
+    root = root.resolve()
+    pending = [root]
+    visited = set()
+    while pending:
+        folder = pending.pop()
+        if folder in visited:
+            raise ValueError(f"Duplicate Maven reactor module: {folder}")
+        if not folder.is_relative_to(root):
+            raise ValueError("Maven module path escapes repository root")
+        visited.add(folder)
+        pom = folder / "pom.xml"
+        if not pom.is_file():
+            raise ValueError(f"Missing Maven module POM: {pom}")
+        project = ET.parse(pom).getroot()
+        namespace = ""
+        if project.tag.startswith("{"):
+            namespace = project.tag.split("}", 1)[0] + "}"
+        if project.tag != namespace + "project":
+            raise ValueError(f"Unexpected Maven POM root: {pom}")
+        modules = project.find(namespace + "modules")
+        if modules is None:
+            continue
+        for child in modules.findall(namespace + "module"):
+            name = (child.text or "").strip()
+            if not name:
+                raise ValueError(f"Empty Maven module in {pom}")
+            resolved = (folder / name).resolve()
+            if not resolved.is_relative_to(root):
+                raise ValueError(f"Maven module escapes repository root: {name}")
+            pending.append(resolved)
+    return visited
+
+
+def validate_reactor_reports(report_files: list[Path], root: Path) -> None:
+    """Fail closed when a module was silently skipped during the audit."""
+    expected = {
+        module / "target" / "checkstyle-result.xml"
+        for module in reactor_module_directories(root)
+    }
+    actual = {report.resolve() for report in report_files}
+    missing = sorted(expected - actual)
+    extra = sorted(actual - expected)
+    if missing or extra:
+        messages = []
+        if missing:
+            messages.append(
+                "Missing Checkstyle module reports: " +
+                ", ".join(str(path.relative_to(root.resolve())) for path in missing))
+        if extra:
+            messages.append("Unexpected Checkstyle reports: " +
+                            ", ".join(str(path) for path in extra))
+        raise ValueError("; ".join(messages))
+
+
+def validate_source_coverage(root: Path, report: dict) -> None:
+    """Reject silently unscanned Java source files in the Maven reactor."""
+    root = root.resolve()
+    expected = set()
+    for module in reactor_module_directories(root):
+        for scope in ("main", "test"):
+            source_root = module / "src" / scope / "java"
+            if source_root.is_dir():
+                expected.update(
+                    java.relative_to(root).as_posix()
+                    for java in source_root.rglob("*.java")
+                    if java.is_file()
+                )
+    observed = set(report["scanned_paths"])
+    missing = sorted(expected - observed)
+    extra = sorted(observed - expected)
+    if missing or extra:
+        details = []
+        if missing:
+            details.append("Unscanned Java source files: " + ", ".join(missing[:12]))
+        if extra:
+            details.append("Unexpected Java sources in XML: " + ", ".join(extra[:12]))
+        raise ValueError("; ".join(details))
+
+
+def validate_strict_gate(report: dict) -> None:
+    """Reject any violation, including Checkstyle warning-severity findings."""
+    if report["reports"] < 1 or report["source_files"] < 1:
+        raise ValueError("Checkstyle strict gate requires nonempty audit evidence")
+    count = report["violations"]
+    if count:
+        details = ", ".join(
+            f'{f["file"]}:{f["line"]} {f["check"]}'
+            for f in report["findings"][:8]
+        )
+        raise ValueError(
+            f"Checkstyle strict gate rejected {count} violation(s): {details}")
+
+
 def summarize(report_files: list[Path], root: Path) -> dict:
     if not report_files:
         raise ValueError("No Checkstyle XML reports found")
@@ -50,6 +148,7 @@ def summarize(report_files: list[Path], root: Path) -> dict:
         "schema": "peach.rpc.checkstyle.audit.v1",
         "reports": len(report_files),
         "source_files": len(scanned_files),
+        "scanned_paths": sorted(scanned_files),
         "violations": len(findings),
         "by_check": dict(sorted(Counter(
             item["check"] for item in findings).items())),
@@ -59,13 +158,21 @@ def summarize(report_files: list[Path], root: Path) -> dict:
     }
 
 
-def markdown(report: dict) -> str:
-    lines = [
-        "# Peach RPC Checkstyle baseline (advisory only)",
-        "",
+def markdown(report: dict, enforced: bool = False) -> str:
+    title = ("# Peach RPC Checkstyle (strict CI gate)"
+             if enforced else "# Peach RPC Checkstyle baseline (advisory only)")
+    explanation = (
+        "**All configured Checkstyle findings block this CI run.** "
+        "This is a scoped naming, import, Javadoc and formatting gate, "
+        "not a semantic correctness or sensitive-data-flow proof."
+        if enforced else
         "**Existing violations are not yet a blocking gate.** "
         "This report is a measurement, not proof that every Java source "
-        "is compliant with all naming, log, concurrency or API rules.",
+        "is compliant with all naming, log, concurrency or API rules.")
+    lines = [
+        title,
+        "",
+        explanation,
         "",
         f"- XML reports: {report['reports']}",
         f"- Source files: {report['source_files']}",
@@ -92,6 +199,8 @@ def main() -> int:
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--json", type=Path, required=True)
     parser.add_argument("--markdown", type=Path, required=True)
+    parser.add_argument("--enforce-zero", action="store_true",
+                        help="Fail if any Checkstyle findings are present")
     args = parser.parse_args()
     root = args.root.resolve()
     reports = [
@@ -99,6 +208,7 @@ def main() -> int:
         if path.parent.name == "target" and ".git" not in path.parts
     ]
     try:
+        validate_reactor_reports(reports, root)
         summary = summarize(reports, root)
     except (ValueError, ET.ParseError, OSError) as error:
         print(f"Checkstyle report aggregation failed: {error}", file=sys.stderr)
@@ -108,9 +218,18 @@ def main() -> int:
     args.json.write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8")
-    args.markdown.write_text(markdown(summary), encoding="utf-8")
+    args.markdown.write_text(
+        markdown(summary, enforced=args.enforce_zero), encoding="utf-8")
+    if args.enforce_zero:
+        try:
+            validate_source_coverage(root, summary)
+            validate_strict_gate(summary)
+        except ValueError as error:
+            print(f"Checkstyle quality gate failed: {error}", file=sys.stderr)
+            return 1
+    mode = "strict gate" if args.enforce_zero else "advisory"
     print(
-        f'Checkstyle advisory: {summary["violations"]} findings '
+        f'Checkstyle {mode}: {summary["violations"]} findings '
         f'across {summary["source_files"]} files in {summary["reports"]} reports.')
     return 0
 

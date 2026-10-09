@@ -50,7 +50,7 @@ MCP 为证据补全工具，不是无限授权。
 
 `.cursor/rules` 仅放薄入口，`.codex/config.toml` 仅放平台配置。不得出现多个互相漂移的规范事实源。
 
-- Java 命名/类型 Javadoc/通配符 Import 与行长的 AST 审计见 [Checkstyle 建议性基线](docs/engineering/java-style-audit.md)，使用 `mvn -B -ntp -Pstyle-audit -DskipTests install`。历史问题只计入台账，不能直接改 public 兼容名称。
+- Java 命名/公共类型与方法 Javadoc/通配符 Import/行长的 AST 检查见 [Checkstyle 严格门禁](docs/engineering/java-style-audit.md)。先运行 `mvn -B -ntp -Pstyle-audit -DskipTests install`，再执行 `python3 scripts/summarize_checkstyle_audit.py --json target/checkstyle-audit.json --markdown target/checkstyle-audit.md --enforce-zero`。该门禁同时验证主 Maven Reactor 所有模块报告完整性；不得为使 CI 通过而改变冻结的公开 API 或禁用规则。
 
 ## Verification
 

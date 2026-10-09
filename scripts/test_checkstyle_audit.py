@@ -7,7 +7,14 @@ import unittest
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-from summarize_checkstyle_audit import markdown, summarize
+from summarize_checkstyle_audit import (
+    markdown,
+    reactor_module_directories,
+    summarize,
+    validate_reactor_reports,
+    validate_source_coverage,
+    validate_strict_gate,
+)
 
 
 class CheckstyleAuditTest(unittest.TestCase):
@@ -82,6 +89,107 @@ class CheckstyleAuditTest(unittest.TestCase):
         self.assertFalse(re.search(
             properties["files"],
             "/workspace/peach-rpc-core/src/main/java/PublicApi.java"))
+
+    def test_zero_violations_pass_strict_gate(self):
+        report = {
+            "reports": 19,
+            "source_files": 208,
+            "violations": 0,
+            "by_check": {},
+            "findings": [],
+        }
+        validate_strict_gate(report)
+        self.assertIn(
+            "strict CI gate",
+            markdown(report, enforced=True))
+        self.assertIn("block this CI run",
+                      markdown(report, enforced=True))
+
+    def test_even_warning_severity_blocks_strict_gate(self):
+        report = {
+            "reports": 19,
+            "source_files": 208,
+            "violations": 1,
+            "findings": [
+                {
+                    "file": "peach-rpc-core/src/main/java/Demo.java",
+                    "line": 12,
+                    "check": "MethodNameCheck",
+                    "severity": "warning",
+                }
+            ],
+        }
+        with self.assertRaisesRegex(ValueError, "MethodNameCheck"):
+            validate_strict_gate(report)
+
+    def test_missing_source_files_fail_strict_gate(self):
+        with self.assertRaisesRegex(ValueError, "nonempty"):
+            validate_strict_gate({
+                "reports": 1, "source_files": 0,
+                "violations": 0, "findings": [],
+            })
+
+    def test_complete_maven_reactor_coverage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            module = root / "service"
+            module.mkdir()
+            (root / "pom.xml").write_text(
+                '<project xmlns="http://maven.apache.org/POM/4.0.0">'
+                '<modules><module>service</module></modules></project>',
+                encoding="utf-8")
+            (module / "pom.xml").write_text(
+                '<project xmlns="http://maven.apache.org/POM/4.0.0"/>',
+                encoding="utf-8")
+            parent_report = root / "target/checkstyle-result.xml"
+            module_report = module / "target/checkstyle-result.xml"
+            parent_report.parent.mkdir()
+            module_report.parent.mkdir()
+            parent_report.write_text('<checkstyle/>', encoding="utf-8")
+            module_report.write_text('<checkstyle/>', encoding="utf-8")
+
+            self.assertEqual(
+                {root.resolve(), module.resolve()},
+                reactor_module_directories(root))
+            validate_reactor_reports([parent_report, module_report], root)
+
+            with self.assertRaisesRegex(ValueError, "Missing Checkstyle module"):
+                validate_reactor_reports([parent_report], root)
+
+            extra = root / "other/target/checkstyle-result.xml"
+            with self.assertRaisesRegex(ValueError, "Unexpected Checkstyle"):
+                validate_reactor_reports(
+                    [parent_report, module_report, extra], root)
+
+    def test_strict_gate_fails_if_any_java_source_is_unscanned(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "pom.xml").write_text(
+                "<project/>", encoding="utf-8")
+            source_root = root / "src/main/java"
+            source_root.mkdir(parents=True)
+            source = source_root / "Example.java"
+            source.write_text("class Example {}", encoding="utf-8")
+            filename = "src/main/java/Example.java"
+            report = {"scanned_paths": [filename]}
+            validate_source_coverage(root, report)
+
+            report["scanned_paths"] = []
+            with self.assertRaisesRegex(ValueError, "Unscanned Java source"):
+                validate_source_coverage(root, report)
+
+            report["scanned_paths"] = [filename, "other.java"]
+            with self.assertRaisesRegex(ValueError, "Unexpected Java sources"):
+                validate_source_coverage(root, report)
+
+    def test_rejects_maven_module_path_outside_repository(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "pom.xml").write_text(
+                '<project><modules><module>../outside</module></modules></project>',
+                encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "escapes"):
+                reactor_module_directories(root)
 
     def test_missing_report_fails_closed(self):
         with self.assertRaisesRegex(ValueError, "No Checkstyle"):

@@ -1,78 +1,68 @@
-# Peach RPC Agent 工程治理：可恢复断点
+# Peach RPC Agent 工程治理：断点续写台账
 
-> 更新时间：2026-10-09（Asia/Singapore）。**仅是提交时的快照。恢复任务须先查 GitHub 的最新 PR Head SHA、Base 和相同 SHA 的 CI。**
->
-> 用户授权：仅 Peach RPC；全仓审计、编码规范/日志/注释/安全改进，按阶段提交 **Draft PR**。**未经额外指令严禁合并、删分支、发布、修改 main 或生产数据。** 单个外部等待超过十分钟无进展时停止当前等待，记录实际状态和下一步，不无限轮询。
+> 更新时间：2026-10-09（Asia/Singapore）。这是代码分支提交时的证据快照；恢复任务时必须查询**最新 GitHub Head SHA 和对应 CI**，不能把过期的绿灯当作现状。用户要求：单项外部等待持续无进展超过十分钟时，保存 Run/Job/日志与下一命令并停止该等待。
 
-## 1. 核心约束
+## 1. 最新授权与主分支
 
-- JDK21 / Maven / Spring Boot 3.5.4（以当前 POM 为准）。公开 1.0.x Java API、Wire v1、Codec 和 Message IDs、Stable Type IDs、Schema Fingerprint v1、SPI 与 Registry metadata 保持兼容。
-- 中文标准 Javadoc，不复制 Peach Cloud 的 `@Author/@Version/@CreateTime`；`@since` 必须由真实发行历史证明。
-- 英文 SLF4J 参数化日志，不输出 Token、Secret、完整请求或未经审查的业务 Throwable/堆栈；EventLoop 禁止阻塞；有界 Queue/Executor/Admission、取消和终态释放可验证。
-- Cursor/Codex 以 `AGENTS.md` 和 `.agents/skills` 为共用行为事实源；MySQL MCP 默认禁用；只读真正依赖数据库授予的用户 GRANT，不依赖提示词承诺。
-- **PR 只创建，不合并。** 研发事实、实际 CI、建议性质量审计、受控性能证据分开陈述。
+用户已经在 2026-10-09 明确授权**合并当时已有的 PR**，因此 #27–#39 已依次使用保留历史的 merge commit 合并到 main。该授权不自动适用于之后新开的 PR 或 Release、删除分支、数据库操作、变更 GitHub 权限。
 
-## 2. 当前堆叠 PR 与验证事实
+- 仓库：[Ryan-Guizhou/peach-rpc](https://github.com/Ryan-Guizhou/peach-rpc)
+- 此轮合并后 main：`8f051b78d74978c5417394ed2cd22467e077c15f`，最后合并 #39。
+- #27–#39 的 GitHub PR API 全部为 `closed + merged`，当时开放 PR 为零。
+- 合并后 [Agent Governance](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37880262218) SUCCESS；[main CI](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37880262195) 在此断点初次核查时尚未完成，**恢复时先查看真实结果**。
+- #29/#30 的旧 SHA 有 Transport 竞态/重连测试失败，#31 后续修复并通过完整 CI；不能倒填旧 SHA 的测试记录。
 
-| 阶段 | PR | 主题与状态 | 证据/下一步 |
-|---|---|---|---|
-| 0 | [#27](https://github.com/Ryan-Guizhou/peach-rpc/pull/27) | Provider 就绪竞态；Draft | 主 CI/滚动/Release 已通过 |
-| 1 | [#28](https://github.com/Ryan-Guizhou/peach-rpc/pull/28) | Agent/MCP 统一与权限；Draft | Agent Governance、CI 已通过 |
-| 2 | [#29](https://github.com/Ryan-Guizhou/peach-rpc/pull/29) | Java 规范/4 Skills/禁用 API；Draft | Java Agent Quality 已通过，旧 SHA 在 Transport 测试有过偶发失败，见 #31 |
-| 3 | [#30](https://github.com/Ryan-Guizhou/peach-rpc/pull/30) | Javadoc 和日志首批治理；Draft | 专项门禁通过，旧 SHA 重连测试偶发失败见 #31 |
-| 4 | [#31](https://github.com/Ryan-Guizhou/peach-rpc/pull/31) | Drain 竞态/重连生命周期；Draft | 主 CI、Rolling、Java Agent Quality、Release 成功 |
-| 5 | [#32](https://github.com/Ryan-Guizhou/peach-rpc/pull/32) | Core 边界/无界 Executor/日志规则；Draft | 主 CI、Java Agent Quality、Agent Governance、Release 成功 |
-| 6 | [#33](https://github.com/Ryan-Guizhou/peach-rpc/pull/33) | Nacos 控制面中断与 Throwable 终态；Draft | CI、Nacos Chaos、Rolling 等全部成功 |
-| 7 | [#34](https://github.com/Ryan-Guizhou/peach-rpc/pull/34) | ArchUnit 字节码依赖边界；Draft | CI、Rolling、Java Agent Quality 全部成功 |
-| 8 | [#35](https://github.com/Ryan-Guizhou/peach-rpc/pull/35) | Checkstyle AST 建议性审计；Draft | CI、Style Audit、Rolling 成功；首轮 208 Java/19 XML/31 条测试类 MissingJavadocType |
-| 9 | [#36](https://github.com/Ryan-Guizhou/peach-rpc/pull/36) | Provider 用户 Throwable WARN 脱敏；Draft | [Head aaa75b5d 的主 CI](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37874991795) 已成功（需恢复时确认新提交） |
-| 10 | [#37](https://github.com/Ryan-Guizhou/peach-rpc/pull/37) | 公共方法 Javadoc 规则与测试夹具豁免；Draft | [Head d0909f10 Style Audit](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37875213504)：208 文件/19 XML/3 条 JMH benchmark 方法缺失 |
-| 11 | [#38](https://github.com/Ryan-Guizhou/peach-rpc/pull/38) | 3 个 JMH 方法契约补充；Draft | [Head c05243c0 Style Audit](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37875476842)：208 文件/19 XML/**0 条当前规则匹配**；其他 CI 以该 SHA 为准 |
-| 12 | [#39](https://github.com/Ryan-Guizhou/peach-rpc/pull/39) | OpenTelemetry 原始 Exception Event 脱敏；Draft | 本断点记录所在分支；必须确认**最新 Head SHA** 的 OTel 测试、CI、Style、Rolling、Release |
+## 2. 已合并研发阶段
 
-**严格强调：** #29/#30 的失败运行是历史事实，后续 #31 在继承分支上解决了实际竞态，不能把后者的成功错误算给旧 SHA。#38 的 0 条匹配只覆盖 Checkstyle 当前规则，而非整个 Java 语义审查或可观测性数据流安全的证明。
+| 阶段 | 已合并 PR | 能力 |
+|---|---|---|
+| 0–3 | [#27–#30](https://github.com/Ryan-Guizhou/peach-rpc/pulls?q=is%3Apr+is%3Amerged) | Provider readiness 基线；Agent/MCP；四个 Skills；编码规范与首批 Javadoc、日志整改 |
+| 4–6 | #31、#32、#33 | Drain/重连；Core 分层、无界资源和日志 API 检查；Nacos 可中断周期任务与异常 Future 生命周期测试 |
+| 7–8 | #34、#35 | ArchUnit 字节码级依赖方向检查；Checkstyle 全仓建议性 AST 扫描 |
+| 9–12 | #36、#37、#38、#39 | Provider 与 OpenTelemetry 异常脱敏、公共 API Javadoc 审计、JMH 基准方法契约补充 |
 
-## 3. 11 处 catch(Throwable) 的治理边界
+最新已合并 #39 的 [Java Style Audit](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37875650253) 明确报告 **19 份 XML、208 个 Java 文件、0 条 Checkstyle 违规**。这只说明当时配置的规则没有发现问题，不说明 Java 线程安全、日志敏感数据流或公共契约完全合规。
 
-[代码审计台账](java-existing-code-audit.md) 已对 Consumer 1、Provider 4、Nacos 控制面 1、Transport Client 3、Transport Server 2 逐项说明风险。
+## 3. 当前继续阶段：PR-13（尚未获授权合并）
 
-- 保留多数请求/连接边界捕获以保证 Future 终态结束，不机械改成 `catch(Exception)`。
-- PR #33 已修复 Nacos 计划任务 `join()` 不可响应中断、静默吞控制面错误问题，并补 User Error / CompletionStage Error 的终态回收测试。
-- 仍需：Consumer 解码/Observer 回调的故障隔离、Transport 异常握手/恶意控制帧、服务关闭/取消竞态的专项测试；**OOM/ThreadDeath 等 JVM 致命错误策略尚未决定**。
+开发分支 `chore/agent-quality-13-enforce-checkstyle`，基于上述 main SHA。目标是将已经达到零违规的 Checkstyle 建议性扫描升级为真实的 CI Quality Gate。
 
-## 4. 待完善工作（不能算作已完成）
+本阶段代码：
+- 根据根 POM 和嵌套 `modules` 动态验证**主 Maven Reactor 每个模块**都有对应 `checkstyle-result.xml`，拒绝报告缺失、额外报告及目录穿越；
+- 汇总完整 XML 后，`--enforce-zero` 对所有 Checkstyle finding（包括 warning）返回失败，报告与原始 XML 继续上传；失败不能写成“检查通过”；
+- PR 和 main 的 Java Style Audit 触发器覆盖 Checkstyle 配置、汇总器及生产源码；
+- 新增零违规、warning、空报告、缺失模块、意外模块与非法 Maven 模块路径测试；
+- `AGENTS.md`、[Java 编码规范](java-coding-standard.md)、[Style Audit](java-style-audit.md) 文档同步。
 
-1. **PR #39 当前 Head 的 CI 结果**：检查 [GitHub PR #39](https://github.com/Ryan-Guizhou/peach-rpc/pull/39) 与实际 Run，若失败优先读 Job Logs 修复；一个外部步骤持续卡住超过十分钟应保存 SHA/Run/Job，结束当前等待。
-2. 复核 OpenTelemetry Span Event 脱敏及 Provider Warn 脱敏实际测试。**自定义 RpcObserver 仍接收原始 Throwable**，需要进一步用户自定义扩展审查和部署说明。
-3. 检查 Java Code Style Audit 对 src/main 的公共方法覆盖，按实际报告安全补注释。已知 #38 Checkstyle 为 0 匹配，但不证明 Javadoc 描述与代码一致；不为覆盖率生成重复无用注释。
-4. 对已有公共类型、Record、Spring 配置、Stable ID、历史命名做 **语义级契约审查**，有行为风险或破坏二进制兼容必须单独设计/PR。
-5. Windows Cursor 与 Codex 实机 MCP 握手、npm 版本锁定/供应链核查需要用户端设备与权限；本环境不能假装已验证。
-6. GitHub Branch Protection / Ruleset **未经用户授权不得修改**；若需让所有 Agent Quality Gate 成为强制合并条件，需要单独授权。
-7. 任何性能敏感改造的固定硬件 JMH/JFR、真实 p99/p99.9 与 10k soak 仍需受控证据，不可用 Shared Runner Smoke 替代。
+不更改 Java Public Core API、Wire v1、Codec/Type ID、Schema v1、Spring 配置键或运行时逻辑。禁止直接修改 main：新阶段只提交 Draft PR，由用户决定是否合并。
 
-## 5. 恢复步骤与当前工具约束
+## 4. 尚需持续治理的真实缺口
 
-优先使用 GitHub Connector 查询：
-```text
-Repo: Ryan-Guizhou/peach-rpc
-Main: https://github.com/Ryan-Guizhou/peach-rpc
-PR stack: #27 → #28 → #29 → #30 → #31 → #32 → #33 → #34 → #35 → #36 → #37 → #38 → #39
-Latest: #39, branch fix/agent-quality-12-otel-exception-redaction
-```
+1. `catch(Throwable)` 已逐项审计并保留必要 Future 隔离；Consumer Decoder/Observer、Transport 握手、恶意控制帧、关闭/取消竞态仍需专项失败测试，不允许机械改写成 `catch(Exception)`。
+2. Checkstyle 对**是否存在 Javadoc**的语法检查，不证明中文契约、异常、线程、单位、资源所有权描述准确，仍需人工语义审查。
+3. Windows Cursor/Codex 的 MCP Server 真机启动、npm 依赖版本锁定、MySQL 只读账号的实际 GRANT 检查尚未在用户端环境验证；用户授权后再执行。
+4. Branch Protection / Ruleset 是否把 Java Quality 变成 GitHub 强制合并条件属于仓库管理权限变更，**未获授权不可修改**。
+5. 固定硬件 p99/p99.9、JFR 与 10k 长稳属于另一个受控性能验收项目，不能用共享 Runner 的 Smoke 代替。
 
-在 JDK 21 Maven 环境运行：
+## 5. 恢复命令和中断保护
+
+先检查 main、当前 Draft PR 的 Head/Base、相同 Head SHA 的 GitHub Actions。运行 JDK 21 Maven：
+
 ```bash
+python3 scripts/check_project.py
 python3 scripts/sync_agent_mcp.py --check
 python3 scripts/test_agent_mcp.py
 python3 scripts/test_java_conventions.py
 python3 scripts/validate_repo_skills.py
 python3 scripts/test_checkstyle_audit.py
-python3 scripts/check_java_conventions.py --audit --report target/java-conventions-audit.json
 mvn -B -ntp clean verify -Pquality
 mvn -B -ntp -Pstyle-audit -DskipTests install
-python3 scripts/summarize_checkstyle_audit.py --json target/checkstyle-audit.json --markdown target/checkstyle-audit.md
+python3 scripts/summarize_checkstyle_audit.py \
+  --json target/checkstyle-audit.json \
+  --markdown target/checkstyle-audit.md \
+  --enforce-zero
 ```
 
-由于本地容器无法可靠连接 GitHub Maven 依赖仓库，真实可复现 Maven 构建结论以对应 Head SHA 的 GitHub Actions 为准；没有执行的测试必须明确写“未执行”，不声称通过。
+每次提交后按**新 SHA**核验 CI；单步等待超过十分钟无进展时，保留 Run/Job ID、最后错误、尚未验证项和恢复方式，结束当前等待，不进行无界重试。当前容器本地无法可靠下载外部 Maven 依赖时，以**相同提交**的 GitHub Actions 为构建证据；缺少证据就明确写未验证。
 
-**恢复时先核对最新 HEAD 与 CI；发现新提交/变基后以前通过的运行记录不计为本提交通过。** 任何等待超过十分钟不得无限轮询、重复创建 PR 或自动合并，保存断点并报告问题。
+**未来 PR 的合并、删除分支、发布和生产数据操作仍需要用户单独明确授权。**
