@@ -27,6 +27,63 @@ public class PeachRpcAutoConfigurationTest {
                             AutoConfigurations.of(
                                     PeachRpcAutoConfiguration.class));
 
+
+    @Test
+    void invalidClientDeadlineShouldFailAtConfigurationBinding() {
+        contextRunner
+                .withPropertyValues("peach.rpc.client.timeout=0s")
+                .run(context -> {
+                    assertThat(context).hasFailed();
+                    assertThat(context.getStartupFailure())
+                            .hasStackTraceContaining("peach.rpc.client.timeout");
+                });
+    }
+
+    @Test
+    void invalidTransportConnectionShardsShouldFailFast() {
+        contextRunner
+                .withPropertyValues("peach.rpc.transport.connections-per-endpoint=0")
+                .run(context -> {
+                    assertThat(context).hasFailed();
+                    assertThat(context.getStartupFailure())
+                            .hasStackTraceContaining(
+                                    "peach.rpc.transport.connections-per-endpoint");
+                });
+    }
+
+    @Test
+    void invalidProviderCpuCapacityShouldFailFast() {
+        contextRunner
+                .withPropertyValues("peach.rpc.server.execution.cpu-queue-capacity=0")
+                .run(context -> {
+                    assertThat(context).hasFailed();
+                    assertThat(context.getStartupFailure())
+                            .hasStackTraceContaining(
+                                    "peach.rpc.server.execution.cpu-queue-capacity");
+                });
+    }
+
+    @Test
+    void missingNacosAdapterShouldSuggestClasspathCorrection() {
+        contextRunner
+                .withPropertyValues("peach.rpc.registry.type=nacos")
+                .run(context -> {
+                    assertThat(context).hasFailed();
+                    assertThat(context.getStartupFailure())
+                            .hasStackTraceContaining("peach.rpc.registry.type")
+                            .hasStackTraceContaining("matching Peach RPC adapter");
+                });
+    }
+
+    @Test
+    void disabledConsumerShouldIgnoreItsInactiveTimeout() {
+        contextRunner
+                .withPropertyValues(
+                        "peach.rpc.client.enabled=false",
+                        "peach.rpc.client.timeout=0s")
+                .run(context -> assertThat(context).hasNotFailed());
+    }
+
     @Test
     void noRpcAnnotationsShouldNotCreateRuntime() {
         contextRunner.run(context -> {
@@ -80,6 +137,18 @@ public class PeachRpcAutoConfigurationTest {
 
                     assertThat(coordinator.clientIfCreated()).isEmpty();
                     assertThat(coordinator.serverIfCreated()).isPresent();
+                });
+    }
+
+    @Test
+    void memoryRegistryShouldCompleteRealRpcWithoutExternalInfrastructure() {
+        providerRunner()
+                .withBean(ServiceBean.class)
+                .withBean(ConsumerBean.class)
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    ConsumerBean consumer = context.getBean(ConsumerBean.class);
+                    assertThat(consumer.service.call()).isEqualTo("ok");
                 });
     }
 

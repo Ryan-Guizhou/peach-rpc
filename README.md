@@ -103,6 +103,20 @@ N+1 Consumer -> N Provider rollback
 <!-- doc-section:quick-start -->
 ## 快速开始
 
+### Spring Boot 轻量接入
+
+Java 21 / Spring Boot 3.5.4 项目可引入以下依赖，默认使用 Memory Registry、JDK Proxy、Fory 和 Vert.x，无须安装 Etcd/Nacos。需要生产注册中心时按需添加 Nacos 或 Etcd Adapter。完整兼容 Starter `peach-rpc-spring-boot-starter` 仍然保留，参见 [Starter 配置指南](docs/starter.md)。
+
+```xml
+<dependency>
+    <groupId>io.peach.rpc</groupId>
+    <artifactId>peach-rpc-spring-boot-starter-lite</artifactId>
+    <version>1.0.1</version>
+</dependency>
+```
+
+当前仓库版本为 Release Prep；公开仓库构件是否可下载取决于后续 Maven Central 发布。启动时会对 `peach.rpc.*` 配置执行 Fail-fast 校验并输出不含凭据的诊断摘要。无需 Docker 的真实回环 RPC 测试见 [Starter 指南](docs/starter.md)。
+
 ### 环境
 
 - JDK 21

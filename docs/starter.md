@@ -2,7 +2,33 @@
 
 ## 1. 引入
 
-业务项目基础使用只需要依赖：
+### 1.1 新项目推荐：轻量 Starter
+
+轻量接入采用 `peach-rpc-spring-boot-starter-lite`，默认是 **Memory Registry、JDK Proxy、Fory、Vert.x**，不额外带入 Etcd、Nacos 或 CGLIB。它保留和完整 Starter 相同的注解、配置、Wire v1 与 Public Core API：
+
+```xml
+<dependency>
+    <groupId>io.peach.rpc</groupId>
+    <artifactId>peach-rpc-spring-boot-starter-lite</artifactId>
+    <version>1.0.1</version>
+</dependency>
+```
+
+需要 Nacos 时仅增加对应 Adapter，并按下文配置 Registry：
+
+```xml
+<dependency>
+    <groupId>io.peach.rpc</groupId>
+    <artifactId>peach-rpc-registry-nacos</artifactId>
+    <version>1.0.1</version>
+</dependency>
+```
+
+Etcd 则引入 `peach-rpc-registry-etcd`，CGLIB fallback 则引入 `peach-rpc-proxy-cglib`，Byte Buddy 使用 `peach-rpc-proxy-bytebuddy`。SPI 自动发现实际已安装的 Adapter；如果配置了未加入类路径的 `peach.rpc.registry.type=nacos`，应按缺失 Adapter 处理，不能假设轻量 Starter 自带 SDK。
+
+### 1.2 兼容模式：完整 Starter
+
+已在使用的 `peach-rpc-spring-boot-starter` **继续保留**原有 Etcd、Nacos、CGLIB 的传递依赖，避免在 1.0.x 期间破坏依赖兼容：
 
 ```xml
 <dependency>
@@ -12,7 +38,34 @@
 </dependency>
 ```
 
-Starter 会带入 Fory、Vert.x、Etcd、Nacos 和 CGLIB 适配器，默认仍使用 JDK Proxy 与内存 Registry。具体 Registry SDK 不进入 autoconfigure 或 Core 公共契约。
+两种 Starter 请选择一种，避免重复声明；不要同时依赖。当前版本仍处于源码 Release Prep，实际 Maven Central 可用性以正式发布结果为准。
+
+```mermaid
+flowchart LR
+    Lite[Starter Lite] --> Auto[AutoConfiguration]
+    Full[Legacy Full Starter] --> Auto
+    Full --> Etcd[Etcd Adapter]
+    Full --> Nacos[Nacos Adapter]
+    Full --> Cglib[CGLIB Adapter]
+    Auto --> Core[Core / JDK Proxy / Memory]
+    Auto --> Codec[Fory Codec]
+    Auto --> Transport[Vert.x Transport]
+```
+
+
+### 1.3 零外部依赖的真实 RPC 冒烟
+
+仓库包含 `PeachRpcAutoConfigurationTest.memoryRegistryShouldCompleteRealRpcWithoutExternalInfrastructure`，在一个 Spring 测试上下文内启动真实 Vert.x Provider/Consumer，使用内存 Registry、回环地址、随机端口完成 `DemoService.call()`。不依赖 Nacos、Etcd、Docker 或外部数据库。
+
+从仓库根目录执行：
+
+```bash
+mvn -B -ntp -pl peach-rpc-spring-boot-autoconfigure -am \
+  -Dtest=PeachRpcAutoConfigurationTest \
+  -Dsurefire.failIfNoSpecifiedTests=false test
+```
+
+这是源码测试命令。若业务项目单独引用已发布的 Lite Starter，需先引入双方共享的 RPC 接口定义，然后分别声明 `@PeachRpcService` 和 `@PeachRpcReference`，单 JVM 内存模式适合本地冒烟，跨进程生产环境必须换用 Etcd、Nacos 或等价的共享注册中心。
 
 ## 2. Provider
 
@@ -212,3 +265,13 @@ Core 的 `RpcObserver`、`RpcTracingBridge`、`RpcMetadataPropagator` 不依赖�
 ## 9. Bean 覆盖
 
 自动配置对 Registry、Codec Registry、TransportFactory、LoadBalancer、ProxyFactory、Client、Server 均使用 `@ConditionalOnMissingBean`，业务项目可以通过声明同类型 Bean 覆盖默认装配。
+
+## 10. 启动 Fail-fast 与脱敏诊断
+
+Spring Boot 完成 `peach.rpc.*` 参数绑定时会立即校验 Registry、Transport、Fory、Consumer 与 Provider 的已启用选项，出现零超时、负数限额、非法端口、退避范围错误或无效的 Fory 严格白名单会终止启动。错误直接指出具体配置键，如 `Invalid peach.rpc.client.timeout: must be positive`。未启用的 Consumer/Provider 的专属配置不参与对应校验，避免影响单一角色部署。
+
+无法找到已配置的 SPI 时（例如在 Lite Starter 上选择 `peach.rpc.registry.type=nacos`，却未加入 `peach-rpc-registry-nacos` 依赖），启动异常会指出配置键，并建议加入对应 Adapter。可用扩展列表来自实际 Classpath，不硬编码在诊断器中。
+
+启动时输出 Registry、Transport、Proxy、Fory 安全模式、TLS 模式、启用角色与限额摘要，**不记录注册中心 username/password、密钥、证书或其文件内容**。默认的 `PLAINTEXT` 与 `TRUSTED_COMPATIBILITY` 会发出安全提醒；提醒不阻止本地开发，但面向不可信网络应开启 TLS/mTLS 与严格 Fory allowlist。
+
+当未引入任一业务注解时，虽然会进行配置校验，Consumer/Provider 的实际运行时仍按需创建，不会因此提前建立远程连接。

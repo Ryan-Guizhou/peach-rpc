@@ -103,6 +103,20 @@ See [Wire Compatibility](docs/wire-compatibility.md) and [Upgrade/Rollback](docs
 <!-- doc-section:quick-start -->
 ## Quick start
 
+### Minimal Spring Boot integration
+
+For Java 21 / Spring Boot 3.5.4 applications, the minimal Starter includes Memory Registry, JDK Proxy, Fory and Vert.x without Etcd/Nacos SDK dependencies. Add the Nacos or Etcd adapter only when needed. The original full `peach-rpc-spring-boot-starter` remains available for dependency compatibility; see the [Starter guide](docs/starter.md).
+
+```xml
+<dependency>
+    <groupId>io.peach.rpc</groupId>
+    <artifactId>peach-rpc-spring-boot-starter-lite</artifactId>
+    <version>1.0.1</version>
+</dependency>
+```
+
+The repository is currently at Release Prep; public artifact availability depends on a subsequent Maven Central release. Startup performs fail-fast validation of `peach.rpc.*` options and emits a credential-free diagnostic summary. See the [Starter guide](docs/starter.md) for a real loopback RPC test that needs no Docker.
+
 ### Prerequisites
 
 - JDK 21

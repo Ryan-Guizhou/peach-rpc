@@ -5,6 +5,7 @@ import io.peach.rpc.codec.fory.ForyRpcSecurityOptions;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.time.Duration;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -15,12 +16,20 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * 线程资源的配置必须验证合法范围及生效时机，不能只依赖 Javadoc。
  */
 @ConfigurationProperties(prefix = "peach.rpc")
-public class PeachRpcProperties {
+public class PeachRpcProperties implements InitializingBean {
 
     /**
      * 创建 Peach RPC 配置属性。
      */
     public PeachRpcProperties() {
+    }
+
+    /**
+     * Spring 完成所有属性绑定后进行一次完整校验，并输出脱敏启动摘要。
+     */
+    @Override
+    public void afterPropertiesSet() {
+        PeachRpcStartupDiagnostics.validateAndReport(this);
     }
 
     private boolean enabled = true;
