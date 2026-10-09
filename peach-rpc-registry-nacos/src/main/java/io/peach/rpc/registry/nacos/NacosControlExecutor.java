@@ -12,6 +12,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,6 +143,7 @@ final class NacosControlExecutor implements AutoCloseable {
                             + "non-negative initialDelay "
                             + "and positive delay");
         }
+        AtomicBoolean consecutiveFailure = new AtomicBoolean();
         return scheduler.scheduleWithFixedDelay(
                 () -> {
                     CompletableFuture<Void> pending =
@@ -156,6 +158,12 @@ final class NacosControlExecutor implements AutoCloseable {
                         // get() can be interrupted during scheduler shutdown;
                         // join() would conceal that signal.
                         pending.get();
+                        if (consecutiveFailure.getAndSet(false)) {
+                            LOGGER.info(
+                                    "Nacos scheduled control operation recovered. operation={}, subject={}",
+                                    operation,
+                                    subject);
+                        }
                     } catch (InterruptedException interrupted) {
                         pending.cancel(true);
                         Thread.currentThread().interrupt();
@@ -165,11 +173,19 @@ final class NacosControlExecutor implements AutoCloseable {
                     } catch (ExecutionException failed) {
                         // A failed iteration must not disable all subsequent
                         // fixed-delay reconciliation attempts.
-                        LOGGER.debug(
-                                "Nacos scheduled control operation failed. operation={}, subject={}",
-                                operation,
-                                subject,
-                                failed.getCause());
+                        if (consecutiveFailure.compareAndSet(false, true)) {
+                            LOGGER.warn(
+                                    "Nacos scheduled control operation failed; retrying. operation={}, subject={}",
+                                    operation,
+                                    subject,
+                                    failed.getCause());
+                        } else {
+                            LOGGER.debug(
+                                    "Nacos scheduled control operation still failing. operation={}, subject={}",
+                                    operation,
+                                    subject,
+                                    failed.getCause());
+                        }
                     } catch (CancellationException cancelled) {
                         if (!scheduler.isShutdown()) {
                             LOGGER.debug(
