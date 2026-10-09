@@ -33,6 +33,7 @@ import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -128,9 +129,12 @@ public final class PeachRpcClient implements AutoCloseable {
                         .name("peach-rpc-client-completion-", 0)
                         .factory(),
                 new ThreadPoolExecutor.AbortPolicy());
-        this.observer = Objects.requireNonNull(
-                builder.observer,
-                "observer");
+        // 自定义 Observer 即使只有一个，也不能通过异常中断 RPC 完成链。
+        // NOOP 配置仍走不产生事件对象的原有快路径。
+        this.observer = RpcObserver.composite(
+                List.of(Objects.requireNonNull(
+                        builder.observer,
+                        "observer")));
         this.metadataPropagator = Objects.requireNonNull(
                 builder.metadataPropagator,
                 "metadataPropagator");
