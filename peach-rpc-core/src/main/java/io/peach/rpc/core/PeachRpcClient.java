@@ -534,9 +534,15 @@ public final class PeachRpcClient implements AutoCloseable {
             return;
         }
 
-        EndpointStats endpointStats = endpointStats(selected);
+        EndpointStats endpointStats = stats.compute(
+                selected.endpoint(),
+                (endpoint, existing) -> {
+                    EndpointStats current =
+                            existing == null ? new EndpointStats() : existing;
+                    current.begin();
+                    return current;
+                });
         long startedAtNanos = System.nanoTime();
-        endpointStats.begin();
 
         long remainingMillis = Math.max(
                 1L,
@@ -920,9 +926,14 @@ public final class PeachRpcClient implements AutoCloseable {
                 activeEndpoints.add(instance.endpoint());
             }
         }
-        stats.entrySet().removeIf(entry ->
-                !activeEndpoints.contains(entry.getKey())
-                        && entry.getValue().inflight() == 0);
+        stats.forEach((endpoint, ignored) -> {
+            if (!activeEndpoints.contains(endpoint)) {
+                // 与请求 begin() 在同一个 key 的计算区间内互斥，
+                // 避免清退时恰有调用拿到即将移除的旧统计对象。
+                stats.computeIfPresent(endpoint, (key, current) ->
+                        current.inflight() == 0 ? null : current);
+            }
+        });
     }
 
     /** 返回缓存的端点统计数量，用于生命周期诊断。 */
