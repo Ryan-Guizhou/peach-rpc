@@ -94,6 +94,7 @@ class CheckstyleAuditTest(unittest.TestCase):
             "reports": 19,
             "source_files": 208,
             "violations": 0,
+            "by_check": {},
             "findings": [],
         }
         validate_strict_gate(report)
