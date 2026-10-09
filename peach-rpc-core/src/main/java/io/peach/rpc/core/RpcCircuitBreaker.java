@@ -2,71 +2,169 @@ package io.peach.rpc.core;
 
 import io.peach.rpc.observability.RpcCircuitState;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
-/** 方法级连续基础设施失败熔断器，OPEN 到期后只允许一个 HALF_OPEN 探测。 */
+/**
+ * 方法级熔断器，使用调用许可的代际防止过期响应覆盖新的熔断状态。
+ *
+ * <p>OPEN 到期后只允许一个 HALF_OPEN 探测。熔断状态切换会更新代际，
+ * 因此旧调用的成功、失败及取消回调不能改变新一轮探测结果。
+ */
 final class RpcCircuitBreaker {
+
+    static final long REJECTED = -1L;
+
     private final int failureThreshold;
     private final long openNanos;
-    private final AtomicInteger consecutiveFailures = new AtomicInteger();
-    private final AtomicLong openUntilNanos = new AtomicLong();
-    private final AtomicBoolean halfOpenProbe = new AtomicBoolean();
+    private final AtomicReference<Snapshot> snapshot =
+            new AtomicReference<>(new Snapshot(
+                    RpcCircuitState.CLOSED, 1L, 0, 0L, false));
 
     RpcCircuitBreaker(int failureThreshold, Duration openDuration) {
         this.failureThreshold = failureThreshold;
         this.openNanos = openDuration.toNanos();
     }
 
-    boolean tryAcquire() {
-        long openUntil = openUntilNanos.get();
-        if (openUntil == 0L) {
-            return true;
+    /**
+     * 获取调用许可的状态代际，返回值必须传给相应的终态回调。
+     *
+     * @return 非负代际，或被熔断时的 {@link #REJECTED}
+     */
+    long tryAcquire() {
+        for (;;) {
+            Snapshot current = snapshot.get();
+            if (current.phase() == RpcCircuitState.CLOSED) {
+                return current.generation();
+            }
+            if (current.phase() == RpcCircuitState.OPEN) {
+                if (System.nanoTime() - current.openUntilNanos() < 0L) {
+                    return REJECTED;
+                }
+                Snapshot probing = new Snapshot(
+                        RpcCircuitState.HALF_OPEN,
+                        current.generation() + 1L,
+                        0,
+                        0L,
+                        true);
+                if (snapshot.compareAndSet(current, probing)) {
+                    return probing.generation();
+                }
+                continue;
+            }
+            if (current.probeInFlight()) {
+                return REJECTED;
+            }
+            Snapshot probing = new Snapshot(
+                    RpcCircuitState.HALF_OPEN,
+                    current.generation() + 1L,
+                    0,
+                    0L,
+                    true);
+            if (snapshot.compareAndSet(current, probing)) {
+                return probing.generation();
+            }
         }
-        if (System.nanoTime() < openUntil) {
-            return false;
-        }
-        return halfOpenProbe.compareAndSet(false, true);
     }
 
-    void onSuccess() {
-        if (consecutiveFailures.get() == 0
-                && openUntilNanos.get() == 0L
-                && !halfOpenProbe.get()) {
+    void onSuccess(long generation) {
+        if (generation == REJECTED) {
             return;
         }
-        consecutiveFailures.set(0);
-        openUntilNanos.set(0L);
-        halfOpenProbe.set(false);
-    }
-
-    void onFailure() {
-        boolean halfOpen = halfOpenProbe.getAndSet(false);
-        int failures = consecutiveFailures.incrementAndGet();
-        if (halfOpen || failures >= failureThreshold) {
-            consecutiveFailures.set(0);
-            openUntilNanos.set(System.nanoTime() + openNanos);
+        for (;;) {
+            Snapshot current = snapshot.get();
+            if (current.generation() != generation
+                    || current.phase() == RpcCircuitState.OPEN) {
+                return;
+            }
+            if (current.phase() == RpcCircuitState.CLOSED
+                    && current.consecutiveFailures() == 0) {
+                return;
+            }
+            Snapshot next = new Snapshot(
+                    RpcCircuitState.CLOSED,
+                    current.phase() == RpcCircuitState.HALF_OPEN
+                            ? current.generation() + 1L
+                            : current.generation(),
+                    0,
+                    0L,
+                    false);
+            if (snapshot.compareAndSet(current, next)) {
+                return;
+            }
         }
     }
 
-    void onCancelled() {
-        halfOpenProbe.set(false);
+    void onFailure(long generation) {
+        if (generation == REJECTED) {
+            return;
+        }
+        for (;;) {
+            Snapshot current = snapshot.get();
+            if (current.generation() != generation
+                    || current.phase() == RpcCircuitState.OPEN) {
+                return;
+            }
+            int failures = current.consecutiveFailures() + 1;
+            boolean opening =
+                    current.phase() == RpcCircuitState.HALF_OPEN
+                            || failures >= failureThreshold;
+            Snapshot next = opening
+                    ? new Snapshot(
+                            RpcCircuitState.OPEN,
+                            current.generation() + 1L,
+                            0,
+                            System.nanoTime() + openNanos,
+                            false)
+                    : new Snapshot(
+                            RpcCircuitState.CLOSED,
+                            current.generation(),
+                            failures,
+                            0L,
+                            false);
+            if (snapshot.compareAndSet(current, next)) {
+                return;
+            }
+        }
+    }
+
+    void onCancelled(long generation) {
+        if (generation == REJECTED) {
+            return;
+        }
+        for (;;) {
+            Snapshot current = snapshot.get();
+            if (current.generation() != generation
+                    || current.phase() != RpcCircuitState.HALF_OPEN
+                    || !current.probeInFlight()) {
+                return;
+            }
+            Snapshot next = new Snapshot(
+                    RpcCircuitState.HALF_OPEN,
+                    current.generation() + 1L,
+                    0,
+                    0L,
+                    false);
+            if (snapshot.compareAndSet(current, next)) {
+                return;
+            }
+        }
     }
 
     boolean isOpen() {
-        long openUntil = openUntilNanos.get();
-        return openUntil != 0L && System.nanoTime() < openUntil;
+        Snapshot current = snapshot.get();
+        return current.phase() == RpcCircuitState.OPEN
+                && System.nanoTime() - current.openUntilNanos() < 0L;
     }
 
     RpcCircuitState state() {
-        long openUntil = openUntilNanos.get();
-        if (openUntil == 0L) {
-            return RpcCircuitState.CLOSED;
-        }
-        if (halfOpenProbe.get()) {
-            return RpcCircuitState.HALF_OPEN;
-        }
-        return RpcCircuitState.OPEN;
+        return snapshot.get().phase();
+    }
+
+    private record Snapshot(
+            RpcCircuitState phase,
+            long generation,
+            int consecutiveFailures,
+            long openUntilNanos,
+            boolean probeInFlight) {
     }
 }
