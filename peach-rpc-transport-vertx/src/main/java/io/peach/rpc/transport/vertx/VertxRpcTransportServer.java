@@ -36,7 +36,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Vert.x TCP Provider 传输服务器。 */
+/**
+ * Vert.x TCP Provider 传输服务器，管理入站连接、帧重组与关闭排空。
+ *
+ * <p>每个连接持有独立的帧缓冲和请求状态；Transport 负责在 EventLoop
+ * 解析 Wire v1 帧并把完整请求交给 Core，不负责直接执行业务逻辑。
+ *
+ * <p>响应写入必须遵守协商的最大 Frame 大小与 Netty/Vert.x 写队列
+ * 容量限制。连接排空和 TLS 资源在关闭路径中统一处理。
+ */
 final class VertxRpcTransportServer implements RpcTransportServer {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(VertxRpcTransportServer.class);
@@ -322,9 +330,11 @@ final class VertxRpcTransportServer implements RpcTransportServer {
             }
             if (response.length > negotiated.maxFrameBytes()) {
                 LOGGER.warn(
-                        "Closing RPC connection because response frame "
-                                + "exceeds negotiated max size: {}",
-                        remote.authority());
+                        "Closing RPC connection: oversized response frame. "
+                                + "remote={}, frameBytes={}, maxFrameBytes={}",
+                        remote.authority(),
+                        response.length,
+                        negotiated.maxFrameBytes());
                 goAwayAndClose(
                         RpcStatus.OVERLOADED,
                         "RPC response exceeds negotiated max frame size");
@@ -332,7 +342,7 @@ final class VertxRpcTransportServer implements RpcTransportServer {
             }
             if (socket.writeQueueFull()) {
                 LOGGER.warn(
-                        "Closing RPC connection because write queue is full: {}",
+                        "Closing RPC connection: response write queue is full. remote={}",
                         remote.authority());
                 goAwayAndClose(
                         RpcStatus.OVERLOADED,

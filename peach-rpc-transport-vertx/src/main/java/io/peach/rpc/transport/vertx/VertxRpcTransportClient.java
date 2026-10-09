@@ -613,8 +613,7 @@ final class VertxRpcTransportClient implements RpcTransportClient {
             PendingRequest request = pending.remove(requestId);
             if (request == null) {
                 LOGGER.debug(
-                        "Ignoring RPC response without pending request: "
-                                + "endpoint={}, requestId={}",
+                        "Ignoring RPC response without pending request. endpoint={}, requestId={}",
                         endpoint.authority(),
                         requestId);
                 return;

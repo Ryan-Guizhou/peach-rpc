@@ -354,17 +354,13 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                     if (error != null) {
                         if (isLeaseNotFound(error)) {
                             LOGGER.warn(
-                                    "Etcd lease no longer exists; "
-                                            + "recovering active registrations: "
-                                            + "leaseId={}",
+                                    "Etcd lease no longer exists. Recovering registrations. leaseId={}",
                                     leaseId);
                             handleLeaseLoss(leaseId);
                             return;
                         }
                         LOGGER.debug(
-                                "Etcd lease health probe failed; "
-                                        + "keeping current lease until the next probe: "
-                                        + "leaseId={}",
+                                "Etcd lease health probe failed. Keeping lease until next probe. leaseId={}",
                                 leaseId,
                                 error);
                         scheduleLeaseHealthProbe(leaseId);
@@ -372,8 +368,7 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                     }
                     if (response.getTTL() <= 0L) {
                         LOGGER.warn(
-                                "Etcd lease expired; recovering active registrations: "
-                                        + "leaseId={}",
+                                "Etcd lease expired. Recovering registrations. leaseId={}",
                                 leaseId);
                         handleLeaseLoss(leaseId);
                         return;

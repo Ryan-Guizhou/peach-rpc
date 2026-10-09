@@ -48,7 +48,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Peach RPC Provider 运行时。 */
+/**
+ * Peach RPC Provider 运行时，协调服务注册、请求准入、执行与响应。
+ *
+ * <p>Provider 启动会先监听网络端点、注册服务实例，随后进入可处理请求的
+ * STARTED 状态。仅 TCP 端口可连接不代表业务已就绪。
+ *
+ * <p>并发和已准入 Frame 字节数受到全局/服务/方法级预算约束；
+ * 请求正常完成、异常或取消时统一归还 Lease。预算不代表 JVM Heap 的硬上限。
+ *
+ * <p>使用者负责在停止服务时调用 {@link #close()}，等待排空期间的资源管理
+ * 以实际关闭策略为准。
+ */
 public final class PeachRpcServer implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(PeachRpcServer.class);
 

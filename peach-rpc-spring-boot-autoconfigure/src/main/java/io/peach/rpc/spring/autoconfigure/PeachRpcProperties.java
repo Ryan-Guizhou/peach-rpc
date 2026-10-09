@@ -8,7 +8,11 @@ import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Peach RPC Spring Boot 配置属性。
+ * Peach RPC Spring Boot 配置属性，统一承载 {@code peach.rpc} 下的装配参数。
+ *
+ * <p>内部属性组包括 Registry、Transport、Client、Server 与 Codec。
+ * 字段默认值应以当前代码和对应启动测试为准；影响 TLS、重试、背压和
+ * 线程资源的配置必须验证合法范围及生效时机，不能只依赖 Javadoc。
  */
 @ConfigurationProperties(prefix = "peach.rpc")
 public class PeachRpcProperties {
