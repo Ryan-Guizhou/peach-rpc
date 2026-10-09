@@ -72,6 +72,14 @@ PR-2 [Java Agent Quality workflow](https://github.com/Ryan-Guizhou/peach-rpc/act
 
 **仍待设计：** 无论异步边界用 `catch(Throwable)` 还是 `catch(Exception)`，`OutOfMemoryError`、`ThreadDeath` 等真正不可恢复 `Error` 的处置策略需要单独论证（例如先完成资源清理再交给 UncaughtExceptionHandler），本阶段不擅自改变现有协议错误分类。即使完成上述测试，也不等于证明任意 fatal Error 下 JVM 可继续服务。
 
+## 4.2 Provider 用户业务异常日志脱敏（PR-9）
+
+`PeachRpcServer.completeInvocationFailure` 原有 WARN 直接将用户业务抛出的 `Throwable` 传入 SLF4J。异常消息和堆栈可能包含用户输入、凭据或其他不可信数据，不能默认在生产日志中展开。
+
+PR-9 保持返回给 Consumer 的协议错误状态及通用错误消息不变，只在日志中输出 `requestId`、`serviceId`、`methodId`、`errorType`，不再把用户 `Throwable` 作为日志末尾参数。Core 测试使用**测试作用域**的 Logback ListAppender 验证异常消息的敏感测试标记没有出现在 Provider WARN 文本或 ThrowableProxy 中，不引入生产依赖。
+
+**权衡：** 用户业务失败在 WARN 中不再输出完整堆栈，可结合 requestId 和受控 Trace 进行排查，但 `RpcObserver` 及其他扩展适配器收到的 `Throwable` 仍需检查它们自身的日志/Trace 脱敏政策；本 PR 不宣称所有可观测性渠道已经完成敏感数据流审计。
+
 ## 5. 验收与剩余工作
 
 应使用 PR-3 最新提交重新运行：
