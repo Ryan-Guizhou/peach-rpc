@@ -34,6 +34,7 @@ EXPECTED_MODULES = (
     "peach-rpc-observability-jfr",
     "peach-rpc-spring-boot-autoconfigure",
     "peach-rpc-spring-boot-starter",
+    "peach-rpc-spring-boot-starter-lite",
     "peach-rpc-examples",
     "peach-rpc-benchmarks",
 )

@@ -2,7 +2,33 @@
 
 ## 1. 引入
 
-业务项目基础使用只需要依赖：
+### 1.1 新项目推荐：轻量 Starter
+
+轻量接入采用 `peach-rpc-spring-boot-starter-lite`，默认是 **Memory Registry、JDK Proxy、Fory、Vert.x**，不额外带入 Etcd、Nacos 或 CGLIB。它保留和完整 Starter 相同的注解、配置、Wire v1 与 Public Core API：
+
+```xml
+<dependency>
+    <groupId>io.peach.rpc</groupId>
+    <artifactId>peach-rpc-spring-boot-starter-lite</artifactId>
+    <version>1.0.1</version>
+</dependency>
+```
+
+需要 Nacos 时仅增加对应 Adapter，并按下文配置 Registry：
+
+```xml
+<dependency>
+    <groupId>io.peach.rpc</groupId>
+    <artifactId>peach-rpc-registry-nacos</artifactId>
+    <version>1.0.1</version>
+</dependency>
+```
+
+Etcd 则引入 `peach-rpc-registry-etcd`，CGLIB fallback 则引入 `peach-rpc-proxy-cglib`，Byte Buddy 使用 `peach-rpc-proxy-bytebuddy`。SPI 自动发现实际已安装的 Adapter；如果配置了未加入类路径的 `peach.rpc.registry.type=nacos`，应按缺失 Adapter 处理，不能假设轻量 Starter 自带 SDK。
+
+### 1.2 兼容模式：完整 Starter
+
+已在使用的 `peach-rpc-spring-boot-starter` **继续保留**原有 Etcd、Nacos、CGLIB 的传递依赖，避免在 1.0.x 期间破坏依赖兼容：
 
 ```xml
 <dependency>
@@ -12,7 +38,20 @@
 </dependency>
 ```
 
-Starter 会带入 Fory、Vert.x、Etcd、Nacos 和 CGLIB 适配器，默认仍使用 JDK Proxy 与内存 Registry。具体 Registry SDK 不进入 autoconfigure 或 Core 公共契约。
+两种 Starter 请选择一种，避免重复声明；不要同时依赖。当前版本仍处于源码 Release Prep，实际 Maven Central 可用性以正式发布结果为准。
+
+```mermaid
+flowchart LR
+    Lite[Starter Lite] --> Auto[AutoConfiguration]
+    Full[Legacy Full Starter] --> Auto
+    Full --> Etcd[Etcd Adapter]
+    Full --> Nacos[Nacos Adapter]
+    Full --> Cglib[CGLIB Adapter]
+    Auto --> Core[Core / JDK Proxy / Memory]
+    Auto --> Codec[Fory Codec]
+    Auto --> Transport[Vert.x Transport]
+```
+
 
 ## 2. Provider
 

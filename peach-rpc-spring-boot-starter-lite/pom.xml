@@ -9,26 +9,14 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>peach-rpc-spring-boot-starter</artifactId>
-    <name>peach-rpc-spring-boot-starter</name>
-    <description>Peach RPC Spring Boot starter.</description>
+    <artifactId>peach-rpc-spring-boot-starter-lite</artifactId>
+    <name>peach-rpc-spring-boot-starter-lite</name>
+    <description>Peach RPC minimal Spring Boot starter (Memory / JDK defaults; optional adapters).</description>
 
     <dependencies>
         <dependency>
             <groupId>io.peach.rpc</groupId>
             <artifactId>peach-rpc-spring-boot-autoconfigure</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-registry-etcd</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-registry-nacos</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-proxy-cglib</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

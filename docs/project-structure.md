@@ -17,7 +17,7 @@ Peach RPC 的模块不是按“功能名越细越好”拆分，而是按**第�
 
 ## 2. Maven Reactor
 
-当前固定 15 个顶层模块：
+当前固定 16 个顶层模块：
 
 | 模块 | 责任 |
 |---|---|
@@ -33,7 +33,8 @@ Peach RPC 的模块不是按“功能名越细越好”拆分，而是按**第�
 | peach-rpc-observability-opentelemetry | Tracing Adapter |
 | peach-rpc-observability-jfr | JFR Adapter |
 | peach-rpc-spring-boot-autoconfigure | Spring Boot AutoConfiguration |
-| peach-rpc-spring-boot-starter | 推荐业务依赖入口 |
+| peach-rpc-spring-boot-starter | 兼容完整业务依赖入口（Etcd/Nacos/CGLIB） |
+| peach-rpc-spring-boot-starter-lite | 推荐新业务的轻量依赖入口 |
 | peach-rpc-examples | 独立 Provider/Consumer 示例 |
 | peach-rpc-benchmarks | JMH/Soak 性能工具 |
 
@@ -53,7 +54,8 @@ flowchart TB
     OTel[observability-opentelemetry]
     Jfr[observability-jfr]
     Auto[Spring Boot autoconfigure]
-    Starter[Spring Boot starter]
+    Starter[Spring Boot full starter]
+    Lite[Spring Boot lite starter]
     Examples[examples]
     Bench[benchmarks]
 
@@ -70,9 +72,11 @@ flowchart TB
     Auto --> Core
     Auto --> Fory
     Auto --> Vertx
-    Auto --> Etcd
-    Auto --> Nacos
     Starter --> Auto
+    Starter --> Etcd
+    Starter --> Nacos
+    Starter --> Cglib
+    Lite --> Auto
     Examples --> Starter
     Bench --> Core
 ```
@@ -118,17 +122,17 @@ Runtime
 
 ## 6. Starter 的位置
 
-业务方推荐只依赖：
+已有项目使用兼容完整 Starter；新项目推荐使用轻量 Starter（Memory/JDK Proxy/Fory/Vert.x），再按需加入 Registry/Proxy Adapter：
 
 ```xml
 <dependency>
     <groupId>io.peach.rpc</groupId>
-    <artifactId>peach-rpc-spring-boot-starter</artifactId>
+    <artifactId>peach-rpc-spring-boot-starter-lite</artifactId>
     <version>1.0.1</version>
 </dependency>
 ```
 
-Starter 负责组装默认 Adapter；业务仍可以直接依赖 Core + 指定 Adapter 进行非 Spring 使用。
+完整 Starter 保留历史 Adapter 传递依赖；轻量 Starter 不带入 Etcd、Nacos、CGLIB。两者都复用同一个 AutoConfiguration，业务仍可以直接依赖 Core + 指定 Adapter 进行非 Spring 使用。
 
 ## 7. 测试结构
 

@@ -25,6 +25,7 @@ PUBLIC_MODULES = (
     "peach-rpc-observability-jfr",
     "peach-rpc-spring-boot-autoconfigure",
     "peach-rpc-spring-boot-starter",
+    "peach-rpc-spring-boot-starter-lite",
 )
 
 NON_PUBLIC_ARTIFACTS = {
@@ -186,69 +187,108 @@ def check_profiles(root: ET.Element) -> None:
 
 
 def check_dependency_only_starter() -> None:
-    starter_pom_path = ROOT / "peach-rpc-spring-boot-starter" / "pom.xml"
-    starter = ET.parse(starter_pom_path).getroot()
-    release = profile(starter, "release")
+    for module in (
+        "peach-rpc-spring-boot-starter",
+        "peach-rpc-spring-boot-starter-lite",
+    ):
+        starter_pom_path = ROOT / module / "pom.xml"
+        starter = ET.parse(starter_pom_path).getroot()
+        release = profile(starter, "release")
 
-    source = plugin(
-        release,
-        "org.apache.maven.plugins",
-        "maven-source-plugin",
-    )
-    if source.findtext(
-        "m:configuration/m:skipSource",
-        namespaces=NS,
-    ) != "true":
-        fail(
-            "Dependency-only starter must skip standard source JAR "
-            "generation in the release profile"
+        source = plugin(
+            release,
+            "org.apache.maven.plugins",
+            "maven-source-plugin",
         )
+        if source.findtext(
+            "m:configuration/m:skipSource",
+            namespaces=NS,
+        ) != "true":
+            fail(
+                "Dependency-only starter must skip standard source JAR "
+                "generation in the release profile"
+            )
 
-    javadoc = plugin(
-        release,
-        "org.apache.maven.plugins",
-        "maven-javadoc-plugin",
-    )
-    if javadoc.findtext(
-        "m:configuration/m:skip",
-        namespaces=NS,
-    ) != "true":
-        fail(
-            "Dependency-only starter must skip standard Javadoc "
-            "generation in the release profile"
+        javadoc = plugin(
+            release,
+            "org.apache.maven.plugins",
+            "maven-javadoc-plugin",
         )
+        if javadoc.findtext(
+            "m:configuration/m:skip",
+            namespaces=NS,
+        ) != "true":
+            fail(
+                "Dependency-only starter must skip standard Javadoc "
+                "generation in the release profile"
+            )
 
-    jar = plugin(
-        release,
-        "org.apache.maven.plugins",
-        "maven-jar-plugin",
-    )
-    classifiers = {
-        node.text.strip()
-        for node in jar.findall(
-            "m:executions/m:execution/m:configuration/m:classifier",
-            NS,
+        jar = plugin(
+            release,
+            "org.apache.maven.plugins",
+            "maven-jar-plugin",
         )
-        if node.text and node.text.strip()
+        classifiers = {
+            node.text.strip()
+            for node in jar.findall(
+                "m:executions/m:execution/m:configuration/m:classifier",
+                NS,
+            )
+            if node.text and node.text.strip()
+        }
+        if classifiers != {"sources", "javadoc"}:
+            fail(
+                "Dependency-only starter must attach placeholder "
+                "sources and javadoc JARs"
+            )
+
+        placeholder = (
+            ROOT
+            / module
+            / "src"
+            / "central-placeholder"
+            / "README.md"
+        )
+        if not placeholder.is_file():
+            fail(
+                "Missing Maven Central placeholder document for "
+                "dependency-only starter"
+            )
+
+def check_starter_dependency_boundaries() -> None:
+    def direct_artifacts(module: str) -> set[str]:
+        pom = ET.parse(ROOT / module / "pom.xml").getroot()
+        return {
+            node.text.strip()
+            for node in pom.findall(
+                "m:dependencies/m:dependency/m:artifactId", NS
+            )
+            if node.text
+        }
+
+    full = direct_artifacts("peach-rpc-spring-boot-starter")
+    lite = direct_artifacts("peach-rpc-spring-boot-starter-lite")
+    auto = direct_artifacts("peach-rpc-spring-boot-autoconfigure")
+    optional = {
+        "peach-rpc-registry-etcd",
+        "peach-rpc-registry-nacos",
+        "peach-rpc-proxy-cglib",
+        "peach-rpc-proxy-bytebuddy",
     }
-    if classifiers != {"sources", "javadoc"}:
-        fail(
-            "Dependency-only starter must attach placeholder "
-            "sources and javadoc JARs"
-        )
+    if optional.intersection(lite) or optional.intersection(auto):
+        fail("Minimal Starter / AutoConfiguration must not pull optional adapters")
+    if not {
+        "peach-rpc-registry-etcd",
+        "peach-rpc-registry-nacos",
+        "peach-rpc-proxy-cglib",
+    }.issubset(full):
+        fail("Legacy full Starter must retain its original adapter capabilities")
+    if not {
+        "peach-rpc-spring-boot-autoconfigure",
+        "spring-boot-starter",
+    }.issubset(lite):
+        fail("Minimal Starter must provide auto-configuration and Boot starter")
 
-    placeholder = (
-        ROOT
-        / "peach-rpc-spring-boot-starter"
-        / "src"
-        / "central-placeholder"
-        / "README.md"
-    )
-    if not placeholder.is_file():
-        fail(
-            "Missing Maven Central placeholder document for "
-            "dependency-only starter"
-        )
 
 def check_modules() -> None:
     for module in PUBLIC_MODULES:
@@ -305,6 +345,7 @@ def main() -> int:
     check_metadata(root)
     check_profiles(root)
     check_dependency_only_starter()
+    check_starter_dependency_boundaries()
     check_modules()
     if args.require_artifacts:
         check_artifacts(args.version)

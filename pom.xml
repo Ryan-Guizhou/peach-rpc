@@ -85,6 +85,7 @@
         <module>peach-rpc-observability-jfr</module>
         <module>peach-rpc-spring-boot-autoconfigure</module>
         <module>peach-rpc-spring-boot-starter</module>
+        <module>peach-rpc-spring-boot-starter-lite</module>
         <module>peach-rpc-examples</module>
         <module>peach-rpc-benchmarks</module>
     </modules>
@@ -233,6 +234,11 @@
             <dependency>
                 <groupId>io.peach.rpc</groupId>
                 <artifactId>peach-rpc-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.peach.rpc</groupId>
+                <artifactId>peach-rpc-spring-boot-starter-lite</artifactId>
                 <version>${revision}</version>
             </dependency>
         </dependencies>
