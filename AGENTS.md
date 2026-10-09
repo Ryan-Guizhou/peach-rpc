@@ -50,6 +50,8 @@ MCP 为证据补全工具，不是无限授权。
 
 `.cursor/rules` 仅放薄入口，`.codex/config.toml` 仅放平台配置。不得出现多个互相漂移的规范事实源。
 
+- Java 命名/类型 Javadoc/通配符 Import 与行长的 AST 审计见 [Checkstyle 建议性基线](docs/engineering/java-style-audit.md)，使用 `mvn -B -ntp -Pstyle-audit -DskipTests validate`。历史问题只计入台账，不能直接改 public 兼容名称。
+
 ## Verification
 
 - 通用门禁：`python3 scripts/check_project.py`；`mvn -B -ntp clean verify -Pquality`。
