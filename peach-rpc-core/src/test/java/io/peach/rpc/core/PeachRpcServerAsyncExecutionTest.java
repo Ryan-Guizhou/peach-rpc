@@ -173,6 +173,73 @@ public class PeachRpcServerAsyncExecutionTest {
     }
 
     @Test
+    void errorFromUserMethodMustSettleResponseAndReleaseAdmission()
+            throws Exception {
+        CapturingTransportServer transport = new CapturingTransportServer();
+        AsyncServiceImpl service = new AsyncServiceImpl();
+        PeachRpcServer server = createServer(
+                transport,
+                service,
+                1,
+                19098);
+
+        try {
+            server.start().toCompletableFuture().join();
+
+            byte[] failed = transport.handle(request("failing"))
+                    .toCompletableFuture()
+                    .get(3, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.BUSINESS_ERROR,
+                    RpcProtocolCodec.view(failed).status());
+
+            byte[] recovered = transport.handle(request("fast"))
+                    .toCompletableFuture()
+                    .get(3, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(recovered).status());
+        } finally {
+            server.close();
+        }
+    }
+
+    @Test
+    void exceptionalAsyncStageMustReleaseAdmissionAfterCompletion()
+            throws Exception {
+        CapturingTransportServer transport = new CapturingTransportServer();
+        AsyncServiceImpl service = new AsyncServiceImpl();
+        PeachRpcServer server = createServer(
+                transport,
+                service,
+                1,
+                19099);
+
+        try {
+            server.start().toCompletableFuture().join();
+            CompletableFuture<byte[]> response =
+                    transport.handle(request("slow")).toCompletableFuture();
+            assertTrue(service.slowInvoked.await(3, TimeUnit.SECONDS));
+
+            service.slow.completeExceptionally(
+                    new AssertionError("Async callback failure"));
+            assertEquals(
+                    RpcStatus.BUSINESS_ERROR,
+                    RpcProtocolCodec.view(
+                            response.get(3, TimeUnit.SECONDS)).status());
+
+            byte[] recovered = transport.handle(request("fast"))
+                    .toCompletableFuture()
+                    .get(3, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(recovered).status());
+        } finally {
+            server.close();
+        }
+    }
+
+    @Test
     void asyncStageShouldRetainAdmissionUntilCompletion() throws Exception {
         CapturingTransportServer transport = new CapturingTransportServer();
         AsyncServiceImpl service = new AsyncServiceImpl();
@@ -365,6 +432,9 @@ public class PeachRpcServerAsyncExecutionTest {
 
         @PeachRpcExecution(RpcExecutionMode.CPU)
         String queued();
+
+        @PeachRpcExecution(RpcExecutionMode.CPU)
+        String failing();
     }
 
     public static final class AsyncServiceImpl implements AsyncService {
@@ -408,6 +478,11 @@ public class PeachRpcServerAsyncExecutionTest {
         @Override
         public String queued() {
             return "queued";
+        }
+
+        @Override
+        public String failing() {
+            throw new AssertionError("Service method failed");
         }
     }
 
