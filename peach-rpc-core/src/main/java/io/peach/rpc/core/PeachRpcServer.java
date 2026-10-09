@@ -44,6 +44,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +57,8 @@ import org.slf4j.LoggerFactory;
  * STARTED 状态。仅 TCP 端口可连接不代表业务已就绪。
  *
  * <p>并发和已准入 Frame 字节数受到全局/服务/方法级预算约束；
- * 请求正常完成、异常或取消时统一归还 Lease。预算不代表 JVM Heap 的硬上限。
+ * Lease 在响应结束且业务执行实际退出后才归还；取消不会假定业务已停止。
+ * 预算不代表 JVM Heap 的硬上限。
  *
  * <p>使用者负责在停止服务时调用 {@link #close()}，等待排空期间的资源管理
  * 以实际关闭策略为准。
@@ -428,13 +431,25 @@ public final class PeachRpcServer implements AutoCloseable {
         CompletableFuture<byte[]> result =
                 new CompletableFuture<>();
         boolean observed = observer.enabled();
-        result.whenComplete((ignoredValue, ignoredError) -> {
-            if (decision.lease().release() && observed) {
+        // 两个终态：传输侧响应结束，以及业务执行（含异步 Stage）结束。
+        // Future.cancel 不能证明业务线程停止，故不得直接释放并发资源。
+        AtomicInteger remainingTerminals = new AtomicInteger(2);
+        AtomicBoolean workFinished = new AtomicBoolean();
+        Runnable releaseIfComplete = () -> {
+            if (remainingTerminals.decrementAndGet() == 0
+                    && decision.lease().release() && observed) {
                 observer.onServerInflightBytesChanged(
                         -request.bytes().length);
                 observer.onServerInflightChanged(-1);
             }
-        });
+        };
+        Runnable markWorkFinished = () -> {
+            if (workFinished.compareAndSet(false, true)) {
+                releaseIfComplete.run();
+            }
+        };
+        result.whenComplete((ignoredValue, ignoredError) ->
+                releaseIfComplete.run());
         if (observed) {
             observer.onServerInflightChanged(1);
             observer.onServerInflightBytesChanged(request.bytes().length);
@@ -447,6 +462,7 @@ public final class PeachRpcServer implements AutoCloseable {
                     request,
                     RpcStatus.METHOD_NOT_FOUND,
                     "Method not found"));
+            markWorkFinished.run();
             return result;
         }
 
@@ -468,6 +484,7 @@ public final class PeachRpcServer implements AutoCloseable {
                     request,
                     RpcStatus.BAD_REQUEST,
                     "Invalid request metadata"));
+            markWorkFinished.run();
             return result;
         } catch (RuntimeException setupError) {
             LOGGER.warn(
@@ -479,6 +496,7 @@ public final class PeachRpcServer implements AutoCloseable {
                     request,
                     RpcStatus.INTERNAL_ERROR,
                     "Provider request setup failed"));
+            markWorkFinished.run();
             return result;
         }
         result.whenComplete((responseBytes, error) ->
@@ -508,7 +526,8 @@ public final class PeachRpcServer implements AutoCloseable {
                     propagatedMetadata,
                     trace,
                     result,
-                    cpuExecutor);
+                    cpuExecutor,
+                    markWorkFinished);
             return result;
         }
 
@@ -516,16 +535,22 @@ public final class PeachRpcServer implements AutoCloseable {
                 executionMode == RpcExecutionMode.CPU
                         ? cpuExecutor
                         : blockingExecutor;
+        AtomicBoolean executionClaimed = new AtomicBoolean();
         Future<?> task;
         try {
-            task = selectedExecutor.submit(() -> execute(
-                    request,
-                    binding,
-                    methodCodec,
-                    propagatedMetadata,
-                    trace,
-                    result,
-                    selectedExecutor));
+            task = selectedExecutor.submit(() -> {
+                if (executionClaimed.compareAndSet(false, true)) {
+                    execute(
+                            request,
+                            binding,
+                            methodCodec,
+                            propagatedMetadata,
+                            trace,
+                            result,
+                            selectedExecutor,
+                            markWorkFinished);
+                }
+            });
         } catch (RejectedExecutionException error) {
             observeAdmissionRejected(request, "cpu-queue");
             result.complete(errorResponse(
@@ -533,11 +558,15 @@ public final class PeachRpcServer implements AutoCloseable {
                     RpcStatus.OVERLOADED,
                     RpcException.class.getName(),
                     "Provider execution queue is full"));
+            markWorkFinished.run();
             return result;
         }
         result.whenComplete((ignoredValue, ignoredError) -> {
-            if (result.isCancelled()) {
-                task.cancel(true);
+            if (result.isCancelled()
+                    && task.cancel(true)
+                    && executionClaimed.compareAndSet(false, true)) {
+                // Runnable 未进入业务代码；被取消的排队任务不会再执行。
+                markWorkFinished.run();
             }
         });
         return result;
@@ -593,7 +622,9 @@ public final class PeachRpcServer implements AutoCloseable {
             Map<String, String> propagatedMetadata,
             RpcTraceContext trace,
             CompletableFuture<byte[]> result,
-            ExecutorService asyncCompletionExecutor) {
+            ExecutorService asyncCompletionExecutor,
+            Runnable markWorkFinished) {
+        boolean deferredCompletion = false;
         try (RpcMetadataScope traceScope =
                      trace.makeCurrent();
              RpcMetadataScope propagationScope =
@@ -601,6 +632,9 @@ public final class PeachRpcServer implements AutoCloseable {
                              ? metadataPropagator.extract(
                                      propagatedMetadata)
                              : RpcMetadataScope.noop()) {
+            if (result.isCancelled()) {
+                return;
+            }
             Object[] arguments = methodCodec.decodeArguments(
                     request.bytes(),
                     request.payloadOffset(),
@@ -609,6 +643,7 @@ public final class PeachRpcServer implements AutoCloseable {
                     request.methodId(),
                     arguments);
             if (value instanceof CompletionStage<?> stage) {
+                deferredCompletion = true;
                 completeAsyncInvocation(
                         request,
                         methodCodec,
@@ -616,7 +651,8 @@ public final class PeachRpcServer implements AutoCloseable {
                         result,
                         asyncCompletionExecutor,
                         propagatedMetadata,
-                        trace);
+                        trace,
+                        markWorkFinished);
                 return;
             }
             byte[] responseBytes = response(
@@ -624,14 +660,13 @@ public final class PeachRpcServer implements AutoCloseable {
                     methodCodec.codecId(),
                     RpcStatus.OK,
                     methodCodec.encodeResult(value));
-            completeResponse(
-                    result,
-                    responseBytes);
+            completeResponse(result, responseBytes);
         } catch (Throwable error) {
-            completeInvocationFailure(
-                    request,
-                    result,
-                    error);
+            completeInvocationFailure(request, result, error);
+        } finally {
+            if (!deferredCompletion) {
+                markWorkFinished.run();
+            }
         }
     }
 
@@ -642,18 +677,20 @@ public final class PeachRpcServer implements AutoCloseable {
             CompletableFuture<byte[]> result,
             ExecutorService completionExecutor,
             Map<String, String> propagatedMetadata,
-            RpcTraceContext trace) {
+            RpcTraceContext trace,
+            Runnable markWorkFinished) {
         try {
-            CompletableFuture<?> asyncFuture =
-                    stage.toCompletableFuture();
-            result.whenComplete((ignoredValue, ignoredError) -> {
+            CompletableFuture<?> asyncFuture = stage.toCompletableFuture();
+            boolean completedInline = asyncFuture.isDone();
+            // 不主动取消业务 Stage：CompletableFuture.cancel 仅保证 Future
+            // 逻辑终态，不保证业务的底层 IO 或线程已经结束。
+            asyncFuture.whenComplete((value, error) -> {
                 if (result.isCancelled()) {
-                    asyncFuture.cancel(true);
+                    markWorkFinished.run();
+                    return;
                 }
-            });
-
-            if (asyncFuture.isDone()) {
-                asyncFuture.whenComplete((value, error) ->
+                if (completedInline) {
+                    try {
                         completeAsyncInvocationResult(
                                 request,
                                 methodCodec,
@@ -661,25 +698,29 @@ public final class PeachRpcServer implements AutoCloseable {
                                 propagatedMetadata,
                                 trace,
                                 value,
-                                error));
-                return;
-            }
-
-            asyncFuture.whenComplete((value, error) ->
-                    dispatchAsyncCompletion(
-                            request,
-                            methodCodec,
-                            result,
-                            completionExecutor,
-                            propagatedMetadata,
-                            trace,
-                            value,
-                            error));
+                                error);
+                    } finally {
+                        markWorkFinished.run();
+                    }
+                    return;
+                }
+                dispatchAsyncCompletion(
+                        request,
+                        methodCodec,
+                        result,
+                        completionExecutor,
+                        propagatedMetadata,
+                        trace,
+                        value,
+                        error,
+                        markWorkFinished);
+            });
         } catch (Throwable setupError) {
-            completeInvocationFailure(
-                    request,
-                    result,
-                    setupError);
+            try {
+                completeInvocationFailure(request, result, setupError);
+            } finally {
+                markWorkFinished.run();
+            }
         }
     }
 
@@ -691,12 +732,15 @@ public final class PeachRpcServer implements AutoCloseable {
             Map<String, String> propagatedMetadata,
             RpcTraceContext trace,
             Object value,
-            Throwable error) {
+            Throwable error,
+            Runnable markWorkFinished) {
         if (result.isCancelled()) {
+            markWorkFinished.run();
             return;
         }
         try {
-            completionExecutor.execute(() ->
+            completionExecutor.execute(() -> {
+                try {
                     completeAsyncInvocationResult(
                             request,
                             methodCodec,
@@ -704,28 +748,31 @@ public final class PeachRpcServer implements AutoCloseable {
                             propagatedMetadata,
                             trace,
                             value,
-                            error));
+                            error);
+                } finally {
+                    markWorkFinished.run();
+                }
+            });
         } catch (RejectedExecutionException rejection) {
-            observeAdmissionRejected(
-                    request,
-                    "async-completion-queue");
-            if (result.isCancelled()) {
-                return;
+            try {
+                observeAdmissionRejected(request, "async-completion-queue");
+                if (!result.isCancelled()) {
+                    LOGGER.warn(
+                            "RPC async completion was rejected: requestId={}, serviceId={}, methodId={}",
+                            request.requestId(),
+                            request.serviceId(),
+                            request.methodId(),
+                            rejection);
+                    byte[] responseBytes = errorResponse(
+                            request,
+                            RpcStatus.OVERLOADED,
+                            RpcException.class.getName(),
+                            "Provider async completion queue is full");
+                    completeResponse(result, responseBytes);
+                }
+            } finally {
+                markWorkFinished.run();
             }
-            LOGGER.warn(
-                    "RPC async completion was rejected: requestId={}, serviceId={}, methodId={}",
-                    request.requestId(),
-                    request.serviceId(),
-                    request.methodId(),
-                    rejection);
-            byte[] responseBytes = errorResponse(
-                    request,
-                    RpcStatus.OVERLOADED,
-                    RpcException.class.getName(),
-                    "Provider async completion queue is full");
-            completeResponse(
-                    result,
-                    responseBytes);
         }
     }
 
