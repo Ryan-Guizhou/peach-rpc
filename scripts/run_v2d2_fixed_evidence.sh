@@ -11,6 +11,10 @@ WARMUP_SECONDS="${PEACH_RPC_SOAK_WARMUP_SECONDS:-30}"
 CLIENT_TIMEOUT_MS="${PEACH_RPC_SOAK_CLIENT_TIMEOUT_MS:-15000}"
 RUN_ID="${PEACH_RPC_EVIDENCE_RUN_ID:-$(basename "$OUTPUT_DIR")}"
 BASELINE="${PEACH_RPC_RUNNER_BASELINE:-}"
+MAX_ERROR_RATE="${PEACH_RPC_SOAK_MAX_ERROR_RATE:-}"
+MIN_OBSERVED_INFLIGHT="${PEACH_RPC_SOAK_MIN_OBSERVED_INFLIGHT:-}"
+MAX_P99_MICROS="${PEACH_RPC_SOAK_MAX_P99_MICROS:-}"
+
 
 if [[ "$PROFILE" != "full" ]]; then
   echo "Fixed production evidence requires PEACH_RPC_EVIDENCE_PROFILE=full" >&2
@@ -32,6 +36,27 @@ if (( CONCURRENCY < 10000 )); then
   echo "Fixed production evidence requires at least 10000 logical callers" >&2
   exit 1
 fi
+# A configured 10k worker count alone does not prove 10k actual inflight calls.
+# Require operator-selected quality thresholds before starting a 30+ minute run.
+if [[ -z "$MAX_ERROR_RATE" || -z "$MIN_OBSERVED_INFLIGHT" ]]; then
+  echo "Controlled soak requires PEACH_RPC_SOAK_MAX_ERROR_RATE and PEACH_RPC_SOAK_MIN_OBSERVED_INFLIGHT" >&2
+  exit 1
+fi
+python3 - "$MAX_ERROR_RATE" "$MIN_OBSERVED_INFLIGHT" "$CONCURRENCY" "$MAX_P99_MICROS" <<'PY'
+import math
+import sys
+max_rate = float(sys.argv[1])
+observed = int(sys.argv[2])
+configured = int(sys.argv[3])
+p99 = sys.argv[4]
+if not math.isfinite(max_rate) or not (0 <= max_rate <= 1):
+    raise SystemExit("Max error rate must be finite and between 0 and 1")
+if not 1 <= observed <= configured:
+    raise SystemExit("Min observed inflight must be within configured logical callers")
+if p99 and (not math.isfinite(float(p99)) or float(p99) <= 0):
+    raise SystemExit("Optional max p99 must be positive")
+PY
+
 if [[ -e "$OUTPUT_DIR" && -n "$(find "$OUTPUT_DIR" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
   echo "Refusing to overwrite an existing evidence bundle: $OUTPUT_DIR" >&2
   exit 1
@@ -61,6 +86,18 @@ mvn -B -ntp -pl peach-rpc-benchmarks -am clean package -DskipTests
 bash scripts/run_v2d2_benchmark_matrix.sh   full   "$OUTPUT_DIR/matrix"
 
 PEACH_RPC_SOAK_CONCURRENCY="$CONCURRENCY" PEACH_RPC_SOAK_DURATION_SECONDS="$DURATION_SECONDS" PEACH_RPC_SOAK_PAYLOAD_SIZE="$PAYLOAD_SIZE" PEACH_RPC_SOAK_CONNECTIONS="$CONNECTIONS" PEACH_RPC_SOAK_WARMUP_SECONDS="$WARMUP_SECONDS" PEACH_RPC_SOAK_CLIENT_TIMEOUT_MS="$CLIENT_TIMEOUT_MS" PEACH_RPC_SOAK_OUTPUT="$OUTPUT_DIR/soak.json"   bash scripts/run_v2d2_soak.sh
+
+POLICY_ARGS=(
+  --soak "$OUTPUT_DIR/soak.json"
+  --mode controlled
+  --max-error-rate "$MAX_ERROR_RATE"
+  --min-observed-inflight "$MIN_OBSERVED_INFLIGHT"
+  --output-dir "$OUTPUT_DIR/soak-policy"
+)
+if [[ -n "$MAX_P99_MICROS" ]]; then
+  POLICY_ARGS+=(--max-p99-micros "$MAX_P99_MICROS")
+fi
+python3 scripts/check_soak_quality.py "${POLICY_ARGS[@]}"
 
 python3 scripts/validate_v2d2_evidence.py   --environment "$OUTPUT_DIR/environment.properties"   --matrix-dir "$OUTPUT_DIR/matrix"   --soak "$OUTPUT_DIR/soak.json"   --profile full   --require-matrix   --require-soak   --require-controlled   --min-soak-seconds 1800   --min-concurrency 10000   --output-dir "$OUTPUT_DIR"
 

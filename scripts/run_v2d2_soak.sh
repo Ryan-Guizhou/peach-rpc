@@ -29,30 +29,8 @@ java -cp "$JAR" io.peach.rpc.benchmarks.PerformanceSoakRunner \
   "--client-timeout-ms=$CLIENT_TIMEOUT_MS" \
   "--output=$OUTPUT"
 
-python3 - "$OUTPUT" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-path = Path(sys.argv[1])
-data = json.loads(path.read_text(encoding="utf-8"))
-required = {
-    "concurrency",
-    "payloadBytes",
-    "connectionsPerEndpoint",
-    "throughputOpsPerSecond",
-    "p50Micros",
-    "p99Micros",
-    "p999Micros",
-    "successes",
-    "errors",
-    "gcCountDelta",
-    "gcTimeMillisDelta",
-    "processCpuCoresAverage",
-}
-missing = sorted(required.difference(data))
-if missing:
-    raise SystemExit(f"Missing soak result fields: {missing}")
-if data["successes"] <= 0:
-    raise SystemExit("Soak produced no successful RPC calls")
-PY
+# Structural checks only: the shared CI smoke cannot certify production SLOs.
+python3 scripts/check_soak_quality.py \
+  --soak "$OUTPUT" \
+  --mode smoke \
+  --output-dir "$(dirname "$OUTPUT")/soak-smoke-quality"

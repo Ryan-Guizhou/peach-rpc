@@ -113,7 +113,7 @@ Benchmark JVM 参数不能未经验证直接复制到生产。
 - TLS handshake/reload；
 - Trace 或等价链路诊断。
 
-见 [生产可观测与 SLO](production-observability.md)。
+见 [生产可观测与 SLO](production-observability.md)；10k 逻辑并发、实际峰值在途量和错误率的差异请参阅 [Soak 质量验收](soak-acceptance.md)。
 
 ## 9. 容量数字
 
