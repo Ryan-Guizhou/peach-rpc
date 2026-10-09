@@ -386,6 +386,29 @@ class PeachRpcClientResilienceTest {
         }
     }
 
+    @Test
+    void retiredEndpointsShouldNotAccumulateConsumerStatistics() {
+        MutableDiscovery discovery = new MutableDiscovery();
+        try (PeachRpcClient client = PeachRpcClient.builder()
+                .serviceDiscovery(discovery)
+                .transportClient(new TestTransport((endpoint, frame, timeout) ->
+                        CompletableFuture.completedFuture(
+                                successResponse(frame, "ok"))))
+                .codecRegistry(RpcCodecRegistry.of(new StringCodec()))
+                .build()) {
+            RetryService service = client.refer(
+                    RetryService.class, "1.0.0", "test");
+
+            assertEquals("ok", service.find("before"));
+            assertEquals(1, client.trackedEndpointCount());
+
+            discovery.publishEmpty();
+            client.evictUnusedEndpointStats();
+
+            assertEquals(0, client.trackedEndpointCount());
+        }
+    }
+
     private static PeachRpcClient client(
             RequestFunction request) {
         return client(
@@ -467,6 +490,35 @@ class PeachRpcClientResilienceTest {
 
         @Override
         public void close() {
+        }
+    }
+
+    private static final class MutableDiscovery implements ServiceDiscovery {
+        private final AtomicReference<RegistryListener> listener =
+                new AtomicReference<>();
+
+        @Override
+        public CompletionStage<RegistrySnapshot> lookup(ServiceKey key) {
+            return CompletableFuture.completedFuture(
+                    StaticDiscovery.snapshot(key));
+        }
+
+        @Override
+        public RegistrySubscription subscribe(
+                ServiceKey key,
+                RegistryListener updateListener) {
+            listener.set(updateListener);
+            updateListener.onSnapshot(StaticDiscovery.snapshot(key));
+            return () -> listener.compareAndSet(updateListener, null);
+        }
+
+        private void publishEmpty() {
+            RegistryListener updateListener = listener.get();
+            if (updateListener == null) {
+                throw new IllegalStateException(
+                        "Registry listener has not been subscribed");
+            }
+            updateListener.onSnapshot(new RegistrySnapshot(List.of(), 2L));
         }
     }
 
