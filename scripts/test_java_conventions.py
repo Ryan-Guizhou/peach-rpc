@@ -88,6 +88,54 @@ class JavaConventionsTest(unittest.TestCase):
         self.assertEqual(["R001"], [x["rule"] for x in out])
         self.assertEqual("warning", out[0]["severity"])
 
+    def test_rejects_core_adapter_imports_only_inside_core(self):
+        code = 'import io.vertx.core.Vertx;\nimport org.springframework.context.ApplicationContext;\n'
+        results = self.findings(self.runtime, code)
+        self.assertIn("B001", results)
+        self.assertNotIn("B001", self.findings(self.transport, code))
+        self.assertNotIn("B001", self.findings(self.test_path, code))
+        self.assertNotIn(
+            "B001",
+            self.findings(self.runtime, "import io.peach.rpc.registry.ServiceDiscovery;"))
+
+    def test_rejects_unbounded_queues_and_cached_executors(self):
+        code = (
+            "new LinkedBlockingQueue<>();\n"
+            "Executors.newCachedThreadPool();\n"
+        )
+        result = self.findings(self.runtime, code)
+        self.assertIn("R002", result)
+        self.assertIn("R003", result)
+        self.assertNotIn(
+            "R002", self.findings(self.runtime,
+                                  "new LinkedBlockingQueue<>(1024);"))
+
+    def test_rejects_eager_formatting_in_logs(self):
+        bad = 'LOGGER.warn(String.format("Request %s failed", requestId));'
+        good = 'LOGGER.warn("Request {} failed", requestId);'
+        self.assertIn("L003", self.findings(self.runtime, bad))
+        self.assertNotIn("L003", self.findings(self.runtime, good))
+
+    def test_sensitive_logging_is_review_only(self):
+        result = lint.scan_source(
+            self.runtime,
+            'LOGGER.info("User token logged", token);',
+            self.rules,
+        )
+        self.assertIn("L004", [x["rule"] for x in result])
+        self.assertTrue(all(x["severity"] == "warning" for x in result))
+        self.assertNotIn(
+            "L004",
+            self.findings(self.runtime,
+                          'LOGGER.info("Connection established. id={}", id);'))
+
+    def test_interface_prefix_is_reviewed_not_blocked(self):
+        result = lint.scan_source(
+            self.runtime, "public interface IConnectionFactory {}",
+            self.rules)
+        self.assertEqual(["N001"], [x["rule"] for x in result])
+        self.assertEqual("warning", result[0]["severity"])
+
     def test_line_number_is_stable(self):
         out = lint.scan_source(
             self.runtime,

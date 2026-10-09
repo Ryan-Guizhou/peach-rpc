@@ -11,6 +11,14 @@ Task Intake → Source/Impact Analysis → Complexity Gate → Implementation Co
 - 本次任务授权开发并提交 Draft PR，不等于授权合并、直接修改 main、发布、删除远端资源、变更权限或执行数据库写操作。这些动作均需要另行明确授权。
 - 分阶段小 PR；逐阶段更新变更范围、运行证据、未完成项，禁止用已通过的旧提交 CI 代替新提交验证。
 
+## 中断保护与断点续写
+
+- 单个 Maven、CI、远程 MCP 或其他待完成步骤持续无进展超过 **10 分钟**时，停止等待并中断可安全中断的本地操作。对于 GitHub 远端工作流，只记录当前 run/status，不为缩短等待擅自取消其他人的 Job。
+- 中断时记录：任务目标、最后一个成功步骤、PR/分支/Head SHA、未通过的检查、日志/错误、下一条可执行命令、回滚方式和影响边界。
+- 断点记录存放于 `docs/engineering/agent-governance-checkpoint.md` 或当前 PR 描述；恢复时必须重新查询最新 SHA 与 CI，不依据旧的对话状态盲目重复提交。
+- 对确定性的代码缺陷先修复；遇到网络/工具访问失败最多做有限重试，仍不可用时如实报告，不循环等待、不伪造测试通过记录。
+- 如当前步骤阻塞，但有无依赖的工作可开展，允许先处理独立任务并标记阻塞项；**不能将待完成工作描述为已完成**。
+
 ## 工程和兼容性红线
 
 - JDK 21、Maven 多模块、Spring Boot 3.5.4；以实际 POM 为准。4 空格、UTF-8、LF、无通配符 import，参见 .editorconfig、[Java 编码规范](docs/engineering/java-coding-standard.md) 与 CONTRIBUTING.md。

@@ -90,6 +90,66 @@
       ],
       "scan": "code",
       "pattern": "\\bcatch\\s*\\(\\s*Throwable\\b"
+    },
+    {
+      "id": "B001",
+      "severity": "error",
+      "message": "Core must not import implementation adapters or Spring framework",
+      "paths": [
+        "peach-rpc-core/src/main/java/*.java"
+      ],
+      "scan": "code",
+      "pattern": "^\\s*import\\s+(?:static\\s+)?(?:io\\.vertx|com\\.alibaba\\.nacos|io\\.etcd|org\\.apache\\.fory|org\\.springframework)\\."
+    },
+    {
+      "id": "R002",
+      "severity": "error",
+      "message": "Production runtime must not construct an unbounded LinkedBlockingQueue",
+      "paths": [
+        "peach-rpc-*/src/main/java/*.java"
+      ],
+      "scan": "code",
+      "pattern": "\\bnew\\s+LinkedBlockingQueue(?:\\s*<[^>]*>)?\\s*\\(\\s*\\)"
+    },
+    {
+      "id": "R003",
+      "severity": "error",
+      "message": "Production runtime must not create unbounded cached thread pools",
+      "paths": [
+        "peach-rpc-*/src/main/java/*.java"
+      ],
+      "scan": "code",
+      "pattern": "\\bExecutors\\s*\\.\\s*newCachedThreadPool\\s*\\("
+    },
+    {
+      "id": "L003",
+      "severity": "error",
+      "message": "Use parameterized SLF4J instead of String.format within log call",
+      "paths": [
+        "peach-rpc-*/src/main/java/*.java"
+      ],
+      "scan": "code",
+      "pattern": "\\b(?:LOGGER|log|logger)\\s*\\.\\s*(?:trace|debug|info|warn|error)\\s*\\(\\s*String\\s*\\.\\s*format\\s*\\("
+    },
+    {
+      "id": "L004",
+      "severity": "warning",
+      "message": "Inspect runtime log statement for sensitive fields and token exposure",
+      "paths": [
+        "peach-rpc-*/src/main/java/*.java"
+      ],
+      "scan": "with-strings",
+      "pattern": "\\b(?:LOGGER|log|logger)\\s*\\.\\s*(?:trace|debug|info|warn|error)\\s*\\([\\s\\S]{0,180}\\b(?:password|secret|token|credential)\\b"
+    },
+    {
+      "id": "N001",
+      "severity": "warning",
+      "message": "Interface I-prefix naming requires compatibility review before rename",
+      "paths": [
+        "peach-rpc-*/src/main/java/*.java"
+      ],
+      "scan": "code",
+      "pattern": "\\binterface\\s+I[A-Z][A-Za-z0-9_]*\\b"
     }
   ]
 }
