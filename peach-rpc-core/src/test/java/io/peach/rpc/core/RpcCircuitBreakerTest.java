@@ -2,6 +2,7 @@ package io.peach.rpc.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.peach.rpc.observability.RpcCircuitState;
@@ -19,101 +20,132 @@ class RpcCircuitBreakerTest {
     @Test
     void shouldOpenAfterConsecutiveFailures() {
         RpcCircuitBreaker breaker =
-                new RpcCircuitBreaker(
-                        2,
-                        Duration.ofSeconds(1));
+                new RpcCircuitBreaker(2, Duration.ofSeconds(1));
 
-        assertTrue(breaker.tryAcquire());
-        breaker.onFailure();
-        assertTrue(breaker.tryAcquire());
-        breaker.onFailure();
+        breaker.onFailure(breaker.tryAcquire());
+        breaker.onFailure(breaker.tryAcquire());
 
         assertTrue(breaker.isOpen());
-        assertFalse(breaker.tryAcquire());
+        assertEquals(RpcCircuitBreaker.REJECTED, breaker.tryAcquire());
     }
 
     @Test
     void halfOpenShouldAllowOnlyOneConcurrentProbe()
             throws Exception {
         RpcCircuitBreaker breaker =
-                new RpcCircuitBreaker(
-                        1,
-                        Duration.ofMillis(20));
+                new RpcCircuitBreaker(1, Duration.ofMillis(20));
 
-        breaker.onFailure();
+        breaker.onFailure(breaker.tryAcquire());
         assertTrue(breaker.isOpen());
         Thread.sleep(30L);
 
         int contenders = 32;
-        CountDownLatch ready =
-                new CountDownLatch(contenders);
-        CountDownLatch start =
-                new CountDownLatch(1);
-        List<CompletableFuture<Boolean>> probes =
-                new ArrayList<>();
+        CountDownLatch ready = new CountDownLatch(contenders);
+        CountDownLatch start = new CountDownLatch(1);
+        List<CompletableFuture<Long>> probes = new ArrayList<>();
 
-        try (var executor =
-                     Executors.newFixedThreadPool(contenders)) {
-            for (int index = 0;
-                    index < contenders;
-                    index++) {
-                probes.add(
-                        CompletableFuture.supplyAsync(
-                                () -> {
-                                    ready.countDown();
-                                    try {
-                                        if (!start.await(
-                                                2,
-                                                TimeUnit.SECONDS)) {
-                                            throw new AssertionError(
-                                                    "Probe start barrier timed out");
-                                        }
-                                    } catch (InterruptedException error) {
-                                        Thread.currentThread().interrupt();
-                                        throw new AssertionError(error);
-                                    }
-                                    return breaker.tryAcquire();
-                                },
-                                executor));
+        try (var executor = Executors.newFixedThreadPool(contenders)) {
+            for (int index = 0; index < contenders; index++) {
+                probes.add(CompletableFuture.supplyAsync(() -> {
+                    ready.countDown();
+                    try {
+                        if (!start.await(2, TimeUnit.SECONDS)) {
+                            throw new AssertionError(
+                                    "Probe start barrier timed out");
+                        }
+                    } catch (InterruptedException error) {
+                        Thread.currentThread().interrupt();
+                        throw new AssertionError(error);
+                    }
+                    return breaker.tryAcquire();
+                }, executor));
             }
-
-            assertTrue(
-                    ready.await(
-                            2,
-                            TimeUnit.SECONDS));
+            assertTrue(ready.await(2, TimeUnit.SECONDS));
             start.countDown();
         }
 
-        long accepted = probes.stream()
+        List<Long> acquired = probes.stream()
                 .map(CompletableFuture::join)
-                .filter(Boolean::booleanValue)
-                .count();
+                .filter(generation -> generation != RpcCircuitBreaker.REJECTED)
+                .toList();
 
-        assertEquals(1L, accepted);
-        assertEquals(
-                RpcCircuitState.HALF_OPEN,
-                breaker.state());
+        assertEquals(1, acquired.size());
+        assertEquals(RpcCircuitState.HALF_OPEN, breaker.state());
 
-        breaker.onSuccess();
+        breaker.onSuccess(acquired.getFirst());
 
-        assertEquals(
-                RpcCircuitState.CLOSED,
-                breaker.state());
-        assertTrue(breaker.tryAcquire());
+        assertEquals(RpcCircuitState.CLOSED, breaker.state());
+        assertNotEquals(RpcCircuitBreaker.REJECTED, breaker.tryAcquire());
     }
 
     @Test
     void successShouldResetFailures() {
         RpcCircuitBreaker breaker =
-                new RpcCircuitBreaker(
-                        2,
-                        Duration.ofSeconds(1));
+                new RpcCircuitBreaker(2, Duration.ofSeconds(1));
 
-        breaker.onFailure();
-        breaker.onSuccess();
-        breaker.onFailure();
+        breaker.onFailure(breaker.tryAcquire());
+        breaker.onSuccess(breaker.tryAcquire());
+        breaker.onFailure(breaker.tryAcquire());
 
         assertFalse(breaker.isOpen());
-        assertTrue(breaker.tryAcquire());
+        assertNotEquals(RpcCircuitBreaker.REJECTED, breaker.tryAcquire());
+    }
+
+    @Test
+    void staleSuccessCannotCloseNewOpenCircuit() {
+        RpcCircuitBreaker breaker =
+                new RpcCircuitBreaker(1, Duration.ofSeconds(1));
+
+        long earlier = breaker.tryAcquire();
+        long failed = breaker.tryAcquire();
+        breaker.onFailure(failed);
+        assertTrue(breaker.isOpen());
+
+        breaker.onSuccess(earlier);
+        assertTrue(breaker.isOpen());
+        assertEquals(RpcCircuitBreaker.REJECTED, breaker.tryAcquire());
+    }
+
+    @Test
+    void staleFailureCannotUndoSuccessfulHalfOpenProbe()
+            throws Exception {
+        RpcCircuitBreaker breaker =
+                new RpcCircuitBreaker(1, Duration.ofMillis(20));
+
+        long earlier = breaker.tryAcquire();
+        breaker.onFailure(breaker.tryAcquire());
+        Thread.sleep(30L);
+        long probe = breaker.tryAcquire();
+        assertNotEquals(RpcCircuitBreaker.REJECTED, probe);
+        breaker.onSuccess(probe);
+        assertEquals(RpcCircuitState.CLOSED, breaker.state());
+
+        breaker.onFailure(earlier);
+        assertEquals(RpcCircuitState.CLOSED, breaker.state());
+    }
+
+    @Test
+    void cancelledHalfOpenProbeAllowsNewGeneration()
+            throws Exception {
+        RpcCircuitBreaker breaker =
+                new RpcCircuitBreaker(1, Duration.ofMillis(20));
+
+        breaker.onFailure(breaker.tryAcquire());
+        Thread.sleep(30L);
+
+        long abandoned = breaker.tryAcquire();
+        assertNotEquals(RpcCircuitBreaker.REJECTED, abandoned);
+        breaker.onCancelled(abandoned);
+
+        long replacement = breaker.tryAcquire();
+        assertNotEquals(RpcCircuitBreaker.REJECTED, replacement);
+        assertNotEquals(abandoned, replacement);
+
+        breaker.onSuccess(abandoned);
+        breaker.onFailure(abandoned);
+        assertEquals(RpcCircuitState.HALF_OPEN, breaker.state());
+
+        breaker.onSuccess(replacement);
+        assertEquals(RpcCircuitState.CLOSED, breaker.state());
     }
 }
