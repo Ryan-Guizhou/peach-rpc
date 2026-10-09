@@ -14,6 +14,7 @@ import io.peach.rpc.api.RpcIds;
 import io.peach.rpc.api.RpcStatus;
 import io.peach.rpc.api.ServiceInstance;
 import io.peach.rpc.api.ServiceKey;
+import io.peach.rpc.observability.RpcObserver;
 import io.peach.rpc.codec.RpcCodec;
 import io.peach.rpc.codec.RpcCodecRegistry;
 import io.peach.rpc.protocol.RpcProtocolCodec;
@@ -27,11 +28,102 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
 public class PeachRpcServerAsyncExecutionTest {
+
+    @Test
+    void failingProviderObserverMustNotLeakAdmissionOrMaskOverload()
+            throws Exception {
+        CapturingTransportServer transport = new CapturingTransportServer();
+        AsyncServiceImpl service = new AsyncServiceImpl();
+        AtomicInteger activeCalls = new AtomicInteger();
+        AtomicLong activeFrameBytes = new AtomicLong();
+        RpcObserver brokenObserver = new RpcObserver() {
+            @Override
+            public void onServerInflightChanged(int delta) {
+                activeCalls.addAndGet(delta);
+                throw new IllegalStateException("Metrics backend unavailable");
+            }
+
+            @Override
+            public void onServerInflightBytesChanged(long delta) {
+                activeFrameBytes.addAndGet(delta);
+                throw new IllegalStateException("Byte metrics unavailable");
+            }
+
+            @Override
+            public void onServerAdmissionRejected(
+                    int serviceId,
+                    int methodId,
+                    String reason) {
+                throw new IllegalStateException("Rejection metrics unavailable");
+            }
+
+            @Override
+            public void onServerInvocationCompleted(
+                    int serviceId,
+                    int methodId,
+                    RpcExecutionMode executionMode,
+                    long durationNanos,
+                    RpcStatus status,
+                    Throwable error) {
+                throw new IllegalStateException("Invocation metrics unavailable");
+            }
+        };
+
+        PeachRpcServer server = PeachRpcServer.builder()
+                .serviceRegistrar(new NoopRegistry())
+                .transportServer(transport)
+                .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
+                .bindEndpoint(new RpcEndpoint("127.0.0.1", 19098))
+                .maxConcurrent(1)
+                .executionOptions(new RpcProviderExecutionOptions(
+                        false, 1, 1))
+                .observer(brokenObserver)
+                .build()
+                .registerService(
+                        AsyncService.class,
+                        service,
+                        "1.0.0",
+                        "default");
+        try {
+            server.start().toCompletableFuture().join();
+
+            CompletableFuture<byte[]> outstanding =
+                    transport.handle(request("slow")).toCompletableFuture();
+            assertTrue(service.slowInvoked.await(2, TimeUnit.SECONDS));
+            assertFalse(outstanding.isDone());
+
+            byte[] overloaded = transport.handle(request("fast"))
+                    .toCompletableFuture()
+                    .get(3, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OVERLOADED,
+                    RpcProtocolCodec.view(overloaded).status());
+
+            service.slow.complete("slow");
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(
+                            outstanding.get(3, TimeUnit.SECONDS)).status());
+
+            byte[] recovered = transport.handle(request("fast"))
+                    .toCompletableFuture()
+                    .get(3, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.OK,
+                    RpcProtocolCodec.view(recovered).status());
+            assertEquals(0, activeCalls.get());
+            assertEquals(0L, activeFrameBytes.get());
+        } finally {
+            server.close();
+        }
+    }
 
     @Test
     void asyncStageShouldNotBlockCpuWorker() throws Exception {
