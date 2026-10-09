@@ -386,7 +386,6 @@
                         <version>${maven-checkstyle-plugin.version}</version>
                         <configuration>
                             <configLocation>${maven.multiModuleProjectDirectory}/config/peach-rpc-checkstyle.xml</configLocation>
-                            <encoding>UTF-8</encoding>
                             <includeTestSourceDirectory>true</includeTestSourceDirectory>
                             <includeResources>false</includeResources>
                             <consoleOutput>false</consoleOutput>
@@ -400,7 +399,7 @@
                                 <id>audit-code-style</id>
                                 <phase>validate</phase>
                                 <goals>
-                                    <goal>checkstyle</goal>
+                                    <goal>check</goal>
                                 </goals>
                             </execution>
                         </executions>
