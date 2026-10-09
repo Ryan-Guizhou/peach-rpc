@@ -43,7 +43,7 @@ DIRECT 只能用于经过证明的极短非阻塞逻辑。
 容量参数：
 
 - max-concurrent；
-- 分层 Admission 的 max-inflight-bytes / 每服务与方法限制（见 [Provider Admission 指南](provider-admission.md)，PR-D Draft）；
+- 分层 Admission 的 max-inflight-bytes / 每服务与方法限制（见 [Provider Admission 指南](provider-admission.md)，当前已实现；生产配额仍需受控负载数据验证）；
 - CPU parallelism；
 - CPU queue capacity；
 - drain timeout。

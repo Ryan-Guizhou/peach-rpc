@@ -52,6 +52,27 @@ class ForyRpcCodecTest {
     }
 
     @Test
+    void zeroArgumentFastPathMustPreserveHistoricalForyBytes()
+            throws Exception {
+        ForyRpcCodec codec = new ForyRpcCodec();
+        RpcMethodCodec binding = codec.bind(RpcMethodDescriptor.from(
+                new ServiceKey(
+                        SampleService.class.getName(),
+                        "1.0.0",
+                        "default"),
+                SampleService.class.getMethod("ping")));
+
+        byte[] historical = binding.encodeArguments(new Object[0]);
+        byte[] generatedFastPath = binding.encode0();
+
+        assertArrayEquals(historical, generatedFastPath);
+        assertArrayEquals(historical, binding.encodeArguments(null));
+        assertArrayEquals(
+                new Object[0],
+                binding.decodeArguments(generatedFastPath));
+    }
+
+    @Test
     void strictAllowlistMustAcceptExplicitApplicationContracts() throws Exception {
         ForyRpcCodec strict = new ForyRpcCodec(
                 ForyRpcSecurityOptions.strictAllowlist(
@@ -169,5 +190,7 @@ class ForyRpcCodecTest {
 
     interface SampleService {
         String echo(String value);
+
+        String ping();
     }
 }

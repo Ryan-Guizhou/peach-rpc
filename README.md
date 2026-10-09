@@ -29,7 +29,7 @@ Peach RPC 是一个面向 **Java 服务间通信** 的轻量、高性能、可�
 - **Load Balancing**：P2C + EWMA + inflight + static weight。
 - **Resilience**：整体 Deadline、显式幂等 Retry、Retry Budget、Circuit Breaker、Outlier Ejection、Provider Admission。
 - **Provider Execution**：默认 Virtual Thread；CPU 有界线程池；DIRECT 默认关闭。
-- **Codec**：Fory；Stable Type ID 冲突检测。
+- **Codec**：Fory；Stable Type ID 冲突检测；零参数编码复用不可变空数组（Wire v1 不变，性能增益需实测）。
 - **Compatibility**：Wire v1、Schema Fingerprint v1、N/N+1 mixed deployment 与 rollback。
 - **Observability**：Micrometer、OpenTelemetry、JFR、Grafana Dashboard、Prometheus Alert Example。
 - **Engineering**：JMH、10k logical-concurrency soak、Etcd/Nacos Chaos、Rolling Compatibility、Release Readiness。

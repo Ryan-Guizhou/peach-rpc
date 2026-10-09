@@ -1,6 +1,6 @@
-# PR-E：Transport FrameAccumulator Allocation Profiling 与热路径优化
+# Transport FrameAccumulator Allocation Profiling 与热路径优化
 
-> **状态：PR-E 开发分支，Draft；尚未合并 main。**
+> **状态：核心完整帧直通优化已在当前 main 代码中实现；受控性能量化仍待完成。**
 > 当前新 CI 的 JMH `-prof gc` 与采样延迟属于 GitHub shared runner **Smoke Evidence**。未经固定主机多轮重复与端到端验证，不声明“内存分配下降 X%”或“p99 无回归”。
 
 ## 1. 优化目标与代码证据
@@ -17,7 +17,7 @@ flowchart LR
     Copy --> Core[Core independent byte array]
 ~~~
 
-PR-E 候选完整帧路径：
+当前完整帧路径：
 
 ~~~mermaid
 flowchart LR
@@ -58,11 +58,13 @@ flowchart LR
 | JVM | Java 21、`-Xms256m -Xmx256m` |
 | Fork / threads | 每个测试一个 fork、单线程、短暂 warmup + measure |
 
-执行命令（仓库根目录，需要包含 Base 和 Head 提交的完整 Git History）：
+执行命令（仓库根目录，需要包含 Base 和 Head 提交的完整 Git History；BASE_SHA 必须替换成真实的 40 位优化前提交，不能使用已删除的分支名）：
 
 ~~~bash
+# 选择同时包含 FrameAccumulatorBenchmark、优化前源码的真实 Git 提交
+BASE_SHA="<baseline-full-commit-sha>"
 bash scripts/run_frame_allocation_comparison.sh \
-  "$(git rev-parse perf/pr-d-provider-hierarchical-admission)" \
+  "$BASE_SHA" \
   "$(git rev-parse HEAD)"
 ~~~
 
@@ -80,7 +82,7 @@ target/frame-allocation-comparison/
 
 `scripts/compare_frame_allocation.py` 校验两侧的 JMH 参数、JDK/JMH 版本、`gc.alloc.rate.norm` B/op、采样延迟 p99 和来源 SHA，拒绝空缺字段或冒充受控测量的输入。配置对应 [Frame Allocation Comparison GitHub Actions](../.github/workflows/frame-allocation-comparison.yml)。
 
-**必须注意：** `FrameAccumulatorBenchmark` 仅包含本地 TCP 帧重组函数的微基准，JMH B/op 和 p99 不是完整 RPC 的 allocation/op 或端到端 p99；Shared Runner 测量也不具备固定物理宿主的一致性。它用于解释当前代码级热路径变化和方向性风险，不能单独完成整个 PR-E 的性能验收。
+**必须注意：** `FrameAccumulatorBenchmark` 仅包含本地 TCP 帧重组函数的微基准，JMH B/op 和 p99 不是完整 RPC 的 allocation/op 或端到端 p99；Shared Runner 测量也不具备固定物理宿主的一致性。它用于解释当前代码级热路径变化和方向性风险，不能单独完成整个 Transport 优化的性能验收。
 
 ## 4. 质量验证
 
@@ -102,4 +104,4 @@ python3 scripts/test_frame_allocation_evidence.py
 - 10k logical concurrency 长稳 30 分钟，超载及断链恢复；
 - 性能变差时保留回滚/关闭候选优化的理由和真实证据。
 
-本 PR 的微基准对比脚本不能代替 [V2-D.2 受控 Evidence](performance-evidence.md) 或 [Dubbo 对照](dubbo-comparison.md)；没有独占 Runner 和可信原始数据时标为 **pending**，绝不填充推测值。
+该微基准对比脚本不能代替 [V2-D.2 受控 Evidence](performance-evidence.md) 或 [Dubbo 对照](dubbo-comparison.md)；没有独占 Runner 和可信原始数据时标为 **pending**，绝不填充推测值。

@@ -36,15 +36,32 @@ Consumer 的 Transport 响应完成不直接执行 Fory 解码和业务 Future c
 ## 3. 当前仍存在的分配
 
 - `CompletableFuture` / PendingRequest；
-- Fory 参数 Object[]；
+- Fory 1～N 个参数调用使用的 Object[]（兼容 Wire v1）；
+- Fory 零参数路径共享不可变空数组，避免每次创建临时 Object[0]；
 - 完整 frame byte[]；
 - 部分 timer/callback。
 
 这些不是自动等于 Bug。只有 Evidence 显示它们成为主要瓶颈时才进入优化。
 
-## 3.1 PR-E：帧重组热路径候选优化
+## 3.1 已实现：帧重组热路径优化
 
-PR-E（Draft）在 `FrameAccumulator` 无尾帧的完整帧路径绕过中间 `pending.appendBuffer`，仍保持独立 `byte[]` 的 Core 所有权边界；分片输入继续采用原有重组逻辑。独立基线与候选 Worktree 通过 JMH `-prof gc` 比较 B/op 与 sample p99，并上传原始 JSON。详见 [Frame Allocation Profiling 方案](transport-allocation-profiling.md)。共享 CI 结果仅作 Smoke，不能替代受控端到端 p99/吞吐复核。
+`FrameAccumulator` 在无尾帧的完整帧路径绕过中间 `pending.appendBuffer`，仍保持独立 `byte[]` 的 Core 所有权边界；分片输入继续采用原有重组逻辑。独立基线与候选 Worktree 通过 JMH `-prof gc` 比较 B/op 与 sample p99，并上传原始 JSON。详见 [Frame Allocation Profiling 方案](transport-allocation-profiling.md)。共享 CI 结果仅作 Smoke，不能替代受控端到端 p99/吞吐复核。
+
+## 3.2 Fory 零参数分配优化与定向基准
+
+`ForyRpcCodec.ForyMethodCodec.encode0()` 直接序列化共享的不可变空 `Object[]`，`encodeArguments(null)` 也复用同一空数组。仍然编码标准 Fory `Object[]` Payload，没有改变 Codec ID、Stable Type ID 或 Wire v1。单参数至四参数调用**仍使用 Object[]**，不作未经验证的无数组承诺。
+
+`ForyRpcCodecTest.zeroArgumentFastPathMustPreserveHistoricalForyBytes` 对新旧路径逐字节比较，并验证反序列化及 `null` 参数兼容。新增 `ForyArgumentEncodingBenchmark`，分别比较零参数快路径、旧式零参数临时数组、单参数和四参数，支持 JMH `-prof gc` 的 `gc.alloc.rate.norm`。
+
+从仓库根目录构建并运行：
+
+```bash
+mvn -B -ntp -pl peach-rpc-codegen -am -DskipTests install
+mvn -B -ntp -pl peach-rpc-benchmarks -am -DskipTests package
+bash scripts/run_fory_argument_allocation.sh
+```
+
+原始证据位于 `target/fory-argument-allocation`。在固定 Runner 上至少三次独立重复后才能评估 B/op、采样 p99 和是否值得保留优化。共享 CI 数据只属于 Smoke，不得用于生产性能或对比声明。
 
 ## 4. Benchmark
 

@@ -225,4 +225,16 @@ for scenario in "${scenarios[@]}"; do
   done
 done
 
+# Exercise the new Fory argument benchmark in CI smoke without
+# treating shared-runner samples as controlled performance evidence.
+if [[ "$PROFILE" == "smoke" ]]; then
+  java -jar "$JAR" 'ForyArgumentEncodingBenchmark.zeroArgumentFastPath' \
+    -t 1 -bm avgt \
+    -wi 1 -i 1 \
+    -w 500ms -r 500ms \
+    -f 1 -prof gc \
+    -rf json \
+    -rff "$OUTPUT_DIR/fory-argument-smoke.json"
+fi
+
 python3 scripts/summarize_v2d2_results.py "$OUTPUT_DIR"
