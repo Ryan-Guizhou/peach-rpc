@@ -216,7 +216,10 @@ final class VertxRpcTransportServer implements RpcTransportServer {
                         "Expected REQUEST or CANCEL after handshake"));
                 return;
             }
-            if (connectionDraining) {
+            // drain() publishes the global flag before each connection is
+            // switched to its EventLoop-owned draining state. Reject new
+            // requests across that handover window as well.
+            if (draining.get() || connectionDraining) {
                 rejectDrainingRequest(frame);
                 return;
             }
