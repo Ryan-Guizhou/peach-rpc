@@ -32,7 +32,7 @@ python3 scripts/summarize_checkstyle_audit.py \
     --enforce-zero
 ~~~
 
-Checkstyle 原始 XML 位于各 Maven 子模块的 `target/checkstyle-result.xml`。PR-13 的汇总器会解析根 POM 和嵌套 `modules`，**要求每一个真实 Maven Reactor 模块都有对应 XML**；缺失或额外报告、未知 XML 根节点、缺失文件名均会导致失败。汇总器把来源路径正规化后写入 JSON；``--enforce-zero`` 在报告生成后拒绝**任何严重级别**的 Checkstyle 违规（包括 `warning`），仍保留原始 XML 供排查。独立 `tools/rpc-comparison` POM 不属于主 Maven Reactor，不被错误纳入该门禁。
+Checkstyle 原始 XML 位于各 Maven 子模块的 `target/checkstyle-result.xml`。PR-13 的汇总器会解析根 POM 和嵌套 `modules`，**要求每一个真实 Maven Reactor 模块都有对应 XML**，且其 `src/main/java` 和 `src/test/java` 下每个 `.java` 文件都包含在 Checkstyle 的来源清单中；缺失/额外模块报告、遗漏 Java 源码、异常来源路径、未知 XML 根节点或缺失文件名均会导致失败。汇总器把来源路径正规化后写入 JSON；``--enforce-zero`` 在报告生成后拒绝**任何严重级别**的 Checkstyle 违规（包括 `warning`），仍保留原始 XML 供排查。独立 `tools/rpc-comparison` POM 不属于主 Maven Reactor，不被错误纳入该门禁。
 
 ## 2.1 首轮结果与规则修正
 
@@ -93,7 +93,7 @@ Peach RPC 已经有 Public Core API、SPI、Wire v1 和自动生成代码，不�
 ## 5. PR-13 验收与下一步
 
 - [ ] 当前 PR Head 的 `Java Style Audit` 工作流及 Python 正反向测试通过；
-- [ ] 完整 Maven Reactor 每个模块都产出 XML，聚合 JSON 的 `violations=0`；
+- [ ] 完整 Maven Reactor 每个模块都产出 XML，所有源码文件被扫描，聚合 JSON 的 `violations=0`；
 - [ ] 检查门禁能拦截 `warning` 级别违规、模块缺失/额外报告与空报告；
 - [ ] 验证 CI 主构建与已有 ArchUnit、Nacos/Transport 测试没有回归；
 - [ ] 未来根据真实误报和公开兼容限制逐项调整规则并提供测试，不得直接放宽或跳过检查。
