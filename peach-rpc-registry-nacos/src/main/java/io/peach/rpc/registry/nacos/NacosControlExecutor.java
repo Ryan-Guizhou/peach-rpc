@@ -4,16 +4,23 @@ import io.peach.rpc.api.ServiceKey;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Nacos 阻塞控制面调用的有界线程隔离器。 */
 final class NacosControlExecutor implements AutoCloseable {
+
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(NacosControlExecutor.class);
 
     private final ThreadPoolExecutor executor;
     private final ScheduledThreadPoolExecutor scheduler;
@@ -83,6 +90,11 @@ final class NacosControlExecutor implements AutoCloseable {
                 try {
                     result.complete(action.get());
                 } catch (Throwable error) {
+                    // Always settle the submitted Future, including Error
+                    // from user-provided control callbacks.
+                    if (error instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
                     result.completeExceptionally(error);
                 }
             });
@@ -132,17 +144,40 @@ final class NacosControlExecutor implements AutoCloseable {
         }
         return scheduler.scheduleWithFixedDelay(
                 () -> {
+                    CompletableFuture<Void> pending =
+                            submit(
+                                    operation,
+                                    subject,
+                                    () -> {
+                                        action.run();
+                                        return null;
+                                    });
                     try {
-                        submit(
+                        // get() can be interrupted during scheduler shutdown;
+                        // join() would conceal that signal.
+                        pending.get();
+                    } catch (InterruptedException interrupted) {
+                        pending.cancel(true);
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException(
+                                "Nacos scheduled control operation interrupted",
+                                interrupted);
+                    } catch (ExecutionException failed) {
+                        // A failed iteration must not disable all subsequent
+                        // fixed-delay reconciliation attempts.
+                        LOGGER.debug(
+                                "Nacos scheduled control operation failed. operation={}, subject={}",
                                 operation,
                                 subject,
-                                () -> {
-                                    action.run();
-                                    return null;
-                                }).join();
-                    } catch (RuntimeException ignored) {
-                        // Keep the periodic reconcile alive. The next fixed
-                        // delay starts only after this attempt has completed.
+                                failed.getCause());
+                    } catch (CancellationException cancelled) {
+                        if (!scheduler.isShutdown()) {
+                            LOGGER.debug(
+                                    "Nacos scheduled control operation cancelled. operation={}, subject={}",
+                                    operation,
+                                    subject,
+                                    cancelled);
+                        }
                     }
                 },
                 initialDelay.toMillis(),
