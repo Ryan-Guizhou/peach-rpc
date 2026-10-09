@@ -43,10 +43,14 @@ public class PeachRpcServerAsyncExecutionTest {
         AsyncServiceImpl service = new AsyncServiceImpl();
         AtomicInteger activeCalls = new AtomicInteger();
         AtomicLong activeFrameBytes = new AtomicLong();
+        CountDownLatch completedMetrics = new CountDownLatch(2);
         RpcObserver brokenObserver = new RpcObserver() {
             @Override
             public void onServerInflightChanged(int delta) {
                 activeCalls.addAndGet(delta);
+                if (delta < 0) {
+                    completedMetrics.countDown();
+                }
                 throw new IllegalStateException("Metrics backend unavailable");
             }
 
@@ -118,6 +122,7 @@ public class PeachRpcServerAsyncExecutionTest {
             assertEquals(
                     RpcStatus.OK,
                     RpcProtocolCodec.view(recovered).status());
+            assertTrue(completedMetrics.await(2, TimeUnit.SECONDS));
             assertEquals(0, activeCalls.get());
             assertEquals(0L, activeFrameBytes.get());
         } finally {
