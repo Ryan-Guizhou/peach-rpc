@@ -133,13 +133,18 @@ class PeachRpcClientResilienceTest {
     }
 
     @Test
-    void singleFailingObserverMustNotBreakRpcSuccessOrInflightBalance() {
+    void singleFailingObserverMustNotBreakRpcSuccessOrInflightBalance()
+            throws Exception {
         AtomicInteger attemptCount = new AtomicInteger();
         AtomicInteger inflightBalance = new AtomicInteger();
+        CountDownLatch completedCalls = new CountDownLatch(2);
         RpcObserver failingObserver = new RpcObserver() {
             @Override
             public void onClientInflightChanged(int delta) {
                 inflightBalance.addAndGet(delta);
+                if (delta < 0) {
+                    completedCalls.countDown();
+                }
                 throw new IllegalStateException("Metrics backend unavailable");
             }
 
@@ -178,6 +183,7 @@ class PeachRpcClientResilienceTest {
             assertEquals("ok", service.find("one"));
             assertEquals("ok", service.create("two"));
             assertEquals(2, attemptCount.get());
+            assertTrue(completedCalls.await(2, TimeUnit.SECONDS));
             assertEquals(0, inflightBalance.get());
         }
     }
