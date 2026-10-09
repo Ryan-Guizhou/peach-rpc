@@ -98,10 +98,10 @@ class SoakQualityTest(unittest.TestCase):
             root = Path(directory)
             env = root / "environment.properties"
             env.write_text(
-                "evidence_class=controlled\\n"
-                "runner_id=fixed-runner\\n"
-                "host_fingerprint_sha256=fingerprint\\n"
-                "jvm_flags=-Xmx512m\\n",
+                "evidence_class=controlled\n"
+                "runner_id=fixed-runner\n"
+                "host_fingerprint_sha256=fingerprint\n"
+                "jvm_flags=-Xmx512m\n",
                 encoding="utf-8",
             )
             soak = root / "soak.json"
@@ -130,7 +130,7 @@ class SoakQualityTest(unittest.TestCase):
             )
             self.assertEqual(0, valid.returncode, valid.stdout + valid.stderr)
 
-            soak.write_text(json.dumps(payload) + "\\n", encoding="utf-8")
+            soak.write_text(json.dumps(payload) + "\n", encoding="utf-8")
             stale = subprocess.run(
                 command, cwd=repo_root, text=True, capture_output=True,
                 check=False,
