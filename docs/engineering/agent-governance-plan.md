@@ -1,6 +1,6 @@
 # Peach RPC Agent 工程治理实施契约
 
-**已由用户确认（2026-10-08），只允许分阶段提交 PR，禁止擅自合并。** 这是方案与验收契约，不代表全部任务已实现。
+**实施契约：** 2026-10-08 用户确认原始治理范围；2026-10-09 已另行批准合并 PR #27–#39，并要求建立冻结稳定分支，后续**本次已授权工程治理**阶段经相关 CI 检查通过后合并 `main`。仅是范围内的代码交付授权，不包括 Release、删除分支、仓库权限变更或数据库写操作。详见 [稳定基线与 Mainline 交付](stable-baseline.md)。
 
 ## Goal
 
@@ -12,7 +12,7 @@
 
 ## Non-goals
 
-不进行无关功能开发、发布或合并；不因为审美重命名公共 API、Wire/Codec 类型、注册兼容标识、配置键或序列化 Record；不伪造数据、性能回归证据或冒充修复已经验证。
+不进行无关功能开发、发布、未经授权的其他合并；不因为审美重命名公共 API、Wire/Codec 类型、注册兼容标识、配置键或序列化 Record；不伪造数据、性能回归证据或冒充修复已经验证。
 
 ## Compatibility
 
@@ -24,15 +24,15 @@ JDK 21、Spring Boot 3.5.4、现有 Maven reactor。1.0.x Wire v1、Public Core 
 - 日志英文、参数化、脱敏、控制热路径日志频次；不能以新增日志降低性能。
 - 数据库 MCP 默认不连接，用户在本地配置基于数据库 GRANT 实际约束的 SELECT 用户后才能启用；提示词不构成安全隔离。
 - Cursor/Codex 共享行为规则，不互相拷贝不同版本 Skill；MCP 运行配置有唯一事实源。
-- 只提交 Draft PR，用户确认后才可能合并。
+- 当前项目治理阶段采用非堆叠的 Mainline PR：`base=main`，当前 Head 所需 CI 通过后在已有授权范围内合并；合并后仍需验证新 main CI。
 
 ## Plan / Migration
 
-1. PR-0：修复当前主 CI 的 Provider readiness E2E 竞态；新回归用例。
-2. PR-1：AGENTS、MCP 唯一配置源、Cursor/Codex 适配、权限/授权说明、漂移 CI 和本契约。
-3. PR-2：规范全文、4 个共享 Skills、命名/禁用 API/Javadoc/日志自动化检查及正反向测试。
-4. PR-3+：全仓审计产出路径/位置/风险/豁免清单；先高风险 API、SPI、Transport、Codec、Starter，再按模块修正注释/日志/私有命名。只改文档和注释的 PR 不混入有行为变化的改造。
-5. 完成：Maven+Javadoc、Agent/MCP 检查、兼容测试、相关性能证据与文档链接均复核。
+1. **已合并：** PR #27–#39 覆盖 Provider readiness、AGENTS/MCP、四个 Skills、禁用 API、ArchUnit、Checkstyle 建议基线及日志脱敏。
+2. **已合并：** PR #40 将全 Maven Reactor 的 Checkstyle 零违规报告升级为 CI 阻断门禁（合并后的 `main` CI 单独核验）。
+3. **已冻结：** `stable/agent-quality-2026-10-09` 指向通过 CI 的 #27–#39 基线 SHA `8f051b78d74978c5417394ed2cd22467e077c15f`，不跟随 main 更新。
+4. **仍待治理：** Consumer/Transport 异常隔离和故障控制帧测试；公共 API Javadoc 语义；私有命名/职责；Windows MCP 实测与 npm 版本供应链核验；受控性能数据。
+5. **验收标准：** 每一新 PR 以准确 Head SHA 的 CI、Javadoc、Agent/MCP、Checkstyle 和必要的兼容/性能证据为依据；通过后合并 main，再核验 main push CI，异常停止推进。
 
 ## Verification
 
