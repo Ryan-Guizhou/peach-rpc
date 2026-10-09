@@ -8,8 +8,17 @@ on:
       - "config/peach-rpc-checkstyle.xml"
       - "scripts/summarize_checkstyle_audit.py"
       - "scripts/test_checkstyle_audit.py"
+      - "scripts/summarize_checkstyle_audit.py"
       - ".github/workflows/java-style-audit.yml"
       - "docs/engineering/**"
+  push:
+    branches: [main]
+    paths:
+      - "**/*.java"
+      - "pom.xml"
+      - "config/peach-rpc-checkstyle.xml"
+      - "scripts/summarize_checkstyle_audit.py"
+      - ".github/workflows/java-style-audit.yml"
 
 jobs:
   style-audit:
@@ -29,21 +38,22 @@ jobs:
       - name: Verify Checkstyle audit aggregation tests
         run: python3 scripts/test_checkstyle_audit.py
 
-      - name: Analyze Java syntax, naming, Javadoc and imports (advisory)
+      - name: Run complete reactor Checkstyle audit under Java 21
         run: mvn -B -ntp -Pstyle-audit -DskipTests install
 
-      - name: Aggregate Checkstyle results and detect missing reports
+      - name: Require every Maven module report and zero Checkstyle violations
         run: |
           python3 scripts/summarize_checkstyle_audit.py \
             --json target/checkstyle-audit.json \
-            --markdown target/checkstyle-audit.md
+            --markdown target/checkstyle-audit.md \
+            --enforce-zero
           cat target/checkstyle-audit.md
 
-      - name: Upload original XML and advisory findings
+      - name: Upload original XML and strict gate evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: java-style-advisory-${{ github.run_id }}
+          name: java-style-gate-${{ github.run_id }}
           path: |
             **/target/checkstyle-result.xml
             target/checkstyle-audit.json
