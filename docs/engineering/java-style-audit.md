@@ -22,7 +22,7 @@
 从仓库根目录、JDK 21 下运行：
 
 ~~~bash
-mvn -B -ntp -Pstyle-audit -DskipTests validate
+mvn -B -ntp -Pstyle-audit -DskipTests install
 
 python3 scripts/test_checkstyle_audit.py
 
