@@ -1,0 +1,45 @@
+name: Java Agent Quality
+
+on:
+  pull_request:
+    paths:
+      - "**/*.java"
+      - "AGENTS.md"
+      - ".agents/**"
+      - "config/java-api-rules.json"
+      - "scripts/check_java_conventions.py"
+      - "scripts/test_java_conventions.py"
+      - "scripts/validate_repo_skills.py"
+      - ".github/workflows/java-agent-quality.yml"
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Run Java API lint rule tests
+        run: python3 scripts/test_java_conventions.py
+
+      - name: Validate shared Skills and Agent routing
+        run: python3 scripts/validate_repo_skills.py
+
+      - name: Reject high-confidence API violations in changed Java files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python3 scripts/check_java_conventions.py --changed --base "$BASE_SHA"
+
+      - name: Produce full-repository advisory baseline
+        run: python3 scripts/check_java_conventions.py --audit --report target/java-conventions-audit.json
+
+      - name: Upload historical findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: peach-rpc-java-conventions-${{ github.run_id }}
+          path: target/java-conventions-audit.json
+          if-no-files-found: warn
+          retention-days: 30

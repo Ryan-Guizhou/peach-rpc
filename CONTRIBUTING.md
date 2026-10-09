@@ -12,6 +12,8 @@ MCP 的数据库默认禁用和用户授权边界见 [Agent/MCP 指南](docs/eng
 提交 PR 不等于授权合并。所有技术事实、性能结论和 CI 状态应引用当前提交的验证证据；
 不以“遵守最佳实践”代替可复现测试。
 
+完整命名规则、禁用 API、中文标准 Javadoc、英文日志及 exceptions，请参阅 [Java 工程编码规范](docs/engineering/java-coding-standard.md)。
+
 ## 编码规则
 
 - JDK 21，UTF-8，无 BOM。

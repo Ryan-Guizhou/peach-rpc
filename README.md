@@ -240,6 +240,8 @@ mvn -B -ntp clean verify -Pquality
 
 - [贡献规范](CONTRIBUTING.md)
 - [开发指南](docs/development.md)
+- [Agent 工程规范与 Skills](docs/engineering/agent-governance-plan.md)
+- [Java 命名、注释、日志与禁用 API](docs/engineering/java-coding-standard.md)
 - [Security Policy](SECURITY.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 

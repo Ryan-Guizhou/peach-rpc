@@ -240,6 +240,8 @@ Registry, wire, transport and hot-path changes require the corresponding integra
 
 - [Contributing](CONTRIBUTING.md)
 - [Development guide](docs/development.md)
+- [Agent engineering contract and Skills](docs/engineering/agent-governance-plan.md)
+- [Java naming, Javadoc, logging and forbidden APIs](docs/engineering/java-coding-standard.md)
 - [Security Policy](SECURITY.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 
