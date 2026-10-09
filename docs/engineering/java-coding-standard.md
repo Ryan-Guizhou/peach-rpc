@@ -104,6 +104,8 @@ List<RpcEndpoint> findEndpoints(ServiceKey serviceKey);
 - 只对幂等可重试操作应用显式预算内 Retry；不能用无限循环、无时限连接/重连替代治理。
 - 性能优化必须先有真实热点，再用 JMH/JFR/allocation、端到端 p99/p99.9 和固定硬件证据评估，不能将 Shared CI smoke 解释为正式业绩。
 
+Checkstyle 的 [建议性 AST 基线](java-style-audit.md) 在 PR-8 阶段覆盖 TypeName、MethodName、MemberName、ConstantName、ParameterName、MissingJavadocType、AvoidStarImport、LineLength。不能把建议性报告当作 CI 禁止项已全面生效。
+
 ## 7. 检查和存量治理
 
 ```bash

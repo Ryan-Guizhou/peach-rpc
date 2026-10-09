@@ -1,0 +1,52 @@
+name: Java Style Audit
+
+on:
+  pull_request:
+    paths:
+      - "**/*.java"
+      - "pom.xml"
+      - "config/peach-rpc-checkstyle.xml"
+      - "scripts/summarize_checkstyle_audit.py"
+      - "scripts/test_checkstyle_audit.py"
+      - ".github/workflows/java-style-audit.yml"
+      - "docs/engineering/**"
+
+jobs:
+  style-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Configure Java 21 and Maven
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Verify Checkstyle audit aggregation tests
+        run: python3 scripts/test_checkstyle_audit.py
+
+      - name: Analyze Java syntax, naming, Javadoc and imports (advisory)
+        run: mvn -B -ntp -Pstyle-audit -DskipTests install
+
+      - name: Aggregate Checkstyle results and detect missing reports
+        run: |
+          python3 scripts/summarize_checkstyle_audit.py \
+            --json target/checkstyle-audit.json \
+            --markdown target/checkstyle-audit.md
+          cat target/checkstyle-audit.md
+
+      - name: Upload original XML and advisory findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-style-advisory-${{ github.run_id }}
+          path: |
+            **/target/checkstyle-result.xml
+            target/checkstyle-audit.json
+            target/checkstyle-audit.md
+          if-no-files-found: warn
+          retention-days: 30
