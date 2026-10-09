@@ -25,7 +25,7 @@ Task Intake → Source/Impact Analysis → Complexity Gate → Implementation Co
 - 1.0.x 冻结 Wire Protocol v1、Public Core API、Stable Type ID、Schema Fingerprint v1、Codec/Message IDs、Registry Compatibility Metadata。**禁止以风格/命名修复为由改变公开签名、Record 字段、序列化行为及兼容键。**
 - 中文 Javadoc/必要行内注释、英文 SLF4J 参数化日志；Peach RPC 仅使用标准 Javadoc 标签（`@since` 必须真实），不复制 Peach Cloud 自定义 `@Author/@Version/@CreateTime`。
 - 公开 API/SPI、Starter、Registry、Codec、Transport 的契约必须明确 null、异常、生命周期、线程归属、背压/取消、资源所有权。不要为注释覆盖率制造无意义注释。
-- Core 不允许直接依赖 Vert.x / Nacos / Etcd / Fory / Spring 等实现；第三方技术通过 SPI/Adapter。
+- Core 不允许直接依赖 Vert.x / Nacos / Etcd / Fory / Spring 等实现；第三方技术通过 SPI/Adapter。Core 字节码层依赖规则见 [ArchUnit 架构门禁](docs/engineering/architecture-guardrails.md)，使用 Maven 测试自动执行。
 - EventLoop 不执行阻塞 IO、Thread.sleep、同步等待 Future 或可任意阻塞的业务回调；Consumer 完成 Future 时也要检查同步回调的执行线程。
 - RPC 热路径不得做服务注册中心 IO、SPI 扫描、无界排队或动态配置解析。
 - 新 Executor、队列、连接、Pending Map、inflight bytes 和缓存必须明确有界、拒绝、取消、超时、关闭和资源释放。
