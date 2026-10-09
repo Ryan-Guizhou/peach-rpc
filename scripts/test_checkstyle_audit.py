@@ -12,6 +12,7 @@ from summarize_checkstyle_audit import (
     reactor_module_directories,
     summarize,
     validate_reactor_reports,
+    validate_source_coverage,
     validate_strict_gate,
 )
 
@@ -159,6 +160,27 @@ class CheckstyleAuditTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Unexpected Checkstyle"):
                 validate_reactor_reports(
                     [parent_report, module_report, extra], root)
+
+    def test_strict_gate_fails_if_any_java_source_is_unscanned(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "pom.xml").write_text(
+                "<project/>", encoding="utf-8")
+            source_root = root / "src/main/java"
+            source_root.mkdir(parents=True)
+            source = source_root / "Example.java"
+            source.write_text("class Example {}", encoding="utf-8")
+            filename = "src/main/java/Example.java"
+            report = {"scanned_paths": [filename]}
+            validate_source_coverage(root, report)
+
+            report["scanned_paths"] = []
+            with self.assertRaisesRegex(ValueError, "Unscanned Java source"):
+                validate_source_coverage(root, report)
+
+            report["scanned_paths"] = [filename, "other.java"]
+            with self.assertRaisesRegex(ValueError, "Unexpected Java sources"):
+                validate_source_coverage(root, report)
 
     def test_rejects_maven_module_path_outside_repository(self):
         with tempfile.TemporaryDirectory() as directory:
