@@ -1,6 +1,6 @@
-# PR-D：Provider 分层 Admission 与 inflight-byte budget
+# Provider 分层 Admission 与 inflight-byte budget
 
-> **状态：Draft PR 实现说明；尚未合并 main。** 此方案作用于 Provider 的**已准入请求 Frame**，并非 JVM 整体堆内存硬隔离。产线吞吐、p99、p99.9 和 10k 负载需要独立受控 Evidence。
+> **状态：1.0.1 当前实现。** 此方案仅保护 Provider 的**已准入请求 Frame**及实际在途业务执行，不构成 JVM 整体堆内存硬隔离。产线吞吐、p99、p99.9 和 10k 负载需要独立受控 Evidence。
 
 ## 1. 背景和边界
 
@@ -14,7 +14,8 @@ flowchart LR
     G -->|per-service slots + bytes| B[Service Budget]
     B -->|per-method slots + bytes| M[Method Budget]
     M -->|accepted| W[CPU / Virtual Worker]
-    W -->|success / error / cancel| L[Idempotent Lease release]
+    W -->|business execution terminal| E[Physical execution complete]
+    E -->|response also terminal| L[Idempotent Lease release]
     A -->|denied| R[OVERLOADED + reason]
     G -->|denied| R
     B -->|denied| R
@@ -76,9 +77,9 @@ PeachRpcServer.builder()
 
 ### 单次释放
 
-`ProviderAdmissionController.Lease` 使用原子状态保证最多释放一次全部六项预算（全局/服务/方法的并发和字节）。响应 Future 无论成功、业务错误、CPU 队列拒绝还是取消，终态都会归还 Lease。
+`ProviderAdmissionController.Lease` 使用原子状态保证最多释放一次全部六项预算（全局/服务/方法的并发和字节）。Lease 必须等待**响应 Future 终态**与**实际业务执行终态**两个信号，不能仅因响应取消而提前释放。
 
-既有分散 `admission.release()` 调用已经迁移为统一 Future 终态回收。异常路径统一完成同一个 Result Future，避免重复释放、Observer 计数不平衡及未结束的 Future。
+执行器拒绝、业务启动前的协议错误和已取消的排队任务会明确触发执行侧终态；已开始的业务直到退出或异步 Stage 完成才触发执行侧终态。Observer 的 inflight 指标对应仍被配额保护的工作；需要区别于已经取消的逻辑响应。
 
 ### 拒绝原因
 
@@ -89,11 +90,11 @@ PeachRpcServer.builder()
 - `global-inflight-bytes` / `service-inflight-bytes` / `method-inflight-bytes`
 - 原有执行器 `cpu-queue` / `async-completion-queue`
 
-`RpcObserver.onServerInflightChanged(int)` 记录逻辑在途请求量，新增 `onServerInflightBytesChanged(long)` 记录已接纳 Frame 字节增减。复合 Observer 会把事件安全分发给所有启用的采集适配器；Micrometer Adapter 已映射 `peach.rpc.server.inflight.bytes` Gauge（无高基数标签）；JFR 尚未增加该事件的专门映射，不应将 Observer API 当作 JFR 指标已完成。
+`RpcObserver.onServerInflightChanged(int)` 记录准入配额尚未归还的业务量，新增 `onServerInflightBytesChanged(long)` 记录已接纳、尚未释放的 Frame 字节增减。复合 Observer 会把事件安全分发给所有启用的采集适配器；Micrometer Adapter 已映射 `peach.rpc.server.inflight.bytes` Gauge（无高基数标签）；JFR 尚未增加该事件的专门映射，不应将 Observer API 当作 JFR 指标已完成。
 
 ### 必须披露的取消语义
 
-当业务 Future 被取消，逻辑请求的准入额度会随结果终态释放。底层业务若忽略中断，仍可能短时间持有原始 Frame 或额外对象；因此不能声称取消瞬间完成了物理内存释放。
+Transport 发出 CANCEL 时，逻辑请求可以立即取消，但已进入业务方法的 Worker 仅尝试中断，配额必须等实际执行退出后归还。框架不主动取消业务自行返回的异步 Stage：Future 的取消不能证明底层 IO、线程或对象已经释放。永不终止的业务 Stage 会持续占用预算，限制进一步准入，而不是允许无界的额外工作。业务方需提供协作式取消或自身超时管理。
 
 ## 5. 内存保护边界
 

@@ -60,15 +60,20 @@ flowchart TD
 
 ### Admission
 
-Provider 最大并发必须有边界。CPU 模式还具有独立有界队列；满时返回 OVERLOADED。PR-D（Draft）新增全局、服务、方法三级并发额度和已准入请求 Frame 字节预算，详见 [Provider 分层 Admission 设计](provider-admission.md)。预算通过幂等 Lease 在响应 Future 终态释放，不提供整体 JVM Heap 硬界限。
+Provider 通过全局、服务、方法三级并发额度及已准入 Frame 字节预算保护业务资源，CPU 模式还有独立的有界队列；拒绝时返回 `OVERLOADED`。详见 [Provider 分层 Admission 设计](provider-admission.md)。这些额度不代表 JVM Heap 的硬上限。
 
-对于业务方法返回的 `CompletionStage`，Provider 不在 CPU/Virtual Thread worker 上执行 `join()`。框架注册完成回调后立即归还执行 worker，但 **admission permit 会一直持有到异步业务真正完成、失败或取消**，因此异步化不会绕过 Provider 最大业务并发保护。
+准入租约只有在两个条件**同时满足**后归还：
 
-异步 Stage 若稍后在业务线程、Netty/Vert.x EventLoop 或其他执行器上完成，框架不会直接在该线程执行响应序列化，而是重新调度到 Provider 管理的执行资源，并恢复 Trace/Metadata Scope 后再编码响应。CPU 方法回到有界 CPU Pool；异步 DIRECT 完成也通过 CPU Pool 隔离，避免业务 Future 的完成线程承担不可控的编码工作。若有界 CPU Pool 连异步完成任务也无法接收，当前 RPC fail-fast 为 `OVERLOADED` 并释放 admission，而不是回退到外部 completion thread 执行编码。正常完成路径也遵循“先完成响应编码与 admission 释放，再对外完成响应 Future”的顺序，避免调用方刚收到响应就因资源计数尚未归还而看到瞬时 `OVERLOADED`。
+1. 响应 Future 已成功、异常或取消而进入终态；
+2. 实际业务执行已经结束：同步方法执行线程退出，或业务返回的异步 `CompletionStage` 已真实进入终态且必要的响应完成处理已结束。
+
+`CompletableFuture.cancel(true)` 不能证明业务代码或外部 IO 已停止，因此不会仅凭逻辑请求取消提前释放 Provider 并发额度。取消发生在 CPU 队列中、业务尚未获得执行所有权时，框架会通过原子执行归属判定直接回收租约。已经开始的同步任务尝试中断，但必须等其真正退出后才释放。对业务自建异步 Stage 不进行强制 `cancel`，以免把 Future 的逻辑取消误判为底层执行已结束。
+
+异步 `CompletionStage` 不占用 CPU/虚拟线程等待 `join()`。异步结果完成后，Provider 将结果序列化派发至受管理的执行器；队列饱和时返回 `OVERLOADED`。响应 Future 对外完成与最终业务执行账本归还之间可能存在极短的异步时序差，因此运维/并发测试应依据 Lease 指标判断资源释放，而不是只依赖响应 Future 终态。
 
 ### Cancellation
 
-Transport 根据 Request ID 找到 connection-local inflight Future，Core 再向业务执行任务传播取消。
+Transport 根据 Request ID 取消 connection-local 请求，Provider 随后尝试取消排队任务或中断正在执行的 Worker。**取消只保证逻辑请求终止，不保证用户业务立即停止**。忽略中断、永不结束的业务 Stage 会继续占用配置配额以防止超过实际执行上限；业务必须具备协作式取消或自身超时治理。
 
 ## 3. Registry 与本地目录
 
