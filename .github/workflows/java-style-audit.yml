@@ -8,7 +8,6 @@ on:
       - "config/peach-rpc-checkstyle.xml"
       - "scripts/summarize_checkstyle_audit.py"
       - "scripts/test_checkstyle_audit.py"
-      - "scripts/summarize_checkstyle_audit.py"
       - ".github/workflows/java-style-audit.yml"
       - "docs/engineering/**"
   push:
