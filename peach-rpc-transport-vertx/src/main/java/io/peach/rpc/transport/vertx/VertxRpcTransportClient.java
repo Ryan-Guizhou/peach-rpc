@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.slf4j.Logger;
@@ -50,6 +51,10 @@ final class VertxRpcTransportClient implements RpcTransportClient {
             LoggerFactory.getLogger(VertxRpcTransportClient.class);
     private static final int MESSAGE_TYPE_OFFSET = 6;
     private static final int CODEC_OFFSET = 7;
+    private static final long GROUP_IDLE_NANOS =
+            Duration.ofMinutes(5).toNanos();
+    private static final long GROUP_SWEEP_MILLIS =
+            Duration.ofMinutes(1).toMillis();
 
     private final Vertx vertx = Vertx.vertx();
     private final NetClient client;
@@ -57,6 +62,7 @@ final class VertxRpcTransportClient implements RpcTransportClient {
     private final ConcurrentMap<RpcEndpoint, ConnectionGroup> groups =
             new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final long groupSweepTimerId;
     private volatile long tlsReloadTimerId = -1L;
     private volatile VertxTlsSupport.FileState tlsFileState;
 
@@ -74,6 +80,9 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                 options.observer());
         this.client = vertx.createNetClient(clientOptions);
         startTlsReload();
+        this.groupSweepTimerId = vertx.setPeriodic(
+                GROUP_SWEEP_MILLIS,
+                ignored -> evictIdleGroups(System.nanoTime()));
     }
 
     @Override
@@ -92,14 +101,42 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                             "RPC frame exceeds transport maxFrameBytes: "
                                     + frame.length));
         }
-        ConnectionGroup group = groups.computeIfAbsent(
-                endpoint,
-                ConnectionGroup::new);
-        return group.request(frame, timeout);
+        for (;;) {
+            ConnectionGroup group = groups.computeIfAbsent(
+                    endpoint,
+                    ConnectionGroup::new);
+            CompletionStage<byte[]> pending = group.request(frame, timeout);
+            if (pending != null) {
+                return pending;
+            }
+            // 退役与新请求并发时重新选择分组，避免请求落在过期连接池。
+            groups.remove(endpoint, group);
+        }
+    }
+
+    /**
+     * 清退已连续空闲的端点连接池；活跃调用从创建到终态全程计数。
+     *
+     * @param nowNanos 单调时钟时间
+     */
+    void evictIdleGroups(long nowNanos) {
+        groups.forEach((endpoint, group) -> {
+            if (group.tryRetire(nowNanos)) {
+                groups.remove(endpoint, group);
+                group.close();
+            }
+        });
+    }
+
+    /** 返回当前端点连接池数量，供运维诊断及回归测试使用。 */
+    int connectionGroupCount() {
+        return groups.size();
     }
 
     private final class ConnectionGroup {
         private final RpcEndpoint endpoint;
+        private final AtomicInteger activeRequests = new AtomicInteger();
+        private volatile long lastRequestNanos = System.nanoTime();
         private final AtomicReferenceArray<CompletableFuture<Connection>> slots;
         private final AtomicIntegerArray reconnectAttempts;
         private final ThreadLocal<Integer> cursor;
@@ -119,52 +156,92 @@ final class VertxRpcTransportClient implements RpcTransportClient {
         private CompletionStage<byte[]> request(
                 byte[] frame,
                 Duration timeout) {
-            long deadlineNanos = System.nanoTime() + timeout.toNanos();
-            int current = cursor.get();
-            int index = current % slots.length();
-            cursor.set(current == Integer.MAX_VALUE ? 0 : current + 1);
+            long remainingNanos = timeout.toNanos();
+            if (remainingNanos <= 0L) {
+                return CompletableFuture.failedFuture(
+                        new RpcTimeoutException(
+                                "RPC transport request deadline exceeded"));
+            }
+            for (;;) {
+                int active = activeRequests.get();
+                if (active < 0) {
+                    // -1 表示已退役，调用方需重新获取端点连接池。
+                    return null;
+                }
+                if (activeRequests.compareAndSet(active, active + 1)) {
+                    break;
+                }
+            }
 
+            long deadlineNanos = System.nanoTime() + remainingNanos;
+            lastRequestNanos = System.nanoTime();
             CompletableFuture<byte[]> result = new CompletableFuture<>();
-            connection(index).whenComplete((connection, connectError) -> {
-                if (connectError != null) {
-                    result.completeExceptionally(connectError);
-                    return;
-                }
-                if (result.isCancelled()) {
-                    return;
-                }
-                long remainingNanos =
-                        deadlineNanos - System.nanoTime();
-                if (remainingNanos <= 0L) {
-                    result.completeExceptionally(
-                            new RpcTimeoutException(
-                                    "RPC request timed out while connecting to "
-                                            + endpoint.authority()));
-                    return;
-                }
+            result.whenComplete((ignoredValue, ignoredError) ->
+                    activeRequests.decrementAndGet());
+            try {
+                long timeoutId = vertx.setTimer(
+                        Math.max(1L, timeout.toMillis()),
+                        ignored -> result.completeExceptionally(
+                                new RpcTimeoutException(
+                                        "RPC request deadline exceeded while waiting for "
+                                                + endpoint.authority())));
+                result.whenComplete((ignoredValue, ignoredError) ->
+                        vertx.cancelTimer(timeoutId));
 
-                CompletableFuture<byte[]> request = connection
-                        .request(
-                                frame,
-                                Duration.ofNanos(remainingNanos))
-                        .toCompletableFuture();
-                result.whenComplete((ignoredValue, ignoredError) -> {
-                    if (result.isCancelled()) {
-                        request.cancel(true);
-                    }
-                });
-                request.whenComplete((response, requestError) -> {
+                int current = cursor.get();
+                int index = current % slots.length();
+                cursor.set(current == Integer.MAX_VALUE ? 0 : current + 1);
+
+                connection(index).whenComplete((connection, connectError) -> {
                     if (result.isDone()) {
                         return;
                     }
-                    if (requestError != null) {
-                        result.completeExceptionally(requestError);
-                    } else {
-                        result.complete(response);
+                    if (connectError != null) {
+                        result.completeExceptionally(connectError);
+                        return;
                     }
+                    long budgetNanos = deadlineNanos - System.nanoTime();
+                    if (budgetNanos <= 0L) {
+                        result.completeExceptionally(
+                                new RpcTimeoutException(
+                                        "RPC request timed out while connecting to "
+                                                + endpoint.authority()));
+                        return;
+                    }
+
+                    CompletableFuture<byte[]> request = connection
+                            .request(
+                                    frame,
+                                    Duration.ofNanos(budgetNanos))
+                            .toCompletableFuture();
+                    result.whenComplete((ignoredValue, error) -> {
+                        if (result.isCancelled()
+                                || error instanceof RpcTimeoutException) {
+                            request.cancel(true);
+                        }
+                    });
+                    request.whenComplete((response, requestError) -> {
+                        if (result.isDone()) {
+                            return;
+                        }
+                        if (requestError != null) {
+                            result.completeExceptionally(requestError);
+                        } else {
+                            result.complete(response);
+                        }
+                    });
                 });
-            });
+            } catch (RuntimeException error) {
+                result.completeExceptionally(error);
+            }
             return result;
+        }
+
+        private boolean tryRetire(long nowNanos) {
+            if (nowNanos - lastRequestNanos < GROUP_IDLE_NANOS) {
+                return false;
+            }
+            return activeRequests.compareAndSet(0, -1);
         }
 
         private CompletionStage<Connection> connection(int index) {
@@ -208,7 +285,8 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                 return;
             }
             vertx.setTimer(delayMillis, ignored -> {
-                if (closed.get() || slots.get(index) != created) {
+                if (closed.get() || activeRequests.get() < 0
+                        || slots.get(index) != created) {
                     slots.compareAndSet(index, created, null);
                     created.completeExceptionally(
                             new RpcUnavailableException(
@@ -250,7 +328,7 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                                             result.cause()));
                             return;
                         }
-                        if (closed.get()) {
+                        if (closed.get() || activeRequests.get() < 0) {
                             result.result().close();
                             slots.compareAndSet(index, created, null);
                             created.completeExceptionally(
@@ -332,12 +410,9 @@ final class VertxRpcTransportClient implements RpcTransportClient {
         private void close() {
             for (int index = 0; index < slots.length(); index++) {
                 CompletableFuture<Connection> future = slots.get(index);
-                if (future == null) {
-                    continue;
-                }
-                Connection connection = future.getNow(null);
-                if (connection != null) {
-                    connection.close();
+                if (future != null) {
+                    // 正在握手的连接一旦完成也必须关闭，避免退休连接池泄漏 Socket。
+                    future.thenAccept(Connection::close);
                 }
             }
         }
@@ -505,7 +580,7 @@ final class VertxRpcTransportClient implements RpcTransportClient {
 
             inflight++;
             long timerId = vertx.setTimer(
-                    timeout.toMillis(),
+                    Math.max(1L, timeout.toMillis()),
                     ignored -> timeout(requestId));
             pending.put(
                     requestId,
@@ -974,6 +1049,7 @@ final class VertxRpcTransportClient implements RpcTransportClient {
             return;
         }
         cancelTlsReload();
+        vertx.cancelTimer(groupSweepTimerId);
         groups.values().forEach(ConnectionGroup::close);
         groups.clear();
         client.close();
