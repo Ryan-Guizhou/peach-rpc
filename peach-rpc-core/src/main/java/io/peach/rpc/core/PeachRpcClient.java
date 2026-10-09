@@ -441,7 +441,6 @@ public final class PeachRpcClient implements AutoCloseable {
         }
         long remainingNanos = deadlineNanos - System.nanoTime();
         if (remainingNanos <= 0L) {
-                        observeCircuitState(reference, method);
             var timeoutError = new io.peach.rpc.api.RpcTimeoutException(
                     "RPC request deadline exceeded");
             observeClientAttempt(
@@ -598,7 +597,6 @@ public final class PeachRpcClient implements AutoCloseable {
             try {
                 Object value = decodeResponse(method, rawResponse);
                 endpointStats.endSuccess(elapsed);
-                                observeCircuitState(reference, method);
                 observeClientAttempt(
                         reference,
                         method,
@@ -634,7 +632,6 @@ public final class PeachRpcClient implements AutoCloseable {
                             remoteError);
                 } else {
                     endpointStats.endSuccess(elapsed);
-                                    observeCircuitState(reference, method);
                     observeClientAttempt(
                             reference,
                             method,
@@ -706,7 +703,6 @@ public final class PeachRpcClient implements AutoCloseable {
                 method.idempotent()
                         && isRetryable(failure);
         if (!retryable) {
-                        observeCircuitState(reference, method);
             result.completeExceptionally(failure);
             return;
         }
@@ -716,7 +712,6 @@ public final class PeachRpcClient implements AutoCloseable {
                     method,
                     RpcRetryExhaustionReason.MAX_ATTEMPTS,
                     failure);
-                        observeCircuitState(reference, method);
             result.completeExceptionally(failure);
             return;
         }
@@ -726,7 +721,6 @@ public final class PeachRpcClient implements AutoCloseable {
                     method,
                     RpcRetryExhaustionReason.BUDGET,
                     failure);
-                        observeCircuitState(reference, method);
             result.completeExceptionally(failure);
             return;
         }
@@ -741,7 +735,6 @@ public final class PeachRpcClient implements AutoCloseable {
                     method,
                     RpcRetryExhaustionReason.DEADLINE,
                     failure);
-                        observeCircuitState(reference, method);
             result.completeExceptionally(failure);
             return;
         }
