@@ -2,8 +2,11 @@ package io.peach.rpc.observability.opentelemetry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.SpanId;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.context.Scope;
@@ -151,6 +154,57 @@ class OpenTelemetryRpcTracingBridgeTest {
                     serverSpan.getParentSpanId());
         } finally {
             tracerProvider.close();
+        }
+    }
+
+    @Test
+    void untrustedBusinessExceptionMustNotLeakIntoExportedSpan() {
+        RecordingExporter exporter =
+                new RecordingExporter();
+        SdkTracerProvider provider = SdkTracerProvider.builder()
+                .addSpanProcessor(SimpleSpanProcessor.create(exporter))
+                .build();
+
+        try {
+            OpenTelemetryRpcTracingBridge bridge =
+                    new OpenTelemetryRpcTracingBridge(
+                            OpenTelemetrySdk.builder()
+                                    .setTracerProvider(provider)
+                                    .build());
+            RpcTraceContext context = bridge.startServer(
+                    123,
+                    456,
+                    Map.of());
+            context.end(
+                    RpcStatus.BUSINESS_ERROR,
+                    new IllegalArgumentException(
+                            "DO_NOT_EXPORT_UNTRUSTED_SECRET"));
+            // Idempotent lifecycle: a second end must not add another event.
+            context.end(
+                    RpcStatus.INTERNAL_ERROR,
+                    new IllegalStateException("SECOND_SECRET"));
+
+            List<SpanData> spans = exporter.spans();
+            assertEquals(1, spans.size());
+            SpanData span = spans.get(0);
+            assertEquals(
+                    StatusCode.ERROR,
+                    span.getStatus().getStatusCode());
+            assertEquals(
+                    "BUSINESS_ERROR",
+                    span.getAttributes().get(
+                            AttributeKey.stringKey("rpc.status")));
+            assertEquals(
+                    IllegalArgumentException.class.getName(),
+                    span.getAttributes().get(
+                            AttributeKey.stringKey("error.type")));
+            assertTrue(span.getEvents().isEmpty());
+            assertFalse(span.toString()
+                    .contains("DO_NOT_EXPORT_UNTRUSTED_SECRET"));
+            assertFalse(span.toString()
+                    .contains("SECOND_SECRET"));
+        } finally {
+            provider.close();
         }
     }
 

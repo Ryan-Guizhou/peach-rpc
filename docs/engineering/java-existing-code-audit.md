@@ -80,6 +80,16 @@ PR-9 保持返回给 Consumer 的协议错误状态及通用错误消息不变�
 
 **权衡：** 用户业务失败在 WARN 中不再输出完整堆栈，可结合 requestId 和受控 Trace 进行排查，但 `RpcObserver` 及其他扩展适配器收到的 `Throwable` 仍需检查它们自身的日志/Trace 脱敏政策；本 PR 不宣称所有可观测性渠道已经完成敏感数据流审计。
 
+## 4.3 OpenTelemetry 异常事件脱敏（PR-12）
+
+在业务运行时日志脱敏后，还需审核不同遥测出口。此前 `OpenTelemetryRpcTracingBridge.OtelTraceContext.end()` 对所有失败调用执行 `span.recordException(error)`，会按 OpenTelemetry SDK 的异常事件处理惯例导出异常 Message、StackTrace 等潜在包含请求参数的数据。因此**单纯修改 Provider WARN 日志并不能阻断 Trace 中的敏感信息泄露**。
+
+PR-12 将默认 Span 记录限制为 `rpc.status` 和异常 `error.type`，失败 Span 仍标记 `StatusCode.ERROR`，不自动附加原始异常事件。对 `RpcTraceContext.end()` 的幂等性和实际导出的 `SpanData` 新增测试，验证即便业务异常包含敏感测试标记，也不会出现在异常 Event 和导出 Span 文本中。
+
+这是**可观测性事件内容的行为变化**：在启用 OpenTelemetry 的环境里，消费异常 StackTrace 的下游可能失去原始 Trace 事件；此取舍为生产默认脱敏而采取。需要完整错误详情时，须通过经过授权、明确有界并脱敏的诊断链路进行，不应静默恢复 `recordException(error)`。
+
+`RpcObserver` 扩展仍可收到原始 Throwable，第三方 Observer 的输出行为不在本 PR 的控制范围内；部署前应审计自定义 Observer 的日志/Trace Exporter。
+
 ## 5. 验收与剩余工作
 
 应使用 PR-3 最新提交重新运行：
