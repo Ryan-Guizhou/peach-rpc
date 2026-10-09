@@ -40,19 +40,23 @@ start_provider() {
     >"$PROVIDER_LOG" 2>&1 &
   PROVIDER_PID=$!
 
-  for _ in {1..150}; do
+  # TCP bind happens before registry registration and STARTED state.
+  # Wait for the explicit Provider-ready marker before launching the Consumer.
+  for _ in {1..300}; do
     if ! kill -0 "$PROVIDER_PID" 2>/dev/null; then
       echo "Provider process exited before becoming ready." >&2
       cat "$PROVIDER_LOG" >&2
       exit 1
     fi
-    if timeout 1 bash -c "</dev/tcp/127.0.0.1/$port" 2>/dev/null; then
+    if grep -F "Peach RPC server started:" "$PROVIDER_LOG" | \
+        grep -Fq "advertised=127.0.0.1:$port" \
+        && timeout 1 bash -c "</dev/tcp/127.0.0.1/$port" 2>/dev/null; then
       return
     fi
     sleep 0.1
   done
 
-  echo "Provider did not open port $port in time." >&2
+  echo "Provider was not fully registered and ready on port $port." >&2
   cat "$PROVIDER_LOG" >&2
   exit 1
 }
