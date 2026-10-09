@@ -56,6 +56,20 @@ class CheckstyleAuditTest(unittest.TestCase):
                       [m.get("name") for m in modules])
         self.assertIn("MissingJavadocMethod",
                       [m.get("name") for m in modules])
+        audited_checks = {
+            "FileTabCharacter", "LineLength", "AvoidStarImport",
+            "TypeName", "MethodName", "MemberName", "ParameterName",
+            "ConstantName", "MissingJavadocType",
+            "MissingJavadocMethod",
+        }
+        for check in modules:
+            if check.get("name") not in audited_checks:
+                continue
+            settings = {p.get("name"): p.get("value")
+                        for p in check.findall("property")}
+            self.assertEqual(
+                "warning", settings.get("severity"),
+                f"Advisory check {check.get('name')} must not emit errors")
         filters = [m for m in modules
                    if m.get("name") == "SuppressionSingleFilter"]
         self.assertEqual(1, len(filters))
