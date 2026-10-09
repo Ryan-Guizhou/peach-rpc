@@ -76,6 +76,9 @@ jobs:
             exit 1
           fi
 
+      - name: Verify soak quality gate with malicious evidence fixtures
+        run: python3 scripts/test_soak_quality.py
+
       - name: Verify V2-D.2 evidence tooling
         run: python3 scripts/test_v2d2_evidence_tools.py
 

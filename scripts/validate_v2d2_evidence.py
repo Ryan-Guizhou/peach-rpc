@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate completeness and provenance of Peach RPC V2-D.2 evidence."""
 from __future__ import annotations
-import argparse,csv,json
+import argparse,csv,json,hashlib
 from pathlib import Path
 RESILIENCE={"retryBudgetAcquire","circuitClosedAcquireAndSuccess","circuitOpenReject","outlierHealthyRead","outlierEjectedRead","outlierFailureAccounting"}
 PROFILES={
@@ -50,6 +50,13 @@ def main():
   if a.soak.is_file():
    soak=json.loads(a.soak.read_text(encoding="utf-8")); req(float(soak.get("durationSeconds",0))>=a.min_soak_seconds,f"Soak duration below {a.min_soak_seconds}s",errs); req(int(soak.get("concurrency",0))>=a.min_concurrency,f"Soak concurrency below {a.min_concurrency}",errs); req(int(soak.get("successes",0))>0,"Soak has no successful RPC calls",errs)
    if env.get("commit") not in {"",None,"unknown"}: req(soak.get("commit")==env.get("commit"),"Soak commit does not match environment commit",errs)
+ if a.require_controlled and a.require_soak and a.soak and a.soak.is_file():
+  policy_path=a.soak.parent/"soak-policy"/"report.json"
+  req(policy_path.is_file(),"Controlled soak is missing quality policy report",errs)
+  if policy_path.is_file():
+   policy=json.loads(policy_path.read_text(encoding="utf-8"))
+   req(policy.get("status")=="POLICY_PASS","Controlled soak policy thresholds did not pass",errs)
+   req(policy.get("soakSha256")==hashlib.sha256(a.soak.read_bytes()).hexdigest(),"Soak policy report is stale or refers to another result",errs)
  a.output_dir.mkdir(parents=True,exist_ok=True); status="PASS" if not errs else "FAIL"; report={"schemaVersion":1,"status":status,"environment":env,"matrix":matrix,"soak":{k:soak.get(k) for k in ("concurrency","durationSeconds","throughputOpsPerSecond","p99Micros","errors","errorRate","processCpuCoresAverage") if k in soak},"errors":errs}; (a.output_dir/"validation-report.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8"); (a.output_dir/"validation-report.md").write_text("# V2-D.2 Evidence Validation\n\n**Status:** "+status+"\n"+("\n".join(f"- {e}" for e in errs) if errs else "\n> Structural evidence validation passed; this does not itself establish a Production SLO.\n"),encoding="utf-8")
  if errs:
   [print("ERROR: "+e) for e in errs]; return 1
