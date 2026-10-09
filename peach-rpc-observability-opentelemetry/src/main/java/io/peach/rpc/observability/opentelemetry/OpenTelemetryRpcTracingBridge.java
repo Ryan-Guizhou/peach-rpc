@@ -21,6 +21,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * OpenTelemetry Peach RPC 分布式 Trace Bridge。
+ *
+ * <p>Span 仅记录有界 RPC 状态与错误类型，不直接记录第三方或业务异常消息、
+ * StackTrace 和原始 RPC Metadata，避免 Trace 出口向外暴露用户数据。
+ * 对于需要诊断详情的调用方，应使用经过授权的受控日志或 Trace 采样策略。
  */
 public final class OpenTelemetryRpcTracingBridge
         implements RpcTracingBridge {
@@ -166,7 +170,12 @@ public final class OpenTelemetryRpcTracingBridge
                     "rpc.status",
                     status.name());
             if (error != null) {
-                span.recordException(error);
+                // Untrusted business exception messages / stack traces may
+                // contain raw request payloads and credentials. The safe
+                // default only exports the exception type.
+                span.setAttribute(
+                        "error.type",
+                        error.getClass().getName());
                 span.setStatus(StatusCode.ERROR);
             } else if (status != RpcStatus.OK) {
                 span.setStatus(StatusCode.ERROR);
