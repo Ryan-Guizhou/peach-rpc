@@ -68,6 +68,31 @@ def validate_reactor_reports(report_files: list[Path], root: Path) -> None:
         raise ValueError("; ".join(messages))
 
 
+def validate_source_coverage(root: Path, report: dict) -> None:
+    """Reject silently unscanned Java source files in the Maven reactor."""
+    root = root.resolve()
+    expected = set()
+    for module in reactor_module_directories(root):
+        for scope in ("main", "test"):
+            source_root = module / "src" / scope / "java"
+            if source_root.is_dir():
+                expected.update(
+                    java.relative_to(root).as_posix()
+                    for java in source_root.rglob("*.java")
+                    if java.is_file()
+                )
+    observed = set(report["scanned_paths"])
+    missing = sorted(expected - observed)
+    extra = sorted(observed - expected)
+    if missing or extra:
+        details = []
+        if missing:
+            details.append("Unscanned Java source files: " + ", ".join(missing[:12]))
+        if extra:
+            details.append("Unexpected Java sources in XML: " + ", ".join(extra[:12]))
+        raise ValueError("; ".join(details))
+
+
 def validate_strict_gate(report: dict) -> None:
     """Reject any violation, including Checkstyle warning-severity findings."""
     if report["reports"] < 1 or report["source_files"] < 1:
@@ -123,6 +148,7 @@ def summarize(report_files: list[Path], root: Path) -> dict:
         "schema": "peach.rpc.checkstyle.audit.v1",
         "reports": len(report_files),
         "source_files": len(scanned_files),
+        "scanned_paths": sorted(scanned_files),
         "violations": len(findings),
         "by_check": dict(sorted(Counter(
             item["check"] for item in findings).items())),
@@ -196,6 +222,7 @@ def main() -> int:
         markdown(summary, enforced=args.enforce_zero), encoding="utf-8")
     if args.enforce_zero:
         try:
+            validate_source_coverage(root, summary)
             validate_strict_gate(summary)
         except ValueError as error:
             print(f"Checkstyle quality gate failed: {error}", file=sys.stderr)
