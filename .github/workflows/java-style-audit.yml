@@ -30,7 +30,7 @@ jobs:
         run: python3 scripts/test_checkstyle_audit.py
 
       - name: Analyze Java syntax, naming, Javadoc and imports (advisory)
-        run: mvn -B -ntp -Pstyle-audit -DskipTests validate
+        run: mvn -B -ntp -Pstyle-audit -DskipTests install
 
       - name: Aggregate Checkstyle results and detect missing reports
         run: |
