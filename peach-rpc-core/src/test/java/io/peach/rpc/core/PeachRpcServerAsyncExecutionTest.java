@@ -388,11 +388,22 @@ public class PeachRpcServerAsyncExecutionTest {
     void asyncStageShouldRetainAdmissionUntilCompletion() throws Exception {
         CapturingTransportServer transport = new CapturingTransportServer();
         AsyncServiceImpl service = new AsyncServiceImpl();
+        CountDownLatch leaseReleased = new CountDownLatch(1);
+        RpcObserver observer = new RpcObserver() {
+            @Override
+            public void onServerInflightChanged(int delta) {
+                if (delta < 0) {
+                    leaseReleased.countDown();
+                }
+            }
+        };
         PeachRpcServer server = createServer(
                 transport,
                 service,
                 1,
-                19094);
+                19094,
+                new NoopCodec(),
+                observer);
 
         try {
             server.start().toCompletableFuture().join();
@@ -415,6 +426,7 @@ public class PeachRpcServerAsyncExecutionTest {
             assertEquals(
                     RpcStatus.OK,
                     RpcProtocolCodec.view(completedSlowResponse).status());
+            assertTrue(leaseReleased.await(2, TimeUnit.SECONDS));
 
             byte[] recovered = transport.handle(request("fast"))
                     .toCompletableFuture()
@@ -627,6 +639,18 @@ public class PeachRpcServerAsyncExecutionTest {
             int maxConcurrent,
             int port,
             RpcCodec codec) {
+        return createServer(
+                transport, service, maxConcurrent, port, codec,
+                RpcObserver.noop());
+    }
+
+    private static PeachRpcServer createServer(
+            CapturingTransportServer transport,
+            AsyncServiceImpl service,
+            int maxConcurrent,
+            int port,
+            RpcCodec codec,
+            RpcObserver observer) {
         return PeachRpcServer.builder()
                 .serviceRegistrar(new NoopRegistry())
                 .transportServer(transport)
@@ -637,6 +661,7 @@ public class PeachRpcServerAsyncExecutionTest {
                         false,
                         1,
                         1))
+                .observer(observer)
                 .build()
                 .registerService(
                         AsyncService.class,
