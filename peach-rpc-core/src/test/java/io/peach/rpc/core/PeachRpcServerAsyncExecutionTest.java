@@ -44,12 +44,14 @@ public class PeachRpcServerAsyncExecutionTest {
         AtomicInteger activeCalls = new AtomicInteger();
         AtomicLong activeFrameBytes = new AtomicLong();
         CountDownLatch completedMetrics = new CountDownLatch(2);
+        CountDownLatch firstLeaseReleased = new CountDownLatch(1);
         RpcObserver brokenObserver = new RpcObserver() {
             @Override
             public void onServerInflightChanged(int delta) {
                 activeCalls.addAndGet(delta);
                 if (delta < 0) {
                     completedMetrics.countDown();
+                    firstLeaseReleased.countDown();
                 }
                 throw new IllegalStateException("Metrics backend unavailable");
             }
@@ -115,6 +117,7 @@ public class PeachRpcServerAsyncExecutionTest {
                     RpcStatus.OK,
                     RpcProtocolCodec.view(
                             outstanding.get(3, TimeUnit.SECONDS)).status());
+            assertTrue(firstLeaseReleased.await(2, TimeUnit.SECONDS));
 
             byte[] recovered = transport.handle(request("fast"))
                     .toCompletableFuture()
@@ -354,11 +357,22 @@ public class PeachRpcServerAsyncExecutionTest {
             throws Exception {
         CapturingTransportServer transport = new CapturingTransportServer();
         AsyncServiceImpl service = new AsyncServiceImpl();
+        CountDownLatch leaseReleased = new CountDownLatch(1);
+        RpcObserver observer = new RpcObserver() {
+            @Override
+            public void onServerInflightChanged(int delta) {
+                if (delta < 0) {
+                    leaseReleased.countDown();
+                }
+            }
+        };
         PeachRpcServer server = createServer(
                 transport,
                 service,
                 1,
-                19099);
+                19099,
+                new NoopCodec(),
+                observer);
 
         try {
             server.start().toCompletableFuture().join();
@@ -372,6 +386,7 @@ public class PeachRpcServerAsyncExecutionTest {
                     RpcStatus.BUSINESS_ERROR,
                     RpcProtocolCodec.view(
                             response.get(3, TimeUnit.SECONDS)).status());
+            assertTrue(leaseReleased.await(2, TimeUnit.SECONDS));
 
             byte[] recovered = transport.handle(request("fast"))
                     .toCompletableFuture()
@@ -388,11 +403,22 @@ public class PeachRpcServerAsyncExecutionTest {
     void asyncStageShouldRetainAdmissionUntilCompletion() throws Exception {
         CapturingTransportServer transport = new CapturingTransportServer();
         AsyncServiceImpl service = new AsyncServiceImpl();
+        CountDownLatch leaseReleased = new CountDownLatch(1);
+        RpcObserver observer = new RpcObserver() {
+            @Override
+            public void onServerInflightChanged(int delta) {
+                if (delta < 0) {
+                    leaseReleased.countDown();
+                }
+            }
+        };
         PeachRpcServer server = createServer(
                 transport,
                 service,
                 1,
-                19094);
+                19094,
+                new NoopCodec(),
+                observer);
 
         try {
             server.start().toCompletableFuture().join();
@@ -415,6 +441,7 @@ public class PeachRpcServerAsyncExecutionTest {
             assertEquals(
                     RpcStatus.OK,
                     RpcProtocolCodec.view(completedSlowResponse).status());
+            assertTrue(leaseReleased.await(2, TimeUnit.SECONDS));
 
             byte[] recovered = transport.handle(request("fast"))
                     .toCompletableFuture()
@@ -499,6 +526,104 @@ public class PeachRpcServerAsyncExecutionTest {
         }
     }
 
+    @Test
+    void cancelledCpuRequestMustRetainAdmissionWhileBusinessStillRuns()
+            throws Exception {
+        CapturingTransportServer transport = new CapturingTransportServer();
+        UncooperativeServiceImpl business = new UncooperativeServiceImpl();
+        CountDownLatch leaseReleased = new CountDownLatch(1);
+        RpcObserver observer = new RpcObserver() {
+            @Override
+            public void onServerInflightChanged(int delta) {
+                if (delta < 0) {
+                    leaseReleased.countDown();
+                }
+            }
+        };
+        PeachRpcServer server = PeachRpcServer.builder()
+                .serviceRegistrar(new NoopRegistry())
+                .transportServer(transport)
+                .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
+                .bindEndpoint(new RpcEndpoint("127.0.0.1", 19102))
+                .maxConcurrent(1)
+                .executionOptions(new RpcProviderExecutionOptions(false, 1, 2))
+                .observer(observer)
+                .build()
+                .registerService(
+                        UncooperativeService.class,
+                        business,
+                        "1.0.0",
+                        "default");
+        try {
+            server.start().toCompletableFuture().join();
+            CompletableFuture<byte[]> cancelled =
+                    transport.handle(requestFor(
+                            UncooperativeService.class, "stall"))
+                            .toCompletableFuture();
+            assertTrue(business.entered.await(2, TimeUnit.SECONDS));
+
+            assertTrue(cancelled.cancel(true));
+            byte[] overloaded = transport.handle(requestFor(
+                            UncooperativeService.class, "fast"))
+                    .toCompletableFuture()
+                    .get(2, TimeUnit.SECONDS);
+            assertEquals(RpcStatus.OVERLOADED,
+                    RpcProtocolCodec.view(overloaded).status());
+            assertEquals(1L, leaseReleased.getCount(),
+                    "Cancellation must not release active business capacity");
+
+            business.release.countDown();
+            assertTrue(leaseReleased.await(2, TimeUnit.SECONDS));
+            byte[] recovered = transport.handle(requestFor(
+                            UncooperativeService.class, "fast"))
+                    .toCompletableFuture()
+                    .get(2, TimeUnit.SECONDS);
+            assertEquals(RpcStatus.OK,
+                    RpcProtocolCodec.view(recovered).status());
+        } finally {
+            business.release.countDown();
+            server.close();
+        }
+    }
+
+    public interface UncooperativeService {
+        @PeachRpcExecution(RpcExecutionMode.CPU)
+        String stall();
+
+        @PeachRpcExecution(RpcExecutionMode.CPU)
+        String fast();
+    }
+
+    public static final class UncooperativeServiceImpl
+            implements UncooperativeService {
+        private final CountDownLatch entered = new CountDownLatch(1);
+        private final CountDownLatch release = new CountDownLatch(1);
+
+        @Override
+        public String stall() {
+            entered.countDown();
+            boolean interrupted = false;
+            for (;;) {
+                try {
+                    release.await();
+                    break;
+                } catch (InterruptedException ignored) {
+                    // 模拟未遵循中断的业务，实现并发额度边界回归。
+                    interrupted = true;
+                }
+            }
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
+            return "finished";
+        }
+
+        @Override
+        public String fast() {
+            return "fast";
+        }
+    }
+
     public interface AnotherService {
         String fast();
     }
@@ -529,6 +654,18 @@ public class PeachRpcServerAsyncExecutionTest {
             int maxConcurrent,
             int port,
             RpcCodec codec) {
+        return createServer(
+                transport, service, maxConcurrent, port, codec,
+                RpcObserver.noop());
+    }
+
+    private static PeachRpcServer createServer(
+            CapturingTransportServer transport,
+            AsyncServiceImpl service,
+            int maxConcurrent,
+            int port,
+            RpcCodec codec,
+            RpcObserver observer) {
         return PeachRpcServer.builder()
                 .serviceRegistrar(new NoopRegistry())
                 .transportServer(transport)
@@ -539,6 +676,7 @@ public class PeachRpcServerAsyncExecutionTest {
                         false,
                         1,
                         1))
+                .observer(observer)
                 .build()
                 .registerService(
                         AsyncService.class,
@@ -548,12 +686,17 @@ public class PeachRpcServerAsyncExecutionTest {
     }
 
     private static byte[] request(String methodName) throws Exception {
+        return requestFor(AsyncService.class, methodName);
+    }
+
+    private static byte[] requestFor(Class<?> api, String methodName)
+            throws Exception {
         ServiceKey key =
                 new ServiceKey(
-                        AsyncService.class.getName(),
+                        api.getName(),
                         "1.0.0",
                         "default");
-        Method method = AsyncService.class.getMethod(methodName);
+        Method method = api.getMethod(methodName);
         return RpcProtocolCodec.encodeRequest(
                 (byte) 1,
                 RpcIds.serviceId(key),
