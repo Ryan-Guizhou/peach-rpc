@@ -783,12 +783,14 @@ public final class PeachRpcServer implements AutoCloseable {
         if (result.isCancelled()) {
             return;
         }
+        // User exception messages may contain raw request parameters or
+        // credentials. Log only bounded technical identifiers and the type.
         LOGGER.warn(
-                "RPC service invocation failed: requestId={}, serviceId={}, methodId={}",
+                "RPC service invocation failed. requestId={}, serviceId={}, methodId={}, errorType={}",
                 request.requestId(),
                 request.serviceId(),
                 request.methodId(),
-                error);
+                error.getClass().getName());
         byte[] responseBytes;
         try {
             responseBytes = errorResponse(

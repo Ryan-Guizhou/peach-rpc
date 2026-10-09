@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import io.peach.rpc.api.PeachRpcExecution;
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.RpcExecutionMode;
@@ -18,6 +21,7 @@ import io.peach.rpc.registry.ServiceRegistrar;
 import io.peach.rpc.transport.RpcRequestHandler;
 import io.peach.rpc.transport.RpcTransportServer;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -25,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 public class PeachRpcServerAsyncExecutionTest {
 
@@ -200,6 +205,49 @@ public class PeachRpcServerAsyncExecutionTest {
                     RpcStatus.OK,
                     RpcProtocolCodec.view(recovered).status());
         } finally {
+            server.close();
+        }
+    }
+
+    @Test
+    void userExceptionMessageMustNotBeExposedInProviderWarningLog()
+            throws Exception {
+        CapturingTransportServer transport = new CapturingTransportServer();
+        AsyncServiceImpl service = new AsyncServiceImpl();
+        PeachRpcServer server = createServer(
+                transport,
+                service,
+                1,
+                19101);
+        Logger logger =
+                (Logger) LoggerFactory.getLogger(PeachRpcServer.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            server.start().toCompletableFuture().join();
+            byte[] response = transport.handle(request("failing"))
+                    .toCompletableFuture()
+                    .get(3, TimeUnit.SECONDS);
+            assertEquals(
+                    RpcStatus.BUSINESS_ERROR,
+                    RpcProtocolCodec.view(response).status());
+
+            List<ILoggingEvent> warnings = appender.list.stream()
+                    .filter(event -> event.getFormattedMessage()
+                            .startsWith("RPC service invocation failed."))
+                    .toList();
+            assertEquals(1, warnings.size());
+            ILoggingEvent warning = warnings.get(0);
+            assertTrue(warning.getFormattedMessage()
+                    .contains("errorType=java.lang.AssertionError"));
+            assertFalse(warning.getFormattedMessage()
+                    .contains("SENSITIVE_TEST_DATA_DO_NOT_LOG"));
+            assertTrue(warning.getThrowableProxy() == null);
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
             server.close();
         }
     }
@@ -482,7 +530,7 @@ public class PeachRpcServerAsyncExecutionTest {
 
         @Override
         public String failing() {
-            throw new AssertionError("Service method failed");
+            throw new AssertionError("SENSITIVE_TEST_DATA_DO_NOT_LOG");
         }
     }
 
