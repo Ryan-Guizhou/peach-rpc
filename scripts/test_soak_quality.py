@@ -3,6 +3,8 @@
 
 import hashlib
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -90,6 +92,65 @@ class SoakQualityTest(unittest.TestCase):
         result = check_soak(data, "smoke")
         self.assertEqual(result["status"], "FAIL")
         self.assertIn("Latency percentiles", " ".join(result["validationErrors"]))
+
+    def test_controlled_structural_validator_rechecks_soak_and_digest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            env = root / "environment.properties"
+            env.write_text(
+                "evidence_class=controlled\\n"
+                "runner_id=fixed-runner\\n"
+                "host_fingerprint_sha256=fingerprint\\n"
+                "jvm_flags=-Xmx512m\\n",
+                encoding="utf-8",
+            )
+            soak = root / "soak.json"
+            payload = valid_soak()
+            soak.write_text(json.dumps(payload), encoding="utf-8")
+            policy_folder = root / "soak-policy"
+            policy_folder.mkdir()
+            policy = check_soak(payload, "controlled", 0.02, 8000)
+            policy["soakSha256"] = hashlib.sha256(soak.read_bytes()).hexdigest()
+            policy_path = policy_folder / "report.json"
+            policy_path.write_text(json.dumps(policy), encoding="utf-8")
+
+            command = [
+                sys.executable, "scripts/validate_v2d2_evidence.py",
+                "--environment", str(env),
+                "--soak", str(soak),
+                "--require-soak", "--require-controlled",
+                "--min-soak-seconds", "1800",
+                "--min-concurrency", "10000",
+                "--output-dir", str(root / "reports"),
+            ]
+            repo_root = Path(__file__).resolve().parents[1]
+            valid = subprocess.run(
+                command, cwd=repo_root, text=True, capture_output=True,
+                check=False,
+            )
+            self.assertEqual(0, valid.returncode, valid.stdout + valid.stderr)
+
+            soak.write_text(json.dumps(payload) + "\\n", encoding="utf-8")
+            stale = subprocess.run(
+                command, cwd=repo_root, text=True, capture_output=True,
+                check=False,
+            )
+            self.assertNotEqual(0, stale.returncode)
+            self.assertIn("stale", stale.stdout + stale.stderr)
+
+            payload.update(
+                successes=100, errors=9900, errorRate=0.99,
+                errorsByType={"RpcTimeoutException": 9900},
+            )
+            soak.write_text(json.dumps(payload), encoding="utf-8")
+            policy["soakSha256"] = hashlib.sha256(soak.read_bytes()).hexdigest()
+            policy_path.write_text(json.dumps(policy), encoding="utf-8")
+            fabricated = subprocess.run(
+                command, cwd=repo_root, text=True, capture_output=True,
+                check=False,
+            )
+            self.assertNotEqual(0, fabricated.returncode)
+            self.assertIn("Soak policy does not match", fabricated.stdout)
 
     def test_p99_policy_rejects_excessive_latency(self):
         result = check_soak(
