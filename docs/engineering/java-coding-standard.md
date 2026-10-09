@@ -82,6 +82,18 @@ List<RpcEndpoint> findEndpoints(ServiceKey serviceKey);
 
 所有自动禁用规则需明确扫描范围。纯测试/CLI/Benchmark 可有特殊许可；生产代码的例外必须先给出可复现需要、风险缓解、替代方案、owner 与追踪 Issue，并通过 Code Review，不允许单纯放 `@SuppressWarnings` 或修改 Lint 脚本跳过。
 
+### PR-5：新增自动检查边界
+
+`B001` 强制 Core 生产源码不能引入 Vert.x、Nacos、Etcd、Fory、Spring 的实现依赖；不影响 Adapter 模块自身的正常引用。
+
+`R002/R003` 禁止在生产运行时代码中直接创建无容量参数的 `LinkedBlockingQueue` 或 `Executors.newCachedThreadPool`。固定容量、VirtualThread 配合独立 Admission 的方案不应被错误拦截。
+
+`L003` 禁止在常见 SLF4J 调用首参使用 `String.format()` 进行立即格式化；`L004` 将潜在 Token、Secret、Password 日志列为人工审查告警，而**不是**声明已经实现敏感字段数据流追踪。
+
+`N001` 将新增 `IConnectionFactory` 一类 I 前缀接口标为审查项。**对于历史已公开的接口，不得直接因该规则更名**；若需改名必须提供迁移、二进制兼容和 SPI 检查。
+
+上述检查由 `config/java-api-rules.json` 和对应正反向 fixture 管理，历史审计仅生成报告；改变代码前应区分真实风险与误报。
+
 ## 6. 并发、性能与安全
 
 - EventLoop 不调用阻塞 IO，不执行用户业务回调；同步 `CompletableFuture` 结束操作可能执行注册回调，必须核对上下文。
