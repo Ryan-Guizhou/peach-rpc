@@ -294,6 +294,7 @@ class PeachRpcClientResilienceTest {
         java.util.concurrent.CopyOnWriteArrayList<CompletableFuture<byte[]>> replies =
                 new java.util.concurrent.CopyOnWriteArrayList<>();
         CountDownLatch admitted = new CountDownLatch(2);
+        AtomicInteger encodedCalls = new AtomicInteger();
         try (PeachRpcClient client = PeachRpcClient.builder()
                 .serviceDiscovery(new StaticDiscovery())
                 .transportClient(new TestTransport(
@@ -305,7 +306,8 @@ class PeachRpcClientResilienceTest {
                             admitted.countDown();
                             return response;
                         }))
-                .codecRegistry(RpcCodecRegistry.of(new StringCodec()))
+                .codecRegistry(RpcCodecRegistry.of(
+                        new StringCodec(() -> { }, encodedCalls::incrementAndGet)))
                 .timeout(Duration.ofSeconds(5))
                 .responseCompletionThreads(1)
                 .responseCompletionQueueCapacity(1)
@@ -325,6 +327,8 @@ class PeachRpcClientResilienceTest {
                     io.peach.rpc.api.RpcOverloadedException.class,
                     rejected.getCause());
             assertEquals(2, frames.size());
+            assertEquals(2, encodedCalls.get(),
+                    "Rejected calls must not serialize arguments");
 
             for (int i = 0; i < replies.size(); i++) {
                 replies.get(i).complete(
@@ -332,6 +336,36 @@ class PeachRpcClientResilienceTest {
             }
             assertEquals("ok", first.get(2, TimeUnit.SECONDS));
             assertEquals("ok", second.get(2, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    void argumentSerializationFailureMustReturnReservedCapacity() {
+        AtomicInteger encodes = new AtomicInteger();
+        RpcCodec codec = new StringCodec(
+                () -> { },
+                () -> {
+                    encodes.incrementAndGet();
+                    throw new IllegalStateException("Argument encoder failed");
+                });
+        try (PeachRpcClient client = PeachRpcClient.builder()
+                .serviceDiscovery(new StaticDiscovery())
+                .transportClient(new TestTransport((endpoint, frame, timeout) ->
+                        CompletableFuture.completedFuture(
+                                successResponse(frame, "ok"))))
+                .codecRegistry(RpcCodecRegistry.of(codec))
+                .responseCompletionThreads(1)
+                .responseCompletionQueueCapacity(1)
+                .build()) {
+            RetryService service =
+                    client.refer(RetryService.class, "1.0.0", "test");
+
+            for (int attempt = 0; attempt < 4; attempt++) {
+                assertThrows(IllegalStateException.class,
+                        () -> service.find("fail"));
+            }
+            assertEquals(4, encodes.get(),
+                    "Every attempt must re-enter the encoder");
         }
     }
 
@@ -383,6 +417,29 @@ class PeachRpcClientResilienceTest {
                     () -> service.find("test"));
             assertInstanceOf(RpcTimeoutException.class, failure.getCause());
             assertTrue(neverFinishes.isCancelled(), "Deadline must cancel the pending transport");
+        }
+    }
+
+    @Test
+    void retiredEndpointsShouldNotAccumulateConsumerStatistics() {
+        MutableDiscovery discovery = new MutableDiscovery();
+        try (PeachRpcClient client = PeachRpcClient.builder()
+                .serviceDiscovery(discovery)
+                .transportClient(new TestTransport((endpoint, frame, timeout) ->
+                        CompletableFuture.completedFuture(
+                                successResponse(frame, "ok"))))
+                .codecRegistry(RpcCodecRegistry.of(new StringCodec()))
+                .build()) {
+            RetryService service = client.refer(
+                    RetryService.class, "1.0.0", "test");
+
+            assertEquals("ok", service.find("before"));
+            assertEquals(1, client.trackedEndpointCount());
+
+            discovery.publishEmpty();
+            client.evictUnusedEndpointStats();
+
+            assertEquals(0, client.trackedEndpointCount());
         }
     }
 
@@ -470,6 +527,35 @@ class PeachRpcClientResilienceTest {
         }
     }
 
+    private static final class MutableDiscovery implements ServiceDiscovery {
+        private final AtomicReference<RegistryListener> listener =
+                new AtomicReference<>();
+
+        @Override
+        public CompletionStage<RegistrySnapshot> lookup(ServiceKey key) {
+            return CompletableFuture.completedFuture(
+                    StaticDiscovery.snapshot(key));
+        }
+
+        @Override
+        public RegistrySubscription subscribe(
+                ServiceKey key,
+                RegistryListener updateListener) {
+            listener.set(updateListener);
+            updateListener.onSnapshot(StaticDiscovery.snapshot(key));
+            return () -> listener.compareAndSet(updateListener, null);
+        }
+
+        private void publishEmpty() {
+            RegistryListener updateListener = listener.get();
+            if (updateListener == null) {
+                throw new IllegalStateException(
+                        "Registry listener has not been subscribed");
+            }
+            updateListener.onSnapshot(new RegistrySnapshot(List.of(), 2L));
+        }
+    }
+
     private static final class StaticDiscovery
             implements ServiceDiscovery {
 
@@ -502,13 +588,19 @@ class PeachRpcClientResilienceTest {
             implements RpcCodec {
 
         private final Runnable onDecode;
+        private final Runnable onEncode;
 
         private StringCodec() {
-            this(() -> { });
+            this(() -> { }, () -> { });
         }
 
         private StringCodec(Runnable onDecode) {
+            this(onDecode, () -> { });
+        }
+
+        private StringCodec(Runnable onDecode, Runnable onEncode) {
             this.onDecode = onDecode;
+            this.onEncode = onEncode;
         }
 
         @Override
@@ -538,6 +630,7 @@ class PeachRpcClientResilienceTest {
 
                 @Override
                 public byte[] encodeArguments(Object[] arguments) {
+                    onEncode.run();
                     return arguments.length == 0
                             ? new byte[0]
                             : arguments[0].toString()

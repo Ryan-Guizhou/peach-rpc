@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.peach.rpc.api.RpcEndpoint;
 import io.peach.rpc.api.RpcStatus;
+import io.peach.rpc.api.RpcTimeoutException;
 import io.peach.rpc.codec.RpcCodecIds;
 import io.peach.rpc.observability.RpcConnectionCloseReason;
 import io.peach.rpc.observability.RpcConnectionRole;
@@ -77,6 +78,92 @@ class VertxRpcTransportTest {
                     responsePayload,
                     decoded.payload());
             assertTrue(decoded.requestId() > 0L);
+        } finally {
+            client.close();
+            server.close();
+        }
+    }
+
+    @Test
+    void requestTimeoutMustFinishWhileHandshakeIsStillPending()
+            throws Exception {
+        RpcTransportOptions options = new RpcTransportOptions(
+                32,
+                1024 * 1024,
+                1024 * 1024,
+                Duration.ofSeconds(2));
+        try (ServerSocket silentPeer = new ServerSocket(0);
+             VertxRpcTransportClient client =
+                     new VertxRpcTransportClient(options)) {
+            CountDownLatch accepted = new CountDownLatch(1);
+            Thread peer = Thread.ofVirtual().start(() -> {
+                try (Socket ignored = silentPeer.accept()) {
+                    accepted.countDown();
+                    Thread.sleep(400L);
+                } catch (java.io.IOException error) {
+                    throw new AssertionError(error);
+                } catch (InterruptedException error) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+            RpcEndpoint endpoint =
+                    new RpcEndpoint("127.0.0.1", silentPeer.getLocalPort());
+            long started = System.nanoTime();
+            CompletionException failure = assertThrows(
+                    CompletionException.class,
+                    () -> client.request(
+                                    endpoint,
+                                    request(),
+                                    Duration.ofMillis(70))
+                            .toCompletableFuture()
+                            .join());
+
+            assertInstanceOf(RpcTimeoutException.class, failure.getCause());
+            assertTrue(accepted.await(2, TimeUnit.SECONDS));
+            assertTrue(System.nanoTime() - started
+                            < Duration.ofSeconds(1).toNanos(),
+                    "The RPC deadline must not wait for handshake timeout");
+            peer.join(1000L);
+        }
+    }
+
+    @Test
+    void idleEndpointPoolShouldBeRetiredAndReconnectOnNextRequest()
+            throws Exception {
+        int port = findFreePort();
+        RpcTransportOptions options = new RpcTransportOptions(
+                32,
+                1024 * 1024,
+                1024 * 1024,
+                Duration.ofSeconds(2));
+        VertxRpcTransportServer server =
+                new VertxRpcTransportServer(options);
+        VertxRpcTransportClient client =
+                new VertxRpcTransportClient(options);
+        RpcEndpoint endpoint = new RpcEndpoint("127.0.0.1", port);
+        try {
+            server.start(
+                            endpoint,
+                            (remote, bytes) ->
+                                    CompletableFuture.completedFuture(
+                                            response(bytes, new byte[] {1})))
+                    .toCompletableFuture()
+                    .join();
+            client.request(endpoint, request(), Duration.ofSeconds(2))
+                    .toCompletableFuture()
+                    .join();
+            assertEquals(1, client.connectionGroupCount());
+
+            client.evictIdleGroups(
+                    System.nanoTime() + Duration.ofMinutes(6).toNanos());
+            assertEquals(0, client.connectionGroupCount());
+
+            byte[] reply = client.request(
+                            endpoint, request(), Duration.ofSeconds(2))
+                    .toCompletableFuture()
+                    .join();
+            assertEquals(RpcStatus.OK, RpcProtocolCodec.view(reply).status());
+            assertEquals(1, client.connectionGroupCount());
         } finally {
             client.close();
             server.close();

@@ -33,10 +33,12 @@ import io.peach.rpc.transport.RpcTransportClient;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -140,6 +142,11 @@ public final class PeachRpcClient implements AutoCloseable {
                         .name("peach-rpc-client-deadline-", 0)
                         .factory());
         this.deadlineScheduler.setRemoveOnCancelPolicy(true);
+        this.deadlineScheduler.scheduleWithFixedDelay(
+                this::evictUnusedEndpointStats,
+                1L,
+                1L,
+                TimeUnit.MINUTES);
         // 自定义 Observer 即使只有一个，也不能通过异常中断 RPC 完成链。
         // NOOP 配置仍走不产生事件对象的原有快路径。
         this.observer = RpcObserver.composite(
@@ -211,11 +218,18 @@ public final class PeachRpcClient implements AutoCloseable {
             ClientReference reference,
             ClientMethodBinding method) {
         long startedAtNanos = System.nanoTime();
+        if (!responseCompletionPermits.tryAcquire()) {
+            return capacityExceeded();
+        }
+        byte[] encodedArguments;
+        try {
+            encodedArguments = method.codec().encode0();
+        } catch (RuntimeException | Error encodingError) {
+            responseCompletionPermits.release();
+            throw encodingError;
+        }
         return invokeEncoded(
-                reference,
-                method,
-                method.codec().encode0(),
-                startedAtNanos);
+                reference, method, encodedArguments, startedAtNanos);
     }
 
     private CompletionStage<Object> invoke1(
@@ -223,11 +237,18 @@ public final class PeachRpcClient implements AutoCloseable {
             ClientMethodBinding method,
             Object argument0) {
         long startedAtNanos = System.nanoTime();
+        if (!responseCompletionPermits.tryAcquire()) {
+            return capacityExceeded();
+        }
+        byte[] encodedArguments;
+        try {
+            encodedArguments = method.codec().encode1(argument0);
+        } catch (RuntimeException | Error encodingError) {
+            responseCompletionPermits.release();
+            throw encodingError;
+        }
         return invokeEncoded(
-                reference,
-                method,
-                method.codec().encode1(argument0),
-                startedAtNanos);
+                reference, method, encodedArguments, startedAtNanos);
     }
 
     private CompletionStage<Object> invoke2(
@@ -236,11 +257,18 @@ public final class PeachRpcClient implements AutoCloseable {
             Object argument0,
             Object argument1) {
         long startedAtNanos = System.nanoTime();
+        if (!responseCompletionPermits.tryAcquire()) {
+            return capacityExceeded();
+        }
+        byte[] encodedArguments;
+        try {
+            encodedArguments = method.codec().encode2(argument0, argument1);
+        } catch (RuntimeException | Error encodingError) {
+            responseCompletionPermits.release();
+            throw encodingError;
+        }
         return invokeEncoded(
-                reference,
-                method,
-                method.codec().encode2(argument0, argument1),
-                startedAtNanos);
+                reference, method, encodedArguments, startedAtNanos);
     }
 
     private CompletionStage<Object> invoke3(
@@ -250,14 +278,21 @@ public final class PeachRpcClient implements AutoCloseable {
             Object argument1,
             Object argument2) {
         long startedAtNanos = System.nanoTime();
-        return invokeEncoded(
-                reference,
-                method,
-                method.codec().encode3(
+        if (!responseCompletionPermits.tryAcquire()) {
+            return capacityExceeded();
+        }
+        byte[] encodedArguments;
+        try {
+            encodedArguments = method.codec().encode3(
                         argument0,
                         argument1,
-                        argument2),
-                startedAtNanos);
+                        argument2);
+        } catch (RuntimeException | Error encodingError) {
+            responseCompletionPermits.release();
+            throw encodingError;
+        }
+        return invokeEncoded(
+                reference, method, encodedArguments, startedAtNanos);
     }
 
     private CompletionStage<Object> invoke4(
@@ -268,15 +303,22 @@ public final class PeachRpcClient implements AutoCloseable {
             Object argument2,
             Object argument3) {
         long startedAtNanos = System.nanoTime();
-        return invokeEncoded(
-                reference,
-                method,
-                method.codec().encode4(
+        if (!responseCompletionPermits.tryAcquire()) {
+            return capacityExceeded();
+        }
+        byte[] encodedArguments;
+        try {
+            encodedArguments = method.codec().encode4(
                         argument0,
                         argument1,
                         argument2,
-                        argument3),
-                startedAtNanos);
+                        argument3);
+        } catch (RuntimeException | Error encodingError) {
+            responseCompletionPermits.release();
+            throw encodingError;
+        }
+        return invokeEncoded(
+                reference, method, encodedArguments, startedAtNanos);
     }
 
     private CompletionStage<Object> invokeN(
@@ -284,11 +326,24 @@ public final class PeachRpcClient implements AutoCloseable {
             ClientMethodBinding method,
             Object[] arguments) {
         long startedAtNanos = System.nanoTime();
+        if (!responseCompletionPermits.tryAcquire()) {
+            return capacityExceeded();
+        }
+        byte[] encodedArguments;
+        try {
+            encodedArguments = method.codec().encodeArguments(arguments);
+        } catch (RuntimeException | Error encodingError) {
+            responseCompletionPermits.release();
+            throw encodingError;
+        }
         return invokeEncoded(
-                reference,
-                method,
-                method.codec().encodeArguments(arguments),
-                startedAtNanos);
+                reference, method, encodedArguments, startedAtNanos);
+    }
+
+    private static CompletionStage<Object> capacityExceeded() {
+        return CompletableFuture.failedFuture(
+                new RpcOverloadedException(
+                        "RPC consumer response completion capacity exceeded"));
     }
 
     private CompletionStage<Object> invokeEncoded(
@@ -296,11 +351,6 @@ public final class PeachRpcClient implements AutoCloseable {
             ClientMethodBinding method,
             byte[] encodedArguments,
             long callStartedAtNanos) {
-        if (!responseCompletionPermits.tryAcquire()) {
-            return CompletableFuture.failedFuture(
-                    new RpcOverloadedException(
-                            "RPC consumer response completion capacity exceeded"));
-        }
         CompletableFuture<Object> result =
                 new CompletableFuture<>();
         long[] circuitGeneration = {RpcCircuitBreaker.REJECTED};
@@ -484,9 +534,15 @@ public final class PeachRpcClient implements AutoCloseable {
             return;
         }
 
-        EndpointStats endpointStats = endpointStats(selected);
+        EndpointStats endpointStats = stats.compute(
+                selected.endpoint(),
+                (endpoint, existing) -> {
+                    EndpointStats current =
+                            existing == null ? new EndpointStats() : existing;
+                    current.begin();
+                    return current;
+                });
         long startedAtNanos = System.nanoTime();
-        endpointStats.begin();
 
         long remainingMillis = Math.max(
                 1L,
@@ -856,6 +912,33 @@ public final class PeachRpcClient implements AutoCloseable {
             return error.getCause();
         }
         return error;
+    }
+
+    /**
+     * 依据注册中心最新快照清退已经不存在且无在途请求的端点统计。
+     *
+     * <p>延迟清退发生在控制面线程，不进入请求热路径。
+     */
+    void evictUnusedEndpointStats() {
+        Set<RpcEndpoint> activeEndpoints = new HashSet<>();
+        for (ServiceDirectory directory : directories.values()) {
+            for (ServiceInstance instance : directory.snapshot()) {
+                activeEndpoints.add(instance.endpoint());
+            }
+        }
+        stats.forEach((endpoint, ignored) -> {
+            if (!activeEndpoints.contains(endpoint)) {
+                // 与请求 begin() 在同一个 key 的计算区间内互斥，
+                // 避免清退时恰有调用拿到即将移除的旧统计对象。
+                stats.computeIfPresent(endpoint, (key, current) ->
+                        current.inflight() == 0 ? null : current);
+            }
+        });
+    }
+
+    /** 返回缓存的端点统计数量，用于生命周期诊断。 */
+    int trackedEndpointCount() {
+        return stats.size();
     }
 
     private EndpointStats endpointStats(
