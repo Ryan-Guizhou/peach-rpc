@@ -1,0 +1,68 @@
+name: Fory Allocation Comparison
+
+on:
+  pull_request:
+    paths:
+      - "peach-rpc-codec-fory/src/main/java/io/peach/rpc/codec/fory/ForyRpcCodec.java"
+      - "peach-rpc-benchmarks/src/main/java/io/peach/rpc/benchmarks/ForyArgumentEncodingBenchmark.java"
+      - "scripts/compare_fory_allocation.py"
+      - "scripts/test_compare_fory_allocation.py"
+      - "scripts/run_fory_allocation_comparison.sh"
+      - ".github/workflows/fory-allocation-comparison.yml"
+  workflow_dispatch:
+    inputs:
+      baseline_sha:
+        description: "Exact comparison baseline SHA (40 chars)"
+        required: true
+        type: string
+      candidate_sha:
+        description: "Exact candidate SHA (40 chars)"
+        required: true
+        type: string
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout exact candidate and full history
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || inputs.candidate_sha }}
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Test evidence validator with negative cases
+        run: python3 scripts/test_compare_fory_allocation.py
+
+      - name: Paired Fory JMH allocation smoke
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.baseline_sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || inputs.candidate_sha }}
+          PEACH_RPC_FORY_COMPARE_RUNS: "1"
+          PEACH_RPC_FORY_EVIDENCE_CLASS: shared-ci-smoke
+          PEACH_RPC_FORY_JMH_WARMUP: "1"
+          PEACH_RPC_FORY_JMH_MEASUREMENT: "1"
+          PEACH_RPC_FORY_JMH_TIME: "500ms"
+          PEACH_RPC_ALLOCATION_JVM_FLAGS: "-Xms256m -Xmx256m"
+        run: bash scripts/run_fory_allocation_comparison.sh "$BASE_SHA" "$HEAD_SHA"
+
+      - name: Upload JMH evidence and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fory-allocation-smoke-${{ github.run_id }}
+          path: |
+            target/fory-allocation-comparison/baseline/run-*/*.json
+            target/fory-allocation-comparison/candidate/run-*/*.json
+            target/fory-allocation-comparison/environment.json
+            target/fory-allocation-comparison/comparison.json
+            target/fory-allocation-comparison/comparison.md
+          if-no-files-found: warn
+          retention-days: 30

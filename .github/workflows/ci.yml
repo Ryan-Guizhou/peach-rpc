@@ -76,6 +76,9 @@ jobs:
             exit 1
           fi
 
+      - name: Verify Fory allocation comparison evidence parser
+        run: python3 scripts/test_compare_fory_allocation.py
+
       - name: Verify soak quality gate with malicious evidence fixtures
         run: python3 scripts/test_soak_quality.py
 
