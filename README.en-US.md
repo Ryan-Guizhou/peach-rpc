@@ -29,7 +29,7 @@ Peach RPC does not turn shared CI-runner numbers into production performance cla
 - **Load balancing**: P2C + EWMA + inflight + static weight.
 - **Resilience**: logical deadline, explicit-idempotency retry, retry budget, circuit breaker, outlier ejection and provider admission.
 - **Provider execution**: virtual threads by default, bounded CPU executor, guarded DIRECT mode.
-- **Codec**: Fory with stable type-ID collision detection.
+- **Codec**: Fory with stable type-ID collision detection and shared empty-array encoding for zero-argument calls (Wire v1 unchanged; measured gains pending).
 - **Compatibility**: Wire v1, Schema Fingerprint v1, N/N+1 mixed deployment and rollback.
 - **Observability**: Micrometer, OpenTelemetry, JFR, Grafana dashboard and Prometheus alert examples.
 - **Engineering**: JMH, 10k logical-concurrency soak harness, Etcd/Nacos chaos, rolling compatibility and release readiness.

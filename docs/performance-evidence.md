@@ -20,6 +20,7 @@ GitHub shared runner 只用于验证工具和行为，不作为生产 SLO 来源
 - payload / concurrency / connection-shard matrix；
 - sample + throughput；
 - `-prof gc`；
+- Fory 零参数和多参数编解码分配 JMH（`scripts/run_fory_argument_allocation.sh`）；
 - Provider execution/fault scenario；
 - TLS/PLAINTEXT security matrix；
 - Retry/Circuit/Outlier resilience matrix；
@@ -101,7 +102,7 @@ flowchart LR
 
 - Buffer-oriented Codec；
 - FrameAccumulator copy reduction（PR-E Draft 的 [定向 Allocation Profiling](transport-allocation-profiling.md)，Shared Runner 的 B/op 与采样延迟仅为 Smoke）；
-- Object[] elimination；
+- Object[] elimination（当前仅零参数复用空数组；1～N 参数仍使用兼容表示）；
 - Future/PendingRequest allocation reduction；
 - EndpointStats/admission contention 优化；
 - Compression。

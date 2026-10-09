@@ -25,6 +25,10 @@ import org.apache.fory.ThreadSafeFory;
 @Extension("fory")
 public final class ForyRpcCodec implements RpcCodec {
 
+    // Object[0] 不可变，无需在每次无参 RPC 上重新创建相同的临时数组。
+    // 仍由 Fory 编码标准 Object[] Payload，完全不修改 Wire v1。
+    private static final Object[] EMPTY_ARGUMENTS = new Object[0];
+
     private final RpcTypeRegistry typeRegistry =
             new RpcTypeRegistry();
     private final ThreadSafeFory fory;
@@ -122,10 +126,15 @@ public final class ForyRpcCodec implements RpcCodec {
         }
 
         @Override
+        public byte[] encode0() {
+            return encodeChecked(EMPTY_ARGUMENTS);
+        }
+
+        @Override
         public byte[] encodeArguments(Object[] arguments) {
             return encodeChecked(
                     arguments == null
-                            ? new Object[0]
+                            ? EMPTY_ARGUMENTS
                             : arguments);
         }
 

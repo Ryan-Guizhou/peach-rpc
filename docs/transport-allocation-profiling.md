@@ -1,6 +1,6 @@
-# PR-E：Transport FrameAccumulator Allocation Profiling 与热路径优化
+# Transport FrameAccumulator Allocation Profiling 与热路径优化
 
-> **状态：PR-E 开发分支，Draft；尚未合并 main。**
+> **状态：核心完整帧直通优化已在当前 main 代码中实现；受控性能量化仍待完成。**
 > 当前新 CI 的 JMH `-prof gc` 与采样延迟属于 GitHub shared runner **Smoke Evidence**。未经固定主机多轮重复与端到端验证，不声明“内存分配下降 X%”或“p99 无回归”。
 
 ## 1. 优化目标与代码证据
@@ -17,7 +17,7 @@ flowchart LR
     Copy --> Core[Core independent byte array]
 ~~~
 
-PR-E 候选完整帧路径：
+当前完整帧路径：
 
 ~~~mermaid
 flowchart LR
@@ -102,4 +102,4 @@ python3 scripts/test_frame_allocation_evidence.py
 - 10k logical concurrency 长稳 30 分钟，超载及断链恢复；
 - 性能变差时保留回滚/关闭候选优化的理由和真实证据。
 
-本 PR 的微基准对比脚本不能代替 [V2-D.2 受控 Evidence](performance-evidence.md) 或 [Dubbo 对照](dubbo-comparison.md)；没有独占 Runner 和可信原始数据时标为 **pending**，绝不填充推测值。
+该微基准对比脚本不能代替 [V2-D.2 受控 Evidence](performance-evidence.md) 或 [Dubbo 对照](dubbo-comparison.md)；没有独占 Runner 和可信原始数据时标为 **pending**，绝不填充推测值。
