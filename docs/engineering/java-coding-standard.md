@@ -15,6 +15,8 @@
 - 优先显式依赖与不可变快照；Spring Bean 采用构造器注入；不要为了“现代化”无理由转换为 `record`、`var`、Stream、Optional 或反射代理。
 - 不允许随意新增 `common` / `misc` / `helpers` 这种无领域边界的收纳模块；算法/策略先选择已有明确的包和 SPI。
 
+架构分层不仅靠源码扫描：Core 生产类与 Public API 的依赖方向还由 [ArchUnit 字节码测试](architecture-guardrails.md) 保护。新增 Java 基础设施依赖前需确认 Core 无逆向依赖；规则以 Maven 自动测试为准。
+
 ## 2. 命名
 
 | 目标 | 必须/推荐 | 避免 |
