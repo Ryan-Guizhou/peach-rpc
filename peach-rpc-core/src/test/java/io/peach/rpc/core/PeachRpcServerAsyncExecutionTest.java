@@ -215,11 +215,22 @@ public class PeachRpcServerAsyncExecutionTest {
             throws Exception {
         CapturingTransportServer transport = new CapturingTransportServer();
         AsyncServiceImpl service = new AsyncServiceImpl();
+        CountDownLatch leasesReleased = new CountDownLatch(3);
+        RpcObserver observer = new RpcObserver() {
+            @Override
+            public void onServerInflightChanged(int delta) {
+                if (delta < 0) {
+                    leasesReleased.countDown();
+                }
+            }
+        };
         PeachRpcServer server = createServer(
                 transport,
                 service,
                 3,
-                19096);
+                19096,
+                new NoopCodec(),
+                observer);
 
         try {
             server.start().toCompletableFuture().join();
@@ -264,6 +275,7 @@ public class PeachRpcServerAsyncExecutionTest {
                             queuedResponse.toCompletableFuture()
                                     .get(1, TimeUnit.SECONDS))
                             .status());
+            assertTrue(leasesReleased.await(2, TimeUnit.SECONDS));
 
             byte[] recovered = transport.handle(request("fast"))
                     .toCompletableFuture()
@@ -471,6 +483,15 @@ public class PeachRpcServerAsyncExecutionTest {
             throws Exception {
         CapturingTransportServer transport = new CapturingTransportServer();
         AsyncServiceImpl busy = new AsyncServiceImpl();
+        CountDownLatch leasesReleased = new CountDownLatch(2);
+        RpcObserver observer = new RpcObserver() {
+            @Override
+            public void onServerInflightChanged(int delta) {
+                if (delta < 0) {
+                    leasesReleased.countDown();
+                }
+            }
+        };
         PeachRpcServer server = PeachRpcServer.builder()
                 .serviceRegistrar(new NoopRegistry())
                 .transportServer(transport)
@@ -481,6 +502,7 @@ public class PeachRpcServerAsyncExecutionTest {
                         1024L, 0, 0, 0L, 0L))
                 .executionOptions(new RpcProviderExecutionOptions(
                         false, 1, 4))
+                .observer(observer)
                 .build()
                 .registerService(
                         AsyncService.class,
@@ -526,6 +548,7 @@ public class PeachRpcServerAsyncExecutionTest {
 
             assertTrue(outstanding.cancel(true));
             busy.slow.complete("cancelled");
+            assertTrue(leasesReleased.await(2, TimeUnit.SECONDS));
             byte[] recovered = transport.handle(request("fast"))
                     .toCompletableFuture()
                     .get(1, TimeUnit.SECONDS);
