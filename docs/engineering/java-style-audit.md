@@ -46,6 +46,8 @@ Checkstyle 原始 XML 位于各 Maven 子模块的 `target/checkstyle-result.xml
 
 测试代码确实需要解释复杂生命周期、协议样例或不安全的故障注入时，依然应写有意义的中文 Javadoc/注释；豁免的是**强制覆盖率**，不是豁免可读性要求。
 
+Checkstyle 的所有 Style Audit 检查统一使用 **warning** 级别，避免历史建议性问题被 GitHub Actions 注记为红色 Error 而误导开发者；真正禁止的 API、EventLoop 不安全行为和 Core 依赖边界仍由 Java Agent Quality 和 ArchUnit 作为独立的硬性质量门禁。
+
 ## 3. 为什么当前不把历史违规全部设为 Error？
 
 Peach RPC 已经有 Public Core API、SPI、Wire v1 和自动生成代码，不能为了统一驼峰命名、Javadoc 或行长就批量更改 public 方法/字段。初次运行后的违规需要分成：
