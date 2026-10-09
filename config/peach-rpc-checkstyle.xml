@@ -19,5 +19,15 @@
         <module name="MissingJavadocType">
             <property name="scope" value="public"/>
         </module>
+        <module name="MissingJavadocMethod">
+            <property name="scope" value="public"/>
+            <property name="allowMissingPropertyJavadoc" value="true"/>
+        </module>
+    </module>
+    <!-- Public API Javadoc is required in production; test fixtures are
+         intentionally excluded to prevent meaningless comments. -->
+    <module name="SuppressionSingleFilter">
+        <property name="checks" value="MissingJavadoc(Type|Method)Check"/>
+        <property name="files" value=".*[\\/]src[\\/]test[\\/]java[\\/].*"/>
     </module>
 </module>
