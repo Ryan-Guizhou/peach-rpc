@@ -115,7 +115,7 @@ For Java 21 / Spring Boot 3.5.4 applications, the minimal Starter includes Memor
 </dependency>
 ```
 
-The repository is currently at Release Prep; public artifact availability depends on a subsequent Maven Central release.
+The repository is currently at Release Prep; public artifact availability depends on a subsequent Maven Central release. Startup performs fail-fast validation of `peach.rpc.*` options and emits a credential-free diagnostic summary.
 
 ### Prerequisites
 

@@ -115,7 +115,7 @@ Java 21 / Spring Boot 3.5.4 项目可引入以下依赖，默认使用 Memory Re
 </dependency>
 ```
 
-当前仓库版本为 Release Prep；公开仓库构件是否可下载取决于后续 Maven Central 发布。
+当前仓库版本为 Release Prep；公开仓库构件是否可下载取决于后续 Maven Central 发布。启动时会对 `peach.rpc.*` 配置执行 Fail-fast 校验并输出不含凭据的诊断摘要。
 
 ### 环境
 

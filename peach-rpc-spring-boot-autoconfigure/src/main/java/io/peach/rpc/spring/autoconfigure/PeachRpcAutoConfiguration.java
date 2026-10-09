@@ -62,8 +62,10 @@ public class PeachRpcAutoConfiguration {
             PeachRpcProperties properties,
             ObjectProvider<RpcObserver> observerProvider) {
         PeachRpcProperties.Registry registry = properties.getRegistry();
-        RegistryFactory factory = ExtensionLoader.getLoader(RegistryFactory.class)
-                .getExtension(registry.getType());
+        RegistryFactory factory = requireExtension(
+                RegistryFactory.class,
+                "peach.rpc.registry.type",
+                registry.getType());
         return factory.create(RegistryOptions.fromCsv(
                 registry.getEndpoints(),
                 registry.getNamespace(),
@@ -111,8 +113,10 @@ public class PeachRpcAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public RpcTransportFactory peachRpcTransportFactory(PeachRpcProperties properties) {
-        return ExtensionLoader.getLoader(RpcTransportFactory.class)
-                .getExtension(properties.getTransport().getType());
+        return requireExtension(
+                RpcTransportFactory.class,
+                "peach.rpc.transport.type",
+                properties.getTransport().getType());
     }
 
     /**
@@ -207,8 +211,10 @@ public class PeachRpcAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public LoadBalancer peachRpcLoadBalancer(PeachRpcProperties properties) {
-        return ExtensionLoader.getLoader(LoadBalancer.class)
-                .getExtension(properties.getClient().getLoadBalancer());
+        return requireExtension(
+                LoadBalancer.class,
+                "peach.rpc.client.load-balancer",
+                properties.getClient().getLoadBalancer());
     }
 
     /**
@@ -220,8 +226,35 @@ public class PeachRpcAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public ProxyFactory peachRpcProxyFactory(PeachRpcProperties properties) {
-        return ExtensionLoader.getLoader(ProxyFactory.class)
-                .getExtension(properties.getClient().getProxy());
+        return requireExtension(
+                ProxyFactory.class,
+                "peach.rpc.client.proxy",
+                properties.getClient().getProxy());
+    }
+
+    /**
+     * 使用完整配置键定位缺失或拼写错误的扩展，避免只暴露底层 SPI 异常。
+     *
+     * @param type SPI 扩展接口
+     * @param propertyName 配置键
+     * @param name 已配置扩展名称
+     * @param <T> SPI 类型
+     * @return 匹配的 SPI 扩展实例
+     */
+    private static <T> T requireExtension(
+            Class<T> type,
+            String propertyName,
+            String name) {
+        try {
+            return ExtensionLoader.getLoader(type).getExtension(name);
+        } catch (IllegalArgumentException error) {
+            throw new IllegalStateException(
+                    "Invalid " + propertyName + "='" + name
+                            + "': install the matching Peach RPC adapter "
+                            + "or select an available SPI implementation. "
+                            + error.getMessage(),
+                    error);
+        }
     }
 
     /**

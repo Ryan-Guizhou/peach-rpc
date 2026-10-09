@@ -251,3 +251,13 @@ Core 的 `RpcObserver`、`RpcTracingBridge`、`RpcMetadataPropagator` 不依赖�
 ## 9. Bean 覆盖
 
 自动配置对 Registry、Codec Registry、TransportFactory、LoadBalancer、ProxyFactory、Client、Server 均使用 `@ConditionalOnMissingBean`，业务项目可以通过声明同类型 Bean 覆盖默认装配。
+
+## 10. 启动 Fail-fast 与脱敏诊断
+
+Spring Boot 完成 `peach.rpc.*` 参数绑定时会立即校验 Registry、Transport、Fory、Consumer 与 Provider 的已启用选项，出现零超时、负数限额、非法端口、退避范围错误或无效的 Fory 严格白名单会终止启动。错误直接指出具体配置键，如 `Invalid peach.rpc.client.timeout: must be positive`。未启用的 Consumer/Provider 的专属配置不参与对应校验，避免影响单一角色部署。
+
+无法找到已配置的 SPI 时（例如在 Lite Starter 上选择 `peach.rpc.registry.type=nacos`，却未加入 `peach-rpc-registry-nacos` 依赖），启动异常会指出配置键，并建议加入对应 Adapter。可用扩展列表来自实际 Classpath，不硬编码在诊断器中。
+
+启动时输出 Registry、Transport、Proxy、Fory 安全模式、TLS 模式、启用角色与限额摘要，**不记录注册中心 username/password、密钥、证书或其文件内容**。默认的 `PLAINTEXT` 与 `TRUSTED_COMPATIBILITY` 会发出安全提醒；提醒不阻止本地开发，但面向不可信网络应开启 TLS/mTLS 与严格 Fory allowlist。
+
+当未引入任一业务注解时，虽然会进行配置校验，Consumer/Provider 的实际运行时仍按需创建，不会因此提前建立远程连接。
