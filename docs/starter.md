@@ -53,6 +53,20 @@ flowchart LR
 ```
 
 
+### 1.3 零外部依赖的真实 RPC 冒烟
+
+仓库包含 `PeachRpcAutoConfigurationTest.memoryRegistryShouldCompleteRealRpcWithoutExternalInfrastructure`，在一个 Spring 测试上下文内启动真实 Vert.x Provider/Consumer，使用内存 Registry、回环地址、随机端口完成 `DemoService.call()`。不依赖 Nacos、Etcd、Docker 或外部数据库。
+
+从仓库根目录执行：
+
+```bash
+mvn -B -ntp -pl peach-rpc-spring-boot-autoconfigure -am \
+  -Dtest=PeachRpcAutoConfigurationTest \
+  -Dsurefire.failIfNoSpecifiedTests=false test
+```
+
+这是源码测试命令。若业务项目单独引用已发布的 Lite Starter，需先引入双方共享的 RPC 接口定义，然后分别声明 `@PeachRpcService` 和 `@PeachRpcReference`，单 JVM 内存模式适合本地冒烟，跨进程生产环境必须换用 Etcd、Nacos 或等价的共享注册中心。
+
 ## 2. Provider
 
 ```java

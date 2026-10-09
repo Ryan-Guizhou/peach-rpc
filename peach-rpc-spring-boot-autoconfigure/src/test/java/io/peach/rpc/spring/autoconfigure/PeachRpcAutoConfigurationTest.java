@@ -141,6 +141,18 @@ public class PeachRpcAutoConfigurationTest {
     }
 
     @Test
+    void memoryRegistryShouldCompleteRealRpcWithoutExternalInfrastructure() {
+        providerRunner()
+                .withBean(ServiceBean.class)
+                .withBean(ConsumerBean.class)
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    ConsumerBean consumer = context.getBean(ConsumerBean.class);
+                    assertThat(consumer.service.call()).isEqualTo("ok");
+                });
+    }
+
+    @Test
     void referenceAndServiceShouldCreateBothRuntimes() {
         providerRunner()
                 .withBean(ServiceBean.class)
