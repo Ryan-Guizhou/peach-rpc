@@ -2,6 +2,16 @@
 
 Peach RPC 将低延迟、有界资源、兼容性和故障行为视为正确性的一部分。任何改动如果降低这些属性，即使 API 更短，也不应视为优化。
 
+## Agent 协作与远程权限
+
+跨 Codex、Cursor 与其他 Agent 的统一约束参见 [AGENTS.md](AGENTS.md)；
+本次治理的已确认边界、迁移和验证策略参见
+[Agent 工程治理实施契约](docs/engineering/agent-governance-plan.md)。
+MCP 的数据库默认禁用和用户授权边界见 [Agent/MCP 指南](docs/engineering/agent-mcp.md)。
+
+提交 PR 不等于授权合并。所有技术事实、性能结论和 CI 状态应引用当前提交的验证证据；
+不以“遵守最佳实践”代替可复现测试。
+
 ## 编码规则
 
 - JDK 21，UTF-8，无 BOM。
