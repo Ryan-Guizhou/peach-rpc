@@ -947,6 +947,20 @@ class VertxRpcTransportTest {
                                         == RpcConnectionCloseReason.REMOTE_CLOSE
                                 || reason
                                         == RpcConnectionCloseReason.TRANSPORT_ERROR));
+
+                // Observe a local close while the recovered socket is still
+                // active. Closing the replacement first would turn this
+                // into a remote-close-only scenario.
+                client.close();
+                long closeDeadline =
+                        System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+                while (!clientCloses.contains(
+                                RpcConnectionCloseReason.LOCAL_CLOSE)
+                        && System.nanoTime() < closeDeadline) {
+                    Thread.sleep(10L);
+                }
+                assertTrue(clientCloses.contains(
+                        RpcConnectionCloseReason.LOCAL_CLOSE));
             } finally {
                 replacement.close();
             }
@@ -954,16 +968,6 @@ class VertxRpcTransportTest {
             client.close();
             first.close();
         }
-
-        long closeDeadline =
-                System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
-        while (!clientCloses.contains(
-                        RpcConnectionCloseReason.LOCAL_CLOSE)
-                && System.nanoTime() < closeDeadline) {
-            Thread.sleep(10L);
-        }
-        assertTrue(clientCloses.contains(
-                RpcConnectionCloseReason.LOCAL_CLOSE));
     }
 
     @Test
