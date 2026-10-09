@@ -282,11 +282,22 @@ public class PeachRpcServerAsyncExecutionTest {
             throws Exception {
         CapturingTransportServer transport = new CapturingTransportServer();
         AsyncServiceImpl service = new AsyncServiceImpl();
+        CountDownLatch leaseReleased = new CountDownLatch(1);
+        RpcObserver observer = new RpcObserver() {
+            @Override
+            public void onServerInflightChanged(int delta) {
+                if (delta < 0) {
+                    leaseReleased.countDown();
+                }
+            }
+        };
         PeachRpcServer server = createServer(
                 transport,
                 service,
                 1,
-                19098);
+                19098,
+                new NoopCodec(),
+                observer);
 
         try {
             server.start().toCompletableFuture().join();
@@ -297,6 +308,7 @@ public class PeachRpcServerAsyncExecutionTest {
             assertEquals(
                     RpcStatus.BUSINESS_ERROR,
                     RpcProtocolCodec.view(failed).status());
+            assertTrue(leaseReleased.await(2, TimeUnit.SECONDS));
 
             byte[] recovered = transport.handle(request("fast"))
                     .toCompletableFuture()
