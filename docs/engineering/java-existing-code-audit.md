@@ -46,6 +46,32 @@ PR-2 [Java Agent Quality workflow](https://github.com/Ryan-Guizhou/peach-rpc/act
 - 内部类型/私有方法的下一批重命名应在 CodeGraph/引用分析后实施，并保留无反射/配置引用及测试证据。
 - 现有静态脚本不是完整 Java AST / 命名规则/敏感数据分析器。规范中“必须人工审查”的规则继续作为 Code Review Checklist，不制造不存在的自动化保证。
 
+## 4.1 异常边界逐项处置（PR-6）
+
+这 11 个 `catch (Throwable)` 不是 11 个可机械替换的编译问题。下表根据源码对请求/控制面执行生命周期逐项分类，**只把有证据的行为变动放入本阶段**。
+
+| 位置 | 处理决定 | 理由和需要的测试 |
+|---|---|---|
+| `PeachRpcClient.completeTransportResponse` | 保留；后续补 Codec 失败 / observer 故障 / 取消与 retry 的组合测试 | Consumer 完成任务必须完成 Future / 维护 endpoint 计数；简单改 catch 范围会让调用长期挂起 |
+| `PeachRpcServer.execute` | 保留，新增用户方法抛出 `AssertionError` 后返回失败并释放准入许可的测试 | 业务执行边界不能导致在途 Future 永久挂起 |
+| `PeachRpcServer.completeAsyncInvocation` | 保留，验证 CompletionStage 出错后请求生命周期 | `stage.toCompletableFuture()` 和完成回调注册均可能抛出不可预期错误 |
+| `PeachRpcServer.completeAsyncInvocationResult` | 保留，新增异步 `CompletionStage` 异常结束、Frame 错误响应及许可释放测试 | 必须覆盖 metadata scope、编码及业务完成异常 |
+| `PeachRpcServer.completeInvocationFailure` | 保留 | 构造错误响应本身也可能失败，此时必须 `completeExceptionally` 而非泄漏 Future |
+| `NacosControlExecutor.submit` | 保留并修复中断处理 | 接收方必须获得 `Error`、`Exception` 的异常完成信号；`InterruptedException` 重新标记中断 |
+| `VertxRpcTransportClient.handleGoAway` | 保留；后续专项 Buffer/close/failAll 测试 | EventLoop 协议解码不能使连接处于半失效状态 |
+| `VertxRpcTransportClient.handleHandshake` | 保留；后续专项握手异常 / pending 请求结束测试 | 不合法 HELLO_ACK 必须使 handshake Future 异常完成 |
+| `VertxRpcTransportClient.handleHeartbeat` | 保留；后续专项控制帧和重连测试 | 心跳解析异常必须关闭连接、回收待处理请求 |
+| `VertxRpcTransportServer.handleHello` | 保留；后续 malformed HELLO / Observer 异常隔离测试 | Provider handshake 协议错误不得逃出 EventLoop |
+| `VertxRpcTransportServer.handleHeartbeat` | 保留；后续 malformed PING / close 测试 | 维护连接超时及错误关闭策略 |
+
+### Nacos 周期任务的实际缺陷
+
+此前 `NacosControlExecutor.scheduleWithFixedDelay` 使用 `CompletableFuture.join()` 等待并静默捕获 `RuntimeException`。本 PR 将其改为**可中断**的 `get()`；关闭时在 `InterruptedException` 恢复当前线程中断标识，并结束本次周期任务，而非无条件继续重试。失败/成功转换通过一次 WARN、连续失败 DEBUG、恢复 INFO 记录，避免频繁失败产生 WARN 风暴。
+
+新增测试证明用户提供的控制面动作抛出 `AssertionError` 后其 Future 会异常完成并可执行下一任务，且一次周期任务失败不会永久停止后续 reconcile。Provider 同时补充同步业务 `Error` 和异步 Future `Error` 的终态与 Admission 回收测试。
+
+**仍待设计：** 无论异步边界用 `catch(Throwable)` 还是 `catch(Exception)`，`OutOfMemoryError`、`ThreadDeath` 等真正不可恢复 `Error` 的处置策略需要单独论证（例如先完成资源清理再交给 UncaughtExceptionHandler），本阶段不擅自改变现有协议错误分类。即使完成上述测试，也不等于证明任意 fatal Error 下 JVM 可继续服务。
+
 ## 5. 验收与剩余工作
 
 应使用 PR-3 最新提交重新运行：
