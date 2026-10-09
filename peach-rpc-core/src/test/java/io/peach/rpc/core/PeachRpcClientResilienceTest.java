@@ -17,6 +17,8 @@ import io.peach.rpc.codec.RpcCodec;
 import io.peach.rpc.codec.RpcCodecRegistry;
 import io.peach.rpc.codec.RpcMethodCodec;
 import io.peach.rpc.observability.RpcObserver;
+import io.peach.rpc.observability.RpcMetadataPropagator;
+import io.peach.rpc.api.RpcTimeoutException;
 import io.peach.rpc.observability.RpcRetryExhaustionReason;
 import io.peach.rpc.protocol.RpcFrameView;
 import io.peach.rpc.protocol.RpcProtocolCodec;
@@ -131,13 +133,18 @@ class PeachRpcClientResilienceTest {
     }
 
     @Test
-    void singleFailingObserverMustNotBreakRpcSuccessOrInflightBalance() {
+    void singleFailingObserverMustNotBreakRpcSuccessOrInflightBalance()
+            throws Exception {
         AtomicInteger attemptCount = new AtomicInteger();
         AtomicInteger inflightBalance = new AtomicInteger();
+        CountDownLatch completedCalls = new CountDownLatch(2);
         RpcObserver failingObserver = new RpcObserver() {
             @Override
             public void onClientInflightChanged(int delta) {
                 inflightBalance.addAndGet(delta);
+                if (delta < 0) {
+                    completedCalls.countDown();
+                }
                 throw new IllegalStateException("Metrics backend unavailable");
             }
 
@@ -176,6 +183,7 @@ class PeachRpcClientResilienceTest {
             assertEquals("ok", service.find("one"));
             assertEquals("ok", service.create("two"));
             assertEquals(2, attemptCount.get());
+            assertTrue(completedCalls.await(2, TimeUnit.SECONDS));
             assertEquals(0, inflightBalance.get());
         }
     }
@@ -324,6 +332,57 @@ class PeachRpcClientResilienceTest {
             }
             assertEquals("ok", first.get(2, TimeUnit.SECONDS));
             assertEquals("ok", second.get(2, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    void failedMetadataExtensionShouldReleaseConsumerCapacity() {
+        AtomicInteger metadataCalls = new AtomicInteger();
+        RpcMetadataPropagator broken = new RpcMetadataPropagator() {
+            @Override
+            public void inject(Map<String, String> metadata) {
+                metadataCalls.incrementAndGet();
+                throw new IllegalStateException("broken custom metadata");
+            }
+        };
+        AtomicInteger sent = new AtomicInteger();
+        try (PeachRpcClient client = PeachRpcClient.builder()
+                .serviceDiscovery(new StaticDiscovery())
+                .transportClient(new TestTransport((endpoint, frame, timeout) -> {
+                    sent.incrementAndGet();
+                    return CompletableFuture.completedFuture(successResponse(frame, "ok"));
+                }))
+                .codecRegistry(RpcCodecRegistry.of(new StringCodec()))
+                .metadataPropagator(broken)
+                .responseCompletionThreads(1)
+                .responseCompletionQueueCapacity(1)
+                .build()) {
+            RetryService service = client.refer(RetryService.class, "1.0.0", "test");
+            for (int attempt = 0; attempt < 4; attempt++) {
+                CompletionException failure = assertThrows(
+                        CompletionException.class, () -> service.find("test"));
+                assertInstanceOf(IllegalStateException.class, failure.getCause());
+            }
+            assertEquals(4, metadataCalls.get());
+            assertEquals(0, sent.get());
+        }
+    }
+
+    @Test
+    void hangingTransportShouldFinishAtLogicalDeadline() throws Exception {
+        CompletableFuture<byte[]> neverFinishes = new CompletableFuture<>();
+        try (PeachRpcClient client = PeachRpcClient.builder()
+                .serviceDiscovery(new StaticDiscovery())
+                .transportClient(new TestTransport(
+                        (endpoint, frame, timeout) -> neverFinishes))
+                .codecRegistry(RpcCodecRegistry.of(new StringCodec()))
+                .timeout(Duration.ofMillis(80))
+                .build()) {
+            RetryService service = client.refer(RetryService.class, "1.0.0", "test");
+            CompletionException failure = assertThrows(CompletionException.class,
+                    () -> service.find("test"));
+            assertInstanceOf(RpcTimeoutException.class, failure.getCause());
+            assertTrue(neverFinishes.isCancelled(), "Deadline must cancel the pending transport");
         }
     }
 
