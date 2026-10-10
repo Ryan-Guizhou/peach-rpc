@@ -1,6 +1,6 @@
 ---
-name: using-peach-rpc-compatibility
-description: "Peach RPC 1.0.x compatibility review for Wire v1, Schema Fingerprint, codec identifiers, stable type IDs, exported public APIs, SPI providers and Spring configuration. Use before modifying protocol, serialization, registry metadata, generated stubs, starters or any public contract."
+name: using-otryx-compatibility
+description: "OTRYX RPC 1.0.x compatibility review for Wire v1, Schema Fingerprint, codec identifiers, stable type IDs, exported public APIs, SPI providers and Spring configuration. Use before modifying protocol, serialization, registry metadata, generated stubs, starters or any public contract."
 ---
 
 # Compatibility Gate
@@ -17,4 +17,4 @@ description: "Peach RPC 1.0.x compatibility review for Wire v1, Schema Fingerpri
 5. Add precise positive and negative tests, rolling compatibility and independent JVM examples where applicable. Keep Chinese/English documentation in sync.
 6. Report impact ledger with contract, callers, risk, migration plan, and tests. If any compatibility axis is untested, disclose it instead of claiming success.
 
-**Do not automatically rename** public Record components, serialized types, `@PeachRpcService` members, SPI names or Maven artifact coordinates.
+**Do not automatically rename** public Record components, serialized types, `@OtryxRpcService` members, SPI names or Maven artifact coordinates.

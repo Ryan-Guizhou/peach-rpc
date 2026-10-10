@@ -1,12 +1,12 @@
 ---
-name: using-peach-rpc-java-engineering
-description: "Peach RPC Java code authoring and review: apply naming conventions, package boundaries, standard Chinese Javadoc, English structured logs, exception handling and resource lifecycle rules. Use when creating, editing or reviewing Java source, Spring Boot configuration, or API documentation."
+name: using-otryx-java-engineering
+description: "OTRYX RPC Java code authoring and review: apply naming conventions, package boundaries, standard Chinese Javadoc, English structured logs, exception handling and resource lifecycle rules. Use when creating, editing or reviewing Java source, Spring Boot configuration, or API documentation."
 ---
 
 # Java Engineering Workflow
 
 1. Read root `AGENTS.md`, `docs/engineering/java-coding-standard.md`, current source, POM and tests. Do not infer implemented behavior from a template.
-2. Inventory exported and internal symbols before renaming. Treat `io.peach.rpc.api`, public Core/SPI, serialization fields, service method IDs and Spring property keys as compatibility boundaries.
+2. Inventory exported and internal symbols before renaming. Treat `com.peachsoft.otryx.api`, public Core/SPI, serialization fields, service method IDs and Spring property keys as compatibility boundaries.
 3. Prefer precise English names: `ServiceKey`, `resolveEndpoint`, `maxInflightBytes`. Express units in identifier; do not append `Utils`, `Manager`, `Helper` without a real abstraction.
 4. Keep Core independent of adapters; keep one coherent responsibility per component. Favor constructor injection, immutable snapshots where useful, no new unbounded queues.
 5. Write Chinese Javadoc with genuine contracts: inputs/null, output/ownership, errors, concurrency, cancellation, cleanup and compatibility when relevant. Use standard tags. Add `@since` **only if source history verifies introduction version**. Never copy Peach Cloud `@Author/@Version/@CreateTime`.
