@@ -90,4 +90,4 @@ RegistryOptions(
 
 Nacos NamingService 的阻塞注册、注销和查询操作由 Adapter 自有有界控制面执行器隔离，不进入 Vert.x Event Loop；Consumer 单次请求仍只读取 Core 的 `ServiceDirectory` 数组快照。
 
-详细映射见 [Nacos Registry Adapter](registry-nacos.md)。
+详细映射见 [Nacos Registry Adapter](reference/registry-nacos.md)。
