@@ -152,11 +152,11 @@ Runtime
 
 1. [需求蓝图](requirements-blueprint.md)
 2. [技术方案](technical-solution.md)
-3. [架构设计](architecture.md)
+3. [架构设计](../architecture.md)
 4. [调用链详设](detailed-design.md)
-5. [SPI](spi.md)
+5. [SPI](../spi.md)
 6. 对应 Adapter 源码与测试
-7. [开发与贡献](development.md)
+7. [开发与贡献](../engineering/development.md)
 
 ## 9. 新增 Adapter 的边界
 
