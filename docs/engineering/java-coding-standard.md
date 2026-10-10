@@ -36,6 +36,20 @@ OTRYX 尚未 GA，不对历史开发版本承担 Java API、SPI、配置、Wire�
 
 普通异常提示、一次性局部业务文本，以及无额外业务含义的 `""`、路径连接符等不必机械抽取。仅整理常量时保持协议字节值和行为一致，不能顺带修改健康判断、重试、订阅或资源生命周期。
 
+**全仓范围**：上述约束适用于 Core/Wire、Registry、Transport、Serialization、Proxy、Spring Boot 配置、Observability、Codegen、Examples 与 Benchmarks，而不仅限于某个注册中心。协议路径、环境变量、SPI Extension、Metrics 名称和 Tags 是对外接口，应集中在各自最小所有者中；配置装配层必须复用 Provider/Adapter 已公开的配置键常量（可适度新增独立、不依赖厂商 SDK 的契约常量）。
+
+**自动审计（Issue #76）**：
+
+```bash
+python3 scripts/test_java_magic_literals.py
+python3 scripts/check_java_magic_literals.py --audit --report target/magic-literal-audit.json
+python3 scripts/check_java_magic_literals.py --changed --base <base-commit-sha>
+# 全仓整改完成并验证零发现后启用：
+python3 scripts/check_java_magic_literals.py --enforce-all
+```
+
+该工具只检查 Java 生产源码的八类高置信度字面量位置（`@Extension`、`providerOption`、`Map.entry`/`Map.of`、`JsonNode.path`、`Metric.tag`、JVM/ENV 与 HTTP Header），不假装分析所有 Java 字符串或数值表达式。全仓整改过程中，audit 可输出报告但暂不阻断；最后必须开启 enforce-all CI 门禁，并对指标名称、容量/时序魔法数、状态映射等未能由词法规则识别的内容保留人工复查记录。不得把业务已知缺陷混入纯常量化 PR。
+
 Java 源文件使用 UTF-8 无 BOM、LF、4 空格、行宽 120，禁止通配符 import、行尾空白和无意义空行。建议按 java/javax/jakarta、第三方、项目内包分组；导入顺序全面自动强制前应先评估全仓差异，不造成与行为变更混合的巨大格式化 PR。遵守现有 Checkstyle 零违规门禁。
 
 ## 3. 中文 Javadoc
