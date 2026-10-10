@@ -11,7 +11,7 @@
 
     <name>OTRYX RPC</name>
     <description>High-performance extensible Java RPC framework.</description>
-    <url>https://github.com/Ryan-Guizhou/otryx</url>
+    <url>https://github.com/Ryan-Guizhou/otryx-rpc</url>
 
     <licenses>
         <license>
@@ -30,9 +30,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/Ryan-Guizhou/otryx.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/Ryan-Guizhou/otryx.git</developerConnection>
-        <url>https://github.com/Ryan-Guizhou/otryx</url>
+        <connection>scm:git:https://github.com/Ryan-Guizhou/otryx-rpc.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/Ryan-Guizhou/otryx-rpc.git</developerConnection>
+        <url>https://github.com/Ryan-Guizhou/otryx-rpc</url>
         <tag>HEAD</tag>
     </scm>
 

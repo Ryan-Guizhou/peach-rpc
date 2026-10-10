@@ -50,6 +50,9 @@ jobs:
       - name: Repository checks
         run: python3 scripts/check_project.py
 
+      - name: Verify repository identity checker self-tests
+        run: python3 scripts/test_repository_identity.py
+
       - name: Verify Maven reactor
         run: mvn -B -ntp clean verify -Pquality
 

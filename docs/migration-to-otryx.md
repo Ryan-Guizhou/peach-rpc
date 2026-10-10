@@ -35,6 +35,10 @@
 6. 在隔离流量环境测试真实新旧混合版本；未提供通过证据前采用蓝绿或业务级分流，不采用自动滚动混合升级。
 7. 回滚时保留旧版注册组、旧依赖和完整配置，防止新消费者错误连接到旧提供者。
 
+## 当前 GitHub 仓库
+
+源码已迁至 [Ryan-Guizhou/otryx-rpc](https://github.com/Ryan-Guizhou/otryx-rpc)，所有新文档、POM SCM 和克隆示例以该地址为准。
+
 ## 稳定快照与兼容证据
 
 重构前稳定分支为 stable/peach-rpc-1.0.1-pre-otryx-2026-10-10，基准 SHA 为 a4175635aef8702cab613b9c672ca7edbaae6a94，主 CI 成功。其发布状态为 1.0.1 Release Prep，不应表述为已经正式发布的 1.0.1 GA。

@@ -18,13 +18,13 @@ mvn -version
 docker version
 ```
 
-当前 GitHub 仓库在正式改名前仍位于 [Ryan-Guizhou/peach-rpc](https://github.com/Ryan-Guizhou/peach-rpc)。本页面所示未来 OTRYX 地址需等仓库设置更名后才可直接使用。
+**仓库已更名：** [Ryan-Guizhou/otryx-rpc](https://github.com/Ryan-Guizhou/otryx-rpc)。建议使用当前 canonical 地址克隆；历史 peach-rpc 链接可能由 GitHub 重定向，但不再作为新文档的正式地址。
 
 ## 2. 获取源码
 
 ```bash
-git clone https://github.com/Ryan-Guizhou/otryx.git
-cd otryx
+git clone https://github.com/Ryan-Guizhou/otryx-rpc.git
+cd otryx-rpc
 ```
 
 ## 3. 先验证仓库
