@@ -1,6 +1,6 @@
 # Peach RPC 1.0 发布策略
 
-> **历史归档说明：** 以下是 Peach RPC 1.0.x 的历史发布策略与门禁说明，不适用于尚未发布的 OTRYX 2.0.0-SNAPSHOT。2.0 公开发布需单独完成新 GAV/namespace、迁移与 CI 认证。参见 [OTRYX 迁移指南](migration-to-otryx.md)。
+> **历史归档说明：** 以下是 Peach RPC 1.0.x 的历史发布策略与门禁说明，不适用于尚未发布的 OTRYX 2.0.0-SNAPSHOT。2.0 公开发布需单独完成新 GAV/namespace、迁移与 CI 认证。参见 [OTRYX 迁移指南](../../migration.md)。
 
 > 状态：**1.0.1 Release Prep / 1.0.x Maintenance**
 
@@ -137,7 +137,7 @@ POM 中的 `central-release` Profile 包含：
 - PGP/GPG signing key；
 - GitHub Repository Secrets。
 
-具体配置见 [Maven 结构与发布](maven.md)。
+具体配置见 [Maven 结构与发布](../../reference/maven.md)。
 
 ## 7. Release Workflow
 
@@ -228,4 +228,4 @@ Maven Central 和 GitHub 已发布版本均视为不可变。
 5. 重新运行全部门禁；
 6. 在 CHANGELOG/Release Notes 明确说明。
 
-运行时滚动回滚见 [升级与回滚](upgrade-rollback.md)。
+运行时滚动回滚见 [升级与回滚](../../upgrade-rollback.md)。
