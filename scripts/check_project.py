@@ -250,6 +250,46 @@ def check_markdown_links() -> None:
                 fail(f"Broken local link in {path.relative_to(ROOT)}: {raw}")
 
 
+def check_retired_paths() -> None:
+    """Reject removed root directories and stale active-documentation references."""
+    for retired in ("tools", "config"):
+        if (ROOT / retired).exists():
+            fail(f"Retired repository directory still exists: {retired}")
+
+    obsolete = (
+        "tools" + "/rpc-comparison",
+        "config" + "/agent-mcp.json",
+        "config" + "/java-api-rules.json",
+        "config" + "/otryx-checkstyle.xml",
+        "docs" + "/requirements-blueprint.md",
+        "docs" + "/technical-solution.md",
+        "docs" + "/detailed-design.md",
+        "docs" + "/project-structure.md",
+        "docs" + "/production-configuration.md",
+        "docs" + "/migration-to-otryx.md",
+        "docs" + "/maven.md",
+        "docs" + "/starter.md",
+        "docs" + "/release-notes-",
+        "docs" + "/release-policy.md",
+        "docs" + "/release-readiness.md",
+    )
+    extensions = {".md", ".py", ".sh", ".xml", ".yml", ".yaml", ".toml", ".json"}
+    for path in ROOT.rglob("*"):
+        if (not path.is_file() or path.suffix not in extensions
+                or path == Path(__file__).resolve()
+                or any(part in {"target", ".git", "node_modules", "__pycache__"}
+                       for part in path.parts)):
+            continue
+        content = path.read_text(encoding="utf-8", errors="replace")
+        for removed in obsolete:
+            for match in re.finditer(re.escape(removed), content):
+                # Permit newly relocated paths such as .agents/config/...
+                if match.start() > 0 and (content[match.start() - 1].isalnum()
+                                           or content[match.start() - 1] in "/._-"):
+                    continue
+                fail(f"Stale reference to retired path in {path.relative_to(ROOT)}: {removed}")
+
+
 def check_maven_reactor() -> None:
     root = ET.parse(ROOT / "pom.xml").getroot()
     modules = tuple(node.text for node in root.findall("m:modules/m:module", NS))
@@ -296,6 +336,7 @@ def main() -> int:
     check_current_dependency_coordinates()
     check_chinese_first_docs()
     check_markdown_links()
+    check_retired_paths()
     check_maven_reactor()
     check_core_boundaries()
     check_java_hygiene()
