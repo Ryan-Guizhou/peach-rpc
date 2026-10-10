@@ -1,6 +1,6 @@
 # PR-C：OTRYX RPC 与 Apache Dubbo 独立进程对比基准
 
-> **阶段：开发中 / Draft PR。** 下述脚本构成可执行的、独立 JVM 的 **Smoke 基线**，并不表示已完成固定硬件性能矩阵。任何 p99、QPS、吞吐领先结论必须建立在后续受控 Evidence 上。
+> **状态：OTRYX 2.0.0-SNAPSHOT 的可执行 Smoke 对比工具（非正式性能结论）。** 下述脚本构成可执行的、独立 JVM 的 **Smoke 基线**，并不表示已完成固定硬件性能矩阵。任何 p99、QPS、吞吐领先结论必须建立在后续受控 Evidence 上。
 
 ## 1. 对比边界
 
@@ -22,8 +22,8 @@
 ~~~mermaid
 flowchart LR
     Bench[共同负载模型及统一 JSON Schema]
-    CP[Peach Consumer JVM]
-    PP[Peach Provider JVM]
+    CP[OTRYX Consumer JVM]
+    PP[OTRYX Provider JVM]
     CD[Dubbo Consumer JVM]
     PD[Dubbo Provider JVM]
     V[校验器和 Evidence Report]
@@ -50,9 +50,9 @@ bash scripts/run_rpc_comparison_smoke.sh
 
 1. 编译并安装比较所需的 OTRYX RPC reactor 模块；
 2. 独立构建 `benchmarks/rpc-comparison/otryx` 和 `benchmarks/rpc-comparison/dubbo`，输出各自独立的 shaded JAR；
-3. 启动 Peach Provider JVM，执行独立 Consumer JVM，结束后停止；
+3. 启动 OTRYX Provider JVM，执行独立 Consumer JVM，结束后停止；
 4. 再以同样方式运行 Dubbo；
-5. 生成 `target/rpc-comparison-smoke/` 下的 `peach.json`、`dubbo.json`、`environment.json`、`report.md` 和 Provider 日志。
+5. 生成 `target/rpc-comparison-smoke/` 下的 `otryx.json`、`dubbo.json`、`environment.json`、`report.md` 和 Provider 日志。
 
 默认 16 并发、预热 2 秒、测量 3 秒、256 字节数据包，**用于正确性和工具连通性检查，不能用于性能排名**。
 
@@ -69,7 +69,7 @@ bash scripts/run_rpc_comparison_smoke.sh
 构建完成后，将对应 JAR 部署到各自目标主机，启动独立 Provider：
 
 ~~~bash
-# Peach Provider 主机
+# OTRYX Provider 主机
 java -jar benchmarks/rpc-comparison/otryx/target/otryx-comparison.jar provider 19501
 
 # Dubbo Provider 主机（另一个终端或实例）
@@ -84,7 +84,7 @@ export RPC_COMPARISON_RUN_ID="local-lab-1"
 export RPC_COMPARISON_EVIDENCE_CLASS="smoke"
 
 java -jar benchmarks/rpc-comparison/otryx/target/otryx-comparison.jar \
-  client <peach-provider-host> 19501 32 5 15 1024 peach.json
+  client <otryx-provider-host> 19501 32 5 15 1024 otryx.json
 
 java -jar benchmarks/rpc-comparison/dubbo/target/dubbo-comparison.jar \
   client <dubbo-provider-host> 19502 32 5 15 1024 dubbo.json
@@ -98,7 +98,7 @@ java -jar benchmarks/rpc-comparison/dubbo/target/dubbo-comparison.jar \
 python3 scripts/test_rpc_comparison_validator.py
 
 python3 scripts/validate_rpc_comparison.py \
-  --peach peach.json \
+  --otryx otryx.json \
   --dubbo dubbo.json \
   --environment environment.json \
   --report report.md
@@ -125,7 +125,7 @@ python3 scripts/validate_rpc_comparison.py \
 
 这些属于**待实施的受控验收项目**，不是当前 Smoke 已经完成的测试。
 
-已存在的 [V2-D.2 Evidence 工具](performance-evidence.md) 用于 Peach 自身定标；PR-C 另增加跨框架对照，不替代既有受控基线门禁。需要独占 Runner 与稳定网络后才能发布具有可复现条件的数值报告。
+已存在的 [V2-D.2 Evidence 工具](performance-evidence.md) 用于 OTRYX 自身定标；PR-C 另增加跨框架对照，不替代既有受控基线门禁。需要独占 Runner 与稳定网络后才能发布具有可复现条件的数值报告。
 
 ## 6. 外部实现依据
 
