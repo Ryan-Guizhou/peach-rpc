@@ -55,6 +55,7 @@ jobs:
         if: steps.api_generation.outputs.breaking == 'true'
         run: |
           python3 scripts/check_migration_readiness.py
+          mvn -B -ntp -pl otryx-codegen -am -DskipTests install
           mvn -B -ntp -pl otryx-benchmarks -am -DskipTests package
           mkdir -p target/frame-migration-smoke
           java -jar otryx-benchmarks/target/benchmarks.jar 'FrameAccumulatorBenchmark' -wi 1 -i 1 -w 200ms -r 200ms -f 1 -rf json -rff target/frame-migration-smoke/candidate.json
