@@ -1,13 +1,13 @@
-# Peach RPC 可观测性
+# OTRYX RPC 可观测性
 
-> 状态：**1.0.1 Release Prep**  
+> 状态：**2.0.0-SNAPSHOT Migration**  
 > Core 不直接依赖 Micrometer、OpenTelemetry 或 JFR。
 
 ## 1. 架构边界
 
 ```mermaid
 flowchart LR
-    Core[peach-rpc-core]
+    Core[otryx-core]
     Observer[RpcObserver]
     Trace[RpcTracingBridge]
     Meta[RpcMetadataPropagator]
@@ -31,8 +31,8 @@ flowchart LR
 
 ```xml
 <dependency>
-    <groupId>io.peach.rpc</groupId>
-    <artifactId>peach-rpc-observability-micrometer</artifactId>
+    <groupId>com.peachsoft.otryx</groupId>
+    <artifactId>otryx-observability-micrometer</artifactId>
     <version>1.0.1</version>
 </dependency>
 ```
@@ -41,30 +41,30 @@ Spring Context 中存在 `MeterRegistry` 时可自动装配 RPC Observer。
 
 ### 标准指标
 
-- `peach.rpc.client.calls`；
-- `peach.rpc.client.attempts`；
-- `peach.rpc.client.retries`；
-- `peach.rpc.client.retry.exhausted`；
-- `peach.rpc.client.inflight`；
-- `peach.rpc.client.timeouts`；
-- `peach.rpc.client.circuit.rejected`；
-- `peach.rpc.client.circuit.state`；
-- `peach.rpc.client.outlier.ejected`；
-- `peach.rpc.server.invocations`；
-- `peach.rpc.server.inflight`；
-- `peach.rpc.server.admission.rejected`；
-- `peach.rpc.server.overloaded`；
-- `peach.rpc.connection.active`；
-- `peach.rpc.connection.established`；
-- `peach.rpc.connection.reconnects`；
-- `peach.rpc.connection.heartbeat.timeouts`；
-- `peach.rpc.connection.closed`；
-- `peach.rpc.registry.operations`；
-- `peach.rpc.registry.failures`；
-- `peach.rpc.registry.recoveries`；
-- `peach.rpc.tls.handshake`；
-- `peach.rpc.tls.certificate.reload`；
-- `peach.rpc.tls.certificate.expiry.warnings`。
+- `otryx.rpc.client.calls`；
+- `otryx.rpc.client.attempts`；
+- `otryx.rpc.client.retries`；
+- `otryx.rpc.client.retry.exhausted`；
+- `otryx.rpc.client.inflight`；
+- `otryx.rpc.client.timeouts`；
+- `otryx.rpc.client.circuit.rejected`；
+- `otryx.rpc.client.circuit.state`；
+- `otryx.rpc.client.outlier.ejected`；
+- `otryx.rpc.server.invocations`；
+- `otryx.rpc.server.inflight`；
+- `otryx.rpc.server.admission.rejected`；
+- `otryx.rpc.server.overloaded`；
+- `otryx.rpc.connection.active`；
+- `otryx.rpc.connection.established`；
+- `otryx.rpc.connection.reconnects`；
+- `otryx.rpc.connection.heartbeat.timeouts`；
+- `otryx.rpc.connection.closed`；
+- `otryx.rpc.registry.operations`；
+- `otryx.rpc.registry.failures`；
+- `otryx.rpc.registry.recoveries`；
+- `otryx.rpc.tls.handshake`；
+- `otryx.rpc.tls.certificate.reload`；
+- `otryx.rpc.tls.certificate.expiry.warnings`。
 
 默认不把 endpoint、instanceId、service、method、exception message、traceId 放进 Meter Tag，避免高基数。
 
@@ -86,8 +86,8 @@ client.retries = attempts - 1
 
 ```xml
 <dependency>
-    <groupId>io.peach.rpc</groupId>
-    <artifactId>peach-rpc-observability-opentelemetry</artifactId>
+    <groupId>com.peachsoft.otryx</groupId>
+    <artifactId>otryx-observability-opentelemetry</artifactId>
     <version>1.0.1</version>
 </dependency>
 ```
@@ -117,8 +117,8 @@ sequenceDiagram
 
 ```xml
 <dependency>
-    <groupId>io.peach.rpc</groupId>
-    <artifactId>peach-rpc-observability-jfr</artifactId>
+    <groupId>com.peachsoft.otryx</groupId>
+    <artifactId>otryx-observability-jfr</artifactId>
     <version>1.0.1</version>
 </dependency>
 ```
@@ -126,7 +126,7 @@ sequenceDiagram
 启用示例：
 
 ```yaml
-peach:
+otryx:
   rpc:
     observability:
       jfr:
@@ -154,5 +154,5 @@ Observer/Propagator Adapter 回调异常必须被隔离，不得改变 RPC 业�
 ## 8. 生产入口
 
 - [生产可观测与 SLO](production-observability.md)
-- [Grafana Dashboard](../deploy/observability/grafana/peach-rpc-dashboard.json)
-- [Prometheus Alert Example](../deploy/observability/prometheus/peach-rpc-alerts.example.yml)
+- [Grafana Dashboard](../deploy/observability/grafana/otryx-dashboard.json)
+- [Prometheus Alert Example](../deploy/observability/prometheus/otryx-alerts.example.yml)

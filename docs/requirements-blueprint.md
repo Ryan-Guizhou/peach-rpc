@@ -1,11 +1,13 @@
-# Peach RPC 1.0 需求蓝图
+# OTRYX RPC 2.0 需求蓝图
 
-> 状态：**1.0.1 Release Prep / 1.0.x GA 基线**  
+> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration-to-otryx.md)。
+
+> 状态：**2.0.0-SNAPSHOT Migration / 继承自 Peach RPC 1.0.x 的 Wire v1 基线**  
 > 目标读者：使用者、架构师、维护者、贡献者。
 
 ## 1. 背景与问题
 
-Peach RPC 面向 Java 服务间通信。项目要解决的不是“再增加一个远程调用 API”，而是把以下能力放进一个边界清晰、可独立演进的 RPC 基础设施中：
+OTRYX RPC 面向 Java 服务间通信。项目要解决的不是“再增加一个远程调用 API”，而是把以下能力放进一个边界清晰、可独立演进的 RPC 基础设施中：
 
 - 高并发 Unary RPC；
 - 服务注册、发现与本地目录；
@@ -55,8 +57,8 @@ Peach RPC 面向 Java 服务间通信。项目要解决的不是“再增加一�
 flowchart LR
     AppC[Consumer Application]
     AppP[Provider Application]
-    CoreC[Peach RPC Consumer Runtime]
-    CoreP[Peach RPC Provider Runtime]
+    CoreC[OTRYX RPC Consumer Runtime]
+    CoreP[OTRYX RPC Provider Runtime]
     Registry[(Etcd / Nacos)]
     Obs[Metrics / Trace / JFR]
     TLS[TLS / mTLS]
@@ -84,18 +86,18 @@ flowchart LR
 ### FR-001 服务契约
 
 - 服务由 Java Interface 定义。
-- `@PeachRpcContract` 可触发编译期 Consumer Stub 与 Provider Dispatcher 生成。
+- `@OtryxRpcContract` 可触发编译期 Consumer Stub 与 Provider Dispatcher 生成。
 - 缺少生成代码时必须存在可工作的 fallback 路径。
 
 ### FR-002 Provider
 
-- `@PeachRpcService` 暴露服务。
+- `@OtryxRpcService` 暴露服务。
 - Provider 启动后向 Registry 注册实际 advertised endpoint。
 - 关闭时先注销、进入 GO_AWAY/Drain，再释放资源。
 
 ### FR-003 Consumer
 
-- `@PeachRpcReference` 注入远程服务。
+- `@OtryxRpcReference` 注入远程服务。
 - Consumer 使用本地服务目录和负载均衡器选择 endpoint。
 - 单次逻辑调用必须受整体 Deadline 约束。
 
@@ -114,7 +116,7 @@ flowchart LR
 
 ### FR-006 Resilience
 
-- 自动 Retry 只允许显式 `@PeachRpcIdempotent` 方法。
+- 自动 Retry 只允许显式 `@OtryxRpcIdempotent` 方法。
 - Retry 受最大 Attempt、Budget、Deadline、Backoff/Jitter 约束。
 - 支持方法级 Circuit Breaker。
 - 支持 endpoint Outlier Ejection。

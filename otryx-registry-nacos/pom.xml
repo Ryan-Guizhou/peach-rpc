@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.peachsoft.otryx</groupId>
+        <artifactId>otryx-parent</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <artifactId>otryx-registry-nacos</artifactId>
+    <name>otryx-registry-nacos</name>
+    <description>Nacos registry adapter for OTRYX RPC.</description>
+    <properties>
+        <nacos.test.groups></nacos.test.groups>
+        <nacos.test.excluded-groups>chaos</nacos.test.excluded-groups>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-core</artifactId>
+            <version>${revision}</version>
+            <type>test-jar</type>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <groups>${nacos.test.groups}</groups>
+                    <excludedGroups>${nacos.test.excluded-groups}</excludedGroups>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>nacos-chaos</id>
+            <properties>
+                <nacos.test.groups>chaos</nacos.test.groups>
+                <nacos.test.excluded-groups></nacos.test.excluded-groups>
+            </properties>
+        </profile>
+    </profiles>
+</project>

@@ -3,8 +3,8 @@ set -euo pipefail
 
 PROFILE="${1:-full}"
 OUTPUT_DIR="${2:-target/v2d2-matrix}"
-JAR="${PEACH_RPC_BENCHMARK_JAR:-peach-rpc-benchmarks/target/benchmarks.jar}"
-JVM_FLAGS="${PEACH_RPC_JVM_FLAGS:-}"
+JAR="${OTRYX_RPC_BENCHMARK_JAR:-otryx-benchmarks/target/benchmarks.jar}"
+JVM_FLAGS="${OTRYX_RPC_JVM_FLAGS:-}"
 
 if [[ ! -f "$JAR" ]]; then
   echo "Benchmark JAR not found: $JAR" >&2
@@ -22,7 +22,7 @@ cleanup_tls_material() {
 trap cleanup_tls_material EXIT
 
 prepare_tls_material() {
-  TLS_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/peach-rpc-v2d2-tls.XXXXXX")"
+  TLS_TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/otryx-v2d2-tls.XXXXXX")"
   local tls_dir="$TLS_TEMP_DIR"
   if ! command -v openssl >/dev/null 2>&1; then
     echo "openssl is required for TLS benchmark matrix" >&2
@@ -35,9 +35,9 @@ prepare_tls_material() {
     -subj "/CN=localhost" \
     -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
     >/dev/null 2>&1
-  export PEACH_RPC_BENCHMARK_TLS_CERT="$tls_dir/server-cert.pem"
-  export PEACH_RPC_BENCHMARK_TLS_KEY="$tls_dir/server-key.pem"
-  export PEACH_RPC_BENCHMARK_TLS_CA="$tls_dir/server-cert.pem"
+  export OTRYX_RPC_BENCHMARK_TLS_CERT="$tls_dir/server-cert.pem"
+  export OTRYX_RPC_BENCHMARK_TLS_KEY="$tls_dir/server-key.pem"
+  export OTRYX_RPC_BENCHMARK_TLS_CA="$tls_dir/server-cert.pem"
 }
 
 case "$PROFILE" in
@@ -178,7 +178,7 @@ done
 for thread_count in "${resilience_threads[@]}"; do
   for mode in "${modes[@]}"; do
     output="$OUTPUT_DIR/resilience-${mode}-t${thread_count}.json"
-    if ! java -jar "$JAR" 'io.peach.rpc.core.ResiliencePathBenchmark.*' \
+    if ! java -jar "$JAR" 'com.peachsoft.otryx.core.ResiliencePathBenchmark.*' \
       -t "$thread_count" \
       -bm "$mode" \
       -wi "$warmup_iterations" \

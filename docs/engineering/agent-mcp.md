@@ -1,4 +1,4 @@
-# Peach RPC：Codex / Cursor MCP 与操作权限规范
+# OTRYX RPC：Codex / Cursor MCP 与操作权限规范
 
 ## 1. 单一配置源
 

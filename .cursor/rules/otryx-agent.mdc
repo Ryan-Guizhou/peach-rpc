@@ -1,0 +1,6 @@
+---
+description: Route every OTRYX RPC code modification and review to repository AGENTS.md.
+alwaysApply: true
+---
+
+Read and obey [AGENTS.md](../../AGENTS.md) before modifying source, configuration, docs, MCP or PRs. Load only matching `.agents/skills/<name>/SKILL.md` when its specific domain is involved. Never copy skill contents or bypass the user's merge/production authorization boundary.

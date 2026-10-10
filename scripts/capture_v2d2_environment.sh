@@ -17,10 +17,10 @@ maven_version="$(if command -v mvn >/dev/null 2>&1; then mvn -version 2>&1 | sin
 openssl_version="$(if command -v openssl >/dev/null 2>&1; then openssl version 2>/dev/null | single_line; else echo unavailable; fi)"
 containerized=false
 if [[ -f /.dockerenv || -f /run/.containerenv ]]; then containerized=true; fi
-commit="${PEACH_RPC_BENCHMARK_COMMIT:-${GITHUB_SHA:-unknown}}"
-evidence_class="${PEACH_RPC_EVIDENCE_CLASS:-shared-ci}"
-runner_id="${PEACH_RPC_RUNNER_ID:-${RUNNER_NAME:-unknown}}"
-runner_labels="${PEACH_RPC_RUNNER_LABELS:-unknown}"
+commit="${OTRYX_RPC_BENCHMARK_COMMIT:-${GITHUB_SHA:-unknown}}"
+evidence_class="${OTRYX_RPC_EVIDENCE_CLASS:-shared-ci}"
+runner_id="${OTRYX_RPC_RUNNER_ID:-${RUNNER_NAME:-unknown}}"
+runner_labels="${OTRYX_RPC_RUNNER_LABELS:-unknown}"
 host_identity_material=""
 if [[ -r /etc/machine-id ]]; then host_identity_material="$(cat /etc/machine-id)"; fi
 if [[ -r /sys/class/dmi/id/product_uuid ]]; then host_identity_material="${host_identity_material}|$(cat /sys/class/dmi/id/product_uuid)"; fi
@@ -28,7 +28,7 @@ host_fingerprint_sha256=unknown
 if [[ -n "$host_identity_material" ]] && command -v sha256sum >/dev/null 2>&1; then
   host_fingerprint_sha256="$(printf '%s' "$host_identity_material" | sha256sum | awk '{print $1}')"
 fi
-run_id="${PEACH_RPC_EVIDENCE_RUN_ID:-unknown}"
+run_id="${OTRYX_RPC_EVIDENCE_RUN_ID:-unknown}"
 hostname_value="$(hostname 2>/dev/null || echo unknown)"
 kernel="$(uname -a 2>/dev/null | single_line)"
 captured_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -54,7 +54,7 @@ java=$java_version
 maven=$maven_version
 openssl=$openssl_version
 containerized=$containerized
-jvm_flags=${PEACH_RPC_JVM_FLAGS:-}
+jvm_flags=${OTRYX_RPC_JVM_FLAGS:-}
 EOF
 cat > "$MARKDOWN" <<EOF
 # V2-D.2 Environment

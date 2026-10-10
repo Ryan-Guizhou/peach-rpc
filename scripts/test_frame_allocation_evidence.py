@@ -8,7 +8,7 @@ from compare_frame_allocation import compare, read_results
 
 def jmh_row(mode, payload, fragmented, allocation=64.0):
     metric = {
-        "benchmark": "io.peach.rpc.transport.vertx.FrameAccumulatorBenchmark.accumulate",
+        "benchmark": "com.peachsoft.otryx.transport.vertx.FrameAccumulatorBenchmark.accumulate",
         "jmhVersion": "1.37",
         "jdkVersion": "21",
         "mode": mode,

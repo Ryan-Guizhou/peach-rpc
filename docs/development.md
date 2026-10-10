@@ -1,4 +1,4 @@
-# Peach RPC 开发指南
+# OTRYX RPC 开发指南
 
 ## 1. 环境
 

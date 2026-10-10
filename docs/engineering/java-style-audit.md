@@ -1,4 +1,4 @@
-# Peach RPC：Java 命名、Javadoc 与格式质量基线
+# OTRYX RPC：Java 命名、Javadoc 与格式质量基线
 
 > 状态：PR-8 建立建议性扫描；**PR-13 在已验证的零违规基线上将同一 Checkstyle 规则集升级为严格 CI Gate**。历史扫描证据保留，严格门禁只覆盖当前配置实际检查的规则与 Maven Reactor。
 
@@ -36,7 +36,7 @@ Checkstyle 原始 XML 位于各 Maven 子模块的 `target/checkstyle-result.xml
 
 ## 2.1 首轮结果与规则修正
 
-[PR-8 首轮 Java Style Audit](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37874810150) 成功，上传原始 XML 和聚合报告，扫描 **208 个 Java 文件、19 份 Checkstyle XML**；发现 **31 条 MissingJavadocType**，全部定位到 `src/test/java` 下的公开测试类或测试 fixture，`src/main/java` 没有该规则的缺失记录。此数字是**特定规则、特定提交、特定扫描范围**的历史基线，不意味着全仓 Javadoc 合格。
+[PR-8 首轮 Java Style Audit](https://github.com/Ryan-Guizhou/otryx/actions/runs/37874810150) 成功，上传原始 XML 和聚合报告，扫描 **208 个 Java 文件、19 份 Checkstyle XML**；发现 **31 条 MissingJavadocType**，全部定位到 `src/test/java` 下的公开测试类或测试 fixture，`src/main/java` 没有该规则的缺失记录。此数字是**特定规则、特定提交、特定扫描范围**的历史基线，不意味着全仓 Javadoc 合格。
 
 这些测试夹具存在 Public 类更多是为了 mock/反射/编译测试，机械补上“测试类”Javadoc 将制造大量无信息价值的注释。因此 PR-10 的规则调整为：
 
@@ -51,7 +51,7 @@ Checkstyle 的所有 Style Audit 检查统一使用 **warning** 级别，避免�
 
 ## 2.2 第二轮 Checkstyle 结果与 JMH 基准整改
 
-[PR-10 的新版审计](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37875213504) 再次扫描 **19 份 XML、208 个 Java 文件**，发现 **3 条 MissingJavadocMethod**。读取原始 `checkstyle-audit.json` 后，确认这 3 条**全部位于 `peach-rpc-benchmarks/src/main/java/io/peach/rpc/benchmarks/ProtocolCodecBenchmark.java`**，分别是：
+[PR-10 的新版审计](https://github.com/Ryan-Guizhou/otryx/actions/runs/37875213504) 再次扫描 **19 份 XML、208 个 Java 文件**，发现 **3 条 MissingJavadocMethod**。读取原始 `checkstyle-audit.json` 后，确认这 3 条**全部位于 `otryx-benchmarks/src/main/java/io/peach/rpc/benchmarks/ProtocolCodecBenchmark.java`**，分别是：
 
 | 行号（整改前） | 方法 | 需要说明的契约 |
 |---|---|---|
@@ -59,11 +59,11 @@ Checkstyle 的所有 Style Audit 检查统一使用 **warning** 级别，避免�
 | 44 | `encode()` | 仅计 Wire v1 编码吞吐，返回每次编码的字节数组 |
 | 49 | `decode()` | 仅计预编码字节的解码吞吐，不含传输/注册中心调用 |
 
-**重要边界：** JMH Benchmark 虽然位于 `src/main/java`，但不属于用户可直接依赖的 Peach RPC 公开运行时 API。不能把这 3 条描述为“RPC 用户公共接口缺少 Javadoc”。本阶段在不改变方法签名、`@Setup`、`@Benchmark`、Codec 或 Wire v1 的情况下补充了有价值的中文基准说明，待本 PR 最新 CI 验证。由于检查器默认豁免测试目录，它**不是所有 Java 源码的注释语义全面审计**。
+**重要边界：** JMH Benchmark 虽然位于 `src/main/java`，但不属于用户可直接依赖的 OTRYX RPC 公开运行时 API。不能把这 3 条描述为“RPC 用户公共接口缺少 Javadoc”。本阶段在不改变方法签名、`@Setup`、`@Benchmark`、Codec 或 Wire v1 的情况下补充了有价值的中文基准说明，待本 PR 最新 CI 验证。由于检查器默认豁免测试目录，它**不是所有 Java 源码的注释语义全面审计**。
 
 ## 2.3 PR-13：从零违规证据升级到严格门禁
 
-[PR-12 最新 Java Style Audit](https://github.com/Ryan-Guizhou/peach-rpc/actions/runs/37875650253) 的聚合日志明确报告 **19 份 Checkstyle XML、208 个 Java 文件、0 条违规**。该数字来自固定提交和既有规则集，**不代表整个代码库不存在敏感信息泄露、线程竞争或 Java API 兼容问题**。
+[PR-12 最新 Java Style Audit](https://github.com/Ryan-Guizhou/otryx/actions/runs/37875650253) 的聚合日志明确报告 **19 份 Checkstyle XML、208 个 Java 文件、0 条违规**。该数字来自固定提交和既有规则集，**不代表整个代码库不存在敏感信息泄露、线程竞争或 Java API 兼容问题**。
 
 利用上述零违规基线，PR-13 将 **Java Style Audit** 的结果由仅上传 Artifact 改为：Maven 仍先生成完整报告，随后由 Python Gate 验证 Reactor 报告覆盖率并在发现任何违规时将 CI 置为失败。新的生产公共类、方法、命名、Import、行长违规由此无法绕过该检查；测试源码的命名、Import 和行长照常检查，但公共测试 Fixture 的机械 Javadoc 覆盖检查仍被排除。
 
@@ -73,7 +73,7 @@ Gate 只说明“Checkstyle 所配置且实际扫描到的规则无违规”。�
 
 ## 3. 为什么早期不直接将所有历史违规升级为 Error？
 
-Peach RPC 已经有 Public Core API、SPI、Wire v1 和自动生成代码，不能为了统一驼峰命名、Javadoc 或行长就批量更改 public 方法/字段。初次运行后的违规需要分成：
+OTRYX RPC 已经有 Public Core API、SPI、Wire v1 和自动生成代码，不能为了统一驼峰命名、Javadoc 或行长就批量更改 public 方法/字段。初次运行后的违规需要分成：
 
 1. **确定的可机械修复项**：纯内部格式、单一文件中不影响公共契约的通配符 import、私有无意义字段名；
 2. **需人工分析项**：公开 API、SPI、序列化与反射字段名、Record 分量、配置键、兼容性元数据；
@@ -85,7 +85,7 @@ Peach RPC 已经有 Public Core API、SPI、Wire v1 和自动生成代码，不�
 ## 4. 与其他门禁关系
 
 - `Java Agent Quality`：**已生效**的 changed-file 禁用 API/安全写法门禁与全仓 Regex/lexer Audit；
-- `PeachRpcCoreArchitectureTest`：**已提交 PR-7** 的 ArchUnit 字节码依赖方向测试；
+- `OtryxRpcCoreArchitectureTest`：**已提交 PR-7** 的 ArchUnit 字节码依赖方向测试；
 - `Java Style Audit`：PR-13 已启用的 Java AST 命名/Javadoc/可读性严格零违规门禁，并检查 Maven Reactor 报告完整性；
 - `mvn clean verify -Pquality`：真实代码编译、单元测试、严格 Javadoc 验证，继续是主质量门槛；
 - Rolling Compatibility / 受控性能测量：按涉及的 Wire/Codec/Transport/Registry 变更触发，不能被任何静态风格扫描替代。

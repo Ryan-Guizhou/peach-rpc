@@ -3,20 +3,20 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>io.peach.rpc.comparison</groupId>
+    <groupId>com.peachsoft.otryx.comparison</groupId>
     <artifactId>rpc-comparison-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>Peach RPC / Dubbo isolated benchmark</name>
+    <name>OTRYX RPC / Dubbo isolated benchmark</name>
     <modules>
         <module>common</module>
-        <module>peach</module>
+        <module>otryx</module>
         <module>dubbo</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
-        <peach.version>1.0.1</peach.version>
+        <otryx.version>2.0.0-SNAPSHOT</otryx.version>
         <dubbo.version>3.3.6</dubbo.version>
     </properties>
     <build>

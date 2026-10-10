@@ -157,7 +157,7 @@ def main() -> int:
             ]
         findings = inspect(paths, ROOT, rules)
         report = {
-            "schema": "peach.rpc.java-conventions.audit.v1",
+            "schema": "otryx.rpc.java-conventions.audit.v1",
             "mode": "audit" if args.audit else "changed",
             "files_scanned": len(set(paths)),
             "errors": sum(f["severity"] == "error" for f in findings),

@@ -15,7 +15,7 @@
 ## Spring Boot 接入
 
 ~~~yaml
-peach:
+otryx:
   rpc:
     codec:
       fory:

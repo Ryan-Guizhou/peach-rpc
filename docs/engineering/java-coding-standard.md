@@ -1,4 +1,4 @@
-# Peach RPC Java 工程编码规范
+# OTRYX RPC Java 工程编码规范
 
 **状态：PR 阶段引入的正式建议；CI 强制范围见“门禁和例外”。**
 **基线**：Java 21、Spring Boot 3.5.4、Maven、Wire v1（以当前 POM 和源码为准）。本规范吸收 Peach Cloud 的高信息量中文 Javadoc、英文日志、并发/资源契约思想，但本仓库不用其自定义类型头。
@@ -9,7 +9,7 @@
 
 ### 代码结构
 
-- `peach-rpc-core` 只承载 API、协议、中立策略、编排和 SPI；第三方依赖落在 Adapter 模块，不向 Core 反向依赖 Vert.x/Nacos/Etcd/Fory/Spring。
+- `otryx-core` 只承载 API、协议、中立策略、编排和 SPI；第三方依赖落在 Adapter 模块，不向 Core 反向依赖 Vert.x/Nacos/Etcd/Fory/Spring。
 - Transport 负责网络帧及缓冲区所有权；Codec 负责序列化校验；Registry 负责注册发现/订阅；Runtime 负责准入、执行和结果；Starter 负责 Spring 装配。
 - 不为类行数机械拆分；优先分析变更原因、职责凝聚力、调用关系、生命周期、共享锁与可测性。
 - 优先显式依赖与不可变快照；Spring Bean 采用构造器注入；不要为了“现代化”无理由转换为 `record`、`var`、Stream、Optional 或反射代理。
@@ -21,7 +21,7 @@
 
 | 目标 | 必须/推荐 | 避免 |
 |---|---|---|
-| Package | 小写、领域/职责层次，`io.peach.rpc.transport.vertx` | `util2`、`temp`、`misc` |
+| Package | 小写、领域/职责层次，`com.peachsoft.otryx.transport.vertx` | `util2`、`temp`、`misc` |
 | Class / Interface | `UpperCamelCase`、名词或明确能力：`RpcMethodCodec`、`RegistrySubscription` | 无意义 `I` 前缀、`DataManager` |
 | SPI 实现 | `<Technology><Contract>` 或明确策略名：`NacosRegistry`、`VertxRpcTransportFactory` | `DefaultImpl2`、`BaseUtils` |
 | Method | `lowerCamelCase`、动词 + 领域名：`resolveEndpoint`、`tryAcquire` | `handle` 滥用、`doStuff` |

@@ -1,5 +1,5 @@
 name: Bug report
-description: 报告可复现的 Peach RPC 问题
+description: 报告可复现的 OTRYX RPC 问题
 title: "[Bug] "
 labels:
   - bug
@@ -11,7 +11,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Peach RPC Version
+      label: OTRYX RPC Version
       placeholder: 1.0.1
     validations:
       required: true

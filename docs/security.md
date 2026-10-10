@@ -1,18 +1,18 @@
-# Peach RPC TLS / mTLS 安全指南
+# OTRYX RPC TLS / mTLS 安全指南
 
 > Fory Native 反序列化安全模式、类型白名单与资源上限参见 [Fory 安全模式迁移指南](fory-security.md)。TLS/mTLS 不替代对象类型约束。
 
-> 适用版本：**Peach RPC 1.0.x**。  
-> TLS/mTLS 位于 Transport 层，不改变 Peach RPC v1 固定协议头，也不替代业务授权。
+> 适用版本：**OTRYX RPC 1.0.x**。  
+> TLS/mTLS 位于 Transport 层，不改变 OTRYX RPC v1 固定协议头，也不替代业务授权。
 
 ## 1. 定位
 
-Peach RPC 的安全链路为：
+OTRYX RPC 的安全链路为：
 
 ~~~text
-PeachRpcClient / PeachRpcServer
+OtryxRpcClient / OtryxRpcServer
         |
-Peach RPC Protocol
+OTRYX RPC Protocol
         |
 TLS / mTLS
         |
@@ -34,14 +34,14 @@ Network
 ## 2. Spring Boot 配置
 
 ~~~yaml
-peach:
+otryx:
   rpc:
     transport:
       security:
         mode: MTLS
-        certificate-path: /etc/peach-rpc/tls/tls.crt
-        private-key-path: /etc/peach-rpc/tls/tls.key
-        trust-certificate-path: /etc/peach-rpc/tls/ca.crt
+        certificate-path: /etc/otryx/tls/tls.crt
+        private-key-path: /etc/otryx/tls/tls.key
+        trust-certificate-path: /etc/otryx/tls/ca.crt
         hostname-verification: true
         handshake-timeout: 3s
         reload-interval: 30s
@@ -75,7 +75,7 @@ Provider 使用 `ClientAuth.REQUIRED`，因此缺少合法客户端证书时握�
 
 ## 3. 连接生命周期
 
-TLS/mTLS 在 Peach RPC HELLO 之前完成：
+TLS/mTLS 在 OTRYX RPC HELLO 之前完成：
 
 ~~~mermaid
 sequenceDiagram
@@ -113,7 +113,7 @@ TLS 失败不会 fallback 到 plaintext。
 默认开启：
 
 ~~~yaml
-peach.rpc.transport.security.hostname-verification: true
+otryx.rpc.transport.security.hostname-verification: true
 ~~~
 
 Consumer 通过目标 RPC host 与证书身份执行校验。
@@ -122,7 +122,7 @@ Consumer 通过目标 RPC host 与证书身份执行校验。
 
 ## 6. 在线证书 Reload
 
-Peach RPC 周期检查以下 material 的 SHA-256 内容指纹、mtime 与 size：
+OTRYX RPC 周期检查以下 material 的 SHA-256 内容指纹、mtime 与 size：
 
 - server certificate
 - private key

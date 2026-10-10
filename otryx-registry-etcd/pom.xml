@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.peachsoft.otryx</groupId>
+        <artifactId>otryx-parent</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <artifactId>otryx-registry-etcd</artifactId>
+    <name>otryx-registry-etcd</name>
+    <description>Etcd registry adapter for OTRYX RPC.</description>
+    <properties>
+        <etcd.test.groups></etcd.test.groups>
+        <etcd.test.excluded-groups>chaos</etcd.test.excluded-groups>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-core</artifactId>
+            <version>${revision}</version>
+            <type>test-jar</type>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.etcd</groupId>
+            <artifactId>jetcd-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.etcd</groupId>
+            <artifactId>jetcd-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <groups>${etcd.test.groups}</groups>
+                    <excludedGroups>${etcd.test.excluded-groups}</excludedGroups>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>etcd-chaos</id>
+            <properties>
+                <etcd.test.groups>chaos</etcd.test.groups>
+                <etcd.test.excluded-groups></etcd.test.excluded-groups>
+            </properties>
+        </profile>
+    </profiles>
+</project>

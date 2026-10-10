@@ -1,0 +1,28 @@
+package com.peachsoft.otryx.transport.vertx;
+
+import com.peachsoft.otryx.spi.Extension;
+import com.peachsoft.otryx.transport.RpcTransportClient;
+import com.peachsoft.otryx.transport.RpcTransportFactory;
+import com.peachsoft.otryx.transport.RpcTransportOptions;
+import com.peachsoft.otryx.transport.RpcTransportServer;
+
+/** Vert.x TCP 传输工厂。 */
+@Extension("vertx")
+public final class VertxRpcTransportFactory implements RpcTransportFactory {
+
+    /**
+     * 创建 Vert.x TCP 传输工厂。
+     */
+    public VertxRpcTransportFactory() {
+    }
+
+    @Override
+    public RpcTransportClient createClient(RpcTransportOptions options) {
+        return new VertxRpcTransportClient(options);
+    }
+
+    @Override
+    public RpcTransportServer createServer(RpcTransportOptions options) {
+        return new VertxRpcTransportServer(options);
+    }
+}

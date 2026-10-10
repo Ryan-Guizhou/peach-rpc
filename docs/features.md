@@ -1,12 +1,14 @@
-# Peach RPC 1.0 功能描述
+# OTRYX RPC 2.0 功能描述
 
-> 状态：**1.0.1 Release Prep**
+> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration-to-otryx.md)。
+
+> 状态：**2.0.0-SNAPSHOT Migration**
 
 ## 1. 功能总览
 
 ```mermaid
 mindmap
-  root((Peach RPC 1.0))
+  root((OTRYX RPC 2.0))
     调用模型
       Unary RPC
       Generated Stub
@@ -42,7 +44,7 @@ mindmap
 ## 2. API 与 Codegen
 
 - Java Interface 作为服务契约；
-- `@PeachRpcContract` 编译期生成 Consumer/Provider 路径；
+- `@OtryxRpcContract` 编译期生成 Consumer/Provider 路径；
 - Generated path 缺失时使用 Proxy / MethodHandle fallback；
 - CGLIB 和 Byte Buddy 为可选 Proxy Adapter。
 
@@ -133,7 +135,7 @@ Wire v1 包含：
 
 ### Retry
 
-只有 `@PeachRpcIdempotent` 方法可自动重试。
+只有 `@OtryxRpcIdempotent` 方法可自动重试。
 
 ### Circuit
 
@@ -177,8 +179,8 @@ CLIENT/SERVER Span + W3C Trace Context/Baggage。
 
 ## 12. Spring Boot Starter
 
-- `@PeachRpcService`；
-- `@PeachRpcReference`；
+- `@OtryxRpcService`；
+- `@OtryxRpcReference`；
 - 按实际 Provider/Consumer 使用惰性创建 Runtime；
 - Provider advertised endpoint 与 bind endpoint 分离；
 - 支持 Registry、Transport、Security、Execution、Observability 配置。

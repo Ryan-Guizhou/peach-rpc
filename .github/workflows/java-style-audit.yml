@@ -5,7 +5,7 @@ on:
     paths:
       - "**/*.java"
       - "pom.xml"
-      - "config/peach-rpc-checkstyle.xml"
+      - "config/otryx-checkstyle.xml"
       - "scripts/summarize_checkstyle_audit.py"
       - "scripts/test_checkstyle_audit.py"
       - ".github/workflows/java-style-audit.yml"
@@ -15,7 +15,7 @@ on:
     paths:
       - "**/*.java"
       - "pom.xml"
-      - "config/peach-rpc-checkstyle.xml"
+      - "config/otryx-checkstyle.xml"
       - "scripts/summarize_checkstyle_audit.py"
       - ".github/workflows/java-style-audit.yml"
 

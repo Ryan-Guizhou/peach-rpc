@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 450" role="img" aria-label="OTRYX control plane versus data plane"><defs><style>.title{font:700 31px Arial,Helvetica,sans-serif;fill:#153451}.section{font:700 20px Arial,Helvetica,sans-serif;fill:#153451}.body{font:16px Arial,Helvetica,sans-serif;fill:#234960}.muted{font:13px Arial,Helvetica,sans-serif;fill:#517186}.label{font:700 16px Arial,Helvetica,sans-serif;fill:#153451}</style><marker id="ar" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0 L10 3 L0 6Z" fill="#16A5B0"/></marker><marker id="dim" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0 L10 3 L0 6Z" fill="#6B8B9B"/></marker><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#F7FCFF"/><stop offset="1" stop-color="#E8F7F7"/></linearGradient></defs>
+<rect width="1160" height="450" rx="24" fill="url(#bg)"/><text x="42" y="54" class="title">Data Plane vs. Control Plane</text>
+<rect x="45" y="95" width="1070" height="140" rx="17" fill="#153451"/><text x="75" y="131" font-family="Arial" font-size="23" font-weight="700" fill="#FFFFFF">Data plane  ·  RPC hot path</text>
+<g font-family="Arial" font-size="18" font-weight="600" fill="#DAFFFF" text-anchor="middle"><text x="188" y="182">Consumer</text><text x="424" y="182">Local snapshot</text><text x="671" y="182">Vert.x Transport</text><text x="942" y="182">Provider</text></g>
+<g stroke="#46D8CF" stroke-width="4" fill="none" marker-end="url(#ar)"><path d="M270 174H334"/><path d="M528 174H568"/><path d="M770 174H832"/></g>
+<rect x="45" y="266" width="1070" height="138" rx="17" fill="#E0F4F2" stroke="#91D2CC" stroke-width="2"/><text x="75" y="305" class="section">Control plane  ·  Changes outside the per-request hot path</text>
+<text x="75" y="343" class="body">Memory / Etcd / Nacos  →  Watch / Subscribe  →  Immutable local ServiceDirectory</text>
+<text x="75" y="375" class="body">Configuration validation · SPI discovery · TLS certificate reload · Registry recovery</text>
+<path d="M420 266V235" stroke="#6B8B9B" stroke-width="3" stroke-dasharray="7 6" fill="none" marker-end="url(#dim)"/>
+</svg>

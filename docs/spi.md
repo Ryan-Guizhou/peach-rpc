@@ -1,6 +1,6 @@
 # SPI 扩展指南
 
-Peach RPC 的 SPI 用于隔离可以独立替换的实现技术和策略，不用于普通工具类。
+OTRYX RPC 的 SPI 用于隔离可以独立替换的实现技术和策略，不用于普通工具类。
 
 ## 1. 基本规则
 
@@ -79,14 +79,14 @@ RegistryOptions(
 
 `ProxyFactory` 是兼容 fallback，不是长期默认性能路径。
 
-标注 `@PeachRpcContract` 并启用 `peach-rpc-codegen` 后，编译期生成 Consumer Stub；运行时优先发现生成类，缺失时才回退 ProxyFactory。
+标注 `@OtryxRpcContract` 并启用 `otryx-codegen` 后，编译期生成 Consumer Stub；运行时优先发现生成类，缺失时才回退 ProxyFactory。
 
 当前同时提供 CGLIB 与 Byte Buddy fallback；Generated Stub 仍是推荐高性能路径。
 
 
 ## 6. Nacos Adapter 能力
 
-`peach-rpc-registry-nacos` 声明 REGISTRATION、SUBSCRIPTION、LEASE、HEALTH、WEIGHT、CLUSTER、METADATA，不声明 REVISION。Nacos SDK 不提供适合直接映射到当前 SPI 的全局单调 revision，因此 Adapter 为 `RegistrySnapshot` 生成进程内单调 revision。
+`otryx-registry-nacos` 声明 REGISTRATION、SUBSCRIPTION、LEASE、HEALTH、WEIGHT、CLUSTER、METADATA，不声明 REVISION。Nacos SDK 不提供适合直接映射到当前 SPI 的全局单调 revision，因此 Adapter 为 `RegistrySnapshot` 生成进程内单调 revision。
 
 Nacos NamingService 的阻塞注册、注销和查询操作由 Adapter 自有有界控制面执行器隔离，不进入 Vert.x Event Loop；Consumer 单次请求仍只读取 Core 的 `ServiceDirectory` 数组快照。
 

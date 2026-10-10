@@ -49,9 +49,9 @@ def environment(
             "captured_at=2026-09-30T00:00:00Z",
             f"commit={commit}",
             "evidence_class=controlled",
-            "runner_id=peach-rpc-perf-01",
+            "runner_id=otryx-perf-01",
             f"host_fingerprint_sha256={host_fingerprint}",
-            "runner_labels=self-hosted,linux,x64,peach-rpc-perf",
+            "runner_labels=self-hosted,linux,x64,otryx-perf",
             f"run_id={run_id}",
             "hostname=perf-host",
             "kernel=Linux test",
@@ -235,7 +235,7 @@ def write_bundle(
 
 
 def main() -> int:
-    with tempfile.TemporaryDirectory(prefix="peach-rpc-evidence-") as raw:
+    with tempfile.TemporaryDirectory(prefix="otryx-evidence-") as raw:
         temp = Path(raw)
         runs = []
         for index, scale in enumerate((1.00, 1.01, 0.99), start=1):

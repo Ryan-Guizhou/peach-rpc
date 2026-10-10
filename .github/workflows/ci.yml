@@ -19,8 +19,8 @@ jobs:
           MODE: standalone
           NACOS_AUTH_ENABLE: "false"
           NACOS_AUTH_TOKEN: "UGVhY2hScGNDb250cm9sUGxhbmVTZWNyZXRLZXkxMjM0NTY3ODkwMTIzNDU2Nzg5MA=="
-          NACOS_AUTH_IDENTITY_KEY: peach-rpc-ci
-          NACOS_AUTH_IDENTITY_VALUE: peach-rpc-ci-secret
+          NACOS_AUTH_IDENTITY_KEY: otryx-ci
+          NACOS_AUTH_IDENTITY_VALUE: otryx-ci-secret
         ports:
           - 8848:8848
           - 9848:9848
@@ -55,22 +55,22 @@ jobs:
 
       - name: Verify V2-D.2-E1 runner preflight
         env:
-          PEACH_RPC_EVIDENCE_CLASS: controlled
-          PEACH_RPC_EVIDENCE_RUN_ID: ci-self-test
-          PEACH_RPC_RUNNER_ID: ci-self-test
-          PEACH_RPC_EXPECT_RUNNER_ID: ci-self-test
-          PEACH_RPC_JVM_FLAGS: "-Xms128m -Xmx128m"
-          PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
+          OTRYX_RPC_EVIDENCE_CLASS: controlled
+          OTRYX_RPC_EVIDENCE_RUN_ID: ci-self-test
+          OTRYX_RPC_RUNNER_ID: ci-self-test
+          OTRYX_RPC_EXPECT_RUNNER_ID: ci-self-test
+          OTRYX_RPC_JVM_FLAGS: "-Xms128m -Xmx128m"
+          OTRYX_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
         run: |
           bash scripts/preflight_v2d2_runner.sh target/v2d2-preflight-self-test
 
-          if PEACH_RPC_EXPECT_RUNNER_ID=wrong-runner \
+          if OTRYX_RPC_EXPECT_RUNNER_ID=wrong-runner \
             bash scripts/preflight_v2d2_runner.sh target/v2d2-preflight-wrong-runner; then
             echo "Preflight unexpectedly accepted the wrong runner ID"
             exit 1
           fi
 
-          if PEACH_RPC_EXPECT_HOST_FINGERPRINT_SHA256=0000000000000000000000000000000000000000000000000000000000000000 \
+          if OTRYX_RPC_EXPECT_HOST_FINGERPRINT_SHA256=0000000000000000000000000000000000000000000000000000000000000000 \
             bash scripts/preflight_v2d2_runner.sh target/v2d2-preflight-wrong-host; then
             echo "Preflight unexpectedly accepted the wrong host fingerprint"
             exit 1
@@ -90,19 +90,19 @@ jobs:
 
       - name: Verify V2-D.2 benchmark harness
         env:
-          PEACH_RPC_JVM_FLAGS: "-Xms256m -Xmx256m"
+          OTRYX_RPC_JVM_FLAGS: "-Xms256m -Xmx256m"
         run: bash scripts/run_v2d2_benchmark_matrix.sh smoke target/v2d2-matrix-smoke
 
       - name: Verify 10k virtual-thread soak harness
         env:
-          PEACH_RPC_SOAK_CONCURRENCY: "10000"
-          PEACH_RPC_SOAK_PAYLOAD_SIZE: "64"
-          PEACH_RPC_SOAK_CONNECTIONS: "4"
-          PEACH_RPC_SOAK_WARMUP_SECONDS: "1"
-          PEACH_RPC_SOAK_DURATION_SECONDS: "3"
-          PEACH_RPC_SOAK_CLIENT_TIMEOUT_MS: "15000"
-          PEACH_RPC_SOAK_OUTPUT: "target/v2d2-soak-smoke.json"
-          PEACH_RPC_JVM_FLAGS: "-Xms256m -Xmx256m"
+          OTRYX_RPC_SOAK_CONCURRENCY: "10000"
+          OTRYX_RPC_SOAK_PAYLOAD_SIZE: "64"
+          OTRYX_RPC_SOAK_CONNECTIONS: "4"
+          OTRYX_RPC_SOAK_WARMUP_SECONDS: "1"
+          OTRYX_RPC_SOAK_DURATION_SECONDS: "3"
+          OTRYX_RPC_SOAK_CLIENT_TIMEOUT_MS: "15000"
+          OTRYX_RPC_SOAK_OUTPUT: "target/v2d2-soak-smoke.json"
+          OTRYX_RPC_JVM_FLAGS: "-Xms256m -Xmx256m"
         run: bash scripts/run_v2d2_soak.sh
 
       - name: Validate V2-D.2 smoke evidence

@@ -12,14 +12,14 @@ BASE_SHA="$1"
 HEAD_SHA="$2"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUTPUT="${3:-$ROOT/target/fory-allocation-comparison}"
-RUNS="${PEACH_RPC_FORY_COMPARE_RUNS:-3}"
-CLASS="${PEACH_RPC_FORY_EVIDENCE_CLASS:-shared-ci-smoke}"
-RUNNER_ID="${PEACH_RPC_RUNNER_ID:-${RUNNER_NAME:-unknown}}"
-HOST_FINGERPRINT="${PEACH_RPC_HOST_FINGERPRINT:-}"
-JVM_FLAGS="${PEACH_RPC_ALLOCATION_JVM_FLAGS:--Xms256m -Xmx256m}"
-WARMUP="${PEACH_RPC_FORY_JMH_WARMUP:-2}"
-MEASUREMENT="${PEACH_RPC_FORY_JMH_MEASUREMENT:-3}"
-ITERATION_TIME="${PEACH_RPC_FORY_JMH_TIME:-1s}"
+RUNS="${OTRYX_RPC_FORY_COMPARE_RUNS:-3}"
+CLASS="${OTRYX_RPC_FORY_EVIDENCE_CLASS:-shared-ci-smoke}"
+RUNNER_ID="${OTRYX_RPC_RUNNER_ID:-${RUNNER_NAME:-unknown}}"
+HOST_FINGERPRINT="${OTRYX_RPC_HOST_FINGERPRINT:-}"
+JVM_FLAGS="${OTRYX_RPC_ALLOCATION_JVM_FLAGS:--Xms256m -Xmx256m}"
+WARMUP="${OTRYX_RPC_FORY_JMH_WARMUP:-2}"
+MEASUREMENT="${OTRYX_RPC_FORY_JMH_MEASUREMENT:-3}"
+ITERATION_TIME="${OTRYX_RPC_FORY_JMH_TIME:-1s}"
 
 if [[ ! "$BASE_SHA" =~ ^[a-f0-9]{40}$ || ! "$HEAD_SHA" =~ ^[a-f0-9]{40}$ ]]; then
   echo "Both SHAs must be 40 lowercase hexadecimal characters" >&2
@@ -30,11 +30,11 @@ if [[ "$BASE_SHA" == "$HEAD_SHA" || "$(git -C "$ROOT" rev-parse HEAD)" != "$HEAD
   exit 1
 fi
 if [[ ! "$RUNS" =~ ^[1-9][0-9]*$ ]]; then
-  echo "PEACH_RPC_FORY_COMPARE_RUNS must be a positive integer" >&2
+  echo "OTRYX_RPC_FORY_COMPARE_RUNS must be a positive integer" >&2
   exit 1
 fi
 if [[ "$CLASS" != "shared-ci-smoke" && "$CLASS" != "controlled-micro" ]]; then
-  echo "PEACH_RPC_FORY_EVIDENCE_CLASS must be shared-ci-smoke or controlled-micro" >&2
+  echo "OTRYX_RPC_FORY_EVIDENCE_CLASS must be shared-ci-smoke or controlled-micro" >&2
   exit 1
 fi
 if [[ "$CLASS" == "controlled-micro" ]]; then
@@ -50,7 +50,7 @@ fi
 git -C "$ROOT" cat-file -e "${BASE_SHA}^{commit}"
 git -C "$ROOT" cat-file -e "${HEAD_SHA}^{commit}"
 
-BENCH_SRC="peach-rpc-benchmarks/src/main/java/io/peach/rpc/benchmarks/ForyArgumentEncodingBenchmark.java"
+BENCH_SRC="otryx-benchmarks/src/main/java/io/peach/rpc/benchmarks/ForyArgumentEncodingBenchmark.java"
 if [[ ! -f "$ROOT/$BENCH_SRC" ]]; then
   echo "Missing candidate benchmark source $BENCH_SRC" >&2
   exit 1
@@ -73,8 +73,8 @@ cp "$ROOT/$BENCH_SRC" "$BASE_WORKTREE/$BENCH_SRC"
 for checkout in "$BASE_WORKTREE" "$ROOT"; do
   (
     cd "$checkout"
-    mvn -B -ntp -pl peach-rpc-codegen -am -DskipTests install
-    mvn -B -ntp -pl peach-rpc-benchmarks -am -DskipTests package
+    mvn -B -ntp -pl otryx-codegen -am -DskipTests install
+    mvn -B -ntp -pl otryx-benchmarks -am -DskipTests package
   )
 done
 
@@ -90,7 +90,7 @@ from pathlib import Path
 
 source = Path(os.environ["ROOT"]) / os.environ["BENCH_SRC"]
 meta = {
-    "schema": "peach.rpc.fory.allocation.environment.v1",
+    "schema": "otryx.rpc.fory.allocation.environment.v1",
     "baseline_sha": os.environ["BASE_SHA"],
     "candidate_sha": os.environ["HEAD_SHA"],
     "evidence_class": os.environ["CLASS"],
@@ -116,9 +116,9 @@ run_side() {
   local round="$2"
   local jar
   if [[ "$side" == "baseline" ]]; then
-    jar="$BASE_WORKTREE/peach-rpc-benchmarks/target/benchmarks.jar"
+    jar="$BASE_WORKTREE/otryx-benchmarks/target/benchmarks.jar"
   else
-    jar="$ROOT/peach-rpc-benchmarks/target/benchmarks.jar"
+    jar="$ROOT/otryx-benchmarks/target/benchmarks.jar"
   fi
   local dir
   dir="$(printf '%s/%s/run-%02d' "$OUTPUT" "$side" "$round")"

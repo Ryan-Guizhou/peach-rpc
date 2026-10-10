@@ -1,11 +1,15 @@
-# Peach RPC 1.0 技术方案
+# OTRYX RPC 2.0 技术方案
 
-> 状态：**Current / 1.0.1 Release Prep**  
+> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration-to-otryx.md)。
+
+> 状态：**Current / 2.0.0-SNAPSHOT Migration**  
 > 本文解释当前实现为什么这样设计，以及各边界如何协同。
+
+![控制面与数据面](images/architecture/control-data-plane.svg)
 
 ## 1. 方案摘要
 
-Peach RPC 采用“**Core 稳定契约 + Adapter 隔离第三方技术 + 启动期绑定 + 热路径最小动态行为**”的总体方案。
+OTRYX RPC 采用“**Core 稳定契约 + Adapter 隔离第三方技术 + 启动期绑定 + 热路径最小动态行为**”的总体方案。
 
 核心决策：
 
@@ -41,7 +45,7 @@ flowchart TB
     end
 
     subgraph CompileTime
-        Codegen[peach-rpc-codegen]
+        Codegen[otryx-codegen]
     end
 
     subgraph Core
@@ -190,7 +194,7 @@ Consumer 维护整体 logical Deadline。新 Provider 优先使用相对 `timeou
 
 ### Retry
 
-只有 `@PeachRpcIdempotent` 方法才允许自动 Retry。停止原因可观测为：
+只有 `@OtryxRpcIdempotent` 方法才允许自动 Retry。停止原因可观测为：
 
 - MAX_ATTEMPTS；
 - BUDGET；
@@ -212,7 +216,7 @@ TLS/mTLS 位于 Vert.x Transport：
 TCP
  -> TLS/mTLS handshake
  -> certificate / hostname verification
- -> Peach RPC HELLO/ACK
+ -> OTRYX RPC HELLO/ACK
  -> RPC traffic
 ```
 

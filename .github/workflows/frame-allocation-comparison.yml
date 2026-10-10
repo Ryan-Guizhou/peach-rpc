@@ -3,9 +3,9 @@ name: Frame Allocation Comparison
 on:
   pull_request:
     paths:
-      - "peach-rpc-transport-vertx/src/main/java/io/peach/rpc/transport/vertx/FrameAccumulator.java"
-      - "peach-rpc-transport-vertx/src/test/java/io/peach/rpc/transport/vertx/FrameAccumulatorTest.java"
-      - "peach-rpc-benchmarks/src/main/java/io/peach/rpc/transport/vertx/FrameAccumulatorBenchmark.java"
+      - "otryx-transport-vertx/src/main/java/com/peachsoft/otryx/transport/vertx/FrameAccumulator.java"
+      - "otryx-transport-vertx/src/test/java/com/peachsoft/otryx/transport/vertx/FrameAccumulatorTest.java"
+      - "otryx-benchmarks/src/main/java/com/peachsoft/otryx/transport/vertx/FrameAccumulatorBenchmark.java"
       - "scripts/run_frame_allocation_comparison.sh"
       - "scripts/compare_frame_allocation.py"
       - "scripts/test_frame_allocation_evidence.py"
@@ -32,12 +32,39 @@ jobs:
       - name: Validate allocation evidence parser
         run: python3 scripts/test_frame_allocation_evidence.py
 
+      - name: Identify breaking API-generation migration
+        id: api_generation
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if git cat-file -e "${BASE_SHA}:peach-rpc-core/pom.xml" 2>/dev/null; then
+            echo "breaking=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "breaking=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Compare base and candidate JMH allocation / sample latency
+        if: steps.api_generation.outputs.breaking != 'true'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PEACH_RPC_ALLOCATION_JVM_FLAGS: "-Xms256m -Xmx256m"
+          OTRYX_RPC_ALLOCATION_JVM_FLAGS: "-Xms256m -Xmx256m"
         run: bash scripts/run_frame_allocation_comparison.sh "$BASE_SHA" "$HEAD_SHA"
+
+      - name: OTRYX migration benchmark smoke (not a cross-generation performance comparison)
+        if: steps.api_generation.outputs.breaking == 'true'
+        run: |
+          python3 scripts/check_migration_readiness.py
+          mvn -B -ntp -pl otryx-codegen -am -DskipTests install
+          mvn -B -ntp -pl otryx-benchmarks -am -DskipTests package
+          mkdir -p target/frame-migration-smoke
+          java -jar otryx-benchmarks/target/benchmarks.jar 'FrameAccumulatorBenchmark' -wi 1 -i 1 -w 200ms -r 200ms -f 1 -rf json -rff target/frame-migration-smoke/candidate.json
+          {
+            echo "## Major API rebrand: historical allocation pair not comparable"
+            echo "Only the OTRYX candidate JMH smoke was executed."
+            echo "The old Java API/class paths differ from the new generation."
+            echo "No allocation or p99 improvement claim can be derived from this run."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload raw JMH and comparison reports
         if: always()

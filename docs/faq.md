@@ -1,4 +1,4 @@
-# Peach RPC FAQ
+# OTRYX RPC FAQ
 
 ## 1. 1.0.x 是否继续冻结 Wire？
 
@@ -6,7 +6,7 @@
 
 ## 2. 是否支持 gRPC / HTTP/2？
 
-1.0 不支持。当前 Transport 是 Peach RPC 自定义 Wire v1 over Vert.x TCP。
+1.0 不支持。当前 Transport 是 OTRYX RPC 自定义 Wire v1 over Vert.x TCP。
 
 ## 3. 是否支持 Protobuf？
 
@@ -22,7 +22,7 @@
 
 ## 6. CPU 密集任务怎么办？
 
-使用 `@PeachRpcExecution(RpcExecutionMode.CPU)`，进入有界平台线程池。
+使用 `@OtryxRpcExecution(RpcExecutionMode.CPU)`，进入有界平台线程池。
 
 ## 7. 为什么 DIRECT 默认关闭？
 
@@ -30,7 +30,7 @@ DIRECT 会在 Transport Event Loop 执行业务代码。任何阻塞或长计算
 
 ## 8. Retry 为什么必须标记幂等？
 
-框架无法替业务判断“重复执行是否安全”。只有 `@PeachRpcIdempotent` 方法才允许自动 Retry。
+框架无法替业务判断“重复执行是否安全”。只有 `@OtryxRpcIdempotent` 方法才允许自动 Retry。
 
 ## 9. Registry 故障会不会立刻导致所有调用失败？
 

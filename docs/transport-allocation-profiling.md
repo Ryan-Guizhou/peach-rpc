@@ -5,7 +5,7 @@
 
 ## 1. 优化目标与代码证据
 
-Peach RPC 1.0.x 的 Vert.x TCP 传输使用 `FrameAccumulator`，并通过 `Consumer<byte[]>` 向 Core 交付完整帧。这个 `byte[]` 的所有权边界不能直接删除，否则可能让后续异步解码读取到 Netty 复用缓冲区。
+OTRYX RPC 1.0.x 的 Vert.x TCP 传输使用 `FrameAccumulator`，并通过 `Consumer<byte[]>` 向 Core 交付完整帧。这个 `byte[]` 的所有权边界不能直接删除，否则可能让后续异步解码读取到 Netty 复用缓冲区。
 
 优化前完整帧路径：
 
@@ -46,7 +46,7 @@ flowchart LR
 
 ## 3. 定量 Allocation Profiling
 
-仓库已经有 `peach-rpc-benchmarks/.../FrameAccumulatorBenchmark`，参数包括：
+仓库已经有 `otryx-benchmarks/.../FrameAccumulatorBenchmark`，参数包括：
 
 | 维度 | 值 |
 |---|---|
@@ -68,7 +68,7 @@ bash scripts/run_frame_allocation_comparison.sh \
   "$(git rev-parse HEAD)"
 ~~~
 
-脚本先为基线建独立 Git Worktree，从**同一仓库的明确 Base SHA**安装 `peach-rpc-codegen` 并编译 Benchmark；然后在当前候选 SHA 上重复同样操作。两边使用同样 JDK、JMH 参数和 JVM flags；所有结果存放到：
+脚本先为基线建独立 Git Worktree，从**同一仓库的明确 Base SHA**安装 `otryx-codegen` 并编译 Benchmark；然后在当前候选 SHA 上重复同样操作。两边使用同样 JDK、JMH 参数和 JVM flags；所有结果存放到：
 
 ~~~text
 target/frame-allocation-comparison/
@@ -87,8 +87,8 @@ target/frame-allocation-comparison/
 ## 4. 质量验证
 
 ~~~bash
-mvn -B -ntp -pl peach-rpc-codegen -am -DskipTests install
-mvn -B -ntp -pl peach-rpc-transport-vertx -am test
+mvn -B -ntp -pl otryx-codegen -am -DskipTests install
+mvn -B -ntp -pl otryx-transport-vertx -am test
 python3 scripts/test_frame_allocation_evidence.py
 ~~~
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Repository quality gate for Peach RPC 1.0.x."""
+"""Repository quality gate for OTRYX migration and historical Peach 1.0.x."""
 
 from __future__ import annotations
 
@@ -21,22 +21,22 @@ LOGGER_WITH_CHINESE = re.compile(
 )
 
 EXPECTED_MODULES = (
-    "peach-rpc-core",
-    "peach-rpc-codegen",
-    "peach-rpc-codec-fory",
-    "peach-rpc-transport-vertx",
-    "peach-rpc-registry-etcd",
-    "peach-rpc-registry-nacos",
-    "peach-rpc-proxy-cglib",
-    "peach-rpc-proxy-bytebuddy",
-    "peach-rpc-observability-micrometer",
-    "peach-rpc-observability-opentelemetry",
-    "peach-rpc-observability-jfr",
-    "peach-rpc-spring-boot-autoconfigure",
-    "peach-rpc-spring-boot-starter",
-    "peach-rpc-spring-boot-starter-lite",
-    "peach-rpc-examples",
-    "peach-rpc-benchmarks",
+    "otryx-core",
+    "otryx-codegen",
+    "otryx-codec-fory",
+    "otryx-transport-vertx",
+    "otryx-registry-etcd",
+    "otryx-registry-nacos",
+    "otryx-proxy-cglib",
+    "otryx-proxy-bytebuddy",
+    "otryx-observability-micrometer",
+    "otryx-observability-opentelemetry",
+    "otryx-observability-jfr",
+    "otryx-spring-boot-autoconfigure",
+    "otryx-spring-boot-starter",
+    "otryx-spring-boot-starter-lite",
+    "otryx-examples",
+    "otryx-benchmarks",
 )
 
 FORBIDDEN_CORE_IMPORTS = (
@@ -88,6 +88,12 @@ REQUIRED_FILES = (
     "docs/release-notes-1.0.0-RC1.md",
     "docs/release-notes-1.0.0.md",
     "docs/release-status.properties",
+    "docs/brand-guidelines.md",
+    "docs/migration-to-otryx.md",
+    "docs/images/brand/otryx-banner.svg",
+    "docs/images/mascot/otti-main.svg",
+    "docs/images/architecture/system-overview.svg",
+    "docs/images/flows/rpc-lifecycle.svg",
     ".github/workflows/ci.yml",
     ".github/workflows/release-readiness.yml",
     ".github/workflows/release.yml",
@@ -144,8 +150,13 @@ def check_required_files() -> None:
 
 def check_release_status() -> None:
     status = properties(ROOT / "docs" / "release-status.properties")
+    version = status.get("version", "")
+    is_migration = version == "2.0.0-SNAPSHOT"
+    if not is_migration and not re.fullmatch(r"1\.0\.\d+", version):
+        fail(f"Unsupported source release channel/version: {version!r}")
+
     expected = {
-        "project": "ga",
+        "project": "migration" if is_migration else "ga",
         "release_candidate": "1.0.0-RC1",
         "wire": "v1",
         "java": "21",
@@ -154,37 +165,25 @@ def check_release_status() -> None:
         if status.get(key) != value:
             fail(f"Unexpected release status: {key}={status.get(key)!r}, expected {value!r}")
 
-    version = status.get("version", "")
-    if not re.fullmatch(r"1\.0\.\d+", version):
-        fail(
-            "Stable source version must be a 1.0.x release, "
-            f"got {version!r}"
-        )
-
-    notes = ROOT / "docs" / f"release-notes-{version}.md"
-    if not notes.is_file():
-        fail(
-            "Missing release notes for current source version: "
-            f"{notes.relative_to(ROOT)}"
-        )
+    if not is_migration:
+        notes = ROOT / "docs" / f"release-notes-{version}.md"
+        if not notes.is_file():
+            fail("Missing release notes for current source version: "
+                 + str(notes.relative_to(ROOT)))
 
     pom = ET.parse(ROOT / "pom.xml").getroot()
     revision = pom.findtext("m:properties/m:revision", namespaces=NS)
     if revision != version:
-        fail(
-            f"Maven revision {revision!r} does not match "
-            f"release status version {version!r}"
-        )
+        fail(f"Maven revision {revision!r} does not match "
+             f"release status version {version!r}")
 
     for relative in ("README.md", "README.en-US.md"):
         text = (ROOT / relative).read_text(encoding="utf-8")
         markers = dict(RELEASE_STATUS.findall(text))
         for key in ("project", "version", "wire"):
             if markers.get(key) != status[key]:
-                fail(
-                    f"Release status drift in {relative}: "
-                    f"{key}={markers.get(key)!r}, expected {status[key]!r}"
-                )
+                fail(f"Release status drift in {relative}: "
+                     f"{key}={markers.get(key)!r}, expected {status[key]!r}")
 
 
 def check_readme_parity() -> None:
@@ -242,7 +241,7 @@ def check_maven_reactor() -> None:
 
 
 def check_core_boundaries() -> None:
-    for path in (ROOT / "peach-rpc-core" / "src/main/java").rglob("*.java"):
+    for path in (ROOT / "otryx-core" / "src/main/java").rglob("*.java"):
         text = path.read_text(encoding="utf-8")
         for prefix in FORBIDDEN_CORE_IMPORTS:
             if f"import {prefix}" in text:
@@ -250,7 +249,7 @@ def check_core_boundaries() -> None:
 
 
 def check_java_hygiene() -> None:
-    for path in ROOT.glob("peach-rpc-*/src/**/*.java"):
+    for path in ROOT.glob("otryx-*/src/**/*.java"):
         text = path.read_text(encoding="utf-8")
         if "System.out" in text or "System.err" in text:
             fail(f"System output is not allowed: {path.relative_to(ROOT)}")
@@ -278,7 +277,7 @@ def main() -> int:
     check_maven_reactor()
     check_core_boundaries()
     check_java_hygiene()
-    print("Peach RPC 1.0.x repository checks passed.")
+    print("OTRYX RPC repository checks passed.")
     return 0
 
 

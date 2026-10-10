@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate completeness and provenance of Peach RPC V2-D.2 evidence."""
+"""Validate completeness and provenance of OTRYX RPC V2-D.2 evidence."""
 from __future__ import annotations
 import argparse,csv,json,hashlib
 from check_soak_quality import check_soak

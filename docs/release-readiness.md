@@ -1,5 +1,7 @@
 # Peach RPC 1.0.x 发布就绪清单
 
+> **历史归档说明：** 以下是 Peach RPC 1.0.x 的历史发布策略与门禁说明，不适用于尚未发布的 OTRYX 2.0.0-SNAPSHOT。2.0 公开发布需单独完成新 GAV/namespace、迁移与 CI 认证。参见 [OTRYX 迁移指南](migration-to-otryx.md)。
+
 > 本文覆盖 1.0.0 历史 GA 与后续 1.0.x Patch Release。机器门禁由 `scripts/check_release_readiness.py`、`scripts/check_central_publication.py` 和 GitHub Actions 执行。
 
 ## 1. 当前发布状态

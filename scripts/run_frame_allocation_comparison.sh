@@ -38,7 +38,7 @@ fi
 mkdir -p "$OUTPUT/baseline" "$OUTPUT/candidate"
 git worktree add --detach "$BASE_PATH" "$BASE_SHA"
 
-export JAVA_TOOL_OPTIONS="${PEACH_RPC_ALLOCATION_JVM_FLAGS:--Xms256m -Xmx256m}"
+export JAVA_TOOL_OPTIONS="${OTRYX_RPC_ALLOCATION_JVM_FLAGS:--Xms256m -Xmx256m}"
 export BASE_SHA
 export HEAD_SHA
 export OUTPUT
@@ -50,7 +50,7 @@ import platform
 import subprocess
 from pathlib import Path
 metadata = {
-    "schema": "peach.rpc.allocation.comparison.v1",
+    "schema": "otryx.rpc.allocation.comparison.v1",
     "baseline_sha": os.environ["BASE_SHA"],
     "candidate_sha": os.environ["HEAD_SHA"],
     "evidence_class": "shared-ci-smoke",
@@ -86,10 +86,10 @@ run_jmh() {
   # Annotation processor artifacts are resolved from the local Maven repository,
   # rather than the compile dependency reactor; install the exact checkout first.
   (cd "$checkout_dir" && \
-    mvn -B -ntp -pl peach-rpc-codegen -am -DskipTests install && \
-    mvn -B -ntp -pl peach-rpc-benchmarks -am -DskipTests package)
+    mvn -B -ntp -pl otryx-codegen -am -DskipTests install && \
+    mvn -B -ntp -pl otryx-benchmarks -am -DskipTests package)
 
-  local jar="$checkout_dir/peach-rpc-benchmarks/target/benchmarks.jar"
+  local jar="$checkout_dir/otryx-benchmarks/target/benchmarks.jar"
   if [[ ! -s "$jar" ]]; then
     echo "Missing benchmark JAR: $jar" >&2
     exit 1

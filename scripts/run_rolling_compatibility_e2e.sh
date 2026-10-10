@@ -4,18 +4,18 @@ set -euo pipefail
 OLD_ROOT="${1:?old checkout root is required}"
 NEW_ROOT="${2:?new checkout root is required}"
 NACOS_ENDPOINT="${NACOS_TEST_ENDPOINT:-127.0.0.1:8848}"
-PORT="${PEACH_RPC_COMPAT_PORT:-19090}"
+PORT="${OTRYX_RPC_COMPAT_PORT:-19090}"
 
 find_exec() {
   local root="$1"
   local module="$2"
-  find "$root/peach-rpc-examples/$module/target"     -maxdepth 1     -name '*-exec.jar'     -print     -quit
+  find "$root/otryx-examples/$module/target"     -maxdepth 1     -name '*-exec.jar'     -print     -quit
 }
 
-OLD_PROVIDER="$(find_exec "$OLD_ROOT" peach-rpc-example-provider)"
-OLD_CONSUMER="$(find_exec "$OLD_ROOT" peach-rpc-example-consumer)"
-NEW_PROVIDER="$(find_exec "$NEW_ROOT" peach-rpc-example-provider)"
-NEW_CONSUMER="$(find_exec "$NEW_ROOT" peach-rpc-example-consumer)"
+OLD_PROVIDER="$(find_exec "$OLD_ROOT" otryx-example-provider)"
+OLD_CONSUMER="$(find_exec "$OLD_ROOT" otryx-example-consumer)"
+NEW_PROVIDER="$(find_exec "$NEW_ROOT" otryx-example-provider)"
+NEW_CONSUMER="$(find_exec "$NEW_ROOT" otryx-example-consumer)"
 
 for jar in "$OLD_PROVIDER" "$OLD_CONSUMER" "$NEW_PROVIDER" "$NEW_CONSUMER"; do
   if [[ -z "$jar" || ! -f "$jar" ]]; then
@@ -47,7 +47,7 @@ start_provider() {
   local label="$2"
   : >"$PROVIDER_LOG"
 
-  java -jar "$jar"     --peach.rpc.registry.endpoints="$NACOS_ENDPOINT"     --peach.rpc.server.port="$PORT"     --peach.rpc.server.advertised-port="$PORT"     >"$PROVIDER_LOG" 2>&1 &
+  java -jar "$jar"     --otryx.rpc.registry.endpoints="$NACOS_ENDPOINT"     --otryx.rpc.server.port="$PORT"     --otryx.rpc.server.advertised-port="$PORT"     >"$PROVIDER_LOG" 2>&1 &
   PROVIDER_PID=$!
 
   for _ in {1..200}; do
@@ -93,11 +93,11 @@ run_consumer() {
 
   for _ in {1..4}; do
     : >"$CONSUMER_LOG"
-    java -jar "$jar"       --peach.rpc.registry.endpoints="$NACOS_ENDPOINT"       >"$CONSUMER_LOG" 2>&1 &
+    java -jar "$jar"       --otryx.rpc.registry.endpoints="$NACOS_ENDPOINT"       >"$CONSUMER_LOG" 2>&1 &
     CONSUMER_PID=$!
 
     for _ in {1..300}; do
-      if grep -q         "RPC demo completed successfully: Hello, Peach RPC!"         "$CONSUMER_LOG"; then
+      if grep -q         "RPC demo completed successfully: Hello, OTRYX RPC!"         "$CONSUMER_LOG"; then
         stop_consumer
         echo "Compatibility PASS: $label"
         return
@@ -140,4 +140,4 @@ stop_provider
 start_provider "$OLD_PROVIDER" "N rollback"
 run_consumer "$NEW_CONSUMER" "N+1 consumer -> N rollback provider"
 
-echo "Peach RPC N/N+1 rolling compatibility matrix passed."
+echo "OTRYX RPC N/N+1 rolling compatibility matrix passed."

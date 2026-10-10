@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 700" role="img" aria-labelledby="title desc">
+<title id="title">Otti, the OTRYX engineering otter</title><desc id="desc">Friendly brown otter mascot with blue engineer vest, teal eyes and wrench.</desc>
+<defs><linearGradient id="fur" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#C78A5F"/><stop offset="1" stop-color="#925637"/></linearGradient><linearGradient id="vest" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#286990"/><stop offset="1" stop-color="#153451"/></linearGradient><filter id="soft"><feDropShadow dx="0" dy="11" stdDeviation="11" flood-color="#153451" flood-opacity=".15"/></filter></defs>
+<g stroke="#60351F" stroke-width="9" stroke-linejoin="round" stroke-linecap="round" filter="url(#soft)">
+<path d="M170 507Q102 482 88 521Q70 579 121 618Q182 663 251 597L218 539Z" fill="url(#fur)"/>
+<path d="M197 548Q159 601 185 641Q200 663 252 645L304 624L314 553" fill="#A56D49"/>
+<path d="M349 568Q344 624 373 640Q423 658 477 626Q496 606 458 572" fill="#A56D49"/>
+<path d="M215 279Q168 331 164 460Q160 543 222 597Q284 650 391 602Q477 557 461 426Q455 324 414 288" fill="url(#fur)"/>
+<path d="M202 340Q157 345 139 425Q133 462 159 479Q188 488 221 453" fill="url(#fur)"/>
+<path d="M416 340Q473 331 506 370Q531 399 511 433Q492 448 467 434" fill="url(#fur)"/>
+<path d="M219 311Q195 347 190 422L207 485L262 477L268 339" fill="url(#vest)"/>
+<path d="M402 307Q429 353 436 426L420 486L371 475L362 335" fill="url(#vest)"/>
+<ellipse cx="313" cy="449" rx="104" ry="151" fill="#F8E8BE" stroke="none"/>
+<path d="M259 427Q269 445 287 444M343 444Q362 441 368 427" fill="none" stroke="#E4C995" stroke-width="7"/>
+<circle cx="207" cy="187" r="57" fill="#9D6040"/><circle cx="207" cy="187" r="26" fill="#DBA87B"/>
+<circle cx="421" cy="187" r="57" fill="#9D6040"/><circle cx="421" cy="187" r="26" fill="#DBA87B"/>
+<path d="M177 203Q181 96 304 102Q449 85 463 204Q487 317 413 364Q359 397 304 390Q213 391 173 318Q155 276 177 203Z" fill="url(#fur)"/>
+<path d="M195 281Q205 252 259 263L309 293L349 260Q413 252 430 284Q444 351 370 372Q315 391 252 372Q193 355 195 281Z" fill="#F8E8BE" stroke="none"/>
+<ellipse cx="258" cy="245" rx="48" ry="56" fill="#FFFFFF" stroke-width="6"/><ellipse cx="368" cy="245" rx="48" ry="56" fill="#FFFFFF" stroke-width="6"/>
+<ellipse cx="275" cy="259" rx="24" ry="31" fill="#12A8AD" stroke="none"/><ellipse cx="384" cy="259" rx="24" ry="31" fill="#12A8AD" stroke="none"/>
+<ellipse cx="280" cy="261" rx="12" ry="20" fill="#153451" stroke="none"/><ellipse cx="389" cy="261" rx="12" ry="20" fill="#153451" stroke="none"/>
+<circle cx="269" cy="243" r="9" fill="#FFFFFF" stroke="none"/><circle cx="378" cy="243" r="9" fill="#FFFFFF" stroke="none"/>
+<path d="M279 308Q311 293 341 308Q339 328 311 333Q285 328 279 308Z" fill="#57352D"/>
+<path d="M310 335Q309 359 281 361M311 335Q324 358 344 349" fill="none" stroke="#69412A" stroke-width="6"/>
+<path d="M198 317L145 302M198 329L145 332M419 315L477 298M419 329L473 336" fill="none" stroke-width="5"/>
+<path d="M228 159Q244 147 262 152M358 153Q376 143 394 157" fill="none" stroke-width="12"/>
+<path d="M457 390Q501 372 511 402Q518 439 493 457Q470 469 451 439" fill="#AD7655"/>
+<path d="M150 448Q139 467 163 486Q186 494 202 476" fill="#AD7655"/>
+</g>
+<g transform="translate(365 376)"><circle cx="35" cy="35" r="29" fill="#16BFC4" stroke="#DDFDFC" stroke-width="4"/><path d="M24 35L34 25L44 35L34 45Z" fill="#153451"/><circle cx="34" cy="25" r="5" fill="#F8E8BE"/><circle cx="45" cy="35" r="5" fill="#F8E8BE"/><circle cx="25" cy="35" r="5" fill="#F8E8BE"/></g>
+<g transform="translate(105 408) rotate(-32 80 80)" fill="none" stroke-linejoin="round" stroke-linecap="round"><path d="M70 25Q40 7 43 43L67 62L69 147Q70 174 88 173Q105 170 104 151L100 62L122 43Q125 7 95 25L92 43H75Z" fill="#C7D9E4" stroke="#6B8095" stroke-width="9"/><circle cx="86" cy="146" r="8" fill="#F2A34A" stroke="#6B8095" stroke-width="4"/></g>
+</svg>

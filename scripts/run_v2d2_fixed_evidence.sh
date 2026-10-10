@@ -2,30 +2,30 @@
 set -euo pipefail
 
 OUTPUT_DIR="${1:-target/v2d2-fixed-evidence}"
-PROFILE="${PEACH_RPC_EVIDENCE_PROFILE:-full}"
-CONCURRENCY="${PEACH_RPC_SOAK_CONCURRENCY:-10000}"
-DURATION_SECONDS="${PEACH_RPC_SOAK_DURATION_SECONDS:-1800}"
-PAYLOAD_SIZE="${PEACH_RPC_SOAK_PAYLOAD_SIZE:-256}"
-CONNECTIONS="${PEACH_RPC_SOAK_CONNECTIONS:-4}"
-WARMUP_SECONDS="${PEACH_RPC_SOAK_WARMUP_SECONDS:-30}"
-CLIENT_TIMEOUT_MS="${PEACH_RPC_SOAK_CLIENT_TIMEOUT_MS:-15000}"
-RUN_ID="${PEACH_RPC_EVIDENCE_RUN_ID:-$(basename "$OUTPUT_DIR")}"
-BASELINE="${PEACH_RPC_RUNNER_BASELINE:-}"
-MAX_ERROR_RATE="${PEACH_RPC_SOAK_MAX_ERROR_RATE:-}"
-MIN_OBSERVED_INFLIGHT="${PEACH_RPC_SOAK_MIN_OBSERVED_INFLIGHT:-}"
-MAX_P99_MICROS="${PEACH_RPC_SOAK_MAX_P99_MICROS:-}"
+PROFILE="${OTRYX_RPC_EVIDENCE_PROFILE:-full}"
+CONCURRENCY="${OTRYX_RPC_SOAK_CONCURRENCY:-10000}"
+DURATION_SECONDS="${OTRYX_RPC_SOAK_DURATION_SECONDS:-1800}"
+PAYLOAD_SIZE="${OTRYX_RPC_SOAK_PAYLOAD_SIZE:-256}"
+CONNECTIONS="${OTRYX_RPC_SOAK_CONNECTIONS:-4}"
+WARMUP_SECONDS="${OTRYX_RPC_SOAK_WARMUP_SECONDS:-30}"
+CLIENT_TIMEOUT_MS="${OTRYX_RPC_SOAK_CLIENT_TIMEOUT_MS:-15000}"
+RUN_ID="${OTRYX_RPC_EVIDENCE_RUN_ID:-$(basename "$OUTPUT_DIR")}"
+BASELINE="${OTRYX_RPC_RUNNER_BASELINE:-}"
+MAX_ERROR_RATE="${OTRYX_RPC_SOAK_MAX_ERROR_RATE:-}"
+MIN_OBSERVED_INFLIGHT="${OTRYX_RPC_SOAK_MIN_OBSERVED_INFLIGHT:-}"
+MAX_P99_MICROS="${OTRYX_RPC_SOAK_MAX_P99_MICROS:-}"
 
 
 if [[ "$PROFILE" != "full" ]]; then
-  echo "Fixed production evidence requires PEACH_RPC_EVIDENCE_PROFILE=full" >&2
+  echo "Fixed production evidence requires OTRYX_RPC_EVIDENCE_PROFILE=full" >&2
   exit 1
 fi
-if [[ "${PEACH_RPC_EVIDENCE_CLASS:-controlled}" != "controlled" ]]; then
-  echo "Fixed production evidence requires PEACH_RPC_EVIDENCE_CLASS=controlled" >&2
+if [[ "${OTRYX_RPC_EVIDENCE_CLASS:-controlled}" != "controlled" ]]; then
+  echo "Fixed production evidence requires OTRYX_RPC_EVIDENCE_CLASS=controlled" >&2
   exit 1
 fi
-if [[ -z "${PEACH_RPC_RUNNER_ID:-}" ]]; then
-  echo "PEACH_RPC_RUNNER_ID must identify the fixed performance runner" >&2
+if [[ -z "${OTRYX_RPC_RUNNER_ID:-}" ]]; then
+  echo "OTRYX_RPC_RUNNER_ID must identify the fixed performance runner" >&2
   exit 1
 fi
 if (( DURATION_SECONDS < 1800 )); then
@@ -39,7 +39,7 @@ fi
 # A configured 10k worker count alone does not prove 10k actual inflight calls.
 # Require operator-selected quality thresholds before starting a 30+ minute run.
 if [[ -z "$MAX_ERROR_RATE" || -z "$MIN_OBSERVED_INFLIGHT" ]]; then
-  echo "Controlled soak requires PEACH_RPC_SOAK_MAX_ERROR_RATE and PEACH_RPC_SOAK_MIN_OBSERVED_INFLIGHT" >&2
+  echo "Controlled soak requires OTRYX_RPC_SOAK_MAX_ERROR_RATE and OTRYX_RPC_SOAK_MIN_OBSERVED_INFLIGHT" >&2
   exit 1
 fi
 python3 - "$MAX_ERROR_RATE" "$MIN_OBSERVED_INFLIGHT" "$CONCURRENCY" "$MAX_P99_MICROS" <<'PY'
@@ -63,14 +63,14 @@ if [[ -e "$OUTPUT_DIR" && -n "$(find "$OUTPUT_DIR" -mindepth 1 -maxdepth 1 -prin
 fi
 
 GIT_HEAD="$(git rev-parse HEAD)"
-if [[ -n "${PEACH_RPC_BENCHMARK_COMMIT:-}" && "$PEACH_RPC_BENCHMARK_COMMIT" != "$GIT_HEAD" ]]; then
-  echo "PEACH_RPC_BENCHMARK_COMMIT does not match git HEAD" >&2
+if [[ -n "${OTRYX_RPC_BENCHMARK_COMMIT:-}" && "$OTRYX_RPC_BENCHMARK_COMMIT" != "$GIT_HEAD" ]]; then
+  echo "OTRYX_RPC_BENCHMARK_COMMIT does not match git HEAD" >&2
   exit 1
 fi
 
-export PEACH_RPC_EVIDENCE_CLASS=controlled
-export PEACH_RPC_BENCHMARK_COMMIT="$GIT_HEAD"
-export PEACH_RPC_EVIDENCE_RUN_ID="$RUN_ID"
+export OTRYX_RPC_EVIDENCE_CLASS=controlled
+export OTRYX_RPC_BENCHMARK_COMMIT="$GIT_HEAD"
+export OTRYX_RPC_EVIDENCE_RUN_ID="$RUN_ID"
 
 mkdir -p "$OUTPUT_DIR"
 
@@ -81,11 +81,11 @@ if [[ -n "$BASELINE" ]]; then
   python3 scripts/check_v2d2_runner_baseline.py     --environment "$OUTPUT_DIR/environment.properties"     --baseline "$BASELINE"     --initialize-if-missing
 fi
 
-mvn -B -ntp -pl peach-rpc-benchmarks -am clean package -DskipTests
+mvn -B -ntp -pl otryx-benchmarks -am clean package -DskipTests
 
 bash scripts/run_v2d2_benchmark_matrix.sh   full   "$OUTPUT_DIR/matrix"
 
-PEACH_RPC_SOAK_CONCURRENCY="$CONCURRENCY" PEACH_RPC_SOAK_DURATION_SECONDS="$DURATION_SECONDS" PEACH_RPC_SOAK_PAYLOAD_SIZE="$PAYLOAD_SIZE" PEACH_RPC_SOAK_CONNECTIONS="$CONNECTIONS" PEACH_RPC_SOAK_WARMUP_SECONDS="$WARMUP_SECONDS" PEACH_RPC_SOAK_CLIENT_TIMEOUT_MS="$CLIENT_TIMEOUT_MS" PEACH_RPC_SOAK_OUTPUT="$OUTPUT_DIR/soak.json"   bash scripts/run_v2d2_soak.sh
+OTRYX_RPC_SOAK_CONCURRENCY="$CONCURRENCY" OTRYX_RPC_SOAK_DURATION_SECONDS="$DURATION_SECONDS" OTRYX_RPC_SOAK_PAYLOAD_SIZE="$PAYLOAD_SIZE" OTRYX_RPC_SOAK_CONNECTIONS="$CONNECTIONS" OTRYX_RPC_SOAK_WARMUP_SECONDS="$WARMUP_SECONDS" OTRYX_RPC_SOAK_CLIENT_TIMEOUT_MS="$CLIENT_TIMEOUT_MS" OTRYX_RPC_SOAK_OUTPUT="$OUTPUT_DIR/soak.json"   bash scripts/run_v2d2_soak.sh
 
 POLICY_ARGS=(
   --soak "$OUTPUT_DIR/soak.json"

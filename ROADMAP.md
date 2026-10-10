@@ -1,8 +1,16 @@
-# Peach RPC Roadmap
+# OTRYX RPC Roadmap
 
-> 1.0.0 GA 之后的方向。以下内容不是承诺日期，只有进入实现并通过相应 Gate 后才会成为 Current。
+> 当前主线是 **OTRYX 2.0.0-SNAPSHOT** 品牌/API 迁移。以下条目仅为技术候选路线，不构成日期、已发布版本或性能承诺。
 
-## 1.0.x
+## 2.0.x：OTRYX API 迁移与稳定化
+
+- 全仓从 io.peach.rpc / peach-rpc-* 迁移为 com.peachsoft.otryx / otryx-*。
+- 准确说明跨包名 Stable Type ID、Method ID、Schema Fingerprint 兼容边界。
+- 验证独立进程示例、Memory/Etcd/Nacos、TLS/mTLS、Chaos、CI 与编译期 Codegen。
+- 完善双语 README、文档架构图、吉祥物和可复现基准测试。
+- Maven Central namespace 与品牌商标风险核查完成后，再评审公开发布。
+
+## Peach RPC 1.0.x（历史兼容分支）
 
 目标：稳定维护。
 

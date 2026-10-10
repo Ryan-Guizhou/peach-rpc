@@ -1,20 +1,24 @@
-# Peach RPC 1.0 架构设计
+# OTRYX RPC 2.0 架构设计
 
-> 状态：**Current / 1.0.1 Release Prep**
+> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration-to-otryx.md)。
+
+> 状态：**Current / 2.0.0-SNAPSHOT Migration**
+
+![OTRYX 整体架构](images/architecture/system-overview.svg)
 
 ## 1. 核心原则
 
-Peach RPC 的设计目标是高吞吐、低尾延迟、可控资源和可预测故障行为，同时维持清晰扩展边界。
+OTRYX RPC 的设计目标是高吞吐、低尾延迟、可控资源和可预测故障行为，同时维持清晰扩展边界。
 
 > 能在编译期确定的信息，不放到启动阶段；能在启动阶段绑定的信息，不放进单次 RPC 热路径。
 
 ## 2. 模块边界
 
-当前 Reactor 有 15 个顶层模块。Core 不泄漏 Vert.x、Etcd、Nacos、Fory、Spring、Micrometer、OpenTelemetry、JFR 等第三方类型。
+当前 Reactor 有 16 个顶层模块。Core 不泄漏 Vert.x、Etcd、Nacos、Fory、Spring、Micrometer、OpenTelemetry、JFR 等第三方类型。
 
 ```mermaid
 flowchart TB
-    Contract[PeachRpcContract] --> Codegen[Compile-time Codegen]
+    Contract[OtryxRpcContract] --> Codegen[Compile-time Codegen]
     Codegen --> Stub[Generated Consumer Stub]
     Codegen --> Dispatcher[Generated Provider Dispatcher]
     Stub --> Core[Core Runtime]
@@ -184,7 +188,7 @@ Consumer 的 logical Deadline 覆盖连接获取、HELLO/ACK 和请求。
 
 ### Retry
 
-仅 `@PeachRpcIdempotent` 方法允许自动 Retry，并受：
+仅 `@OtryxRpcIdempotent` 方法允许自动 Retry，并受：
 
 - max attempts；
 - Retry Budget；
@@ -211,7 +215,7 @@ Provider 关闭顺序：
 
 ## 11. Security
 
-TLS/mTLS handshake 先于 Peach RPC HELLO。Consumer 默认开启 hostname verification。TLS 失败不会降级为 PLAINTEXT。
+TLS/mTLS handshake 先于 OTRYX RPC HELLO。Consumer 默认开启 hostname verification。TLS 失败不会降级为 PLAINTEXT。
 
 ## 12. Observability
 

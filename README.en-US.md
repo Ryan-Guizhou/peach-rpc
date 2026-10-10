@@ -1,265 +1,118 @@
-# Peach RPC
+# OTRYX RPC
 
-[简体中文](README.md) | English
+[简体中文](README.md) | [English](README.en-US.md)
 
-<!-- release-status:project=ga -->
-<!-- release-status:version=1.0.1 -->
+![OTRYX brand banner](docs/images/brand/otryx-banner.svg)
+
+<!-- release-status:project=migration -->
+<!-- release-status:version=2.0.0-SNAPSHOT -->
 <!-- release-status:wire=v1 -->
 
 <!-- doc-section:overview -->
 ## Overview
 
-Peach RPC is a lightweight, high-performance, extensible RPC framework for **Java service-to-service communication**. Version 1.0.1 keeps the Wire v1 and Public Core API compatibility boundary established by 1.0.0 GA while hardening asynchronous Provider completion, reducing healthy-path hot-spot overhead, and adding Maven Central patch-release engineering.
+**OTRYX RPC** is a lightweight, high-performance, highly available Java RPC framework evolving from Peach RPC 1.0.x.
+Meet Otti, the engineering otter: **Simple to Call. Built to Scale.**
 
-**Current source version: 1.0.1 Release Prep**  
-**Java: 21**  
-**Spring Boot: 3.5.4**  
-**Wire: v1 (frozen for 1.0.x)**  
-**License: MIT**
+**Source: 2.0.0-SNAPSHOT (migration in progress, not yet publicly released)**
+· **Java 21** · **Spring Boot 3.5.4** · **Wire v1** · **MIT**
 
-Peach RPC does not turn shared CI-runner numbers into production performance claims. Official performance or capacity numbers require controlled fixed-environment evidence.
+This release migrates Maven coordinates, Java namespaces and public APIs. It retains Wire v1 framing, **but it does not promise compatibility with Peach RPC 1.0.x Java APIs, Type IDs, Method IDs or schema fingerprints**. See the [migration guide](docs/migration-to-otryx.md).
 
 <!-- doc-section:capabilities -->
 ## Core capabilities
 
-- **Unary RPC** with generated Stub/Dispatcher preferred and Proxy/MethodHandle fallbacks.
-- **Transport**: Vert.x TCP connections, sharding, heartbeat, reconnect, CANCEL, GO_AWAY, graceful drain.
-- **Security**: PLAINTEXT / TLS / mTLS, hostname verification, certificate validation and live reload.
-- **Registry**: Memory, Etcd and Nacos; the request hot path reads a local service directory only.
-- **Load balancing**: P2C + EWMA + inflight + static weight.
-- **Resilience**: logical deadline, explicit-idempotency retry, retry budget, circuit breaker, outlier ejection and provider admission.
-- **Provider execution**: virtual threads by default, bounded CPU executor, guarded DIRECT mode.
-- **Codec**: Fory with stable type-ID collision detection and shared empty-array encoding for zero-argument calls (Wire v1 unchanged; measured gains pending).
-- **Compatibility**: Wire v1, Schema Fingerprint v1, N/N+1 mixed deployment and rollback.
-- **Observability**: Micrometer, OpenTelemetry, JFR, Grafana dashboard and Prometheus alert examples.
-- **Engineering**: JMH, 10k logical-concurrency soak harness, Etcd/Nacos chaos, rolling compatibility and release readiness.
-
-See the Chinese-first [feature reference](docs/features.md) for the full capability matrix.
+- **Unary RPC**: Generated Stubs / Dispatchers with JDK Proxy / MethodHandle fallback.
+- **Transport**: Vert.x TCP, sharded connections, heartbeat, reconnect, CANCEL, GO_AWAY and graceful drain.
+- **Security**: PLAINTEXT / TLS / mTLS, hostname verification and certificate reload.
+- **Registry**: Memory, Etcd, Nacos; consumer hot path reads a local service directory.
+- **Load balancing**: P2C + EWMA, inflight count and static weights.
+- **Resilience**: end-to-end deadline, explicitly idempotent retries, retry budget, circuit breaker, outlier ejection and provider admission.
+- **Execution**: virtual threads, bounded CPU resources, Fory and stable type IDs.
+- **Observability**: Micrometer, OpenTelemetry, JFR and Grafana / Prometheus examples.
+- **Engineering**: JMH, 10k logical-concurrency soak harness, chaos and independent-process tests.
 
 <!-- doc-section:architecture -->
 ## Architecture
 
-```mermaid
-flowchart TB
-    Contract[Java Service Contract]
-    Codegen[Compile-time Codegen]
-    Client[Consumer Runtime]
-    Server[Provider Runtime]
-    Fory[Fory Codec]
-    Vertx[Vert.x Transport]
-    Etcd[Etcd Registry]
-    Nacos[Nacos Registry]
-    Obs[Micrometer / OTel / JFR]
-    Starter[Spring Boot Starter]
+![OTRYX system architecture](docs/images/architecture/system-overview.svg)
 
-    Contract --> Codegen
-    Codegen --> Client
-    Codegen --> Server
-    Client --> Vertx --> Server
-    Client --> Fory
-    Server --> Fory
-    Client --> Etcd
-    Client --> Nacos
-    Server --> Etcd
-    Server --> Nacos
-    Client --> Obs
-    Server --> Obs
-    Starter --> Client
-    Starter --> Server
-```
+![OTRYX RPC call flow](docs/images/flows/rpc-lifecycle.svg)
 
-The central design rule is: **separate control plane from data plane, isolate third-party technology behind adapters, and keep compile-time/startup bindings out of the per-RPC hot path.**
-
-- [Requirements blueprint](docs/requirements-blueprint.md)
-- [Technical solution](docs/technical-solution.md)
-- [Architecture](docs/architecture.md)
-- [Detailed design](docs/detailed-design.md)
-- [Project structure](docs/project-structure.md)
+**Design**: control-plane/data-plane isolation; SPI and adapters for implementations; no registry I/O, SPI scan or dynamic parsing per request.
 
 <!-- doc-section:compatibility -->
-## Compatibility
+## Compatibility and migration
 
-Frozen for 1.0.x:
+Wire v1 keeps its 32-byte header, message/codec IDs and historical registry compatibility metadata.
+However, full Java class names affect type and method identifiers and schema fingerprints. OTRYX 2.0 is therefore a **breaking API namespace migration**.
 
-- Wire Protocol v1;
-- Public Core API;
-- Stable Type ID rules;
-- Schema Fingerprint v1;
-- assigned Codec / Message Type IDs;
-- Registry compatibility metadata keys.
+- The original Peach RPC baseline remains available and is not republished under a new GAV.
+- Isolate deployments or use blue/green upgrades until cross-version service contract compatibility is independently verified.
+- Frozen registry keys remain peach.rpc.protocol.version / peach.rpc.schema.version / peach.rpc.schema.fingerprint.
 
-Automated rolling compatibility verifies:
-
-```text
-N Consumer   -> N Provider
-N+1 Consumer -> N Provider
-N Consumer   -> N+1 Provider
-N+1 Consumer -> N+1 Provider
-N+1 Consumer -> N Provider rollback
-```
-
-See [Wire Compatibility](docs/wire-compatibility.md) and [Upgrade/Rollback](docs/upgrade-rollback.md).
+[Wire compatibility](docs/wire-compatibility.md) · [Migration/rollback](docs/migration-to-otryx.md)
 
 <!-- doc-section:quick-start -->
 ## Quick start
 
-### Minimal Spring Boot integration
+Requires **JDK 21, Maven and Spring Boot 3.5.4**. Build the development version from source:
 
-For Java 21 / Spring Boot 3.5.4 applications, the minimal Starter includes Memory Registry, JDK Proxy, Fory and Vert.x without Etcd/Nacos SDK dependencies. Add the Nacos or Etcd adapter only when needed. The original full `peach-rpc-spring-boot-starter` remains available for dependency compatibility; see the [Starter guide](docs/starter.md).
+~~~bash
+mvn -B -ntp clean install -DskipTests
+mvn -B -ntp clean verify -Pquality
+~~~
 
-```xml
-<dependency>
-    <groupId>io.peach.rpc</groupId>
-    <artifactId>peach-rpc-spring-boot-starter-lite</artifactId>
-    <version>1.0.1</version>
-</dependency>
-```
-
-The repository is currently at Release Prep; public artifact availability depends on a subsequent Maven Central release. Startup performs fail-fast validation of `peach.rpc.*` options and emits a credential-free diagnostic summary. See the [Starter guide](docs/starter.md) for a real loopback RPC test that needs no Docker.
-
-### Prerequisites
-
-- JDK 21
-- Maven 3.9+
-- Docker for the official Nacos example
-
-### Run the independent-process example from source
-
-```bash
-git clone https://github.com/Ryan-Guizhou/peach-rpc.git
-cd peach-rpc
-
-docker compose -f peach-rpc-examples/docker-compose.yml up -d
-mvn -B -ntp -pl peach-rpc-examples -am clean package
-```
-
-Start the Provider:
-
-```bash
-java -jar peach-rpc-examples/peach-rpc-example-provider/target/*-exec.jar
-```
-
-Start the Consumer in another terminal:
-
-```bash
-java -jar peach-rpc-examples/peach-rpc-example-consumer/target/*-exec.jar
-```
-
-Expected output:
-
-```text
-RPC demo completed successfully: Hello, Peach RPC!
-```
-
-See [Getting Started](docs/getting-started.md).
+Run the independent Provider / Consumer example from [otryx-examples](otryx-examples/README.md); see [Getting started](docs/getting-started.md) for complete setup.
 
 <!-- doc-section:dependency -->
-## Spring Boot dependency
+## Maven coordinates
 
-1.0.1 coordinates (available from Maven Central after publication; install from source before publication):
+Development version:
 
-```xml
+~~~xml
 <dependency>
-    <groupId>io.peach.rpc</groupId>
-    <artifactId>peach-rpc-spring-boot-starter</artifactId>
-    <version>1.0.1</version>
+    <groupId>com.peachsoft.otryx</groupId>
+    <artifactId>otryx-spring-boot-starter-lite</artifactId>
+    <version>2.0.0-SNAPSHOT</version>
 </dependency>
-```
+~~~
 
-If 1.0.1 is not yet available in the Maven repository you use, install from source first:
-
-```bash
-mvn -B -ntp clean install -DskipTests
-```
-
-The same 1.0.1 coordinates will then resolve from your local Maven repository.
+The full starter is otryx-spring-boot-starter. **No Maven Central release is claimed for this snapshot.**
 
 <!-- doc-section:configuration -->
-## Minimal usage
+## Configuration
 
-Provider:
+~~~yaml
+otryx:
+  rpc:
+    enabled: true
+    registry:
+      type: memory
+~~~
 
-```java
-@PeachRpcService(
-        interfaceClass = OrderService.class,
-        version = "1.0.0")
-public class OrderServiceImpl implements OrderService {
-}
-```
-
-Consumer:
-
-```java
-@PeachRpcReference(version = "1.0.0")
-private OrderService orderService;
-```
-
-See [Spring Boot Starter](docs/starter.md) for complete configuration, execution policies, security, code generation and registry behavior.
+See [Starter guide](docs/starter.md) and [Production configuration](docs/production-configuration.md) for validated options, TLS and registry setup.
 
 <!-- doc-section:operations -->
-## Production and operations
+## Performance and operations
 
-- [Production configuration](docs/production-configuration.md)
-- [TLS / mTLS](docs/security.md)
-- [Observability](docs/observability.md)
-- [Dashboard / Alert / SLO](docs/production-observability.md)
-- [Capacity planning](docs/capacity-planning.md)
-- [Performance evidence](docs/performance-evidence.md)
-- [Upgrade and rollback](docs/upgrade-rollback.md)
+Validate deadline, admission, backpressure, retries, TLS and observability against your actual workloads. Shared CI-runner smoke results are not production throughput, p99 or capacity claims.
 
-> GA does not mean every machine has the same capacity. Connections, threads, heap, QPS/Core and tail latency must be validated in the target environment.
+[Performance evidence](docs/performance-evidence.md) · [Capacity planning](docs/capacity-planning.md) · [Observability](docs/observability.md)
 
 <!-- doc-section:documentation -->
 ## Documentation
 
-### Product and design
-
-- [Requirements blueprint](docs/requirements-blueprint.md)
-- [Technical solution](docs/technical-solution.md)
-- [Features](docs/features.md)
-- [Detailed design](docs/detailed-design.md)
-- [Project structure](docs/project-structure.md)
-- [Architecture](docs/architecture.md)
-- [Protocol](docs/protocol.md)
-- [SPI](docs/spi.md)
-
-### Usage and operations
-
-- [Getting started](docs/getting-started.md)
-- [Starter and configuration](docs/starter.md)
-- [Nacos Registry](docs/registry-nacos.md)
-- [FAQ](docs/faq.md)
-
-### Releases
-
-- [Release policy](docs/release-policy.md)
-- [Release readiness](docs/release-readiness.md)
-- [1.0.0-RC1 Release Notes](docs/release-notes-1.0.0-RC1.md)
-- [1.0.0 Release Notes](docs/release-notes-1.0.0.md)
-- [1.0.1 Release Notes](docs/release-notes-1.0.1.md)
-- [CHANGELOG](CHANGELOG.md)
-- [Roadmap](ROADMAP.md)
+[Requirements](docs/requirements-blueprint.md) · [Technical solution](docs/technical-solution.md) · [Architecture](docs/architecture.md) · [Detailed design](docs/detailed-design.md) · [Features](docs/features.md) · [Protocol](docs/protocol.md) · [SPI](docs/spi.md) · [Brand guidelines](docs/brand-guidelines.md) · [Migration guide](docs/migration-to-otryx.md) · [Historical release notes](docs/release-notes-1.0.1.md)
 
 <!-- doc-section:development -->
 ## Development and contributing
 
-Base gates:
+[Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Agent contract](AGENTS.md).
 
-```bash
-python3 scripts/check_project.py
-mvn -B -ntp clean verify -Pquality
-```
-
-Registry, wire, transport and hot-path changes require the corresponding integration, chaos, rolling-compatibility or benchmark evidence.
-
-- [Contributing](CONTRIBUTING.md)
-- [Development guide](docs/development.md)
-- [Agent engineering contract and Skills](docs/engineering/agent-governance-plan.md)
-- [Java naming, Javadoc, logging and forbidden APIs](docs/engineering/java-coding-standard.md)
-- [Security Policy](SECURITY.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
+The repository requires **Chinese standard Javadoc, English structured logs and reproducible compatibility/performance evidence**.
 
 <!-- doc-section:license -->
 ## License
 
-[MIT](LICENSE)
+[MIT License](LICENSE)

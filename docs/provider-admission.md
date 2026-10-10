@@ -39,7 +39,7 @@ flowchart LR
 ## 3. Spring Boot 配置
 
 ~~~yaml
-peach:
+otryx:
   rpc:
     server:
       max-concurrent: 4096
@@ -58,7 +58,7 @@ peach:
 程序化调用：
 
 ~~~java
-PeachRpcServer.builder()
+OtryxRpcServer.builder()
     .maxConcurrent(4096)
     .admissionOptions(new RpcProviderAdmissionOptions(
         256L * 1024 * 1024, // Global inflight Frame bytes
@@ -90,7 +90,7 @@ PeachRpcServer.builder()
 - `global-inflight-bytes` / `service-inflight-bytes` / `method-inflight-bytes`
 - 原有执行器 `cpu-queue` / `async-completion-queue`
 
-`RpcObserver.onServerInflightChanged(int)` 记录准入配额尚未归还的业务量，新增 `onServerInflightBytesChanged(long)` 记录已接纳、尚未释放的 Frame 字节增减。复合 Observer 会把事件安全分发给所有启用的采集适配器；Micrometer Adapter 已映射 `peach.rpc.server.inflight.bytes` Gauge（无高基数标签）；JFR 尚未增加该事件的专门映射，不应将 Observer API 当作 JFR 指标已完成。
+`RpcObserver.onServerInflightChanged(int)` 记录准入配额尚未归还的业务量，新增 `onServerInflightBytesChanged(long)` 记录已接纳、尚未释放的 Frame 字节增减。复合 Observer 会把事件安全分发给所有启用的采集适配器；Micrometer Adapter 已映射 `otryx.rpc.server.inflight.bytes` Gauge（无高基数标签）；JFR 尚未增加该事件的专门映射，不应将 Observer API 当作 JFR 指标已完成。
 
 ### 必须披露的取消语义
 
@@ -119,8 +119,8 @@ mvn -B -ntp verify
 针对性测试：
 
 ~~~bash
-mvn -B -ntp -pl peach-rpc-core -am \
-  -Dtest=ProviderAdmissionControllerTest,PeachRpcServerAsyncExecutionTest,RpcObserverTest \
+mvn -B -ntp -pl otryx-core -am \
+  -Dtest=ProviderAdmissionControllerTest,OtryxRpcServerAsyncExecutionTest,RpcObserverTest \
   -Dsurefire.failIfNoSpecifiedTests=false test
 ~~~
 

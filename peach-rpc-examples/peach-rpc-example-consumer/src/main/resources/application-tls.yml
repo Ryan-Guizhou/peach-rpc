@@ -1,9 +1,0 @@
-peach:
-  rpc:
-    transport:
-      security:
-        mode: TLS
-        trust-certificate-path: ${PEACH_RPC_TLS_CA}
-        hostname-verification: true
-        reload-interval: 30s
-        expiry-warning-threshold: 7d

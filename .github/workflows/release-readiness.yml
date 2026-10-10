@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - 'peach-rpc-*/**'
+      - 'otryx-*/**'
       - 'README.md'
       - 'README.en-US.md'
       - 'CHANGELOG.md'
@@ -54,31 +54,45 @@ jobs:
       - name: Repository checks
         run: python3 scripts/check_project.py
 
+      - name: Verify OTRYX migration readiness
+        if: ${{ endsWith(steps.release.outputs.version, '-SNAPSHOT') }}
+        run: python3 scripts/check_migration_readiness.py
+
+      - name: Verify migration Maven reactor
+        if: ${{ endsWith(steps.release.outputs.version, '-SNAPSHOT') }}
+        run: mvn -B -ntp clean verify -Pquality
+
       - name: Verify Maven Central publication configuration
+        if: ${{ !endsWith(steps.release.outputs.version, '-SNAPSHOT') }}
         run: python3 scripts/check_central_publication.py
 
       - name: Verify current patch release contract
+        if: ${{ !endsWith(steps.release.outputs.version, '-SNAPSHOT') }}
         run: >
           python3 scripts/check_release_version.py
           --stage patch
           --version ${{ steps.release.outputs.version }}
 
       - name: Verify current patch release readiness
+        if: ${{ !endsWith(steps.release.outputs.version, '-SNAPSHOT') }}
         run: >
           python3 scripts/check_release_readiness.py
           --stage patch
           --version ${{ steps.release.outputs.version }}
 
       - name: Verify current patch Maven reactor
+        if: ${{ !endsWith(steps.release.outputs.version, '-SNAPSHOT') }}
         run: mvn -B -ntp clean verify -Pquality,release
 
       - name: Verify Maven Central artifact shape
+        if: ${{ !endsWith(steps.release.outputs.version, '-SNAPSHOT') }}
         run: >
           python3 scripts/check_central_publication.py
           --version ${{ steps.release.outputs.version }}
           --require-artifacts
 
       - name: Build release artifact inventory
+        if: ${{ !endsWith(steps.release.outputs.version, '-SNAPSHOT') }}
         shell: bash
         run: |
           mkdir -p target
@@ -88,9 +102,10 @@ jobs:
           cat target/release-artifacts.txt
 
       - name: Upload release artifact inventory
+        if: ${{ !endsWith(steps.release.outputs.version, '-SNAPSHOT') }}
         uses: actions/upload-artifact@v4
         with:
-          name: peach-rpc-release-readiness-${{ steps.release.outputs.version }}-${{ github.run_id }}
+          name: otryx-release-readiness-${{ steps.release.outputs.version }}-${{ github.run_id }}
           path: target/release-artifacts.txt
           if-no-files-found: error
           retention-days: 30

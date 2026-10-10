@@ -1,4 +1,6 @@
-# Peach RPC 快速开始
+# OTRYX RPC 快速开始
+
+> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration-to-otryx.md)。
 
 > 目标：从干净环境运行一个真实的 Provider/Consumer 独立进程调用。
 
@@ -16,11 +18,13 @@ mvn -version
 docker version
 ```
 
+当前 GitHub 仓库在正式改名前仍位于 [Ryan-Guizhou/peach-rpc](https://github.com/Ryan-Guizhou/peach-rpc)。本页面所示未来 OTRYX 地址需等仓库设置更名后才可直接使用。
+
 ## 2. 获取源码
 
 ```bash
-git clone https://github.com/Ryan-Guizhou/peach-rpc.git
-cd peach-rpc
+git clone https://github.com/Ryan-Guizhou/otryx.git
+cd otryx
 ```
 
 ## 3. 先验证仓库
@@ -37,7 +41,7 @@ Windows 没有 `python3` 命令时可使用已安装 Python 的等价入口执�
 在仓库根目录：
 
 ```bash
-docker compose -f peach-rpc-examples/docker-compose.yml up -d
+docker compose -f otryx-examples/docker-compose.yml up -d
 ```
 
 该 Compose 只负责示例所需外部基础设施。
@@ -45,19 +49,19 @@ docker compose -f peach-rpc-examples/docker-compose.yml up -d
 ## 5. 构建 Examples
 
 ```bash
-mvn -B -ntp -pl peach-rpc-examples -am clean package
+mvn -B -ntp -pl otryx-examples -am clean package
 ```
 
 ## 6. 启动 Provider
 
 ```bash
-java -jar peach-rpc-examples/peach-rpc-example-provider/target/*-exec.jar
+java -jar otryx-examples/otryx-example-provider/target/*-exec.jar
 ```
 
 成功时会看到类似：
 
 ```text
-Peach RPC server started: bind=0.0.0.0:19090, advertised=127.0.0.1:19090
+OTRYX RPC server started: bind=0.0.0.0:19090, advertised=127.0.0.1:19090
 ```
 
 ## 7. 启动 Consumer
@@ -65,13 +69,13 @@ Peach RPC server started: bind=0.0.0.0:19090, advertised=127.0.0.1:19090
 另一个终端：
 
 ```bash
-java -jar peach-rpc-examples/peach-rpc-example-consumer/target/*-exec.jar
+java -jar otryx-examples/otryx-example-consumer/target/*-exec.jar
 ```
 
 预期：
 
 ```text
-RPC demo completed successfully: Hello, Peach RPC!
+RPC demo completed successfully: Hello, OTRYX RPC!
 ```
 
 ## 8. 你刚刚运行了什么
@@ -85,20 +89,20 @@ sequenceDiagram
     P->>N: register
     C->>N: subscribe / lookup
     N-->>C: Provider endpoint
-    C->>P: Peach RPC REQUEST
-    P-->>C: Peach RPC RESPONSE
+    C->>P: OTRYX RPC REQUEST
+    P-->>C: OTRYX RPC RESPONSE
 ```
 
 Provider 和 Consumer 是两个独立 JVM；Contract 位于共享 API 模块。
 
 ## 9. 在 Spring Boot 项目中引入
 
-当前 1.0.1 Release Prep 坐标：
+当前 2.0.0-SNAPSHOT Migration 坐标：
 
 ```xml
 <dependency>
-    <groupId>io.peach.rpc</groupId>
-    <artifactId>peach-rpc-spring-boot-starter</artifactId>
+    <groupId>com.peachsoft.otryx</groupId>
+    <artifactId>otryx-spring-boot-starter</artifactId>
     <version>1.0.1</version>
 </dependency>
 ```
@@ -114,7 +118,7 @@ mvn -B -ntp clean install -DskipTests
 ## 10. Provider 最小代码
 
 ```java
-@PeachRpcService(
+@OtryxRpcService(
         interfaceClass = OrderService.class,
         version = "1.0.0")
 public class OrderServiceImpl
@@ -125,7 +129,7 @@ public class OrderServiceImpl
 ## 11. Consumer 最小代码
 
 ```java
-@PeachRpcReference(version = "1.0.0")
+@OtryxRpcReference(version = "1.0.0")
 private OrderService orderService;
 ```
 
