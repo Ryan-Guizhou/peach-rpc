@@ -281,6 +281,24 @@
                     <configuration>
                         <doclint>all</doclint>
                         <failOnWarnings>true</failOnWarnings>
+                        <!-- Peach Cloud type metadata tags are custom Javadoc tags. -->
+                        <tags>
+                            <tag>
+                                <name>Author</name>
+                                <placement>t</placement>
+                                <head>Author:</head>
+                            </tag>
+                            <tag>
+                                <name>Version</name>
+                                <placement>t</placement>
+                                <head>Version:</head>
+                            </tag>
+                            <tag>
+                                <name>CreateTime</name>
+                                <placement>t</placement>
+                                <head>Create time:</head>
+                            </tag>
+                        </tags>
                         <encoding>${project.build.sourceEncoding}</encoding>
                         <quiet>true</quiet>
                     </configuration>

@@ -1,5 +1,8 @@
 # OTRYX RPC：Java 命名、Javadoc 与格式质量基线
 
+> **当前 V1.1 说明（2026-10-10）：** 本文中的 PR-8 至 PR-13、208 文件、19 份 XML 数字是历史提交的证据，并非当前 1.0.0-SNAPSHOT 的全仓审计计数。现行类型级 @Author/@Version/@CreateTime 使用 scripts/check_java_doc_metadata.py 单独审计，PR-02 只对变更的 Java 类型强制，待 PR-07 统一全仓 enforce-all。Checkstyle 的现有严格规则仍持续执行。
+
+
 > 状态：PR-8 建立建议性扫描；**PR-13 在已验证的零违规基线上将同一 Checkstyle 规则集升级为严格 CI Gate**。历史扫描证据保留，严格门禁只覆盖当前配置实际检查的规则与 Maven Reactor。
 
 ## 1. 目的

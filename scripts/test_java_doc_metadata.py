@@ -18,6 +18,12 @@ VALID = """/**
 
 class JavadocMetadataTest(unittest.TestCase):
 
+    def test_javadoc_plugin_declares_all_custom_type_tags(self):
+        pom = (lint.ROOT / "pom.xml").read_text(encoding="utf-8")
+        for name in lint.REQUIRED:
+            self.assertIn(f"<name>{name}</name>", pom)
+        self.assertIn("<placement>t</placement>", pom)
+
     def findings(self, source):
         _, violations = lint.scan_source("otryx-core/src/main/java/Example.java", source)
         return [v["message"] for v in violations]
@@ -47,17 +53,17 @@ class JavadocMetadataTest(unittest.TestCase):
 
     def test_placeholder_values_are_rejected(self):
         self.assertTrue(any("placeholder" in v for v in self.findings(
-            VALID.replace("@Author Mr Shu", "@Author TODO")
+            VALID.replace("@Author Mr Shu", "@Author TODO") + "class Example {}"
         )))
 
     def test_invalid_calendar_date_is_rejected(self):
         self.assertTrue(any("real date" in v for v in self.findings(
-            VALID.replace("2026/10/10 09:30", "2026/13/45 09:30")
+            VALID.replace("2026/10/10 09:30", "2026/13/45 09:30") + "class Example {}"
         )))
 
     def test_invalid_date_format_is_rejected(self):
         self.assertTrue(any("yyyy/M/d" in v for v in self.findings(
-            VALID.replace("2026/10/10 09:30", "2026-10-10")
+            VALID.replace("2026/10/10 09:30", "2026-10-10") + "class Example {}"
         )))
 
     def test_duplicate_tag_is_rejected(self):
