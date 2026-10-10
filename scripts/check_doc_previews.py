@@ -37,7 +37,7 @@ def check_pixels(path: Path, label: str) -> None:
     with Image.open(path) as opened:
         image = opened.convert("RGBA")
         if image.width < 32 or image.height < 32:
-            raise ValueError(f"{label}: rendered image is unexpectedly small")
+            raise ValueError(f"{label}: rendered image is unexpectedly small ({image.width}x{image.height})")
         if image.getcolors(maxcolors=1) is not None:
             raise ValueError(f"{label}: raster appears blank / one solid color")
 
