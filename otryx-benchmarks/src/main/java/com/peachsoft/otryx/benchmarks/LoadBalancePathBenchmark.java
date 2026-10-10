@@ -22,7 +22,7 @@ import org.openjdk.jmh.annotations.State;
  * P2C/EWMA 旧分配路径与数组快路径基准。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 15:46
  */
 @BenchmarkMode(Mode.AverageTime)

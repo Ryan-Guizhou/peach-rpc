@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
  * 验证 Nacos 服务名的编码、解析与非法参数处理。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 11:35
  */
 class NacosServiceNamesTest {

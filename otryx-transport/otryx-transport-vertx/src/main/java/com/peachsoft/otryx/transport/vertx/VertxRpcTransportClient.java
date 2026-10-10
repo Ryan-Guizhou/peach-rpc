@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * 上访问，避免请求完成路径上的共享 ConcurrentHashMap 与原子计数竞争。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 final class VertxRpcTransportClient implements RpcTransportClient {

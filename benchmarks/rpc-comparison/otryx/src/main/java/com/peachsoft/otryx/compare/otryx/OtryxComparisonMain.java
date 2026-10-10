@@ -33,7 +33,7 @@ import java.util.concurrent.CountDownLatch;
  * 可在不同主机启动。该入口绝不能与 Dubbo 依赖打包在同一个 JVM 中。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/10 14:27
  */
 public final class OtryxComparisonMain {

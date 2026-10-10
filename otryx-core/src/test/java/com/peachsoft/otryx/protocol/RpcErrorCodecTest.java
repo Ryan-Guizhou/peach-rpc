@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
  * 验证 RPC 错误载荷的编解码及非法输入处理。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 class RpcErrorCodecTest {

@@ -23,7 +23,7 @@ import org.springframework.context.ConfigurableApplicationContext;
  * 两个独立 Spring Context 通过 Nacos 完成真实 RPC round-trip。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 11:38
  */
 class NacosRoundTripTest {

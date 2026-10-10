@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  * Bean 完成创建后会自动注册到 OTRYX RPC Provider。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 @Documented

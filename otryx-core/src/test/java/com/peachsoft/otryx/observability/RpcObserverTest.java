@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
  * 验证 RPC Observer 的事件分发、隔离与无操作实现。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 10:13
  */
 class RpcObserverTest {

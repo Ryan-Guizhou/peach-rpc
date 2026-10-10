@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * 因此旧调用的成功、失败及取消回调不能改变新一轮探测结果。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/24 11:33
  */
 final class RpcCircuitBreaker {

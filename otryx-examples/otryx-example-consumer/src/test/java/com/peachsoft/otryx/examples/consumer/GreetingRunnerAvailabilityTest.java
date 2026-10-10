@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.1
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/8 17:07
  */
 class GreetingRunnerAvailabilityTest {

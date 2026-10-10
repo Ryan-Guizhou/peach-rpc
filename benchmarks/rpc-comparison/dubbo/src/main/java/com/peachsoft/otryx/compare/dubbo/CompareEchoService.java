@@ -4,7 +4,7 @@ package com.peachsoft.otryx.compare.dubbo;
  * Dubbo 独立 JVM 中使用的相同 byte[] Echo 业务接口。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/10 14:27
  */
 public interface CompareEchoService {

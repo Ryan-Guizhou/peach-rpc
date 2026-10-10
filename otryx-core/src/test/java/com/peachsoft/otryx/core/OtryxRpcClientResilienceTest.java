@@ -44,7 +44,7 @@ import org.junit.jupiter.api.Test;
  * 验证 Consumer 的重试、过载处理与容错策略边界。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/24 11:44
  */
 class OtryxRpcClientResilienceTest {

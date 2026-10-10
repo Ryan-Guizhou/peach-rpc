@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
  * 验证注解处理器生成的客户端和服务端 Stub 正确调用。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 class GeneratedStubTest {

@@ -38,7 +38,7 @@ import org.openjdk.jmh.annotations.Warmup;
  * V2-D.2 Provider 执行、慢调用与过载性能矩阵。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 18:54
  */
 @BenchmarkMode({Mode.SampleTime, Mode.Throughput})

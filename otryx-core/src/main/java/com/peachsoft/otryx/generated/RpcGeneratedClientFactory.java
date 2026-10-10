@@ -6,7 +6,7 @@ package com.peachsoft.otryx.generated;
  * @param <T> 服务接口类型
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 public interface RpcGeneratedClientFactory<T> {

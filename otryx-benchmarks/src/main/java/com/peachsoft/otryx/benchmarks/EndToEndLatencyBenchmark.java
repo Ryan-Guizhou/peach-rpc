@@ -43,7 +43,7 @@ import org.openjdk.jmh.annotations.Warmup;
  * 当前环境下的 RPC Added Latency；正式结果仍需记录机器、JVM、payload 与 fork 参数。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/24 11:40
  */
 @BenchmarkMode(Mode.AverageTime)

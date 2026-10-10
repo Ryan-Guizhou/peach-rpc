@@ -4,7 +4,7 @@ package com.peachsoft.otryx.protocol;
  * OTRYX RPC 官方压缩算法线协议编号。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 public final class RpcCompressionIds {

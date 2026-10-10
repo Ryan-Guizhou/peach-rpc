@@ -13,7 +13,7 @@ import java.util.Objects;
  * 描述。调用方在视图生命周期内不得修改 backing bytes。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 15:46
  */
 public final class RpcFrameView {

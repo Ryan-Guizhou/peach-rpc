@@ -10,7 +10,7 @@ import java.util.Objects;
  * @param group 服务分组
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 public record ServiceKey(String serviceName, String version, String group) {

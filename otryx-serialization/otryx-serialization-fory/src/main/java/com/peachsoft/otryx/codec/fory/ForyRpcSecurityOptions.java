@@ -17,7 +17,7 @@ import java.util.Set;
  * @param maxPayloadBytes 单个 Fory Payload 字节数上限
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/8 14:52
  */
 public record ForyRpcSecurityOptions(

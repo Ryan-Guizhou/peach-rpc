@@ -9,7 +9,7 @@ import java.util.concurrent.CompletionStage;
  * RPC 服务端传输契约。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 public interface RpcTransportServer extends AutoCloseable {

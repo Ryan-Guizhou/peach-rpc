@@ -6,7 +6,7 @@ import java.util.Optional;
  * Generated Server Dispatcher 的启动阶段发现工具。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 15:46
  */
 public final class RpcGeneratedServers {

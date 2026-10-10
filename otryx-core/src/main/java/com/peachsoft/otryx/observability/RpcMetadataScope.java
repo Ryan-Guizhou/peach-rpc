@@ -6,7 +6,7 @@ package com.peachsoft.otryx.observability;
  * <p>实现必须允许重复 close；NOOP 作用域不做任何操作。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 14:42
  */
 @FunctionalInterface

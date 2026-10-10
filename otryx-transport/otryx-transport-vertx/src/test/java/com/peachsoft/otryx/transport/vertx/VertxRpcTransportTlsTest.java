@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
  * Vert.x TLS/mTLS 真实网络集成测试。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 15:06
  */
 class VertxRpcTransportTlsTest {

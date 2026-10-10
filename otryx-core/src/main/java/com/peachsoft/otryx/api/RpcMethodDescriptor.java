@@ -16,7 +16,7 @@ import java.util.Objects;
  * @param returnType 返回泛型类型
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 public record RpcMethodDescriptor(

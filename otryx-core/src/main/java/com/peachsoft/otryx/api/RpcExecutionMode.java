@@ -4,7 +4,7 @@ package com.peachsoft.otryx.api;
  * Provider 业务方法的执行资源类型。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 10:13
  */
 public enum RpcExecutionMode {

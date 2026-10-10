@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
  * Metadata Propagator 组合与故障隔离测试。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 15:07
  */
 class RpcMetadataPropagatorTest {

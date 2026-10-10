@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Bean;
  * OTRYX RPC OpenTelemetry 自动配置。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 14:59
  */
 @AutoConfiguration

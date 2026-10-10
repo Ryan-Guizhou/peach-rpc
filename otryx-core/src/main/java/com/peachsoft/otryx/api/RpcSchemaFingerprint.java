@@ -24,7 +24,7 @@ import java.util.Set;
  * 不依赖方法枚举顺序、反射字段返回顺序或 Codec 注册顺序。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/30 11:16
  */
 public final class RpcSchemaFingerprint {

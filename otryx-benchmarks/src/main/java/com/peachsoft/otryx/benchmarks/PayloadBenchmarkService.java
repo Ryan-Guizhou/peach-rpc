@@ -6,7 +6,7 @@ import com.peachsoft.otryx.api.OtryxRpcContract;
  * V2-D Payload 端到端基准服务。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 17:55
  */
 @OtryxRpcContract

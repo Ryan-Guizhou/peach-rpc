@@ -9,7 +9,7 @@ import java.util.Set;
  * @param values 能力集合
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 public record RegistryCapabilities(Set<RegistryCapability> values) {

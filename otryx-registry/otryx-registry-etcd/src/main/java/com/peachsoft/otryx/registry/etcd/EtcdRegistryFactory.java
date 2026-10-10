@@ -10,7 +10,7 @@ import java.util.List;
  * Etcd 注册中心工厂。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 @Extension("etcd")

@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
  * 不触发网络访问，也不会向日志输出注册中心凭据或证书内容。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/9 16:12
  */
 final class OtryxRpcStartupDiagnostics {

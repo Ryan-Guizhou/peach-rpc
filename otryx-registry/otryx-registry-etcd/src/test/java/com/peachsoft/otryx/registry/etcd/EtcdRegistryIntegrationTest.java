@@ -29,7 +29,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * 验证 etcd Registry 的端到端注册、发现与订阅能力。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 10:13
  */
 @Timeout(value = 90, unit = TimeUnit.SECONDS)

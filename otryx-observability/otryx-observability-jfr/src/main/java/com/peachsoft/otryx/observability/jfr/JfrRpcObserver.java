@@ -17,7 +17,7 @@ import java.time.Duration;
  * <p>仅记录失败、恢复以及超过阈值的调用，避免高频正常请求持续产生事件。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 15:00
  */
 public final class JfrRpcObserver implements RpcObserver {

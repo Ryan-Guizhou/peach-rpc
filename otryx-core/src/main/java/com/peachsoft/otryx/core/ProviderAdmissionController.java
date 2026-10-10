@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * 待写响应、反序列化对象图或业务对象。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/8 15:51
  */
 final class ProviderAdmissionController {

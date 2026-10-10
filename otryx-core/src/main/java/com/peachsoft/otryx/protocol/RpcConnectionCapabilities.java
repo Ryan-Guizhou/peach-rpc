@@ -13,7 +13,7 @@ import java.util.Set;
  * @param maxFrameBytes 单帧最大字节数
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 public record RpcConnectionCapabilities(

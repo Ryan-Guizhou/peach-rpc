@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
  * 验证服务目录注册、查询及实例选择逻辑。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 class ServiceDirectoryTest {

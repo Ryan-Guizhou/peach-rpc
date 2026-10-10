@@ -4,7 +4,7 @@ package com.peachsoft.otryx.protocol;
  * 连接握手可协商的协议能力。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 public enum RpcFeature {

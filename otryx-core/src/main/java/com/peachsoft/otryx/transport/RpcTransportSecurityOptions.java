@@ -16,7 +16,7 @@ import java.time.Duration;
  * @param expiryWarningThreshold 证书过期前告警窗口
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 14:54
  */
 public record RpcTransportSecurityOptions(

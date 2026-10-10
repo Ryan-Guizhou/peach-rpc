@@ -9,7 +9,7 @@ import java.util.Optional;
  * 用于兼容 Kubernetes EndpointSlice 等 discovery-only 控制面。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 public interface Registry extends ServiceDiscovery, AutoCloseable {

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
  * 验证端点运行统计、隔离到期及重新可用的判定。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/8 10:08
  */
 class EndpointStatsTest {

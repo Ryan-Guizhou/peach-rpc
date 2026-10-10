@@ -4,7 +4,7 @@ package com.peachsoft.otryx.generated;
  * 编译期生成的 Provider 方法分派器。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 15:46
  */
 @FunctionalInterface

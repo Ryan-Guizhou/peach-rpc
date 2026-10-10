@@ -10,7 +10,7 @@ VALID = """/**
  * 提供 RPC 请求调度契约。
  *
  * @Author Mr Shu
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/10 09:30
  */
 """

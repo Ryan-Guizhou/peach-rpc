@@ -14,7 +14,7 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
  * 将 {@link OtryxRpcService} Spring Bean 注册到 OTRYX RPC Provider。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 public final class OtryxRpcServiceBeanPostProcessor implements BeanPostProcessor {

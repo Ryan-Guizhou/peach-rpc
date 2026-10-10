@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
  * 验证 Registry 兼容元数据的判断规则与不匹配处理。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/30 11:16
  */
 class RpcCompatibilityMetadataTest {

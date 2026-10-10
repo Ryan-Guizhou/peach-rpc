@@ -9,7 +9,7 @@ import java.util.List;
  * 服务实例选择扩展点。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 @SPI("p2c-ewma")

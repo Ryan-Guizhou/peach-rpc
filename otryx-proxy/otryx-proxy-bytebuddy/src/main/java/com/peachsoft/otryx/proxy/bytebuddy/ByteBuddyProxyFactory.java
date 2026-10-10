@@ -19,7 +19,7 @@ import net.bytebuddy.matcher.ElementMatchers;
  * 的运行时代码生成 fallback。当前只支持 RPC 服务接口。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 15:46
  */
 @Extension("bytebuddy")

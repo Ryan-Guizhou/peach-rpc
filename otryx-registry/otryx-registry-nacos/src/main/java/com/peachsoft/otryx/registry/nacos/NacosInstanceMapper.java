@@ -11,7 +11,7 @@ import java.util.Map;
  * Nacos Instance 与 OTRYX RPC ServiceInstance 的映射器。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 11:35
  */
 final class NacosInstanceMapper {

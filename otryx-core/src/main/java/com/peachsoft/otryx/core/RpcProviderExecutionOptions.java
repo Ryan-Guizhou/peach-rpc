@@ -8,7 +8,7 @@ package com.peachsoft.otryx.core;
  * @param cpuQueueCapacity CPU 执行池有界队列容量
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 10:13
  */
 public record RpcProviderExecutionOptions(

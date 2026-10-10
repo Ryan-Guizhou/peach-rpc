@@ -6,7 +6,7 @@ import java.util.Objects;
  * 携带远端 RPC 状态与脱敏异常类型的调用异常。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/24 11:33
  */
 public final class RpcRemoteException extends RpcException {

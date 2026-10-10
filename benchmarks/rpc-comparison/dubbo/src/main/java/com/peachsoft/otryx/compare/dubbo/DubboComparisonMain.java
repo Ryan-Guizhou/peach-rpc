@@ -17,7 +17,7 @@ import org.apache.dubbo.config.ServiceConfig;
  * Nacos 等注册中心，并且绝不与 Peach 的 Transport/Netty 类加载路径共用 JVM。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/10 14:27
  */
 public final class DubboComparisonMain {

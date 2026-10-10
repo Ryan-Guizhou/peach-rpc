@@ -9,7 +9,7 @@ import jdk.jfr.Name;
  * Consumer Retry 调度 JFR Event。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 17:33
  */
 @Name("com.peachsoft.otryx.Retry")

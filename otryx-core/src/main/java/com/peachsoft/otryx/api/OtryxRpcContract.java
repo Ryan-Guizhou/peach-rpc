@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * <p>注解本身不会改变运行时语义；未生成 Stub 时仍可回退到运行时代理。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/10 11:43
  */
 @Target(ElementType.TYPE)

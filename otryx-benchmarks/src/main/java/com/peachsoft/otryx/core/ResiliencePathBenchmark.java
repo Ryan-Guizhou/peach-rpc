@@ -21,7 +21,7 @@ import org.openjdk.jmh.annotations.Warmup;
  * 直接测量 package-private 的 Retry Budget、Circuit Breaker 与 Outlier 状态路径。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/30 09:50
  */
 @BenchmarkMode({Mode.SampleTime, Mode.Throughput})

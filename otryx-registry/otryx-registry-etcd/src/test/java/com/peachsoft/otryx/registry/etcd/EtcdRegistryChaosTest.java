@@ -27,7 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * {@code -Petcd-chaos} 单独运行，避免 3 节点容器生命周期影响普通 PR 门禁。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 13:41
  */
 @Tag("chaos")

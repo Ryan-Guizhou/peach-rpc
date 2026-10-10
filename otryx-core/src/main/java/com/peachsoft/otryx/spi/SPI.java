@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * 声明框架扩展点及其默认扩展名。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 @Documented

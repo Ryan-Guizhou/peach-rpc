@@ -7,7 +7,7 @@ import com.peachsoft.otryx.api.OtryxRpcIdempotent;
  * 示例问候 RPC 契约。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 11:36
  */
 @OtryxRpcContract

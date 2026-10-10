@@ -7,7 +7,7 @@ import java.util.Map;
  * 单次逻辑 RPC 调用的低依赖 Trace 上下文。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 14:47
  */
 public interface RpcTraceContext {

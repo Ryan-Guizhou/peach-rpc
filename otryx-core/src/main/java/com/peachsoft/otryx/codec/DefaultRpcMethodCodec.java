@@ -6,7 +6,7 @@ import java.util.Objects;
  * 通用 RpcCodec 到方法级 Codec 的兼容适配器。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 final class DefaultRpcMethodCodec implements RpcMethodCodec {

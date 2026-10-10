@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
  * HELLO Payload 畸形与截断输入测试。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/30 11:19
  */
 class RpcHandshakeRobustnessTest {

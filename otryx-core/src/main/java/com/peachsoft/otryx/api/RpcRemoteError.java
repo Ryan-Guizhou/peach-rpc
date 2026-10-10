@@ -9,7 +9,7 @@ import java.io.Serializable;
  * @param message 面向 Consumer 的脱敏消息
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 public record RpcRemoteError(String errorType, String message) implements Serializable {

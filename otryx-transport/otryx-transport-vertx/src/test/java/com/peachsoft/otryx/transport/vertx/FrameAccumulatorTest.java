@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
  * 验证帧累积器的边界、拼装及异常输入处理。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 class FrameAccumulatorTest {

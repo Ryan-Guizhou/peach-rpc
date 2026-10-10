@@ -8,7 +8,7 @@ import com.peachsoft.otryx.api.RpcExecutionMode;
  * V2-D.2 Provider 执行与过载场景基准契约。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 18:54
  */
 @OtryxRpcContract

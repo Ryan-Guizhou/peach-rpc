@@ -21,7 +21,7 @@ import org.openjdk.jmh.annotations.State;
  * <p>该基准不包含网络和序列化，用于单独观察代理/分派层附加成本。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 15:46
  */
 @BenchmarkMode(Mode.AverageTime)

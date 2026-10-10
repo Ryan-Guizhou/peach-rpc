@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
  * OpenTelemetry Trace Context 传播测试。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 15:07
  */
 class OpenTelemetryRpcTracingBridgeTest {

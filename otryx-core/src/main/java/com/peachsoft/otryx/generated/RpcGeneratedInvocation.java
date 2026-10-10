@@ -9,7 +9,7 @@ import java.util.concurrent.CompletionStage;
  * 更高参数个数使用 invokeN 作为兼容 fallback。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 public interface RpcGeneratedInvocation {

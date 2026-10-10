@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
  * 验证 SPI 加载器的扩展发现、命名和异常处理。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 class ExtensionLoaderTest {

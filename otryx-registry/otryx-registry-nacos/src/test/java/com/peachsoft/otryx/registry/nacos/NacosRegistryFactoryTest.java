@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
  * 验证 Nacos Registry Factory 的扩展构建与参数校验。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 11:35
  */
 class NacosRegistryFactoryTest {

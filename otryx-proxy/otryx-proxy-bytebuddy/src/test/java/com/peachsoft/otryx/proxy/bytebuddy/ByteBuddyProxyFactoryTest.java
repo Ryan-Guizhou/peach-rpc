@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
  * 验证 ByteBuddy 代理方法调用与异常传播。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 15:46
  */
 class ByteBuddyProxyFactoryTest {

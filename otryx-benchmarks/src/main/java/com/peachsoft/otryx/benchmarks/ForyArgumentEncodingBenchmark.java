@@ -24,7 +24,7 @@ import org.openjdk.jmh.annotations.Warmup;
  * 层，不代表完整 RPC 的网络吞吐、p99 或 10k 并发。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/9 16:36
  */
 @BenchmarkMode({Mode.AverageTime, Mode.SampleTime})

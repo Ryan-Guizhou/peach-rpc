@@ -14,7 +14,7 @@ import java.util.Map;
  * @param observer 控制面 Observer
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 public record RegistryOptions(

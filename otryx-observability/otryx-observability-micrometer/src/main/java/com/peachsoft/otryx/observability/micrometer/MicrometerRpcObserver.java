@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>默认标签不包含 Endpoint、InstanceId、异常消息或 TraceId，避免高基数。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 14:51
  */
 public final class MicrometerRpcObserver implements RpcObserver {

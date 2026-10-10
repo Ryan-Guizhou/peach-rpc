@@ -7,7 +7,7 @@ import java.util.concurrent.CompletionStage;
  * Provider 收到完整协议帧后的异步处理器。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 @FunctionalInterface

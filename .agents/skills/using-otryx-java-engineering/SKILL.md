@@ -24,7 +24,7 @@ description: "OTRYX RPC Java engineering baseline: Chinese Peach Cloud type Java
  * <p>说明线程归属、返回快照及资源释放责任。</p>
  *
  * @Author Mr Shu
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/10 09:30
  */
 ~~~

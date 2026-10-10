@@ -35,7 +35,7 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
  * TLS 集成测试临时证书工厂。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 15:04
  */
 final class TlsTestCertificates implements AutoCloseable {

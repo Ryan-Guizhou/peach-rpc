@@ -64,7 +64,7 @@ import org.slf4j.LoggerFactory;
  * 以实际关闭策略为准。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 public final class OtryxRpcServer implements AutoCloseable {

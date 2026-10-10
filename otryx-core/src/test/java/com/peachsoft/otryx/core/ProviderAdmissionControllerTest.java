@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
  * Provider Admission 并发、内存预算以及竞态释放回归测试。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/8 15:55
  */
 class ProviderAdmissionControllerTest {

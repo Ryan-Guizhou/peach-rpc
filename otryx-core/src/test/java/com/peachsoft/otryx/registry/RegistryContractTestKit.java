@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * register/discovery/subscription/unregister 的可观察语义。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/30 11:39
  */
 public final class RegistryContractTestKit {

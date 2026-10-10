@@ -9,7 +9,7 @@ import jdk.jfr.Name;
  * 连接/Registry/TLS 恢复类 JFR Event。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 15:00
  */
 @Name("com.peachsoft.otryx.Recovery")

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
  * 对应的接口和独立 Adapter 模块。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/9 10:22
  */
 class OtryxRpcCoreArchitectureTest {

@@ -15,7 +15,7 @@ package com.peachsoft.otryx.core;
  * @param maxInflightBytesPerMethod 方法请求字节硬上限；0 为所属服务全部额度
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/8 15:49
  */
 public record RpcProviderAdmissionOptions(

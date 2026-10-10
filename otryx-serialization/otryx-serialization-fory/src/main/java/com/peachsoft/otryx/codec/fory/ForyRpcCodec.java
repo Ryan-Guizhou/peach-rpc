@@ -23,7 +23,7 @@ import org.apache.fory.ThreadSafeFory;
  * 不能由本 Codec 自动推断，应由应用配置和测试验证。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 @Extension("fory")

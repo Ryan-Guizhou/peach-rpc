@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * 单端点负载均衡与异常实例剔除统计。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 final class EndpointStats {

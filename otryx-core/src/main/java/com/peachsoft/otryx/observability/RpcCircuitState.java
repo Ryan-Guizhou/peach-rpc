@@ -4,7 +4,7 @@ package com.peachsoft.otryx.observability;
  * Consumer 方法级 Circuit Breaker 的稳定观测状态。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/30 11:45
  */
 public enum RpcCircuitState {

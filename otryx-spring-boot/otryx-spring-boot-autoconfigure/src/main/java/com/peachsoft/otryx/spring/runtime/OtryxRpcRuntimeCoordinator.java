@@ -24,7 +24,7 @@ import org.springframework.beans.factory.ObjectProvider;
  * 按需创建并持有 OTRYX RPC Consumer / Provider 运行时。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 11:30
  */
 public final class OtryxRpcRuntimeCoordinator implements AutoCloseable {

@@ -17,7 +17,7 @@ import java.time.Duration;
  * @param circuitOpenDuration 熔断打开时间
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/24 11:33
  */
 public record RpcClientResilienceOptions(

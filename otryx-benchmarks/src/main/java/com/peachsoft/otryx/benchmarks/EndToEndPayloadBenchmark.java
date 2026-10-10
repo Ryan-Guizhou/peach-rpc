@@ -41,7 +41,7 @@ import org.openjdk.jmh.annotations.Warmup;
  * Vert.x Transport 与 Provider Dispatcher 路径。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 17:55
  */
 @BenchmarkMode(Mode.AverageTime)

@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
  * 示例 Consumer，在应用启动后完成一次真实 RPC 调用。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 11:36
  */
 @Component

@@ -4,7 +4,7 @@ package com.peachsoft.otryx.registry;
  * 服务实例快照监听器。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 @FunctionalInterface

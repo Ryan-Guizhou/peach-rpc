@@ -10,7 +10,7 @@ import org.springframework.context.SmartLifecycle;
  * 将已经创建的 OTRYX RPC Provider 接入 Spring 生命周期。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 public final class OtryxRpcServerLifecycle implements SmartLifecycle {

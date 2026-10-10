@@ -14,7 +14,7 @@ import net.sf.cglib.proxy.MethodInterceptor;
  * <p>该实现用于兼容需要类代理的调用场景，不作为长期默认高性能路径。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 @Extension("cglib")

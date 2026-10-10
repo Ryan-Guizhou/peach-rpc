@@ -6,3 +6,5 @@ target/
 .settings/
 .DS_Store
 *.log
+.flattened-pom.xml
+.codegraph

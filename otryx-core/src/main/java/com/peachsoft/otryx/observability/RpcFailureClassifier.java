@@ -12,7 +12,7 @@ import java.util.concurrent.CancellationException;
  * RPC 失败分类工具，供指标、日志和告警统一使用。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/30 11:21
  */
 public final class RpcFailureClassifier {

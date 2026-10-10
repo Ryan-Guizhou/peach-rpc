@@ -7,7 +7,7 @@ import java.util.concurrent.CompletionStage;
  * Provider 服务注册控制面。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 public interface ServiceRegistrar {

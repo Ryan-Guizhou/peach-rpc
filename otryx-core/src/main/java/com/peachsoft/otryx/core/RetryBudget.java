@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * Consumer 全局重试预算，使用定点额度限制故障期间的重试放大。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/24 11:33
  */
 final class RetryBudget {

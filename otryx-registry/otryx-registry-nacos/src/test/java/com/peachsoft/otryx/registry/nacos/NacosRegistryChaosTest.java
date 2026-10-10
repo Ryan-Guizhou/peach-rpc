@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Timeout;
  * 该测试仅由 nacos-chaos Profile 执行，需要宿主机 Docker CLI。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/30 11:21
  */
 @Tag("chaos")

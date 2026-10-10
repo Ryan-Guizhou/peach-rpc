@@ -19,7 +19,7 @@ import org.openjdk.jmh.annotations.State;
  * FrameAccumulator 完整帧与分片帧重组基准。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 17:59
  */
 @BenchmarkMode(Mode.AverageTime)

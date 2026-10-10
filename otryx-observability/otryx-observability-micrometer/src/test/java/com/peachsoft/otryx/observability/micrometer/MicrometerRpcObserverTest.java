@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
  * Micrometer Observer 指标映射测试。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 14:51
  */
 class MicrometerRpcObserverTest {

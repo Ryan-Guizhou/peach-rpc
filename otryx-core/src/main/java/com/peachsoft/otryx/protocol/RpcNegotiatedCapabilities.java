@@ -12,7 +12,7 @@ import java.util.Set;
  * @param maxFrameBytes 双端共同接受的最大帧大小
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 public record RpcNegotiatedCapabilities(

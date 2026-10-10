@@ -4,7 +4,7 @@ package com.peachsoft.otryx.observability;
  * Registry 控制面恢复动作。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 14:42
  */
 public enum RpcRegistryRecoveryAction {

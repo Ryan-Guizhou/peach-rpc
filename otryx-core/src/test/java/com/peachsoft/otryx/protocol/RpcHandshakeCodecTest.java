@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
  * 验证握手能力协商载荷的编码与解析。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 11:46
  */
 class RpcHandshakeCodecTest {

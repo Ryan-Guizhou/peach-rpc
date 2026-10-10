@@ -16,7 +16,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * 线程资源的配置必须验证合法范围及生效时机，不能只依赖 Javadoc。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 @ConfigurationProperties(prefix = "otryx.rpc")

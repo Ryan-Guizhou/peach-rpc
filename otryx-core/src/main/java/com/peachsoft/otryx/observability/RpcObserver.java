@@ -16,7 +16,7 @@ import java.util.List;
  * <p>实现不应阻塞调用线程，也不应把异常传播回 RPC 主链。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 10:13
  */
 public interface RpcObserver {

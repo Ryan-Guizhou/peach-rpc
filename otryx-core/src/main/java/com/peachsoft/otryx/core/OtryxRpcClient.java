@@ -65,7 +65,7 @@ import java.util.concurrent.TimeUnit;
  * 避免遗留连接、服务发现订阅和执行资源。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 public final class OtryxRpcClient implements AutoCloseable {

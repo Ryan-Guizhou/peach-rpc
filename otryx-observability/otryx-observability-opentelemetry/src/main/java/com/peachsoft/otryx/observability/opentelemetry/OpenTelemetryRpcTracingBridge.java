@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 对于需要诊断详情的调用方，应使用经过授权的受控日志或 Trace 采样策略。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 14:59
  */
 public final class OpenTelemetryRpcTracingBridge

@@ -4,7 +4,7 @@ package com.peachsoft.otryx.registry.nacos;
  * OTRYX RPC 在 Nacos metadata 中保留的键。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 11:35
  */
 final class NacosReservedMetadata {

@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.LongAdder;
  * 10000 个平台线程把 Driver 调度成本误判成 RPC 成本。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 18:36
  */
 public final class PerformanceSoakRunner {

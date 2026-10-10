@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
  * 验证进程内注册中心的注册、发现和订阅语义。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 class MemoryRegistryTest {

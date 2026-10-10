@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
  * 验证 Vert.x Transport 的往返调用及连接生命周期。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 class VertxRpcTransportTest {

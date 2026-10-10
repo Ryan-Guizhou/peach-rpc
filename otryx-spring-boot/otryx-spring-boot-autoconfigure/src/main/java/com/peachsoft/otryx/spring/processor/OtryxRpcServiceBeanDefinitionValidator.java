@@ -12,7 +12,7 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
  * 在 Provider 实例化前校验 Bean 生命周期，避免 Server 启动后才出现服务。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 11:38
  */
 public final class OtryxRpcServiceBeanDefinitionValidator

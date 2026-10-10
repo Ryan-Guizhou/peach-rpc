@@ -17,7 +17,7 @@ import java.util.Map;
  * 所有兼容性变更需要配套现有 Rolling Compatibility 验证。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 public final class RpcProtocolCodec {

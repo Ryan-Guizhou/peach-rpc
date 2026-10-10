@@ -11,7 +11,7 @@ import java.util.concurrent.CompletionStage;
  * JDK 动态代理实现，作为接口类型的默认代理策略。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 @Extension("jdk")

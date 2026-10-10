@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
  * 未标记的方法即使配置了重试次数也不会进行自动重试。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/10 11:43
  */
 @Documented

@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
  * 验证服务方法绑定和执行模式的契约。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/28 10:13
  */
 public class ServiceBindingExecutionTest {

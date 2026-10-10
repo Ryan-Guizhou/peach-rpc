@@ -1,7 +1,7 @@
 # OTRYX RPC Java 工程编码规范
 
-**状态：V1.1 首发前治理规范（PR-02 建立执行机制，PR-03 至 PR-07 完成全仓治理）。**  
-**事实基线：** Java 21、Maven、Spring Boot 3.5.4、OTRYX 1.0.0-SNAPSHOT，以当前 POM、代码和测试为准。  
+**状态：V1.1 首发前治理规范（PR-02 建立执行机制，PR-03 至 PR-07 完成全仓治理）。**
+**事实基线：** Java 21、Maven、Spring Boot 3.5.4、OTRYX 1.0.0-SNAPSHOT，以当前 POM、代码和测试为准。
 **参考：** Peach Cloud 的中文 Javadoc、类型元数据、英文日志和可读性要求；保留 RPC 热路径及异步边界的特殊约束。
 
 ## 1. 目标与治理边界
@@ -43,7 +43,7 @@ Java 源文件使用 UTF-8 无 BOM、LF、4 空格、行宽 120，禁止通配�
  * <p>端点列表返回当前缓存快照，不保证远端注册中心即时同步。</p>
  *
  * @Author Mr Shu
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/10 09:30
  */
 ~~~

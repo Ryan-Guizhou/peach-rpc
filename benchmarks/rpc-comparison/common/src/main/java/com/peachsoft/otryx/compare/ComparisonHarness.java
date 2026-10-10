@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.LongAdder;
  * 消除 coordinated omission 的正式 open-loop 延迟声明。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/10/10 14:27
  */
 public final class ComparisonHarness {

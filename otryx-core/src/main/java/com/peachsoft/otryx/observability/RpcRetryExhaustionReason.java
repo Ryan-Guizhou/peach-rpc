@@ -4,7 +4,7 @@ package com.peachsoft.otryx.observability;
  * Consumer 自动重试无法继续时的低基数原因。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/30 14:09
  */
 public enum RpcRetryExhaustionReason {

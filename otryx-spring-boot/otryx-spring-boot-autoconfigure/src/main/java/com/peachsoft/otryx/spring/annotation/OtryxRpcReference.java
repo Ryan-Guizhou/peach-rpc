@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * 标记需要注入 OTRYX RPC Consumer 代理的字段。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 @Documented

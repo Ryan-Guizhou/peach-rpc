@@ -4,7 +4,7 @@ package com.peachsoft.otryx.observability;
  * RPC 连接关闭或摘除原因。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/29 13:43
  */
 public enum RpcConnectionCloseReason {

@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
  * 验证 P2C EWMA 负载均衡的端点选择与权重行为。
  *
  * @Author Ryan
- * @Version 1.0.0-SNAPSHOT
+ * @Version 1.0.0
  * @CreateTime 2026/9/23 10:51
  */
 class P2cEwmaLoadBalancerTest {
