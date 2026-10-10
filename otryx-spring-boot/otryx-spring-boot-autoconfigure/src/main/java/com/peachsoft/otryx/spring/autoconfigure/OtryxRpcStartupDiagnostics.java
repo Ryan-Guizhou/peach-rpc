@@ -12,6 +12,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>在 ConfigurationProperties 完成绑定后执行，不创建 Transport/Registry，
  * 不触发网络访问，也不会向日志输出注册中心凭据或证书内容。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/10/9 16:12
  */
 final class OtryxRpcStartupDiagnostics {
     private static final Logger LOGGER =

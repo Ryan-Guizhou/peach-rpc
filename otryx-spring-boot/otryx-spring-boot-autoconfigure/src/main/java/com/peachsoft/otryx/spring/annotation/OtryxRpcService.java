@@ -12,6 +12,10 @@ import org.springframework.stereotype.Component;
  *
  * <p>该注解同时是 Spring stereotype，服务实现类无需额外添加 {@code @Component}。
  * Bean 完成创建后会自动注册到 OTRYX RPC Provider。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 @Documented
 @Component

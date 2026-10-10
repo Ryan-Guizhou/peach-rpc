@@ -13,6 +13,10 @@ import org.springframework.util.ReflectionUtils;
 
 /**
  * 将 {@link OtryxRpcReference} 字段替换为 RPC Consumer 代理。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 public final class OtryxRpcReferenceBeanPostProcessor
         implements InstantiationAwareBeanPostProcessor, PriorityOrdered {
