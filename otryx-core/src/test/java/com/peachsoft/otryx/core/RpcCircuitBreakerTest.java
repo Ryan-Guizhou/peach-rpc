@@ -15,6 +15,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证熔断器故障判定、恢复与状态转换。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/24 11:36
+ */
 class RpcCircuitBreakerTest {
 
     @Test

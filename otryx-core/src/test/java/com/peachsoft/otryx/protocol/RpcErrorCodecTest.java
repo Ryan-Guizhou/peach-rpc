@@ -7,6 +7,13 @@ import com.peachsoft.otryx.api.RpcRemoteError;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证 RPC 错误载荷的编解码及非法输入处理。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
+ */
 class RpcErrorCodecTest {
 
     @Test

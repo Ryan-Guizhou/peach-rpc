@@ -13,6 +13,10 @@ import org.junit.jupiter.api.Test;
  * <p>测试仅扫描生产类，而不包含测试夹具。禁止 Core 直接耦合具体
  * Transport、Registry、Codec 与 Spring 适配器；技术集成必须经过
  * 对应的接口和独立 Adapter 模块。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/10/9 10:22
  */
 class OtryxRpcCoreArchitectureTest {
 

@@ -8,6 +8,13 @@ import java.lang.reflect.Type;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证 RPC Schema 指纹的稳定计算及结构变化检测。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/30 11:16
+ */
 class RpcSchemaFingerprintTest {
 
     @Test

@@ -7,7 +7,13 @@ import java.util.Arrays;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-/** HELLO Payload 畸形与截断输入测试。 */
+/**
+ * HELLO Payload 畸形与截断输入测试。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/30 11:19
+ */
 class RpcHandshakeRobustnessTest {
 
     @Test

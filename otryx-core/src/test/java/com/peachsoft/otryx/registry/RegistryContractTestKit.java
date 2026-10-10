@@ -15,6 +15,10 @@ import java.util.stream.Collectors;
  *
  * <p>真实 Adapter 测试负责创建后端和 Registry，本 TestKit 统一验证
  * register/discovery/subscription/unregister 的可观察语义。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/30 11:39
  */
 public final class RegistryContractTestKit {
 

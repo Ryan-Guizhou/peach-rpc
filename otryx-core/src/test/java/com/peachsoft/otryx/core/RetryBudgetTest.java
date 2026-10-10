@@ -6,6 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证重试预算的分配、消耗与容量限制。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/24 11:36
+ */
 class RetryBudgetTest {
 
     @Test

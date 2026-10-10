@@ -5,6 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证 Registry 兼容元数据的判断规则与不匹配处理。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/30 11:16
+ */
 class RpcCompatibilityMetadataTest {
 
     @Test

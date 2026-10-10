@@ -8,6 +8,13 @@ import com.peachsoft.otryx.api.RpcStatus;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证 RPC Frame 视图的读取和缓冲区边界。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 15:46
+ */
 class RpcFrameViewTest {
 
     @Test
