@@ -7,6 +7,10 @@ import java.util.Objects;
  *
  * @param host 主机名或 IP 地址
  * @param port TCP 端口
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 public record RpcEndpoint(String host, int port) {
 

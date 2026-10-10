@@ -2,7 +2,13 @@ package com.peachsoft.otryx.api;
 
 import java.util.Objects;
 
-/** 携带远端 RPC 状态与脱敏异常类型的调用异常。 */
+/**
+ * 携带远端 RPC 状态与脱敏异常类型的调用异常。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/24 11:33
+ */
 public final class RpcRemoteException extends RpcException {
 
     /** 远端返回的 RPC 状态。 */

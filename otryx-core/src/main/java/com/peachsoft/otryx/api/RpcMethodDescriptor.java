@@ -14,6 +14,10 @@ import java.util.Objects;
  * @param methodName 方法名
  * @param parameterTypes 参数泛型类型
  * @param returnType 返回泛型类型
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
  */
 public record RpcMethodDescriptor(
         ServiceKey serviceKey,

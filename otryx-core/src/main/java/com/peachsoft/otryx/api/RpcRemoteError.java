@@ -7,6 +7,10 @@ import java.io.Serializable;
  *
  * @param errorType 远端异常类型
  * @param message 面向 Consumer 的脱敏消息
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
  */
 public record RpcRemoteError(String errorType, String message) implements Serializable {
 }

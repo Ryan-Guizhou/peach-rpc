@@ -8,6 +8,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * 稳定类型标识注册表。
  *
  * <p>用于在启动绑定阶段检测不同 Type 被映射到同一稳定 ID 的碰撞。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/30 11:16
  */
 public final class RpcTypeRegistry {
 
