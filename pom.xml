@@ -197,6 +197,21 @@
             </dependency>
             <dependency>
                 <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-registry-http</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-registry-consul</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-registry-eureka</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.peachsoft.otryx</groupId>
                 <artifactId>otryx-proxy-cglib</artifactId>
                 <version>${revision}</version>
             </dependency>

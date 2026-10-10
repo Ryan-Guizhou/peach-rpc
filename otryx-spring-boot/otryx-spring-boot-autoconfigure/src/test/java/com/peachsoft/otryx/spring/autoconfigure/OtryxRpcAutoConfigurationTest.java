@@ -70,6 +70,32 @@ public class OtryxRpcAutoConfigurationTest {
     }
 
     @Test
+    void consulAndEurekaRegistryOptionsShouldBind() {
+        contextRunner
+                .withPropertyValues(
+                        "otryx.rpc.registry.consul.token=test-token",
+                        "otryx.rpc.registry.consul.ttl-seconds=45",
+                        "otryx.rpc.registry.consul.heartbeat-seconds=15",
+                        "otryx.rpc.registry.consul.datacenter=dc-east",
+                        "otryx.rpc.registry.eureka.username=test-user",
+                        "otryx.rpc.registry.eureka.password=test-password",
+                        "otryx.rpc.registry.eureka.lease-seconds=60",
+                        "otryx.rpc.registry.eureka.poll-interval-millis=3000")
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    OtryxRpcProperties.Registry props =
+                            context.getBean(OtryxRpcProperties.class).getRegistry();
+                    assertThat(props.getConsul().getToken()).isEqualTo("test-token");
+                    assertThat(props.getConsul().getTtlSeconds()).isEqualTo(45);
+                    assertThat(props.getConsul().getHeartbeatSeconds()).isEqualTo(15);
+                    assertThat(props.getConsul().getDatacenter()).isEqualTo("dc-east");
+                    assertThat(props.getEureka().getUsername()).isEqualTo("test-user");
+                    assertThat(props.getEureka().getLeaseSeconds()).isEqualTo(60);
+                    assertThat(props.getEureka().getPollIntervalMillis()).isEqualTo(3000);
+                });
+    }
+
+    @Test
     void missingNacosAdapterShouldSuggestClasspathCorrection() {
         contextRunner
                 .withPropertyValues("otryx.rpc.registry.type=nacos")

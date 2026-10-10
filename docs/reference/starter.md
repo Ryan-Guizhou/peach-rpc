@@ -6,7 +6,7 @@
 
 ### 1.1 新项目推荐：轻量 Starter
 
-轻量接入采用 `otryx-spring-boot-starter-lite`，默认是 **Memory Registry、JDK Proxy、Fory、Vert.x**，不额外带入 Etcd、Nacos 或 CGLIB。它保留和完整 Starter 相同的注解、配置、Wire v1 与 Public Core API：
+轻量接入采用 `otryx-spring-boot-starter-lite`，默认是 **Memory Registry、JDK Proxy、Fory、Vert.x**，不额外带入 Etcd、Nacos、Consul、Eureka 或 CGLIB。它保留和完整 Starter 相同的注解、配置、Wire v1 与 Public Core API：
 
 ```xml
 <dependency>
@@ -26,7 +26,19 @@
 </dependency>
 ```
 
-Etcd 则引入 `otryx-registry-etcd`，CGLIB fallback 则引入 `otryx-proxy-cglib`，Byte Buddy 使用 `otryx-proxy-bytebuddy`。SPI 自动发现实际已安装的 Adapter；如果配置了未加入类路径的 `otryx.rpc.registry.type=nacos`，应按缺失 Adapter 处理，不能假设轻量 Starter 自带 SDK。
+Etcd 则引入 `otryx-registry-etcd`。Consul 或 Eureka 需要额外引入对应 `otryx-registry-consul` / `otryx-registry-eureka` Adapter，分别配置 `registry.type=consul` / `eureka`：
+
+```xml
+<dependency>
+    <groupId>com.peachsoft.otryx</groupId>
+    <artifactId>otryx-registry-consul</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+</dependency>
+```
+
+将 `artifactId` 改为 `otryx-registry-eureka` 即可选择 Eureka；完整配置分别见 [Consul 接入](registry-consul.md)、[Eureka 接入](registry-eureka.md)。二者通过 `otryx-registry-http` 共享控制面，不需要单独声明 HTTP 子模块。
+
+CGLIB fallback 则引入 `otryx-proxy-cglib`，Byte Buddy 使用 `otryx-proxy-bytebuddy`。SPI 自动发现实际已安装的 Adapter；如果配置了未加入类路径的 `otryx.rpc.registry.type=nacos`，应按缺失 Adapter 处理，不能假设轻量 Starter 自带 SDK。
 
 ### 1.2 兼容模式：完整 Starter
 
@@ -67,7 +79,7 @@ mvn -B -ntp -pl otryx-spring-boot-autoconfigure -am \
   -Dsurefire.failIfNoSpecifiedTests=false test
 ```
 
-这是源码测试命令。若业务项目单独引用已发布的 Lite Starter，需先引入双方共享的 RPC 接口定义，然后分别声明 `@OtryxRpcService` 和 `@OtryxRpcReference`，单 JVM 内存模式适合本地冒烟，跨进程生产环境必须换用 Etcd、Nacos 或等价的共享注册中心。
+这是源码测试命令。若业务项目单独引用已发布的 Lite Starter，需先引入双方共享的 RPC 接口定义，然后分别声明 `@OtryxRpcService` 和 `@OtryxRpcReference`，单 JVM 内存模式适合本地冒烟，跨进程生产环境必须换用 Etcd、Nacos、Consul、Eureka 或等价的共享注册中心。
 
 ## 2. Provider
 
@@ -171,11 +183,13 @@ public interface OrderService {
 ## 5. 主要配置
 
 - `otryx.rpc.enabled`：总开关。
-- `otryx.rpc.registry.type`：`memory`、`etcd` 或 `nacos`，也可以是自定义 SPI 名称。
+- `otryx.rpc.registry.type`：`memory`、`etcd`、`nacos`、`consul` 或 `eureka`，也可以是自定义 SPI 名称。
 - `otryx.rpc.registry.endpoints`：默认空，由 Adapter 决定；Etcd 默认 `http://127.0.0.1:2379`，Nacos 默认 `127.0.0.1:8848`。
 - `otryx.rpc.registry.namespace`：默认空，由 Adapter 决定；Etcd 默认 `default`，Nacos 默认 `public`。
 - `otryx.rpc.registry.nacos.group` / `cluster`：Nacos 管理分组与集群，默认 `OTRYX_RPC` / `DEFAULT`；RPC 接口自身的 group 仍属于 `ServiceKey`，两者不是同一概念。
 - `otryx.rpc.registry.nacos.username` / `password`：Nacos 用户名密码；日志和异常不得输出密码。
+- `otryx.rpc.registry.consul.*`：ACL Token、TTL、心跳、轮询、请求超时、Datacenter/Enterprise namespace，详见 [Consul](registry-consul.md)。
+- `otryx.rpc.registry.eureka.*`：Basic Auth、Lease、心跳、轮询、请求超时，详见 [Eureka](registry-eureka.md)。
 - `otryx.rpc.transport.type`：默认 `vertx`。
 - `otryx.rpc.transport.handshake-timeout`：协议握手超时，默认 3 秒。
 - `otryx.rpc.transport.connections-per-endpoint`：每个服务端点连接分片数，默认 1。

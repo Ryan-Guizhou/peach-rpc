@@ -243,6 +243,8 @@ public class OtryxRpcProperties implements InitializingBean {
         private String namespace = "";
         private long leaseTtlSeconds = 30;
         private final Nacos nacos = new Nacos();
+        private final Consul consul = new Consul();
+        private final Eureka eureka = new Eureka();
 
         /**
          * 返回注册中心 SPI 名称。
@@ -324,6 +326,223 @@ public class OtryxRpcProperties implements InitializingBean {
         public Nacos getNacos() {
             return nacos;
         }
+
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Consul 专用 Registry 配置
+     */
+        public Consul getConsul() {
+            return consul;
+        }
+
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Eureka 专用 Registry 配置
+     */
+        public Eureka getEureka() {
+            return eureka;
+        }
+    }
+
+    /**
+     * Consul Registry 控制面私有参数。
+     *
+     * @Author Ryan
+     * @Version 1.0.0
+     * @CreateTime 2026/10/10 18:00
+     */
+    public static class Consul {
+        private String token = "";
+        private String datacenter = "";
+        private String enterpriseNamespace = "";
+        private long ttlSeconds = 30;
+        private long heartbeatSeconds = 10;
+        private long pollIntervalMillis = 1000;
+        private long requestTimeoutMillis = 3000;
+
+        /** 创建 Consul 配置。 */
+        public Consul() {
+        }
+
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Consul ACL token
+     */
+        public String getToken() { return token; }
+        /**
+     * 设置对应配置项。
+     *
+     * @param value Consul ACL token
+     */
+        public void setToken(String value) { this.token = value; }
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Consul Datacenter
+     */
+        public String getDatacenter() { return datacenter; }
+        /**
+     * 设置对应配置项。
+     *
+     * @param value Consul Datacenter
+     */
+        public void setDatacenter(String value) { this.datacenter = value; }
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Consul Enterprise Namespace，可留空
+     */
+        public String getEnterpriseNamespace() { return enterpriseNamespace; }
+        /**
+     * 设置对应配置项。
+     *
+     * @param value Consul Enterprise Namespace
+     */
+        public void setEnterpriseNamespace(String value) { this.enterpriseNamespace = value; }
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return TTL 秒数
+     */
+        public long getTtlSeconds() { return ttlSeconds; }
+        /**
+     * 设置对应配置项。
+     *
+     * @param value TTL 秒数
+     */
+        public void setTtlSeconds(long value) { this.ttlSeconds = value; }
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 续约周期秒数
+     */
+        public long getHeartbeatSeconds() { return heartbeatSeconds; }
+        /**
+     * 设置对应配置项。
+     *
+     * @param value 续约周期秒数
+     */
+        public void setHeartbeatSeconds(long value) { this.heartbeatSeconds = value; }
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 轮询周期毫秒数
+     */
+        public long getPollIntervalMillis() { return pollIntervalMillis; }
+        /**
+     * 设置对应配置项。
+     *
+     * @param value 轮询周期毫秒数
+     */
+        public void setPollIntervalMillis(long value) { this.pollIntervalMillis = value; }
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 请求超时毫秒数
+     */
+        public long getRequestTimeoutMillis() { return requestTimeoutMillis; }
+        /**
+     * 设置对应配置项。
+     *
+     * @param value 请求超时毫秒数
+     */
+        public void setRequestTimeoutMillis(long value) { this.requestTimeoutMillis = value; }
+    }
+
+    /**
+     * Eureka Registry 控制面私有参数。
+     *
+     * @Author Ryan
+     * @Version 1.0.0
+     * @CreateTime 2026/10/10 18:00
+     */
+    public static class Eureka {
+        private String username = "";
+        private String password = "";
+        private long leaseSeconds = 30;
+        private long heartbeatSeconds = 10;
+        private long pollIntervalMillis = 1000;
+        private long requestTimeoutMillis = 3000;
+
+        /** 创建 Eureka 配置。 */
+        public Eureka() {
+        }
+
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Eureka Basic Auth 用户名
+     */
+        public String getUsername() { return username; }
+        /**
+     * 设置对应配置项。
+     *
+     * @param value Eureka Basic Auth 用户名
+     */
+        public void setUsername(String value) { this.username = value; }
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Eureka Basic Auth 密码
+     */
+        public String getPassword() { return password; }
+        /**
+     * 设置对应配置项。
+     *
+     * @param value Eureka Basic Auth 密码
+     */
+        public void setPassword(String value) { this.password = value; }
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 租约过期时间秒数
+     */
+        public long getLeaseSeconds() { return leaseSeconds; }
+        /**
+     * 设置对应配置项。
+     *
+     * @param value 租约过期时间秒数
+     */
+        public void setLeaseSeconds(long value) { this.leaseSeconds = value; }
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 续约周期秒数
+     */
+        public long getHeartbeatSeconds() { return heartbeatSeconds; }
+        /**
+     * 设置对应配置项。
+     *
+     * @param value 续约周期秒数
+     */
+        public void setHeartbeatSeconds(long value) { this.heartbeatSeconds = value; }
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 轮询周期毫秒数
+     */
+        public long getPollIntervalMillis() { return pollIntervalMillis; }
+        /**
+     * 设置对应配置项。
+     *
+     * @param value 轮询周期毫秒数
+     */
+        public void setPollIntervalMillis(long value) { this.pollIntervalMillis = value; }
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return HTTP 超时毫秒数
+     */
+        public long getRequestTimeoutMillis() { return requestTimeoutMillis; }
+        /**
+     * 设置对应配置项。
+     *
+     * @param value HTTP 超时毫秒数
+     */
+        public void setRequestTimeoutMillis(long value) { this.requestTimeoutMillis = value; }
     }
 
     /** Nacos Registry Adapter 配置。 */
