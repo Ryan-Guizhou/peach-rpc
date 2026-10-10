@@ -50,6 +50,14 @@ jobs:
       - name: Repository checks
         run: python3 scripts/check_project.py
 
+      - name: Verify magic-literal policy fixtures
+        run: python3 scripts/test_java_magic_literals.py
+
+      - name: Audit semantic magic literals across all production Java modules
+        run: >-
+          python3 scripts/check_java_magic_literals.py
+          --audit --report target/magic-literal-audit.json
+
       - name: Verify repository identity checker self-tests
         run: python3 scripts/test_repository_identity.py
 
