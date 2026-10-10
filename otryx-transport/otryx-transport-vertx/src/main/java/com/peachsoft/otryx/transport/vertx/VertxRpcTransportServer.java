@@ -44,6 +44,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>响应写入必须遵守协商的最大 Frame 大小与 Netty/Vert.x 写队列
  * 容量限制。连接排空和 TLS 资源在关闭路径中统一处理。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 final class VertxRpcTransportServer implements RpcTransportServer {
     private static final Logger LOGGER =

@@ -3,7 +3,13 @@ package com.peachsoft.otryx.observability.jfr;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/** OTRYX RPC JFR Adapter 配置。 */
+/**
+ * OTRYX RPC JFR Adapter 配置。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 15:10
+ */
 @ConfigurationProperties("otryx.rpc.observability.jfr")
 public class OtryxRpcJfrProperties {
 

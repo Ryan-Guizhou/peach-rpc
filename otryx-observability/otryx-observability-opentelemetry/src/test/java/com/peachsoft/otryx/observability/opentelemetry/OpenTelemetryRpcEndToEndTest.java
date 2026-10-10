@@ -27,7 +27,13 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.jupiter.api.Test;
 
-/** OpenTelemetry 真实 RPC Trace 穿透测试。 */
+/**
+ * OpenTelemetry 真实 RPC Trace 穿透测试。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 16:40
+ */
 class OpenTelemetryRpcEndToEndTest {
 
     @Test

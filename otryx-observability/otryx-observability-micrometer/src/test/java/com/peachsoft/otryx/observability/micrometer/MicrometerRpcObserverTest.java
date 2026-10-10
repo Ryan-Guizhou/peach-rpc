@@ -15,7 +15,13 @@ import com.peachsoft.otryx.observability.RpcConnectionRole;
 import com.peachsoft.otryx.observability.RpcRetryExhaustionReason;
 import org.junit.jupiter.api.Test;
 
-/** Micrometer Observer 指标映射测试。 */
+/**
+ * Micrometer Observer 指标映射测试。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 14:51
+ */
 class MicrometerRpcObserverTest {
 
     @Test

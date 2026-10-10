@@ -27,7 +27,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
-/** Vert.x TLS/mTLS 真实网络集成测试。 */
+/**
+ * Vert.x TLS/mTLS 真实网络集成测试。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 15:06
+ */
 class VertxRpcTransportTlsTest {
 
     @Test

@@ -7,7 +7,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
-/** OTRYX RPC JFR 自动配置。 */
+/**
+ * OTRYX RPC JFR 自动配置。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 15:00
+ */
 @AutoConfiguration
 @ConditionalOnProperty(
         prefix = "otryx.rpc.observability.jfr",
