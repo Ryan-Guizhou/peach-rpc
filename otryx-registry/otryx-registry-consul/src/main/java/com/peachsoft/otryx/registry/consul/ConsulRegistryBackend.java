@@ -6,6 +6,7 @@ import com.peachsoft.otryx.api.ServiceKey;
 import com.peachsoft.otryx.registry.http.HttpRegistryBackend;
 import com.peachsoft.otryx.registry.http.HttpRegistryClient;
 import com.peachsoft.otryx.registry.http.HttpRegistryIdentity;
+import java.net.HttpURLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -57,7 +58,7 @@ public final class ConsulRegistryBackend implements HttpRegistryBackend {
      */
     @Override
     public String type() {
-        return "consul";
+        return ConsulProtocol.ADAPTER_TYPE;
     }
 
     /**
@@ -72,17 +73,20 @@ public final class ConsulRegistryBackend implements HttpRegistryBackend {
         String name = HttpRegistryIdentity.serviceName(namespace, instance.serviceKey());
         String id = HttpRegistryIdentity.scopedInstanceId(namespace, instance);
         Map<String, Object> body = Map.of(
-                "ID", id,
-                "Name", name,
-                "Address", instance.endpoint().host(),
-                "Port", instance.endpoint().port(),
-                "Meta", HttpRegistryIdentity.metadata(instance),
-                "Check", Map.of(
-                        "TTL", ttlSeconds + "s",
-                        "DeregisterCriticalServiceAfter", "1m",
-                        "Status", "critical"));
+                ConsulProtocol.FIELD_ID, id,
+                ConsulProtocol.FIELD_NAME, name,
+                ConsulProtocol.FIELD_ADDRESS, instance.endpoint().host(),
+                ConsulProtocol.FIELD_PORT, instance.endpoint().port(),
+                ConsulProtocol.FIELD_META, HttpRegistryIdentity.metadata(instance),
+                ConsulProtocol.FIELD_CHECK, Map.of(
+                        ConsulProtocol.FIELD_TTL, ttlSeconds + ConsulProtocol.SECONDS_SUFFIX,
+                        ConsulProtocol.FIELD_DEREGISTER_CRITICAL_AFTER,
+                        ConsulProtocol.DEREGISTER_CRITICAL_AFTER,
+                        ConsulProtocol.FIELD_STATUS, ConsulProtocol.STATUS_CRITICAL));
         requireSuccess(client.request(
-                "PUT", "/v1/agent/service/register" + namespaceQuery(), body));
+                HttpRegistryClient.METHOD_PUT,
+                ConsulProtocol.PATH_REGISTER_SERVICE + namespaceQuery(),
+                body));
         pass(id);
     }
 
@@ -96,9 +100,12 @@ public final class ConsulRegistryBackend implements HttpRegistryBackend {
     public void renew(ServiceInstance instance) throws Exception {
         String id = HttpRegistryIdentity.scopedInstanceId(namespace, instance);
         HttpRegistryClient.Response response = client.request(
-                "PUT", "/v1/agent/check/pass/" + encode("service:" + id)
-                        + namespaceQuery(), null);
-        if (response.status() == 404) {
+                HttpRegistryClient.METHOD_PUT,
+                ConsulProtocol.PATH_PASS_CHECK_PREFIX
+                        + encode(ConsulProtocol.SERVICE_CHECK_ID_PREFIX + id)
+                        + namespaceQuery(),
+                null);
+        if (response.status() == HttpURLConnection.HTTP_NOT_FOUND) {
             register(instance);
         } else {
             requireSuccess(response);
@@ -107,8 +114,11 @@ public final class ConsulRegistryBackend implements HttpRegistryBackend {
 
     private void pass(String id) throws Exception {
         requireSuccess(client.request(
-                "PUT", "/v1/agent/check/pass/" + encode("service:" + id)
-                        + namespaceQuery(), null));
+                HttpRegistryClient.METHOD_PUT,
+                ConsulProtocol.PATH_PASS_CHECK_PREFIX
+                        + encode(ConsulProtocol.SERVICE_CHECK_ID_PREFIX + id)
+                        + namespaceQuery(),
+                null));
     }
 
     /**
@@ -121,9 +131,11 @@ public final class ConsulRegistryBackend implements HttpRegistryBackend {
     public void unregister(ServiceInstance instance) throws Exception {
         String id = HttpRegistryIdentity.scopedInstanceId(namespace, instance);
         HttpRegistryClient.Response response = client.request(
-                "PUT", "/v1/agent/service/deregister/" + encode(id)
-                        + namespaceQuery(), null);
-        if (response.status() != 404) {
+                HttpRegistryClient.METHOD_PUT,
+                ConsulProtocol.PATH_DEREGISTER_SERVICE_PREFIX + encode(id)
+                        + namespaceQuery(),
+                null);
+        if (response.status() != HttpURLConnection.HTTP_NOT_FOUND) {
             requireSuccess(response);
         }
     }
@@ -138,12 +150,14 @@ public final class ConsulRegistryBackend implements HttpRegistryBackend {
     @Override
     public List<ServiceInstance> lookup(ServiceKey key) throws Exception {
         String name = HttpRegistryIdentity.serviceName(namespace, key);
-        String url = "/v1/health/service/" + encode(name) + "?passing=true"
-                + (datacenter.isBlank() ? "" : "&dc=" + encode(datacenter))
+        String url = ConsulProtocol.PATH_HEALTH_SERVICE_PREFIX + encode(name)
+                + ConsulProtocol.QUERY_PASSING
+                + (datacenter.isBlank() ? "" : ConsulProtocol.QUERY_DATACENTER + encode(datacenter))
                 + (enterpriseNamespace.isBlank()
-                        ? "" : "&ns=" + encode(enterpriseNamespace));
-        HttpRegistryClient.Response response = client.request("GET", url, null);
-        if (response.status() == 404) {
+                        ? "" : ConsulProtocol.QUERY_ENTERPRISE_NAMESPACE + encode(enterpriseNamespace));
+        HttpRegistryClient.Response response = client.request(
+                HttpRegistryClient.METHOD_GET, url, null);
+        if (response.status() == HttpURLConnection.HTTP_NOT_FOUND) {
             return List.of();
         }
         requireSuccess(response);
@@ -152,16 +166,16 @@ public final class ConsulRegistryBackend implements HttpRegistryBackend {
         }
         List<ServiceInstance> result = new ArrayList<>();
         for (JsonNode item : response.json()) {
-            JsonNode service = item.path("Service");
-            String address = service.path("Address").asText("");
+            JsonNode service = item.path(ConsulProtocol.FIELD_SERVICE);
+            String address = service.path(ConsulProtocol.FIELD_ADDRESS).asText("");
             if (address.isBlank()) {
-                address = item.path("Node").path("Address").asText("");
+                address = item.path(ConsulProtocol.FIELD_NODE).path(ConsulProtocol.FIELD_ADDRESS).asText("");
             }
-            JsonNode checks = item.path("Checks");
+            JsonNode checks = item.path(ConsulProtocol.FIELD_CHECKS);
             if (checks.isArray()) {
                 boolean healthy = true;
                 for (JsonNode check : checks) {
-                    if (!"passing".equals(check.path("Status").asText(""))) {
+                    if (!ConsulProtocol.STATUS_PASSING.equals(check.path(ConsulProtocol.FIELD_STATUS).asText(""))) {
                         healthy = false;
                         break;
                     }
@@ -171,8 +185,8 @@ public final class ConsulRegistryBackend implements HttpRegistryBackend {
                 }
             }
             ServiceInstance mapped = HttpRegistryIdentity.fromRemote(
-                    key, address, service.path("Port").asInt(-1),
-                    metadata(service.path("Meta")));
+                    key, address, service.path(ConsulProtocol.FIELD_PORT).asInt(-1),
+                    metadata(service.path(ConsulProtocol.FIELD_META)));
             if (mapped != null) {
                 result.add(mapped);
             }
@@ -201,7 +215,7 @@ public final class ConsulRegistryBackend implements HttpRegistryBackend {
 
     private String namespaceQuery() {
         return enterpriseNamespace.isBlank()
-                ? "" : "?ns=" + encode(enterpriseNamespace);
+                ? "" : ConsulProtocol.QUERY_AGENT_NAMESPACE + encode(enterpriseNamespace);
     }
 
     private static String encode(String input) {

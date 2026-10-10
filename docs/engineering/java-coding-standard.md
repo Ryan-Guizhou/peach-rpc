@@ -28,6 +28,14 @@ OTRYX 尚未 GA，不对历史开发版本承担 Java API、SPI、配置、Wire�
 | 错误类型 | 以具体失败原因命名，拒绝模糊 SystemException |
 | SPI 实现 | 技术名 + 契约名，如 NacosRegistry、VertxRpcTransportFactory |
 
+### 协议字面量与魔法值
+
+对外部协议（Consul、Eureka 等）的 **JSON 字段名、HTTP 方法、API 路径、健康状态、固定 Header、配置键与有语义的默认值**，应使用具名 `static final` 常量，遵循 `UPPER_SNAKE_CASE`。按归属就近放在 Adapter 包内的协议常量类；跨 Adapter 共用的 HTTP 方法常量放在共享 HTTP 控制面。不将厂商协议字段塞入 Core，也不创建缺乏职责的全局常量库。
+
+例如：Consul 的 `"DeregisterCriticalServiceAfter"` 与 Eureka 的 `"overriddenstatus"` 属于需要精确匹配的协议值，不应散落在注册、发现、健康过滤等业务方法内。测试中用于验证**第三方协议的预期报文字段和值**可直接使用标准协议字面量作为独立断言，避免测试引用生产常量导致「实现与预期一起写错」的假阳性。
+
+普通异常提示、一次性局部业务文本，以及无额外业务含义的 `""`、路径连接符等不必机械抽取。仅整理常量时保持协议字节值和行为一致，不能顺带修改健康判断、重试、订阅或资源生命周期。
+
 Java 源文件使用 UTF-8 无 BOM、LF、4 空格、行宽 120，禁止通配符 import、行尾空白和无意义空行。建议按 java/javax/jakarta、第三方、项目内包分组；导入顺序全面自动强制前应先评估全仓差异，不造成与行为变更混合的巨大格式化 PR。遵守现有 Checkstyle 零违规门禁。
 
 ## 3. 中文 Javadoc

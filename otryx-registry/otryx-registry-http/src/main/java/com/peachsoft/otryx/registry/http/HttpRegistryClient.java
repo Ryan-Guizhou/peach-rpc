@@ -25,6 +25,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class HttpRegistryClient implements AutoCloseable {
 
+    /** Registry HTTP GET 方法。 */
+    public static final String METHOD_GET = "GET";
+
+    /** Registry HTTP POST 方法。 */
+    public static final String METHOD_POST = "POST";
+
+    /** Registry HTTP PUT 方法。 */
+    public static final String METHOD_PUT = "PUT";
+
+    /** Registry HTTP DELETE 方法。 */
+    public static final String METHOD_DELETE = "DELETE";
+
     private final HttpClient client;
     private final ObjectMapper mapper = new ObjectMapper();
     private final List<String> endpoints;
