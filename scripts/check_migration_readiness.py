@@ -72,9 +72,9 @@ def main() -> int:
         require(ET.parse(img).getroot().tag.endswith("svg"),
                 "Invalid SVG image: " + relative)
 
-    for relative in ("docs/brand-guidelines.md", "docs/migration-to-otryx.md"):
+    for relative in ("docs/brand-guidelines.md", "docs/migration.md"):
         require((ROOT / relative).is_file(), "Missing migration doc: " + relative)
-    require((ROOT / "docs/release-notes-1.0.1.md").is_file(),
+    require((ROOT / "docs/archive/releases/release-notes-1.0.1.md").is_file(),
             "Historical release notes must survive renaming")
     print("OTRYX 2.0 migration readiness passed")
     return 0

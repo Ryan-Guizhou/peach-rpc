@@ -17,7 +17,7 @@ def validate(root: Path = ROOT) -> list[str]:
     errors: list[str] = []
     pom_path = root / "pom.xml"
     docs_path = root / "docs/getting-started.md"
-    maven_path = root / "docs/maven.md"
+    maven_path = root / "docs/reference/maven.md"
     guard_path = root / "docs/publication-readiness.md"
 
     for path in (pom_path, docs_path, maven_path, guard_path):

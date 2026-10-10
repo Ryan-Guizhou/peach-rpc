@@ -8,7 +8,7 @@ from check_repository_identity import URL, validate
 
 
 def fixture(root: Path) -> None:
-    (root / "docs").mkdir()
+    (root / "docs/reference").mkdir(parents=True)
     (root / "pom.xml").write_text(
         '<?xml version="1.0"?><project xmlns="http://maven.apache.org/POM/4.0.0">'
         '<groupId>com.peachsoft.otryx</groupId><url>' + URL + '</url>'
@@ -19,7 +19,7 @@ def fixture(root: Path) -> None:
         encoding="utf-8")
     (root / "docs/getting-started.md").write_text(
         'git clone ' + URL + '.git\ncd otryx-rpc\n', encoding="utf-8")
-    (root / "docs/maven.md").write_text(
+    (root / "docs/reference/maven.md").write_text(
         'com.peachsoft => peachsoft.com; com.peachsoft.otryx => otryx.peachsoft.com',
         encoding="utf-8")
     (root / "docs/publication-readiness.md").write_text(
@@ -46,7 +46,7 @@ class IdentityTests(unittest.TestCase):
         with TemporaryDirectory() as d:
             root = Path(d)
             fixture(root)
-            path = root / "docs/maven.md"
+            path = root / "docs/reference/maven.md"
             path.write_text(path.read_text() + "\n验证 `io.peach` 能发布 com.peachsoft.otryx", encoding="utf-8")
             self.assertTrue(any("reverse-DNS" in error for error in validate(root)))
 

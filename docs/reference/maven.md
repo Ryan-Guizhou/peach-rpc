@@ -18,7 +18,7 @@
 - `docs/release-status.properties`；
 - 中英文 README release status；
 - CHANGELOG；
-- 对应 `docs/release-notes-<version>.md`。
+- 对应 `docs/archive/releases/release-notes-<version>.md`。
 
 已发布版本不可覆盖。1.0.x 修复必须使用新的 Patch 版本。
 
@@ -219,7 +219,7 @@ Workflow 会等待 `PUBLISHED`，随后创建一个全新的 Maven local reposit
 
 ## 9. 本地使用
 
-当前源码 release-prep 版本为 `1.0.1`。若该版本尚未发布到目标 Maven Repository，可先在源码根目录：
+以下 1.0.1 发布流程只适用于旧版稳定分支。当前 OTRYX 源码是 **2.0.0-SNAPSHOT**，尚未发布 Maven Central；本地开发使用源码安装而不是 1.0.1 坐标。
 
 ```bash
 mvn -B -ntp clean install -DskipTests

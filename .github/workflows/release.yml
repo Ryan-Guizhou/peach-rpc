@@ -52,7 +52,7 @@ jobs:
         run: |
           VERSION="${{ inputs.version }}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "notes=docs/release-notes-$VERSION.md" >> "$GITHUB_OUTPUT"
+          echo "notes=docs/archive/releases/release-notes-$VERSION.md" >> "$GITHUB_OUTPUT"
 
           if [[ "${{ inputs.central_auto_publish }}" == "true" ]]; then
             echo "central_wait_until=published" >> "$GITHUB_OUTPUT"
