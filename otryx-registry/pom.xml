@@ -9,5 +9,8 @@
     <modules>
         <module>otryx-registry-etcd</module>
         <module>otryx-registry-nacos</module>
+        <module>otryx-registry-http</module>
+        <module>otryx-registry-consul</module>
+        <module>otryx-registry-eureka</module>
     </modules>
 </project>

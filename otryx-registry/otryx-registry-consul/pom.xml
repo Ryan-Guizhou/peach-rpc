@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>com.peachsoft.otryx</groupId><artifactId>otryx-rpc</artifactId><version>${revision}</version><relativePath>../../pom.xml</relativePath></parent>
+  <artifactId>otryx-registry-consul</artifactId>
+  <name>otryx-registry-consul</name>
+  <description>Consul registry adapter for OTRYX RPC.</description>
+  <dependencies>
+    <dependency>
+      <groupId>com.peachsoft.otryx</groupId>
+      <artifactId>otryx-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.peachsoft.otryx</groupId>
+      <artifactId>otryx-core</artifactId>
+      <version>${revision}</version>
+      <type>test-jar</type>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.peachsoft.otryx</groupId>
+      <artifactId>otryx-registry-http</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>
