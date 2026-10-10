@@ -13,6 +13,10 @@ import org.junit.jupiter.api.Test;
  * 示例 Consumer 仅重试明确暂时不可用状态的规则测试。
  *
  * @since 1.0.1
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/10/8 17:07
  */
 class GreetingRunnerAvailabilityTest {
 

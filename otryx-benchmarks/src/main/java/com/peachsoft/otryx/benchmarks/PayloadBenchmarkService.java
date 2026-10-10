@@ -2,7 +2,13 @@ package com.peachsoft.otryx.benchmarks;
 
 import com.peachsoft.otryx.api.OtryxRpcContract;
 
-/** V2-D Payload 端到端基准服务。 */
+/**
+ * V2-D Payload 端到端基准服务。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 17:55
+ */
 @OtryxRpcContract
 public interface PayloadBenchmarkService {
 

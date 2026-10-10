@@ -19,6 +19,10 @@ import org.openjdk.jmh.annotations.State;
  * Generated Stub、JDK Proxy 与 Byte Buddy fallback 的纯调用入口基准。
  *
  * <p>该基准不包含网络和序列化，用于单独观察代理/分派层附加成本。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 15:46
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)

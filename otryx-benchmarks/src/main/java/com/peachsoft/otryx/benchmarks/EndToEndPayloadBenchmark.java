@@ -39,6 +39,10 @@ import org.openjdk.jmh.annotations.Warmup;
  * <p>Payload 与每 Endpoint 连接分片通过 Param 控制；并发通过 JMH
  * `-t` 参数控制。该基准保留完整 Generated Stub、Fory、Protocol、
  * Vert.x Transport 与 Provider Dispatcher 路径。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 17:55
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)

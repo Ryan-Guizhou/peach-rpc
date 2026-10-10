@@ -4,7 +4,13 @@ import com.peachsoft.otryx.api.OtryxRpcContract;
 import com.peachsoft.otryx.api.OtryxRpcExecution;
 import com.peachsoft.otryx.api.RpcExecutionMode;
 
-/** V2-D.2 Provider 执行与过载场景基准契约。 */
+/**
+ * V2-D.2 Provider 执行与过载场景基准契约。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 18:54
+ */
 @OtryxRpcContract
 public interface ScenarioBenchmarkService {
 

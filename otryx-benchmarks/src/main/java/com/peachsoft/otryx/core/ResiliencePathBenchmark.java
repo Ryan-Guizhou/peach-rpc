@@ -19,6 +19,10 @@ import org.openjdk.jmh.annotations.Warmup;
  *
  * <p>该基准刻意与 Core 使用相同 package，以便在不扩大生产 API 可见性的前提下，
  * 直接测量 package-private 的 Retry Budget、Circuit Breaker 与 Outlier 状态路径。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/30 09:50
  */
 @BenchmarkMode({Mode.SampleTime, Mode.Throughput})
 @OutputTimeUnit(TimeUnit.NANOSECONDS)

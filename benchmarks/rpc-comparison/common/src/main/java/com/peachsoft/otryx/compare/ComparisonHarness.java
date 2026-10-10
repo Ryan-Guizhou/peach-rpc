@@ -26,6 +26,10 @@ import java.util.concurrent.atomic.LongAdder;
  * <p>通过单独的 provider 与 consumer JVM 测试真实网络调用；两套独立打包
  * 运行时调用同一份本类，避免基准负载漂移。负载为 closed-loop，不适用于
  * 消除 coordinated omission 的正式 open-loop 延迟声明。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/10/10 14:27
  */
 public final class ComparisonHarness {
 

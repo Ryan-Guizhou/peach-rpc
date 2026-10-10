@@ -18,6 +18,10 @@ import org.openjdk.jmh.annotations.State;
 
 /**
  * 完整 Frame decode 与零 body-copy Frame View 的协议解析基准。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 15:46
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)

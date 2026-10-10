@@ -45,6 +45,10 @@ import java.util.concurrent.atomic.LongAdder;
  *
  * <p>默认使用 JDK 21 Virtual Threads 驱动同步 Generated Stub，避免使用
  * 10000 个平台线程把 Driver 调度成本误判成 RPC 成本。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 18:36
  */
 public final class PerformanceSoakRunner {
 
