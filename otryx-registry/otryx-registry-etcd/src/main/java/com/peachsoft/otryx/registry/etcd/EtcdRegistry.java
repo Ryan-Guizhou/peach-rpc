@@ -276,9 +276,9 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                     @Override
                     public void onError(Throwable error) {
                         LOGGER.error(
-                                "Etcd lease keepalive failed for leaseId={}",
+                                "Etcd lease keepalive failed: leaseId={}, errorType={}",
                                 leaseId,
-                                error);
+                                error.getClass().getName());
                         handleLeaseLoss(leaseId);
                     }
 
@@ -364,9 +364,10 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                             return;
                         }
                         LOGGER.debug(
-                                "Etcd lease health probe failed. Keeping lease until next probe. leaseId={}",
+                                "Etcd lease health probe failed; keeping lease until next probe. "
+                                        + "leaseId={}, errorType={}",
                                 leaseId,
-                                error);
+                                error.getClass().getName());
                         scheduleLeaseHealthProbe(leaseId);
                         return;
                     }
@@ -444,8 +445,8 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                     }
                     if (error != null) {
                         LOGGER.warn(
-                                "Failed to recover Etcd registrations; retrying",
-                                error);
+                                "Failed to recover Etcd registrations; retrying. errorType={}",
+                                error.getClass().getName());
                         invalidateLease();
                         scheduleLeaseRecovery(attempt + 1);
                     } else {
@@ -501,9 +502,9 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                                 error);
                     }
                     LOGGER.warn(
-                            "Failed to load Etcd snapshot for {}; retrying",
+                            "Failed to load Etcd snapshot; retrying. service={}, errorType={}",
                             serviceKey.canonicalName(),
-                            error);
+                            error.getClass().getName());
                     scheduleRestart();
                     return;
                 }
@@ -545,14 +546,16 @@ final class EtcdRegistry implements Registry, ServiceRegistrar {
                             return;
                         }
                         if (error != null) {
-                            LOGGER.warn("Failed to refresh Etcd snapshot for {}", serviceKey.canonicalName(), error);
+                            LOGGER.warn("Failed to refresh Etcd snapshot: service={}, errorType={}",
+                                    serviceKey.canonicalName(), error.getClass().getName());
                         } else {
                             listener.onSnapshot(snapshot);
                         }
                     }),
                     error -> {
                         if (!closed.get()) {
-                            LOGGER.warn("Etcd watch failed for {}; resubscribing", serviceKey.canonicalName(), error);
+                            LOGGER.warn("Etcd watch failed; resubscribing. service={}, errorType={}",
+                                    serviceKey.canonicalName(), error.getClass().getName());
                             scheduleRestart();
                         }
                     }));

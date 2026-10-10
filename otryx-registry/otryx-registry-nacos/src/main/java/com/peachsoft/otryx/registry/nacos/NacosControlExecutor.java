@@ -179,26 +179,33 @@ final class NacosControlExecutor implements AutoCloseable {
                     } catch (ExecutionException failed) {
                         // A failed iteration must not disable all subsequent
                         // fixed-delay reconciliation attempts.
+                        Throwable cause = failed.getCause();
+                        String errorType = cause == null
+                                ? failed.getClass().getName()
+                                : cause.getClass().getName();
                         if (consecutiveFailure.compareAndSet(false, true)) {
                             LOGGER.warn(
-                                    "Nacos scheduled control operation failed; retrying. operation={}, subject={}",
+                                    "Nacos scheduled control operation failed; retrying. "
+                                            + "operation={}, subject={}, errorType={}",
                                     operation,
                                     subject,
-                                    failed.getCause());
+                                    errorType);
                         } else {
                             LOGGER.debug(
-                                    "Nacos scheduled control operation still failing. operation={}, subject={}",
+                                    "Nacos scheduled control operation still failing. "
+                                            + "operation={}, subject={}, errorType={}",
                                     operation,
                                     subject,
-                                    failed.getCause());
+                                    errorType);
                         }
                     } catch (CancellationException cancelled) {
                         if (!scheduler.isShutdown()) {
                             LOGGER.debug(
-                                    "Nacos scheduled control operation cancelled. operation={}, subject={}",
+                                    "Nacos scheduled control operation cancelled. "
+                                            + "operation={}, subject={}, errorType={}",
                                     operation,
                                     subject,
-                                    cancelled);
+                                    cancelled.getClass().getName());
                         }
                     }
                 },

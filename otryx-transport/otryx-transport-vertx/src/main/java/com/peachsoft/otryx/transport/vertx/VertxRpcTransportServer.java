@@ -326,9 +326,9 @@ final class VertxRpcTransportServer implements RpcTransportServer {
             }
             if (error != null) {
                 LOGGER.error(
-                        "RPC request handler failed for remote={}",
+                        "RPC request handler failed: remote={}, errorType={}",
                         remote.authority(),
-                        error);
+                        error.getClass().getName());
                 goAwayAndClose(
                         RpcStatus.INTERNAL_ERROR,
                         "RPC request handler failed: "
@@ -549,9 +549,9 @@ final class VertxRpcTransportServer implements RpcTransportServer {
 
         private void closeMalformed(Throwable error) {
             LOGGER.warn(
-                    "Closing malformed RPC connection from {}",
+                    "Closing malformed RPC connection: remote={}, errorType={}",
                     remote.authority(),
-                    error);
+                    error == null ? "unknown" : error.getClass().getName());
             if (!open) {
                 return;
             }
@@ -607,9 +607,9 @@ final class VertxRpcTransportServer implements RpcTransportServer {
             cancelHandshakeTimer();
             cancelHeartbeatTimer();
             LOGGER.debug(
-                    "RPC connection failed for remote={}",
+                    "RPC connection failed: remote={}, errorType={}",
                     remote.authority(),
-                    error);
+                    error == null ? "unknown" : error.getClass().getName());
             socket.close();
         }
 

@@ -330,9 +330,9 @@ public final class OtryxRpcServer implements AutoCloseable {
                     .unregister(runtimeInstance(configured, endpoint))
                     .exceptionally(error -> {
                         LOGGER.warn(
-                                "Failed to rollback RPC service registration: service={}",
+                                "Failed to rollback RPC service registration: service={}, errorType={}",
                                 configured.serviceKey().canonicalName(),
-                                error);
+                                error.getClass().getName());
                         return null;
                     })
                     .toCompletableFuture();
@@ -492,10 +492,10 @@ public final class OtryxRpcServer implements AutoCloseable {
             return result;
         } catch (RuntimeException setupError) {
             LOGGER.warn(
-                    "RPC tracing setup failed: serviceId={}, methodId={}",
+                    "RPC tracing setup failed: serviceId={}, methodId={}, errorType={}",
                     request.serviceId(),
                     request.methodId(),
-                    setupError);
+                    setupError.getClass().getName());
             result.complete(frameworkError(
                     request,
                     RpcStatus.INTERNAL_ERROR,
@@ -762,11 +762,12 @@ public final class OtryxRpcServer implements AutoCloseable {
                 observeAdmissionRejected(request, "async-completion-queue");
                 if (!result.isCancelled()) {
                     LOGGER.warn(
-                            "RPC async completion was rejected: requestId={}, serviceId={}, methodId={}",
+                            "RPC async completion was rejected: requestId={}, serviceId={}, "
+                                    + "methodId={}, errorType={}",
                             request.requestId(),
                             request.serviceId(),
                             request.methodId(),
-                            rejection);
+                            rejection.getClass().getName());
                     byte[] responseBytes = errorResponse(
                             request,
                             RpcStatus.OVERLOADED,
@@ -941,9 +942,9 @@ public final class OtryxRpcServer implements AutoCloseable {
                             .join();
                 } catch (RuntimeException error) {
                     LOGGER.warn(
-                            "Failed to unregister RPC service {}",
+                            "Failed to unregister RPC service: service={}, errorType={}",
                             configured.serviceKey().canonicalName(),
-                            error);
+                            error.getClass().getName());
                 }
             }
         }
@@ -955,8 +956,8 @@ public final class OtryxRpcServer implements AutoCloseable {
                         .join();
             } catch (RuntimeException error) {
                 LOGGER.warn(
-                        "RPC graceful drain failed; forcing transport close",
-                        error);
+                        "RPC graceful drain failed; forcing transport close. errorType={}",
+                        error.getClass().getName());
             } finally {
                 state.set(State.CLOSED);
             }
