@@ -105,7 +105,7 @@ otryx:
 <!-- doc-section:documentation -->
 ## 文档
 
-[需求蓝图](docs/requirements-blueprint.md) · [技术方案](docs/technical-solution.md) · [架构设计](docs/architecture.md) · [详细设计](docs/detailed-design.md) · [功能描述](docs/features.md) · [协议](docs/protocol.md) · [SPI](docs/spi.md) · [品牌规范](docs/brand-guidelines.md) · [迁移指南](docs/migration-to-otryx.md) · [发布前核查](docs/publication-readiness.md) · [历史发布说明](docs/release-notes-1.0.1.md)
+[文档总览与阅读导航](docs/index.md) · [快速开始](docs/getting-started.md) · [用户指南](docs/user-guide.md) · [运行与排障](docs/operations.md) · [设计与协议](docs/architecture.md) · [SPI](docs/spi.md) · [安全](docs/security.md) · [品牌规范](docs/brand-guidelines.md) · [迁移指南](docs/migration-to-otryx.md) · [发布核查](docs/publication-readiness.md)
 
 <!-- doc-section:development -->
 ## 开发与贡献

@@ -40,3 +40,21 @@
 **素材授权：** 原始参考水獭由用户提供，但当前仓库没有足以证明原作者及公开商用改编授权的链路；新 SVG 可作为开发期品牌概念展示，不表示已经取得独占商标权。之前 AI 概念海报中的未经实测性能数字不能用作正式宣传证据。
 
 详见 [公开发布与品牌权利核查](publication-readiness.md)。
+
+## 品牌素材清单（开发期概念稿）
+
+| 图形 | 用途 | 仓库中的文件 |
+|---|---|---|
+| 横版 Banner | README、文档页头 | [OTRYX Banner](images/brand/otryx-banner.svg) |
+| Otti 主形象 | 品牌故事、项目介绍 | [Otti SVG](images/mascot/otti-main.svg) |
+| 系统架构 | 解释已实现架构 | [系统总览](images/architecture/system-overview.svg) |
+| 控制面/数据面 | 解释两类负载边界 | [控制数据面](images/architecture/control-data-plane.svg) |
+| Unary RPC 流程 | 解释请求主路径 | [调用生命周期](images/flows/rpc-lifecycle.svg) |
+
+这些 SVG 是项目仓库中可编辑的概念与技术插图，主色遵循本文调色板。**仅纳入经过审核的代表性资产**，避免以大批相似海报占据用户文档。涉及准确拓扑、时序与状态的内容，以源码驱动的 Mermaid/矢量源及实际实现为准。
+
+### 版权与公开使用限制
+
+- 第三方原始参考图、品牌素材压缩包及其著作权链未在当前仓库得到可独立验证的授权证明，不将其视为商业宣传已获授权的素材。
+- Otti 的开发期 SVG 与品牌概念不构成注册商标证据，不得暗示独占使用权。
+- 商用 Logo、文档封面、社交头像和官网宣传上线前，仍需完成[商标、图片授权及 Maven Namespace 核查](publication-readiness.md)。

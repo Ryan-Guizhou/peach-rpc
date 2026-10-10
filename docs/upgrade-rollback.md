@@ -2,7 +2,7 @@
 
 
 > 状态：**Engineering Current**  
-> 适用于 Wire Protocol v1 内的 N/N+1 滚动升级。若业务契约不兼容，必须使用新的 ServiceKey.version。
+> 仅适用于**同一 Java API / Type ID / Method ID / Schema Fingerprint 契约家族**内、经过实际兼容测试的 N/N+1 滚动升级。**不适用于 Peach RPC 1.x → OTRYX 2.0 的直接混部**：本次包名与公开 API 迁移是 Breaking Change，虽然 Wire Protocol v1 仍冻结，但 Type/Method IDs、Schema Fingerprint 可能改变。跨代升级请采用版本隔离/蓝绿迁移并逐个验证业务契约，见[迁移指南](migration-to-otryx.md)。
 
 ## 1. 发布前检查
 
@@ -20,7 +20,7 @@
 
 ## 2. 推荐滚动顺序
 
-同一 Wire v1 且业务 Schema 未变化时，推荐先升级 Provider，再升级 Consumer：
+在同一契约家族、Type/Method IDs 和 Schema Fingerprint 已验证兼容的前提下，推荐先升级 Provider，再升级 Consumer：
 
 ~~~text
 N Provider + N Consumer
@@ -61,7 +61,7 @@ Provider-first 不是协议硬要求，而是推荐的操作顺序，便于先�
 
 Consumer 升级期间：
 
-- N Consumer 会忽略 N+1 Provider 的新增兼容 Metadata；
+- 在已验证的同代兼容升级中，N Consumer 可忽略 N+1 Provider 的新增兼容 Metadata；
 - N+1 Consumer 会保留没有 Fingerprint 的 N Provider 为 LEGACY；
 - N+1 Consumer 会过滤明确 Fingerprint 不一致的 Provider；
 - Retry 不应被当作升级兜底，只有标记为幂等的方法才允许自动 Retry。
@@ -102,13 +102,13 @@ demo.UserService:2.0.0:default
 2. Drain N+1 Provider；
 3. 启动 N Provider；
 4. 等待 Registry Snapshot 恢复；
-5. N+1 Consumer 会把缺失 Fingerprint 的 N Provider识别为 LEGACY；
+5. 在适用的同代兼容路径中，N+1 Consumer 可能将缺失 Fingerprint 的 N Provider 标记为 LEGACY；该策略不构成跨代互通保证；
 6. 确认 Client logical call、Retry、Circuit、Registry 指标恢复正常；
 7. 再逐批回滚剩余 Provider。
 
 ### Consumer 回滚
 
-只要 Wire Protocol 仍为 v1，N Consumer 可继续调用 N+1 Provider，因为新增 Schema Metadata 位于 Registry 控制面且旧 Consumer 会忽略。
+只有在 N 与 N+1 的公共 Java 契约、Type/Method IDs、Codec Payload 和 Schema Fingerprint 已验证兼容时，才可执行 Consumer 滚动回退。仅凭 Wire v1 不变并不足以判定两端能互通；Peach RPC 1.x 与 OTRYX 2.0 **不得按此流程直接回滚**。
 
 ### 必须停止回滚的情况
 

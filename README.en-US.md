@@ -105,7 +105,7 @@ Validate deadline, admission, backpressure, retries, TLS and observability again
 <!-- doc-section:documentation -->
 ## Documentation
 
-[Requirements](docs/requirements-blueprint.md) · [Technical solution](docs/technical-solution.md) · [Architecture](docs/architecture.md) · [Detailed design](docs/detailed-design.md) · [Features](docs/features.md) · [Protocol](docs/protocol.md) · [SPI](docs/spi.md) · [Brand guidelines](docs/brand-guidelines.md) · [Migration guide](docs/migration-to-otryx.md) · [Publication readiness](docs/publication-readiness.md) · [Historical release notes](docs/release-notes-1.0.1.md)
+[Documentation index](docs/index.md) · [Getting started](docs/getting-started.md) · [User guide](docs/user-guide.md) · [Operations & troubleshooting](docs/operations.md) · [Architecture](docs/architecture.md) · [SPI](docs/spi.md) · [Security](docs/security.md) · [Brand](docs/brand-guidelines.md) · [Migration](docs/migration-to-otryx.md) · [Publication readiness](docs/publication-readiness.md)
 
 <!-- doc-section:development -->
 ## Development and contributing

@@ -103,17 +103,17 @@ Provider 和 Consumer 是两个独立 JVM；Contract 位于共享 API 模块。
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-spring-boot-starter</artifactId>
-    <version>1.0.1</version>
+    <version>2.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
-如果 1.0.1 Artifact 尚未发布到你的 Maven Repository，可以从源码执行：
+当前 2.0.0-SNAPSHOT 尚未发布至 Maven Central。需先在仓库根目录执行：
 
 ```bash
 mvn -B -ntp clean install -DskipTests
 ```
 
-然后本地 Maven Repository 即可解析同样的 `1.0.1` 坐标。
+安装完成后，本地 Maven Repository 才能解析相同的 `2.0.0-SNAPSHOT` 坐标。
 
 ## 10. Provider 最小代码
 
@@ -142,3 +142,5 @@ private OrderService orderService;
 - [可观测性](observability.md)
 - [升级与回滚](upgrade-rollback.md)
 - [FAQ](faq.md)
+
+相关入口：[文档中心](index.md) · [用户指南](user-guide.md) · [运行排障](operations.md)。
