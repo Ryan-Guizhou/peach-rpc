@@ -1,6 +1,6 @@
 # Changelog
 
-Peach RPC 使用语义化版本。1.0.x 保持 Wire v1、Stable Type ID、Schema Fingerprint v1 和 Public Core API 的兼容边界。
+OTRYX RPC 使用语义化版本。1.0.x 保持 Wire v1、Stable Type ID、Schema Fingerprint v1 和 Public Core API 的兼容边界。
 
 ## Unreleased
 

@@ -1,4 +1,4 @@
-# Peach RPC — Repository Agent Contract
+# OTRYX RPC — Repository Agent Contract
 
 本文件为 Cursor、Codex 和其他 Agent 的统一工作入口。唯一事实源：当前分支源码、测试、POM、构建结果 > 当前依赖版本官方文档 > 仓库技术文档和 CONTRIBUTING > 共享 Skills > 运行时适配 > 历史对话。不得根据旧资料声称某功能已实现。
 
@@ -8,7 +8,7 @@ Task Intake → Source/Impact Analysis → Complexity Gate → Implementation Co
 
 - 简单、确定且不涉及公共契约的局部修复可直接实施。
 - 公共 API、Wire/Codec/Schema、SPI、配置、线程/资源、鉴权、安全、模块架构、兼容性重构属于复杂任务。实施前交付 Goal、Scope、Non-goals、Compatibility、Constraints、Migration、Verification、Risks，获用户确认方可执行。对已授权的当前任务不重复确认。
-- **本轮明确授权（2026-10-09）**：Peach RPC 既定 Agent 代码治理工作可以从 `main` 创建短生命周期分支，提交 PR，经该 Head SHA 对应的相关质量门禁全部通过后合并到 `main`，不再堆叠 Draft PR。此授权**不适用于**发布、删除远端资源、修改仓库权限、数据库写入或超出本轮实施契约的改动。
+- **本轮明确授权（2026-10-09）**：OTRYX RPC 既定 Agent 代码治理工作可以从 `main` 创建短生命周期分支，提交 PR，经该 Head SHA 对应的相关质量门禁全部通过后合并到 `main`，不再堆叠 Draft PR。此授权**不适用于**发布、删除远端资源、修改仓库权限、数据库写入或超出本轮实施契约的改动。
 - `stable/agent-quality-2026-10-09` 固定在 SHA `8f051b78d74978c5417394ed2cd22467e077c15f`，作为已验证的合并前基线。禁止在该分支追加提交、强制推送或将其用作日常开发分支，详见 [稳定基线与主线工作流](docs/engineering/stable-baseline.md)。
 - 分阶段小 PR，**只以 `main` 为 Base**。每次先核对原始 PR Head SHA、变更影响及新提交 CI，再合并，随后核验 `main` 上的 CI。未通过或未执行的必需门禁不得冒充成功。不能从历史绿色提交推断后续提交通过。
 
@@ -24,7 +24,7 @@ Task Intake → Source/Impact Analysis → Complexity Gate → Implementation Co
 
 - JDK 21、Maven 多模块、Spring Boot 3.5.4；以实际 POM 为准。4 空格、UTF-8、LF、无通配符 import，参见 .editorconfig、[Java 编码规范](docs/engineering/java-coding-standard.md) 与 CONTRIBUTING.md。
 - 1.0.x 冻结 Wire Protocol v1、Public Core API、Stable Type ID、Schema Fingerprint v1、Codec/Message IDs、Registry Compatibility Metadata。**禁止以风格/命名修复为由改变公开签名、Record 字段、序列化行为及兼容键。**
-- 中文 Javadoc/必要行内注释、英文 SLF4J 参数化日志；Peach RPC 仅使用标准 Javadoc 标签（`@since` 必须真实），不复制 Peach Cloud 自定义 `@Author/@Version/@CreateTime`。
+- 中文 Javadoc/必要行内注释、英文 SLF4J 参数化日志；OTRYX RPC 仅使用标准 Javadoc 标签（`@since` 必须真实），不复制 Peach Cloud 自定义 `@Author/@Version/@CreateTime`。
 - 公开 API/SPI、Starter、Registry、Codec、Transport 的契约必须明确 null、异常、生命周期、线程归属、背压/取消、资源所有权。不要为注释覆盖率制造无意义注释。
 - Core 不允许直接依赖 Vert.x / Nacos / Etcd / Fory / Spring 等实现；第三方技术通过 SPI/Adapter。Core 字节码层依赖规则见 [ArchUnit 架构门禁](docs/engineering/architecture-guardrails.md)，使用 Maven 测试自动执行。
 - EventLoop 不执行阻塞 IO、Thread.sleep、同步等待 Future 或可任意阻塞的业务回调；Consumer 完成 Future 时也要检查同步回调的执行线程。
@@ -37,16 +37,16 @@ Task Intake → Source/Impact Analysis → Complexity Gate → Implementation Co
 MCP 为证据补全工具，不是无限授权。
 - CodeGraph 用于 symbol/caller/impact；Context7 仅用于依赖版本不确定的 API；GitHub 用于已授权 PR、Issue、CI 和远端读写；AgentMemory 不得覆盖仓库事实。
 - MySQL 默认**不连接**：只有使用数据库真正授权的独立只读账号，并经用户主动启用后才允许访问；prompt 或 MCP 配置本身不能强制只读。不得使用有生产写权限的用户。
-- GitHub 合并：仅当前已授权的 Peach RPC Agent 工程治理范围，允许在相关检查全部通过后合并到 `main`；所有其他合并仍须明确授权。删除分支、Release、数据库 DML/DDL、权限变更和生产配置写入始终必须另行授权。
+- GitHub 合并：仅当前已授权的 OTRYX RPC Agent 工程治理范围，允许在相关检查全部通过后合并到 `main`；所有其他合并仍须明确授权。删除分支、Release、数据库 DML/DDL、权限变更和生产配置写入始终必须另行授权。
 - 不允许 Agent 自动批准未知第三方 MCP 或将凭据提交到源码。详见 docs/engineering/agent-mcp.md（本治理阶段加入）。
 
 ## Skills 与适配
 
 唯一共享目录 `.agents/skills/<name>/SKILL.md`，不复制到 .cursor 或 .codex。只加载与任务相关的 Skill：
-- `using-peach-rpc-java-engineering`：命名、Javadoc、日志、基础代码结构。
-- `using-peach-rpc-compatibility`：Wire v1、Schema、SPI、公开 API 与迁移。
-- `using-peach-rpc-performance`：EventLoop、Admission、背压、JMH/JFR。
-- `review-peach-rpc-changes`：变更审查、违规分类、证据复核。
+- `using-otryx-java-engineering`：命名、Javadoc、日志、基础代码结构。
+- `using-otryx-compatibility`：Wire v1、Schema、SPI、公开 API 与迁移。
+- `using-otryx-performance`：EventLoop、Admission、背压、JMH/JFR。
+- `review-otryx-changes`：变更审查、违规分类、证据复核。
 - 文档变化需同步 README.md 与 README.en-US.md 的相关结构和事实。
 
 `.cursor/rules` 仅放薄入口，`.codex/config.toml` 仅放平台配置。不得出现多个互相漂移的规范事实源。
