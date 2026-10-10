@@ -15,6 +15,10 @@ import java.time.Duration;
  * @param outlierEjectionDuration 端点临时剔除时间
  * @param circuitConsecutiveFailureThreshold 方法连续基础设施失败熔断阈值
  * @param circuitOpenDuration 熔断打开时间
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/24 11:33
  */
 public record RpcClientResilienceOptions(
         int maxAttempts,

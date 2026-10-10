@@ -11,6 +11,10 @@ import java.util.Objects;
  *
  * <p>该视图持有原始完整帧 byte[]，Metadata 与 Payload 通过 offset/length
  * 描述。调用方在视图生命周期内不得修改 backing bytes。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 15:46
  */
 public final class RpcFrameView {
     private static final byte[] DEADLINE_KEY =

@@ -9,6 +9,10 @@ import java.util.Map;
  *
  * <p>Core 不依赖 OpenTelemetry。Adapter 可将 W3C Trace Context、Baggage
  * 或其他上下文注入现有 RPC metadata，并在 Provider 执行线程恢复。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 14:42
  */
 public interface RpcMetadataPropagator {
 

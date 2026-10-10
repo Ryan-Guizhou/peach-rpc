@@ -1,6 +1,12 @@
 package com.peachsoft.otryx.observability;
 
-/** Registry 控制面操作类型。 */
+/**
+ * Registry 控制面操作类型。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 14:42
+ */
 public enum RpcRegistryOperation {
     /** 注册 Provider 实例。 */
     REGISTER,

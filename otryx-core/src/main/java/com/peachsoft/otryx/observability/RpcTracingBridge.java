@@ -8,6 +8,10 @@ import java.util.Map;
  *
  * <p>Core 不依赖 OpenTelemetry。具体 Adapter 负责创建 Consumer/Provider
  * Span，并把远端 Trace Context 编码到现有 RPC metadata。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 14:47
  */
 public interface RpcTracingBridge {
 

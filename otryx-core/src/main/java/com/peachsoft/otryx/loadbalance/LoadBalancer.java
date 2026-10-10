@@ -5,7 +5,13 @@ import com.peachsoft.otryx.spi.SPI;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 服务实例选择扩展点。 */
+/**
+ * 服务实例选择扩展点。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 @SPI("p2c-ewma")
 public interface LoadBalancer {
 

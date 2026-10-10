@@ -2,7 +2,13 @@ package com.peachsoft.otryx.generated;
 
 import java.util.Optional;
 
-/** Generated Server Dispatcher 的启动阶段发现工具。 */
+/**
+ * Generated Server Dispatcher 的启动阶段发现工具。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 15:46
+ */
 public final class RpcGeneratedServers {
 
     /** 生成服务端工厂类名称后缀。 */

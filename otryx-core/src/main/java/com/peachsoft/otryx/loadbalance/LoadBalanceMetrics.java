@@ -6,6 +6,10 @@ import com.peachsoft.otryx.api.ServiceInstance;
  * 负载均衡器读取的实时端点指标。
  *
  * <p>实现必须保证读取足够轻量，不应在单次查询中分配临时对象。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 15:46
  */
 public interface LoadBalanceMetrics {
 

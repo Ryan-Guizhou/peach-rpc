@@ -7,6 +7,10 @@ import java.util.concurrent.CompletionStage;
  *
  * <p>0~4 参数使用专用入口，避免 Generated Stub 为常见方法立即创建 Object[]。
  * 更高参数个数使用 invokeN 作为兼容 fallback。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
  */
 public interface RpcGeneratedInvocation {
 

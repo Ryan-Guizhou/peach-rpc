@@ -62,6 +62,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>使用者负责在停止服务时调用 {@link #close()}，等待排空期间的资源管理
  * 以实际关闭策略为准。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 public final class OtryxRpcServer implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(OtryxRpcServer.class);

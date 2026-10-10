@@ -63,6 +63,10 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>实例由 Builder 构建，使用者应在不再发起调用时调用 {@link #close()}，
  * 避免遗留连接、服务发现订阅和执行资源。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 public final class OtryxRpcClient implements AutoCloseable {
     private final ServiceDiscovery discovery;

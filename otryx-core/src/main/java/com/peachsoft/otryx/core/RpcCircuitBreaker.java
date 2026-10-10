@@ -9,6 +9,10 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * <p>OPEN 到期后只允许一个 HALF_OPEN 探测。熔断状态切换会更新代际，
  * 因此旧调用的成功、失败及取消回调不能改变新一轮探测结果。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/24 11:33
  */
 final class RpcCircuitBreaker {
 

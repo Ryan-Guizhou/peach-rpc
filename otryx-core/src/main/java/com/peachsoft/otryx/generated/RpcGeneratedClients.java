@@ -2,7 +2,13 @@ package com.peachsoft.otryx.generated;
 
 import java.util.Optional;
 
-/** Generated Client Stub 的启动阶段发现工具。 */
+/**
+ * Generated Client Stub 的启动阶段发现工具。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
+ */
 public final class RpcGeneratedClients {
 
     /** 生成类名称后缀。 */

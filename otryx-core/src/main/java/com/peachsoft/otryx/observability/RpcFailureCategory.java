@@ -1,6 +1,12 @@
 package com.peachsoft.otryx.observability;
 
-/** RPC 失败的低基数运维分类。 */
+/**
+ * RPC 失败的低基数运维分类。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/30 11:21
+ */
 public enum RpcFailureCategory {
     /** 非失败。 */
     NONE,

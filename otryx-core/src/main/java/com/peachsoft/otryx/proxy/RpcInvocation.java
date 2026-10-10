@@ -3,7 +3,13 @@ package com.peachsoft.otryx.proxy;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletionStage;
 
-/** Proxy 到 Core 的统一调用函数。 */
+/**
+ * Proxy 到 Core 的统一调用函数。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 @FunctionalInterface
 public interface RpcInvocation {
 

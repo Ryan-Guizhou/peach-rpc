@@ -8,7 +8,13 @@ import com.peachsoft.otryx.spi.Extension;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-/** Power-of-Two-Choices + EWMA 负载均衡实现。 */
+/**
+ * Power-of-Two-Choices + EWMA 负载均衡实现。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 @Extension("p2c-ewma")
 public final class P2cEwmaLoadBalancer implements LoadBalancer {
 
