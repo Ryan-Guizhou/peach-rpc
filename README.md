@@ -27,7 +27,7 @@
 - **Unary RPC**：Generated Stub / Dispatcher 优先，JDK Proxy / MethodHandle fallback。
 - **Transport**：Vert.x TCP 长连接、连接分片、Heartbeat、Reconnect、CANCEL、GO_AWAY、Graceful Drain。
 - **Security**：PLAINTEXT / TLS / mTLS、证书校验、Hostname Verification 与证书 Reload。
-- **Registry**：Memory、Etcd、Nacos；Consumer 热路径读取本地服务目录。
+- **Registry**：Memory、Etcd、Nacos、Consul、Eureka；Consumer 热路径读取本地服务目录。
 - **Load Balancing**：P2C + EWMA、inflight 与静态权重。
 - **Resilience**：整体 Deadline、显式幂等 Retry、Retry Budget、Circuit Breaker、Outlier Ejection、Provider Admission。
 - **Execution**：Virtual Thread、CPU 有界资源；Fory Codec 与 Stable Type ID。
@@ -92,6 +92,8 @@ otryx:
     registry:
       type: memory
 ~~~
+
+Consul / Eureka 采用按需依赖与轮询式订阅，见 [Consul](docs/reference/registry-consul.md) 与 [Eureka](docs/reference/registry-eureka.md) 适配指南。
 
 完整配置约束和 TLS/Nacos/Etcd 示例见 [Starter 文档](docs/reference/starter.md)、[生产配置](docs/configuration.md)。
 

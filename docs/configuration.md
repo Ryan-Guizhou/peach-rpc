@@ -84,6 +84,14 @@ Retry/Circuit/Outlier 是故障控制，不是容量替代。
 
 评审 endpoint、namespace、group、cluster、username/password 和 SDK 恢复行为。
 
+### Consul
+
+使用 Consul Agent API，配置 `otryx.rpc.registry.type=consul`，endpoint URL、逻辑 namespace、可选 datacenter/Enterprise namespace 与 ACL token；Provider 使用 TTL Check 并主动 Pass 续约，Consumer 通过 `/v1/health/service` 只读取 passing 节点。订阅使用有界控制线程定期刷新，不承诺原生 Watch。详见 [Consul 接入](reference/registry-consul.md)。
+
+### Eureka
+
+使用 Eureka REST API，配置 `otryx.rpc.registry.type=eureka`，包含完整 `/eureka` context-path 的 endpoint URL、可选 Basic Auth、Lease 和查询校对周期。Provider 续约失败 404 时重新注册；Consumer 仅接收 UP 节点，订阅通过有界定时轮询实现。详见 [Eureka 接入](reference/registry-eureka.md)。
+
 Registry 不进入单次 RPC 热路径。
 
 ## 7. JVM

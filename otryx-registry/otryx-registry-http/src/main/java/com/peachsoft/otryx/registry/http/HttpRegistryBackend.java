@@ -13,7 +13,11 @@ import java.util.List;
  */
 public interface HttpRegistryBackend extends AutoCloseable {
 
-    /** @return 注册中心类型名称 */
+    /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 注册中心类型名称
+     */
     String type();
 
     /**

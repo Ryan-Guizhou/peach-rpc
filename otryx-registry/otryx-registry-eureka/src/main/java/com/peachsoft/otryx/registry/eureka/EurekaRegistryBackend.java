@@ -48,7 +48,11 @@ public final class EurekaRegistryBackend implements HttpRegistryBackend {
         this.leaseSeconds = leaseSeconds;
     }
 
-    /** @return Eureka 适配器名称 */
+    /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Eureka 适配器名称
+     */
     @Override
     public String type() {
         return "eureka";

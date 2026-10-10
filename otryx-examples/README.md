@@ -113,3 +113,21 @@ N+1 Consumer -> N Provider rollback
 
 该 E2E 验证 Wire v1 与 Registry Schema Metadata 的跨 Git 版本兼容。它不替代生产多副本滚动发布演练；真实多实例分批发布、容量和流量切换仍属于 RC 环境门禁。
 
+
+
+## Consul / Eureka 可选注册中心
+
+示例 Provider、Consumer 的 POM 均按需引入新增 Adapter，默认仍为 Nacos。先从项目根目录执行：
+
+```bash
+mvn -B -ntp -pl otryx-examples -am clean package
+```
+
+确保已启动同一 Consul Agent（默认本地 `http://127.0.0.1:8500`）或 Eureka Server（默认本地 `http://127.0.0.1:8761/eureka`）。两个进程使用**相同**的 Spring Profile、Registry endpoint 和逻辑 namespace 启动：
+
+```bash
+java -jar otryx-examples/otryx-example-provider/target/*-exec.jar --spring.profiles.active=consul
+java -jar otryx-examples/otryx-example-consumer/target/*-exec.jar --spring.profiles.active=consul
+```
+
+将上面的 `consul` 改为 `eureka`，可测试 Eureka；Provider 和 Consumer 分别在独立终端启动，不要同时占用 shell。Consul Token 用环境变量 `CONSUL_HTTP_TOKEN`，Eureka Basic Auth 用 `EUREKA_USERNAME`、`EUREKA_PASSWORD`；切勿把密钥写进配置仓库。以上是**外部服务启动后**的独立进程示例，普通 CI 的 Mock HTTP 单元测试不等于已通过真实 Consul/Eureka Server 集成测试。详细参见 [Consul](../docs/reference/registry-consul.md) 和 [Eureka](../docs/reference/registry-eureka.md)。

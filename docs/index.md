@@ -17,7 +17,7 @@
 
 ## 架构与技术细节
 
-[协议](protocol.md) · [安全](security.md) · [可观测性](observability.md) · [性能与限制](performance.md) · [注册中心](reference/registry-nacos.md)
+[协议](protocol.md) · [安全](security.md) · [可观测性](observability.md) · [性能与限制](performance.md) · [Nacos 注册中心](reference/registry-nacos.md) · [Consul](reference/registry-consul.md) · [Eureka](reference/registry-eureka.md)
 
 设计依据：[需求蓝图](design/requirements-blueprint.md) · [技术方案](design/technical-solution.md) · [详细设计](design/detailed-design.md) · [模块结构](design/project-structure.md)。
 

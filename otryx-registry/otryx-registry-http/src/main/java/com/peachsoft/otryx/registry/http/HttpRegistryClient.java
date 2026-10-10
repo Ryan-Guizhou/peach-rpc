@@ -134,9 +134,18 @@ public final class HttpRegistryClient implements AutoCloseable {
                 ? new IOException("Registry HTTP request failed") : last;
     }
 
-    /** HTTP 控制面响应，不包含凭证或完整 URL。 */
+    /**
+     * HTTP 控制面响应，不包含凭证或完整 URL。
+     *
+     * @param status HTTP 响应状态码
+     * @param json 已解析的 JSON 内容
+     */
     public record Response(int status, JsonNode json) {
-        /** @return 请求是否为 HTTP 2xx */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 请求是否为 HTTP 2xx
+     */
         public boolean successful() {
             return status >= 200 && status < 300;
         }

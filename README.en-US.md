@@ -27,7 +27,7 @@ The project has not yet reached GA and makes no backward-compatibility promise t
 - **Unary RPC**: Generated Stubs / Dispatchers with JDK Proxy / MethodHandle fallback.
 - **Transport**: Vert.x TCP, sharded connections, heartbeat, reconnect, CANCEL, GO_AWAY and graceful drain.
 - **Security**: PLAINTEXT / TLS / mTLS, hostname verification and certificate reload.
-- **Registry**: Memory, Etcd, Nacos; consumer hot path reads a local service directory.
+- **Registry**: Memory, Etcd, Nacos, Consul, Eureka; the consumer hot path reads a local service directory.
 - **Load balancing**: P2C + EWMA, inflight count and static weights.
 - **Resilience**: end-to-end deadline, explicitly idempotent retries, retry budget, circuit breaker, outlier ejection and provider admission.
 - **Execution**: virtual threads, bounded CPU resources, Fory and stable type IDs.
@@ -92,6 +92,8 @@ otryx:
     registry:
       type: memory
 ~~~
+
+Consul and Eureka are opt-in adapters with polling-based subscriptions. See [Consul](docs/reference/registry-consul.md) and [Eureka](docs/reference/registry-eureka.md).
 
 See [Starter guide](docs/reference/starter.md) and [Production configuration](docs/configuration.md) for validated options, TLS and registry setup.
 

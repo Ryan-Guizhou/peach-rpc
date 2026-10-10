@@ -50,7 +50,11 @@ public final class ConsulRegistryBackend implements HttpRegistryBackend {
         this.ttlSeconds = ttlSeconds;
     }
 
-    /** @return Consul 适配器名称 */
+    /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Consul 适配器名称
+     */
     @Override
     public String type() {
         return "consul";

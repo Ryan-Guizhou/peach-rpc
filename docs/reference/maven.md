@@ -37,7 +37,10 @@ otryx-rpc (root parent)
 ├── otryx-codegen
 ├── otryx-registry
 │   ├── otryx-registry-etcd
-│   └── otryx-registry-nacos
+│   ├── otryx-registry-nacos
+│   ├── otryx-registry-http
+│   ├── otryx-registry-consul
+│   └── otryx-registry-eureka
 ├── otryx-serialization
 │   └── otryx-serialization-fory
 ├── otryx-transport

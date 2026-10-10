@@ -72,7 +72,7 @@ class JavadocMetadataTest(unittest.TestCase):
                             for v in self.findings(source + "public class Example {}")))
 
     def test_version_format_is_checked(self):
-        source = VALID.replace("1.0.0-SNAPSHOT", "future")
+        source = VALID.replace("@Version 1.0.0", "@Version future")
         self.assertTrue(any("@Version" in v for v in
                             self.findings(source + "public class Example {}")))
 

@@ -20,7 +20,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -107,7 +106,11 @@ public final class HttpRegistry implements Registry, ServiceRegistrar {
         return value;
     }
 
-    /** @return 声明经适配器实现的真实能力，不含远端 Revision */
+    /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 声明经适配器实现的真实能力，不含远端 Revision
+     */
     @Override
     public RegistryCapabilities capabilities() {
         return CAPABILITIES;

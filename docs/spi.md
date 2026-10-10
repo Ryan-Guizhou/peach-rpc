@@ -73,7 +73,7 @@ RegistryOptions(
 )
 ```
 
-其中 endpoints 与 namespace 是跨注册中心公共语义，并允许保持空值，由具体 Adapter 决定默认值。Etcd Lease TTL、Nacos Group/Cluster/凭据等厂商特有参数进入 `providerOptions`，Core 不引入厂商 SDK 类型。
+其中 endpoints 与 namespace 是跨注册中心公共语义，并允许保持空值，由具体 Adapter 决定默认值。Etcd Lease TTL、Nacos Group/Cluster/凭据、Consul ACL/TTL、Eureka Basic Auth/Lease 等厂商特有参数进入 `providerOptions`，Core 不引入厂商 SDK 类型。
 
 ## 5. Proxy 与 Generated Stub
 
@@ -91,3 +91,13 @@ RegistryOptions(
 Nacos NamingService 的阻塞注册、注销和查询操作由 Adapter 自有有界控制面执行器隔离，不进入 Vert.x Event Loop；Consumer 单次请求仍只读取 Core 的 `ServiceDirectory` 数组快照。
 
 详细映射见 [Nacos Registry Adapter](reference/registry-nacos.md)。
+
+
+## 7. Consul 与 Eureka Adapter
+
+`otryx-registry-consul` 和 `otryx-registry-eureka` 都通过 `RegistryFactory` SPI 扩展点注册；`otryx-registry-http` 是两者私有共享的有界 HTTP 控制面模块。两个 Adapter 声明 REGISTRATION、SUBSCRIPTION、LEASE、HEALTH、WEIGHT、METADATA，**不声明 REVISION**：`RegistrySnapshot.revision` 由进程内单调递增序列生成，绝非跨节点一致的外部 Revision。
+
+- Consul：Agent TTL Check 主动心跳、`/v1/health/service?passing=true` 健康查询、失败重注册。
+- Eureka：REST Lease Renewal，404 触发重新注册；查询过滤非 UP 实例；**无原生推送订阅**。
+- 两者均完整隔离 `ServiceKey(serviceName,version,group)` 与逻辑 namespace，通过健康快照异步更新本地 `ServiceDirectory`，不在单次 RPC 中做远程 HTTP。
+- 两者均单独引入 Maven 模块和配置，不纳入默认 Lite/Full Starter 的传递依赖。详细参见 [Consul](reference/registry-consul.md) 与 [Eureka](reference/registry-eureka.md)。

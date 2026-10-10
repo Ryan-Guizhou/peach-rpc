@@ -24,6 +24,14 @@
         </dependency>
         <dependency>
             <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-registry-consul</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-registry-eureka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.peachsoft.otryx</groupId>
             <artifactId>otryx-example-provider</artifactId>
             <version>${revision}</version>
             <scope>test</scope>

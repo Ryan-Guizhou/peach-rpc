@@ -327,12 +327,20 @@ public class OtryxRpcProperties implements InitializingBean {
             return nacos;
         }
 
-        /** @return Consul 专用 Registry 配置 */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Consul 专用 Registry 配置
+     */
         public Consul getConsul() {
             return consul;
         }
 
-        /** @return Eureka 专用 Registry 配置 */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Eureka 专用 Registry 配置
+     */
         public Eureka getEureka() {
             return eureka;
         }
@@ -358,33 +366,89 @@ public class OtryxRpcProperties implements InitializingBean {
         public Consul() {
         }
 
-        /** @return Consul ACL token */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Consul ACL token
+     */
         public String getToken() { return token; }
-        /** @param value Consul ACL token */
+        /**
+     * 设置对应配置项。
+     *
+     * @param value Consul ACL token
+     */
         public void setToken(String value) { this.token = value; }
-        /** @return Consul Datacenter */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Consul Datacenter
+     */
         public String getDatacenter() { return datacenter; }
-        /** @param value Consul Datacenter */
+        /**
+     * 设置对应配置项。
+     *
+     * @param value Consul Datacenter
+     */
         public void setDatacenter(String value) { this.datacenter = value; }
-        /** @return Consul Enterprise Namespace，可留空 */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Consul Enterprise Namespace，可留空
+     */
         public String getEnterpriseNamespace() { return enterpriseNamespace; }
-        /** @param value Consul Enterprise Namespace */
+        /**
+     * 设置对应配置项。
+     *
+     * @param value Consul Enterprise Namespace
+     */
         public void setEnterpriseNamespace(String value) { this.enterpriseNamespace = value; }
-        /** @return TTL 秒数 */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return TTL 秒数
+     */
         public long getTtlSeconds() { return ttlSeconds; }
-        /** @param value TTL 秒数 */
+        /**
+     * 设置对应配置项。
+     *
+     * @param value TTL 秒数
+     */
         public void setTtlSeconds(long value) { this.ttlSeconds = value; }
-        /** @return 续约周期秒数 */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 续约周期秒数
+     */
         public long getHeartbeatSeconds() { return heartbeatSeconds; }
-        /** @param value 续约周期秒数 */
+        /**
+     * 设置对应配置项。
+     *
+     * @param value 续约周期秒数
+     */
         public void setHeartbeatSeconds(long value) { this.heartbeatSeconds = value; }
-        /** @return 轮询周期毫秒数 */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 轮询周期毫秒数
+     */
         public long getPollIntervalMillis() { return pollIntervalMillis; }
-        /** @param value 轮询周期毫秒数 */
+        /**
+     * 设置对应配置项。
+     *
+     * @param value 轮询周期毫秒数
+     */
         public void setPollIntervalMillis(long value) { this.pollIntervalMillis = value; }
-        /** @return 请求超时毫秒数 */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 请求超时毫秒数
+     */
         public long getRequestTimeoutMillis() { return requestTimeoutMillis; }
-        /** @param value 请求超时毫秒数 */
+        /**
+     * 设置对应配置项。
+     *
+     * @param value 请求超时毫秒数
+     */
         public void setRequestTimeoutMillis(long value) { this.requestTimeoutMillis = value; }
     }
 
@@ -407,29 +471,77 @@ public class OtryxRpcProperties implements InitializingBean {
         public Eureka() {
         }
 
-        /** @return Eureka Basic Auth 用户名 */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Eureka Basic Auth 用户名
+     */
         public String getUsername() { return username; }
-        /** @param value Eureka Basic Auth 用户名 */
+        /**
+     * 设置对应配置项。
+     *
+     * @param value Eureka Basic Auth 用户名
+     */
         public void setUsername(String value) { this.username = value; }
-        /** @return Eureka Basic Auth 密码 */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return Eureka Basic Auth 密码
+     */
         public String getPassword() { return password; }
-        /** @param value Eureka Basic Auth 密码 */
+        /**
+     * 设置对应配置项。
+     *
+     * @param value Eureka Basic Auth 密码
+     */
         public void setPassword(String value) { this.password = value; }
-        /** @return 租约过期时间秒数 */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 租约过期时间秒数
+     */
         public long getLeaseSeconds() { return leaseSeconds; }
-        /** @param value 租约过期时间秒数 */
+        /**
+     * 设置对应配置项。
+     *
+     * @param value 租约过期时间秒数
+     */
         public void setLeaseSeconds(long value) { this.leaseSeconds = value; }
-        /** @return 续约周期秒数 */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 续约周期秒数
+     */
         public long getHeartbeatSeconds() { return heartbeatSeconds; }
-        /** @param value 续约周期秒数 */
+        /**
+     * 设置对应配置项。
+     *
+     * @param value 续约周期秒数
+     */
         public void setHeartbeatSeconds(long value) { this.heartbeatSeconds = value; }
-        /** @return 轮询周期毫秒数 */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return 轮询周期毫秒数
+     */
         public long getPollIntervalMillis() { return pollIntervalMillis; }
-        /** @param value 轮询周期毫秒数 */
+        /**
+     * 设置对应配置项。
+     *
+     * @param value 轮询周期毫秒数
+     */
         public void setPollIntervalMillis(long value) { this.pollIntervalMillis = value; }
-        /** @return HTTP 超时毫秒数 */
+        /**
+     * 返回相应配置或运行状态。
+     *
+     * @return HTTP 超时毫秒数
+     */
         public long getRequestTimeoutMillis() { return requestTimeoutMillis; }
-        /** @param value HTTP 超时毫秒数 */
+        /**
+     * 设置对应配置项。
+     *
+     * @param value HTTP 超时毫秒数
+     */
         public void setRequestTimeoutMillis(long value) { this.requestTimeoutMillis = value; }
     }
 

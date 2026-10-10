@@ -21,7 +21,7 @@ OTRYX RPC 的模块不是按“功能名越细越好”拆分，而是按**第�
 
 | 聚合能力族 | 子模块 |
 | --- | --- |
-| otryx-registry | otryx-registry-etcd、otryx-registry-nacos |
+| otryx-registry | otryx-registry-etcd、otryx-registry-nacos、otryx-registry-http、otryx-registry-consul、otryx-registry-eureka |
 | otryx-serialization | otryx-serialization-fory |
 | otryx-transport | otryx-transport-vertx |
 | otryx-proxy | otryx-proxy-cglib、otryx-proxy-bytebuddy |
@@ -40,6 +40,9 @@ flowchart TB
     Vertx[transport-vertx]
     Etcd[registry-etcd]
     Nacos[registry-nacos]
+    Http[registry-http]
+    Consul[registry-consul]
+    Eureka[registry-eureka]
     Cglib[proxy-cglib]
     ByteBuddy[proxy-bytebuddy]
     Micro[observability-micrometer]
@@ -56,6 +59,9 @@ flowchart TB
     Vertx --> Core
     Etcd --> Core
     Nacos --> Core
+    Http --> Core
+    Consul --> Http
+    Eureka --> Http
     Cglib --> Core
     ByteBuddy --> Core
     Micro --> Core
