@@ -142,7 +142,20 @@ class EurekaRegistryTest {
             if ("POST".equals(ex.getRequestMethod()) && parts.length == 1) {
                 JsonNode info = mapper.readTree(ex.getRequestBody()).path("instance");
                 assertEquals(parts[0], info.path("app").asText());
-                assertTrue(info.path("leaseInfo").path("durationInSecs").asInt() > 0);
+                assertEquals("UP", info.path("status").asText());
+                assertEquals("127.0.0.1", info.path("hostName").asText());
+                assertEquals("127.0.0.1", info.path("ipAddr").asText());
+                assertEquals(19090, info.path("port").path("$").asInt());
+                assertEquals("true", info.path("port").path("@enabled").asText());
+                assertEquals("false", info.path("securePort").path("@enabled").asText());
+                assertEquals("MyOwn", info.path("dataCenterInfo").path("name").asText());
+                assertEquals("com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo",
+                        info.path("dataCenterInfo").path("@class").asText());
+                assertEquals(9, info.path("leaseInfo").path("durationInSecs").asInt());
+                assertEquals(1, info.path("leaseInfo").path("renewalIntervalInSecs").asInt());
+                assertEquals("eureka-provider",
+                        info.path("metadata").path("otryx.rpc.instance-id").asText());
+                assertEquals("155", info.path("metadata").path("otryx.rpc.weight").asText());
                 remote.set(info);
                 down.set(false);
                 registers.incrementAndGet();
