@@ -111,9 +111,9 @@ final class NacosRegistrySubscription implements RegistrySubscription {
                     }
                     if (error != null && !closed.get()) {
                         LOGGER.warn(
-                                "Nacos subscription initialization failed: service={}",
+                                "Nacos subscription initialization failed: service={}, errorType={}",
                                 serviceKey.canonicalName(),
-                                error);
+                                error.getClass().getName());
                         closeAsync();
                     }
                 });
@@ -229,9 +229,9 @@ final class NacosRegistrySubscription implements RegistrySubscription {
             publish(instances);
         } catch (Exception error) {
             LOGGER.debug(
-                    "Nacos subscription reconcile failed: service={}",
+                    "Nacos subscription reconcile failed: service={}, errorType={}",
                     serviceKey.canonicalName(),
-                    error);
+                    error.getClass().getName());
         }
     }
 
@@ -299,9 +299,9 @@ final class NacosRegistrySubscription implements RegistrySubscription {
         closeAsync().whenComplete((ignored, error) -> {
             if (error != null) {
                 LOGGER.warn(
-                        "Nacos unsubscribe failed: service={}",
+                        "Nacos unsubscribe failed: service={}, errorType={}",
                         serviceKey.canonicalName(),
-                        error);
+                        error.getClass().getName());
             }
         });
     }

@@ -305,8 +305,8 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
                     .join();
         } catch (RuntimeException error) {
             LOGGER.warn(
-                    "Nacos subscription shutdown exceeded expected bound",
-                    error);
+                    "Nacos subscription shutdown exceeded expected bound. errorType={}",
+                    error.getClass().getName());
         }
         try {
             executor.submit(
@@ -322,9 +322,9 @@ final class NacosRegistry implements Registry, ServiceRegistrar {
                     .join();
         } catch (RuntimeException error) {
             LOGGER.warn(
-                    "Nacos naming service shutdown failed: namespace={}",
+                    "Nacos naming service shutdown failed: namespace={}, errorType={}",
                     namespace,
-                    error);
+                    error.getClass().getName());
         } finally {
             executor.close();
         }

@@ -725,9 +725,9 @@ final class VertxRpcTransportClient implements RpcTransportClient {
                 cancelHeartbeatTimer();
                 group.release(slot, this);
                 LOGGER.debug(
-                        "RPC connection is draining: endpoint={}, reason={}",
+                        "RPC connection is draining: endpoint={}, status={}",
                         endpoint.authority(),
-                        error.message());
+                        frame.status());
                 closeIfDrained();
             } catch (Throwable error) {
                 failAll(error);
