@@ -67,7 +67,7 @@ Checkstyle 的所有 Style Audit 检查统一使用 **warning** 级别，避免�
 
 利用上述零违规基线，PR-13 将 **Java Style Audit** 的结果由仅上传 Artifact 改为：Maven 仍先生成完整报告，随后由 Python Gate 验证 Reactor 报告覆盖率并在发现任何违规时将 CI 置为失败。新的生产公共类、方法、命名、Import、行长违规由此无法绕过该检查；测试源码的命名、Import 和行长照常检查，但公共测试 Fixture 的机械 Javadoc 覆盖检查仍被排除。
 
-Gate 只说明“Checkstyle 所配置且实际扫描到的规则无违规”。它不能替代 [Java Agent Quality](../engineering/java-coding-standard.md) 的禁止 API 检查、ArchUnit、编译测试、运行时/协议回归和人工代码审查；也**不能把未经证明的日志/注释语义正确性等同于无检查告警**。
+Gate 只说明“Checkstyle 所配置且实际扫描到的规则无违规”。它不能替代 [Java Agent Quality](java-coding-standard.md) 的禁止 API 检查、ArchUnit、编译测试、运行时/协议回归和人工代码审查；也**不能把未经证明的日志/注释语义正确性等同于无检查告警**。
 
 报告完整性通过遍历真实的 Maven `<modules>` 配置得到，而不是把“19 模块”永久写死为魔法常量。若新增模块却未执行 Checkstyle，对应 XML 缺失会使门禁直接失败。编译失败、Checkstyle 插件出错也不会伪装成“零违规”。
 
