@@ -47,7 +47,7 @@ class IdentityTests(unittest.TestCase):
             root = Path(d)
             fixture(root)
             path = root / "docs/maven.md"
-            path.write_text(path.read_text() + "\nio.peach", encoding="utf-8")
+            path.write_text(path.read_text() + "\n验证 `io.peach` 能发布 com.peachsoft.otryx", encoding="utf-8")
             self.assertTrue(any("reverse-DNS" in error for error in validate(root)))
 
     def test_missing_migration_preflight_is_rejected(self):
