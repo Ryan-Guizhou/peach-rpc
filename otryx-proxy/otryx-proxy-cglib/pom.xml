@@ -5,25 +5,21 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.peachsoft.otryx</groupId>
-        <artifactId>otryx-parent</artifactId>
+        <artifactId>otryx-rpc</artifactId>
         <version>${revision}</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>otryx-codec-fory</artifactId>
-    <name>otryx-codec-fory</name>
-    <description>Apache Fory codec adapter for OTRYX RPC.</description>
+    <artifactId>otryx-proxy-cglib</artifactId>
+    <name>otryx-proxy-cglib</name>
+    <description>Optional CGLIB proxy adapter for OTRYX RPC.</description>
     <dependencies>
         <dependency>
             <groupId>com.peachsoft.otryx</groupId>
             <artifactId>otryx-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.fory</groupId>
-            <artifactId>fory-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
+            <groupId>cglib</groupId>
+            <artifactId>cglib</artifactId>
         </dependency>
     </dependencies>
 </project>

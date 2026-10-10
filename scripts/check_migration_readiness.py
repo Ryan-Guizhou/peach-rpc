@@ -24,12 +24,12 @@ def main() -> int:
     pom = ET.parse(ROOT / "pom.xml").getroot()
     require(pom.findtext("m:groupId", namespaces=NS) == "com.peachsoft.otryx",
             "Incorrect OTRYX groupId")
-    require(pom.findtext("m:artifactId", namespaces=NS) == "otryx-parent",
+    require(pom.findtext("m:artifactId", namespaces=NS) == "otryx-rpc",
             "Incorrect OTRYX parent artifactId")
-    require(pom.findtext("m:properties/m:revision", namespaces=NS) == "2.0.0-SNAPSHOT",
+    require(pom.findtext("m:properties/m:revision", namespaces=NS) == "1.0.0-SNAPSHOT",
             "Incorrect development version")
     status = (ROOT / "docs/release-status.properties").read_text(encoding="utf-8")
-    require("project=migration" in status and "version=2.0.0-SNAPSHOT" in status,
+    require("project=development" in status and "version=1.0.0-SNAPSHOT" in status,
             "Development source status must explicitly be migration")
     require(not list(ROOT.glob("peach-rpc-*")), "Legacy module directories remain")
 
@@ -53,7 +53,7 @@ def main() -> int:
     for token in EXPECTED_KEYS:
         require('"' + token + '"' in compat,
                 "Frozen registry key changed: " + token)
-    props = (ROOT / "otryx-spring-boot-autoconfigure/src/main/java/com/peachsoft/otryx/"
+    props = (ROOT / "otryx-spring-boot/otryx-spring-boot-autoconfigure/src/main/java/com/peachsoft/otryx/"
              "spring/autoconfigure/OtryxRpcProperties.java").read_text(encoding="utf-8")
     require('@ConfigurationProperties(prefix = "otryx.rpc")' in props,
             "Spring Boot config prefix did not migrate")

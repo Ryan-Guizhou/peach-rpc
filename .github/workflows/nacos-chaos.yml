@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - 'otryx-registry-nacos/**'
+      - 'otryx-registry/otryx-registry-nacos/**'
       - '.github/workflows/nacos-chaos.yml'
 
 concurrency:

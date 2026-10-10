@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.peachsoft.otryx</groupId>
-        <artifactId>otryx-parent</artifactId>
+        <artifactId>otryx-rpc</artifactId>
         <version>${revision}</version>
     </parent>
     <artifactId>otryx-examples</artifactId>

@@ -14,7 +14,7 @@ NS = {"m": "http://maven.apache.org/POM/4.0.0"}
 PUBLIC_MODULES = (
     "otryx-core",
     "otryx-codegen",
-    "otryx-codec-fory",
+    "otryx-serialization-fory",
     "otryx-transport-vertx",
     "otryx-registry-etcd",
     "otryx-registry-nacos",
@@ -35,6 +35,22 @@ NON_PUBLIC_ARTIFACTS = {
     "otryx-example-consumer",
     "otryx-benchmarks",
 }
+
+
+def module_path(name: str) -> Path:
+    """Resolve a published artifact to its nested Maven source directory."""
+    families = {
+        "otryx-registry-": "otryx-registry",
+        "otryx-serialization-": "otryx-serialization",
+        "otryx-transport-": "otryx-transport",
+        "otryx-proxy-": "otryx-proxy",
+        "otryx-observability-": "otryx-observability",
+        "otryx-spring-boot-": "otryx-spring-boot",
+    }
+    for prefix, family in families.items():
+        if name.startswith(prefix):
+            return Path(family) / name
+    return Path(name)
 
 
 def fail(message: str) -> None:
@@ -191,7 +207,7 @@ def check_dependency_only_starter() -> None:
         "otryx-spring-boot-starter",
         "otryx-spring-boot-starter-lite",
     ):
-        starter_pom_path = ROOT / module / "pom.xml"
+        starter_pom_path = ROOT / module_path(module) / "pom.xml"
         starter = ET.parse(starter_pom_path).getroot()
         release = profile(starter, "release")
 
@@ -257,7 +273,7 @@ def check_dependency_only_starter() -> None:
 
 def check_starter_dependency_boundaries() -> None:
     def direct_artifacts(module: str) -> set[str]:
-        pom = ET.parse(ROOT / module / "pom.xml").getroot()
+        pom = ET.parse(ROOT / module_path(module) / "pom.xml").getroot()
         return {
             node.text.strip()
             for node in pom.findall(
@@ -292,7 +308,7 @@ def check_starter_dependency_boundaries() -> None:
 
 def check_modules() -> None:
     for module in PUBLIC_MODULES:
-        pom_path = ROOT / module / "pom.xml"
+        pom_path = ROOT / module_path(module) / "pom.xml"
         if not pom_path.is_file():
             fail(f"Missing public module POM: {module}")
         pom = ET.parse(pom_path).getroot()
@@ -310,7 +326,7 @@ def check_modules() -> None:
 
 def check_artifacts(version: str) -> None:
     for module in PUBLIC_MODULES:
-        target = ROOT / module / "target"
+        target = ROOT / module_path(module) / "target"
         expected = (
             target / f"{module}-{version}.jar",
             target / f"{module}-{version}-sources.jar",

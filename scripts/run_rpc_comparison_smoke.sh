@@ -28,7 +28,7 @@ mkdir -p "$OUTPUT_DIR"
 
 echo "Building the installed OTRYX RPC dependency graph"
 mvn -B -ntp -DskipTests \
-  -pl otryx-codegen,otryx-codec-fory,otryx-transport-vertx \
+  -pl otryx-codegen,otryx-serialization/otryx-serialization-fory,otryx-transport/otryx-transport-vertx \
   -am install
 
 echo "Building isolated Maven runtimes"

@@ -3,8 +3,8 @@ name: Frame Allocation Comparison
 on:
   pull_request:
     paths:
-      - "otryx-transport-vertx/src/main/java/com/peachsoft/otryx/transport/vertx/FrameAccumulator.java"
-      - "otryx-transport-vertx/src/test/java/com/peachsoft/otryx/transport/vertx/FrameAccumulatorTest.java"
+      - "otryx-transport/otryx-transport-vertx/src/main/java/com/peachsoft/otryx/transport/vertx/FrameAccumulator.java"
+      - "otryx-transport/otryx-transport-vertx/src/test/java/com/peachsoft/otryx/transport/vertx/FrameAccumulatorTest.java"
       - "otryx-benchmarks/src/main/java/com/peachsoft/otryx/transport/vertx/FrameAccumulatorBenchmark.java"
       - "scripts/run_frame_allocation_comparison.sh"
       - "scripts/compare_frame_allocation.py"
