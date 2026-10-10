@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate isolated Peach/Dubbo RPC result parity without inventing missing metrics."""
+"""Validate isolated OTRYX/Dubbo RPC result parity without inventing missing metrics."""
 
 import argparse
 import json
@@ -78,26 +78,26 @@ def validate_result(data, framework):
             f"{framework}: missing explicit unmeasured-metric markers")
 
 
-def validate_pair(peach, dubbo, environment, max_error_rate=0.05):
-    validate_result(peach, "peach")
+def validate_pair(otryx, dubbo, environment, max_error_rate=0.05):
+    validate_result(otryx, "otryx")
     validate_result(dubbo, "dubbo")
     for field in SCENARIO_FIELDS:
-        require(peach.get(field) == dubbo.get(field),
+        require(otryx.get(field) == dubbo.get(field),
                 f"Scenario mismatch: {field}")
-    require(peach["evidence_class"] == dubbo["evidence_class"],
+    require(otryx["evidence_class"] == dubbo["evidence_class"],
             "Mismatched evidence provenance class")
     require(environment.get("schema") ==
             "otryx.rpc.comparison.environment.v1",
             "Environment provenance record is missing")
     for field in ("run_id", "git_sha", "evidence_class"):
-        require(environment.get(field) == peach.get(field),
+        require(environment.get(field) == otryx.get(field),
                 f"Environment mismatch: {field}")
-    require(peach.get("git_sha") not in ("", "unverified", None),
+    require(otryx.get("git_sha") not in ("", "unverified", None),
             "Evidence must identify a real source revision")
     require(all(data["error_rate"] <= max_error_rate
-                for data in (peach, dubbo)),
+                for data in (otryx, dubbo)),
             f"Comparison error rate exceeded {max_error_rate}")
-    if peach["evidence_class"] == "controlled":
+    if otryx["evidence_class"] == "controlled":
         require(environment.get("physical_host_fingerprint")
                 and environment.get("runner_id"),
                 "Controlled evidence requires fixed runner identity and fingerprint")
@@ -106,15 +106,15 @@ def validate_pair(peach, dubbo, environment, max_error_rate=0.05):
             "collect >=3 independent repeats and controlled soak/JFR evidence")
 
 
-def markdown(peach, dubbo, environment):
-    provenance = peach["evidence_class"]
+def markdown(otryx, dubbo, environment):
+    provenance = otryx["evidence_class"]
     header = ("SMOKE ONLY - NOT OFFICIAL PERFORMANCE EVIDENCE"
               if provenance == "smoke" else
               "CONTROLLED CANDIDATE - AWAITING INDEPENDENT REVIEW")
     values = [
         f"# OTRYX RPC / Dubbo comparison — {header}",
         "",
-        f"Source SHA: `{peach['git_sha']}`. Run: `{peach['run_id']}`.",
+        f"Source SHA: `{otryx['git_sha']}`. Run: `{otryx['run_id']}`.",
         f"Runner: `{environment.get('runner_id', 'unknown')}`.",
         "",
         "| Metric | OTRYX RPC | Apache Dubbo |",
@@ -146,13 +146,13 @@ def markdown(peach, dubbo, environment):
             if isinstance(value, float):
                 return f"{value:.5f}"
             return str(value)
-        values.append(f"| {label} | {render(peach.get(field))} "
+        values.append(f"| {label} | {render(otryx.get(field))} "
                       f"| {render(dubbo.get(field))} |")
     values.extend([
         "",
         "Both runtimes used separate provider and client JVMs; "
         "the reported workload is **closed-loop synchronous byte[] echo**.",
-        "The protocols and serializers are different (Peach Wire v1/Fory vs "
+        "The protocols and serializers are different (OTRYX Wire v1/Fory vs "
         "Dubbo TCP/Hessian2), so results measure the complete runtime stacks, "
         "not isolated transport efficiency.",
         "Missing allocation/server CPU figures are deliberately marked "
@@ -165,7 +165,7 @@ def markdown(peach, dubbo, environment):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--peach", required=True)
+    parser.add_argument("--otryx", required=True)
     parser.add_argument("--dubbo", required=True)
     parser.add_argument("--environment", required=True)
     parser.add_argument("--report", required=True)
@@ -173,12 +173,12 @@ def main():
     args = parser.parse_args()
     try:
         require(0 <= args.max_error_rate <= 1, "Invalid max error rate")
-        peach, dubbo, env = (
-            read_json(args.peach), read_json(args.dubbo),
+        otryx, dubbo, env = (
+            read_json(args.otryx), read_json(args.dubbo),
             read_json(args.environment))
-        validate_pair(peach, dubbo, env, args.max_error_rate)
+        validate_pair(otryx, dubbo, env, args.max_error_rate)
         Path(args.report).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.report).write_text(markdown(peach, dubbo, env),
+        Path(args.report).write_text(markdown(otryx, dubbo, env),
                                      encoding="utf-8")
         print(f"Validated smoke comparison evidence: {args.report}")
     except (ValueError, OSError, json.JSONDecodeError) as error:

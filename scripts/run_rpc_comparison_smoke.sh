@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 OUTPUT_DIR="${RPC_COMPARISON_OUTPUT_DIR:-target/rpc-comparison-smoke}"
-PEACH_JAR="tools/rpc-comparison/otryx/target/peach-comparison.jar"
+OTRYX_JAR="tools/rpc-comparison/otryx/target/otryx-comparison.jar"
 DUBBO_JAR="tools/rpc-comparison/dubbo/target/dubbo-comparison.jar"
 CONCURRENCY="${RPC_COMPARISON_CONCURRENCY:-16}"
 WARMUP="${RPC_COMPARISON_WARMUP_SECONDS:-2}"
@@ -34,7 +34,7 @@ mvn -B -ntp -DskipTests \
 echo "Building isolated Maven runtimes"
 mvn -B -ntp -f tools/rpc-comparison/pom.xml clean package
 
-if [[ ! -s "$PEACH_JAR" || ! -s "$DUBBO_JAR" ]]; then
+if [[ ! -s "$OTRYX_JAR" || ! -s "$DUBBO_JAR" ]]; then
   echo "Comparison jars were not produced" >&2
   exit 1
 fi
@@ -118,11 +118,11 @@ run_one() {
   cleanup
 }
 
-run_one peach "$PEACH_JAR"
+run_one otryx "$OTRYX_JAR"
 run_one dubbo "$DUBBO_JAR"
 
 python3 scripts/validate_rpc_comparison.py \
-  --peach "$OUTPUT_DIR/peach.json" \
+  --otryx "$OUTPUT_DIR/otryx.json" \
   --dubbo "$OUTPUT_DIR/dubbo.json" \
   --environment "$OUTPUT_DIR/environment.json" \
   --report "$OUTPUT_DIR/report.md"

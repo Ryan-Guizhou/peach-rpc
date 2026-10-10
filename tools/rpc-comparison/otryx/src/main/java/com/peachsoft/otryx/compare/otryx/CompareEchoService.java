@@ -1,4 +1,4 @@
-package com.peachsoft.otryx.compare.peach;
+package com.peachsoft.otryx.compare.otryx;
 
 import com.peachsoft.otryx.api.OtryxRpcContract;
 

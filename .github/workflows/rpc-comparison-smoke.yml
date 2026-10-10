@@ -28,7 +28,7 @@ jobs:
       - name: Validate evidence schema tests
         run: python3 scripts/test_rpc_comparison_validator.py
 
-      - name: Build and smoke-test isolated Peach / Dubbo runtimes
+      - name: Build and smoke-test isolated OTRYX / Dubbo runtimes
         run: bash scripts/run_rpc_comparison_smoke.sh
 
       - name: Upload isolated-JVM smoke evidence
@@ -38,7 +38,7 @@ jobs:
           name: rpc-comparison-smoke-${{ github.run_id }}
           path: |
             target/rpc-comparison-smoke/environment.json
-            target/rpc-comparison-smoke/peach.json
+            target/rpc-comparison-smoke/otryx.json
             target/rpc-comparison-smoke/dubbo.json
             target/rpc-comparison-smoke/report.md
             target/rpc-comparison-smoke/*-provider.log

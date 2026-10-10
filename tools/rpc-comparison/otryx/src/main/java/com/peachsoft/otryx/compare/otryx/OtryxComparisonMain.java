@@ -1,4 +1,4 @@
-package com.peachsoft.otryx.compare.peach;
+package com.peachsoft.otryx.compare.otryx;
 
 import com.peachsoft.otryx.api.RpcEndpoint;
 import com.peachsoft.otryx.api.ServiceInstance;
@@ -88,7 +88,7 @@ public final class OtryxComparisonMain {
                              VERSION, GROUP)) {
             server.start().toCompletableFuture().join();
             System.out.printf(
-                    "READY framework=peach protocol=tcp serializer=fory-native port=%d%n",
+                    "READY framework=otryx protocol=tcp serializer=fory-native port=%d%n",
                     port);
             new CountDownLatch(1).await();
         }
@@ -111,7 +111,7 @@ public final class OtryxComparisonMain {
             CompareEchoService service = client.refer(
                     CompareEchoService.class, VERSION, GROUP);
             ComparisonHarness.run(
-                    "peach", "tcp-v1", "fory-native", args, service::echo);
+                    "otryx", "tcp-v1", "fory-native", args, service::echo);
         }
     }
 

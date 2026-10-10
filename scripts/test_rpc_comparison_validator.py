@@ -6,7 +6,7 @@ import unittest
 from validate_rpc_comparison import markdown, validate_pair, validate_result
 
 
-def sample(framework="peach"):
+def sample(framework="otryx"):
     return {
         "schema": "otryx.rpc.comparison.v1",
         "recorded_at": "2026-01-01T00:00:00Z",
@@ -14,11 +14,11 @@ def sample(framework="peach"):
         "run_id": "test-01",
         "git_sha": "0123456789abcdef",
         "framework": framework,
-        "protocol": "tcp-v1" if framework == "peach" else "dubbo-tcp",
-        "serializer": "fory-native" if framework == "peach" else "hessian2",
+        "protocol": "tcp-v1" if framework == "otryx" else "dubbo-tcp",
+        "serializer": "fory-native" if framework == "otryx" else "hessian2",
         "workload": "sync-byte-array-echo-closed-loop",
         "provider_host": "127.0.0.1",
-        "provider_port": 19001 if framework == "peach" else 19002,
+        "provider_port": 19001 if framework == "otryx" else 19002,
         "concurrency": 16,
         "payload_bytes": 256,
         "warmup_seconds": 2,
@@ -63,23 +63,23 @@ def environment():
 
 class ComparisonValidatorTest(unittest.TestCase):
     def test_accepts_complete_smoke_without_invented_allocations(self):
-        peach, dubbo = sample(), sample("dubbo")
-        validate_pair(peach, dubbo, environment())
-        report = markdown(peach, dubbo, environment())
+        otryx, dubbo = sample(), sample("dubbo")
+        validate_pair(otryx, dubbo, environment())
+        report = markdown(otryx, dubbo, environment())
         self.assertIn("NOT OFFICIAL PERFORMANCE EVIDENCE", report)
         self.assertIn("not measured", report)
 
     def test_rejects_inconsistent_scenarios(self):
-        peach, dubbo = sample(), sample("dubbo")
+        otryx, dubbo = sample(), sample("dubbo")
         dubbo["concurrency"] = 32
         with self.assertRaisesRegex(ValueError, "Scenario mismatch"):
-            validate_pair(peach, dubbo, environment())
+            validate_pair(otryx, dubbo, environment())
 
     def test_rejects_hidden_allocation_omission(self):
         data = sample()
         data.pop("allocation_bytes_per_op")
         with self.assertRaisesRegex(ValueError, "unmeasured-metric"):
-            validate_result(data, "peach")
+            validate_result(data, "otryx")
 
     def test_rejects_error_breakdown_drift(self):
         data = sample()
@@ -87,15 +87,15 @@ class ComparisonValidatorTest(unittest.TestCase):
         data["errors"] = 1
         data["error_rate"] = 1 / 101
         with self.assertRaisesRegex(ValueError, "error breakdown"):
-            validate_result(data, "peach")
+            validate_result(data, "otryx")
 
     def test_rejects_unproven_controlled_claim(self):
-        peach, dubbo, env = sample(), sample("dubbo"), environment()
-        peach["evidence_class"] = dubbo["evidence_class"] = "controlled"
+        otryx, dubbo, env = sample(), sample("dubbo"), environment()
+        otryx["evidence_class"] = dubbo["evidence_class"] = "controlled"
         env["evidence_class"] = "controlled"
         env["physical_host_fingerprint"] = "0123"
         with self.assertRaisesRegex(ValueError, "single controlled pair"):
-            validate_pair(peach, dubbo, env)
+            validate_pair(otryx, dubbo, env)
 
 
 if __name__ == "__main__":
