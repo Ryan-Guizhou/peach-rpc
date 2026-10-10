@@ -10,22 +10,22 @@
 |---|---|
 | 下载源码、编译、实际跑通 Provider / Consumer | [快速开始](getting-started.md) |
 | 第一次集成 Starter、写业务接口 | [用户指南](user-guide.md) |
-| Registry / 超时 / 背压 / TLS 等参数 | [配置参考](production-configuration.md) 和 [Starter](starter.md) |
+| Registry / 超时 / 背压 / TLS 等参数 | [配置参考](configuration.md) 和 [Starter](reference/starter.md) |
 | 排查运行失败、资源和监控问题 | [运行与排障](operations.md) 和 [FAQ](faq.md) |
 | 理解设计或开发扩展 | [架构](architecture.md)、[核心能力](features.md)、[SPI](spi.md) |
-| 跨版本迁移或生产发布 | [兼容协议](wire-compatibility.md)、[迁移](migration-to-otryx.md)、[升级回滚](upgrade-rollback.md) |
+| 跨版本迁移或生产发布 | [兼容协议](wire-compatibility.md)、[迁移](migration.md)、[升级回滚](upgrade-rollback.md) |
 
 ## 架构与技术细节
 
-[协议](protocol.md) · [安全](security.md) · [可观测性](observability.md) · [性能与限制](performance.md) · [注册中心](registry-nacos.md)
+[协议](protocol.md) · [安全](security.md) · [可观测性](observability.md) · [性能与限制](performance.md) · [注册中心](reference/registry-nacos.md)
 
-设计依据：[需求蓝图](requirements-blueprint.md) · [技术方案](technical-solution.md) · [详细设计](detailed-design.md) · [模块结构](project-structure.md)。
+设计依据：[需求蓝图](design/requirements-blueprint.md) · [技术方案](design/technical-solution.md) · [详细设计](design/detailed-design.md) · [模块结构](design/project-structure.md)。
 
-性能及工程证据：[性能证据](performance-evidence.md) · [容量规划](capacity-planning.md) · [Soak 验收](soak-acceptance.md) · [分配剖析](transport-allocation-profiling.md)。
+性能及工程证据：[性能证据](reference/performance-evidence.md) · [容量规划](reference/capacity-planning.md) · [Soak 验收](reference/soak-acceptance.md) · [分配剖析](reference/transport-allocation-profiling.md)。
 
 ## 发布与项目管理
 
-[品牌规范与 Otti](brand-guidelines.md) · [公开发布验收与授权风险](publication-readiness.md) · [历史发布说明](release-notes-1.0.1.md)。
+[品牌规范与 Otti](brand-guidelines.md) · [公开发布验收与授权风险](publication-readiness.md) · [历史发布说明](archive/releases/release-notes-1.0.1.md)。
 
 Agent/MCP 与 Java 规范属于贡献者资料，不是使用 OTRYX RPC 的必要步骤，详见 [工程规范](../AGENTS.md)。
 

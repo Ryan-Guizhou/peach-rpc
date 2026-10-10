@@ -153,6 +153,6 @@ Observer/Propagator Adapter 回调异常必须被隔离，不得改变 RPC 业�
 
 ## 8. 生产入口
 
-- [生产可观测与 SLO](production-observability.md)
+- [生产可观测与 SLO](reference/production-observability.md)
 - [Grafana Dashboard](../deploy/observability/grafana/otryx-dashboard.json)
 - [Prometheus Alert Example](../deploy/observability/prometheus/otryx-alerts.example.yml)

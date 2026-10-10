@@ -74,4 +74,4 @@ mvn -B -ntp -Drevision=1.0.0-RC1 clean verify -Pquality,release
 
 ## 18. 如何贡献？
 
-阅读 [CONTRIBUTING.md](../CONTRIBUTING.md) 和 [开发指南](development.md)，所有 PR 必须通过自动化门禁。
+阅读 [CONTRIBUTING.md](../CONTRIBUTING.md) 和 [开发指南](engineering/development.md)，所有 PR 必须通过自动化门禁。
