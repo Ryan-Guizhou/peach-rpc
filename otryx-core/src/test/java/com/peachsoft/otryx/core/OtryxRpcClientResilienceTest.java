@@ -40,6 +40,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证 Consumer 的重试、过载处理与容错策略边界。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/24 11:44
+ */
 class OtryxRpcClientResilienceTest {
 
     @Test

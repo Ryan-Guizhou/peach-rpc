@@ -34,6 +34,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 验证 Provider 异步执行、完成与资源释放语义。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/30 18:13
+ */
 public class OtryxRpcServerAsyncExecutionTest {
 
     @Test

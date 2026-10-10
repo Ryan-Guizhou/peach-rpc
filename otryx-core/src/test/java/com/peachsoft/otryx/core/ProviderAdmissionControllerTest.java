@@ -17,7 +17,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
-/** Provider Admission 并发、内存预算以及竞态释放回归测试。 */
+/**
+ * Provider Admission 并发、内存预算以及竞态释放回归测试。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/10/8 15:55
+ */
 class ProviderAdmissionControllerTest {
 
     @Test

@@ -9,6 +9,13 @@ import com.peachsoft.otryx.api.ServiceKey;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证 Codec 注册和查找时的约束与异常行为。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
+ */
 class RpcCodecRegistryTest {
 
     @Test

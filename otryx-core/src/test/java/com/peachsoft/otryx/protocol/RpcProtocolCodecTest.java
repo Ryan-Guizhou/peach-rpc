@@ -11,6 +11,13 @@ import java.util.Arrays;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证 RPC 帧协议的往返编解码和边界条件。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 class RpcProtocolCodecTest {
 
     @Test

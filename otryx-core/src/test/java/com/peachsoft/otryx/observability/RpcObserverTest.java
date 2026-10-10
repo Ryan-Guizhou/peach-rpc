@@ -12,6 +12,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证 RPC Observer 的事件分发、隔离与无操作实现。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/28 10:13
+ */
 class RpcObserverTest {
 
     @Test

@@ -7,6 +7,13 @@ import com.peachsoft.otryx.api.RpcTimeoutException;
 import com.peachsoft.otryx.protocol.RpcProtocolException;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证 RPC 失败分类及异常归因规则。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/30 11:21
+ */
 class RpcFailureClassifierTest {
 
     @Test

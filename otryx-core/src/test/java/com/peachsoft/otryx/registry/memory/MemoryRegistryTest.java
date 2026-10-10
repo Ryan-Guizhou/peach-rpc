@@ -16,6 +16,13 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证进程内注册中心的注册、发现和订阅语义。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 class MemoryRegistryTest {
 
     @Test
