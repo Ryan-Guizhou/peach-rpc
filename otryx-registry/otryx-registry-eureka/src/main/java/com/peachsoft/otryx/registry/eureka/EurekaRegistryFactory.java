@@ -18,8 +18,20 @@ import java.util.List;
  * @Version 1.0.0
  * @CreateTime 2026/10/10 18:00
  */
-@Extension("eureka")
+@Extension(EurekaProtocol.ADAPTER_TYPE)
 public final class EurekaRegistryFactory implements RegistryFactory {
+
+    private static final long DEFAULT_LEASE_SECONDS = 30L;
+    private static final long MIN_LEASE_SECONDS = 9L;
+    private static final long MAX_LEASE_SECONDS = 3600L;
+    private static final long DEFAULT_HEARTBEAT_SECONDS = 10L;
+    private static final long MIN_HEARTBEAT_SECONDS = 1L;
+    private static final long DEFAULT_POLL_INTERVAL_MILLIS = 1000L;
+    private static final long MIN_POLL_INTERVAL_MILLIS = 200L;
+    private static final long MAX_POLL_INTERVAL_MILLIS = 60000L;
+    private static final long DEFAULT_REQUEST_TIMEOUT_MILLIS = 3000L;
+    private static final long MIN_REQUEST_TIMEOUT_MILLIS = 100L;
+    private static final long MAX_REQUEST_TIMEOUT_MILLIS = 60000L;
 
     /** 创建 Eureka 工厂。 */
     public EurekaRegistryFactory() {
@@ -33,23 +45,27 @@ public final class EurekaRegistryFactory implements RegistryFactory {
      */
     @Override
     public Registry create(RegistryOptions options) {
-        long lease = number(options, "eurekaLeaseSeconds", 30L, 9L, 3600L);
-        long heartbeat = number(options, "eurekaHeartbeatSeconds", 10L, 1L, lease - 1);
-        long poll = number(options, "eurekaPollIntervalMillis", 1000L, 200L, 60000L);
-        long timeout = number(options, "eurekaRequestTimeoutMillis", 3000L, 100L, 60000L);
-        String username = options.providerOption("eurekaUsername", "");
-        String password = options.providerOption("eurekaPassword", "");
+        long lease = number(options, EurekaProtocol.OPTION_LEASE_SECONDS,
+                DEFAULT_LEASE_SECONDS, MIN_LEASE_SECONDS, MAX_LEASE_SECONDS);
+        long heartbeat = number(options, EurekaProtocol.OPTION_HEARTBEAT_SECONDS,
+                DEFAULT_HEARTBEAT_SECONDS, MIN_HEARTBEAT_SECONDS, lease - MIN_HEARTBEAT_SECONDS);
+        long poll = number(options, EurekaProtocol.OPTION_POLL_INTERVAL_MILLIS,
+                DEFAULT_POLL_INTERVAL_MILLIS, MIN_POLL_INTERVAL_MILLIS, MAX_POLL_INTERVAL_MILLIS);
+        long timeout = number(options, EurekaProtocol.OPTION_REQUEST_TIMEOUT_MILLIS,
+                DEFAULT_REQUEST_TIMEOUT_MILLIS, MIN_REQUEST_TIMEOUT_MILLIS, MAX_REQUEST_TIMEOUT_MILLIS);
+        String username = options.providerOption(EurekaProtocol.OPTION_USERNAME, "");
+        String password = options.providerOption(EurekaProtocol.OPTION_PASSWORD, "");
         if (username.isBlank() != password.isBlank()) {
             throw new IllegalArgumentException(
                     "Eureka username and password must be configured together");
         }
-        String credential = username.isBlank() ? "" : "Basic "
+        String credential = username.isBlank() ? "" : EurekaProtocol.BASIC_AUTH_PREFIX
                 + Base64.getEncoder().encodeToString(
                         (username + ":" + password).getBytes(StandardCharsets.UTF_8));
         HttpRegistryClient client = new HttpRegistryClient(
                 options.endpoints().isEmpty()
-                        ? List.of("http://127.0.0.1:8761/eureka") : options.endpoints(),
-                "Authorization", credential, Duration.ofMillis(timeout));
+                        ? List.of(EurekaProtocol.DEFAULT_ENDPOINT) : options.endpoints(),
+                EurekaProtocol.AUTHORIZATION_HEADER, credential, Duration.ofMillis(timeout));
         return new HttpRegistry(
                 new EurekaRegistryBackend(client, options.namespace(),
                         (int) heartbeat, (int) lease),

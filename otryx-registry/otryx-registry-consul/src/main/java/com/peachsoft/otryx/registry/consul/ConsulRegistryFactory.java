@@ -16,8 +16,20 @@ import java.util.List;
  * @Version 1.0.0
  * @CreateTime 2026/10/10 18:00
  */
-@Extension("consul")
+@Extension(ConsulProtocol.ADAPTER_TYPE)
 public final class ConsulRegistryFactory implements RegistryFactory {
+
+    private static final long DEFAULT_TTL_SECONDS = 30L;
+    private static final long MIN_TTL_SECONDS = 9L;
+    private static final long MAX_TTL_SECONDS = 3600L;
+    private static final long DEFAULT_HEARTBEAT_SECONDS = 10L;
+    private static final long MIN_HEARTBEAT_SECONDS = 1L;
+    private static final long DEFAULT_POLL_INTERVAL_MILLIS = 1000L;
+    private static final long MIN_POLL_INTERVAL_MILLIS = 200L;
+    private static final long MAX_POLL_INTERVAL_MILLIS = 60000L;
+    private static final long DEFAULT_REQUEST_TIMEOUT_MILLIS = 3000L;
+    private static final long MIN_REQUEST_TIMEOUT_MILLIS = 100L;
+    private static final long MAX_REQUEST_TIMEOUT_MILLIS = 60000L;
 
     /** 创建 Consul 工厂。 */
     public ConsulRegistryFactory() {
@@ -31,25 +43,29 @@ public final class ConsulRegistryFactory implements RegistryFactory {
      */
     @Override
     public Registry create(RegistryOptions options) {
-        long ttl = number(options, "consulTtlSeconds", 30L, 9L, 3600L);
-        long heartbeat = number(options, "consulHeartbeatSeconds", 10L, 1L, ttl - 1);
-        long poll = number(options, "consulPollIntervalMillis", 1000L, 200L, 60000L);
-        long timeout = number(options, "consulRequestTimeoutMillis", 3000L, 100L, 60000L);
+        long ttl = number(options, ConsulProtocol.OPTION_TTL_SECONDS,
+                DEFAULT_TTL_SECONDS, MIN_TTL_SECONDS, MAX_TTL_SECONDS);
+        long heartbeat = number(options, ConsulProtocol.OPTION_HEARTBEAT_SECONDS,
+                DEFAULT_HEARTBEAT_SECONDS, MIN_HEARTBEAT_SECONDS, ttl - MIN_HEARTBEAT_SECONDS);
+        long poll = number(options, ConsulProtocol.OPTION_POLL_INTERVAL_MILLIS,
+                DEFAULT_POLL_INTERVAL_MILLIS, MIN_POLL_INTERVAL_MILLIS, MAX_POLL_INTERVAL_MILLIS);
+        long timeout = number(options, ConsulProtocol.OPTION_REQUEST_TIMEOUT_MILLIS,
+                DEFAULT_REQUEST_TIMEOUT_MILLIS, MIN_REQUEST_TIMEOUT_MILLIS, MAX_REQUEST_TIMEOUT_MILLIS);
         List<String> agentEndpoints = options.endpoints().isEmpty()
-                ? List.of("http://127.0.0.1:8500") : options.endpoints();
+                ? List.of(ConsulProtocol.DEFAULT_AGENT_ENDPOINT) : options.endpoints();
         if (agentEndpoints.size() != 1) {
             throw new IllegalArgumentException(
                     "Consul Agent registration requires exactly one local Agent endpoint");
         }
         HttpRegistryClient client = new HttpRegistryClient(
                 agentEndpoints,
-                "X-Consul-Token",
-                options.providerOption("consulToken", ""),
+                ConsulProtocol.TOKEN_HEADER,
+                options.providerOption(ConsulProtocol.OPTION_TOKEN, ""),
                 Duration.ofMillis(timeout));
         ConsulRegistryBackend backend = new ConsulRegistryBackend(
                 client, options.namespace(),
-                options.providerOption("consulDatacenter", ""),
-                options.providerOption("consulEnterpriseNamespace", ""), ttl);
+                options.providerOption(ConsulProtocol.OPTION_DATACENTER, ""),
+                options.providerOption(ConsulProtocol.OPTION_ENTERPRISE_NAMESPACE, ""), ttl);
         return new HttpRegistry(
                 backend, Duration.ofMillis(poll),
                 Duration.ofSeconds(heartbeat), options.observer());

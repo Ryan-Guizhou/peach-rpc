@@ -145,6 +145,18 @@ class ConsulRegistryTest {
                 JsonNode parsed = mapper.readTree(ex.getRequestBody());
                 assertEquals(HttpRegistryIdentity.serviceName("environment-a", key()),
                         parsed.path("Name").asText());
+                assertEquals(HttpRegistryIdentity.scopedInstanceId(
+                        "environment-a", instance()), parsed.path("ID").asText());
+                assertEquals("127.0.0.1", parsed.path("Address").asText());
+                assertEquals(19090, parsed.path("Port").asInt());
+                assertEquals("consul-provider",
+                        parsed.path("Meta").path("otryx.rpc.instance-id").asText());
+                assertEquals("175",
+                        parsed.path("Meta").path("otryx.rpc.weight").asText());
+                JsonNode check = parsed.path("Check");
+                assertEquals("9s", check.path("TTL").asText());
+                assertEquals("1m", check.path("DeregisterCriticalServiceAfter").asText());
+                assertEquals("critical", check.path("Status").asText());
                 service.set(parsed);
                 passing.set(false);
                 registers.incrementAndGet();
@@ -165,6 +177,7 @@ class ConsulRegistryTest {
                 respond(ex, 200, "{}");
             });
             server.createContext("/v1/health/service/", ex -> {
+                assertEquals("passing=true", ex.getRequestURI().getRawQuery());
                 JsonNode current = service.get();
                 if (current == null || !passing.get()) {
                     respond(ex, 200, "[]");
