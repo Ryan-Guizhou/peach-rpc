@@ -245,7 +245,7 @@ Adapter：
 自动化分层：
 
 ```mermaid
-flowchart LR
+flowchart TB
     Unit[Unit / Property / Race] --> Reactor[Reactor Verify]
     Reactor --> E2E[Independent JVM E2E]
     E2E --> Registry[Etcd / Nacos Integration]

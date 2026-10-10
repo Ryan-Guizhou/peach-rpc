@@ -1,0 +1,31 @@
+name: Documentation Previews
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Mermaid renderer and SVG verification dependencies
+        run: |
+          npm install --no-save --no-package-lock @mermaid-js/mermaid-cli@11.12.0
+          python3 -m pip install --disable-pip-version-check "Pillow==11.3.0" "CairoSVG==2.8.2"
+      - name: Configure Chromium
+        run: |
+          printf '%s\n' '{"args":["--no-sandbox","--disable-setuid-sandbox"]}' > target-puppeteer.json
+      - name: Render all Markdown diagrams and SVG preview assets
+        run: |
+          python3 scripts/check_doc_previews.py \
+            --mmdc node_modules/.bin/mmdc \
+            --puppeteer-config target-puppeteer.json

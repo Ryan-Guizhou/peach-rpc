@@ -33,7 +33,7 @@ GitHub shared runner 只用于验证工具和行为，不作为生产 SLO 来源
 ## 3. Evidence 流程
 
 ```mermaid
-flowchart LR
+flowchart TB
     Preflight[Fixed Runner Preflight]
     Runs[>= 3 Controlled Runs]
     Validate[Evidence Validation]
