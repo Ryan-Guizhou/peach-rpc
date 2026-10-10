@@ -2,7 +2,7 @@
 
 ## 1. 单一配置源
 
-以仓库根目录的 `config/agent-mcp.json` 为唯一配置来源。不要直接修改 `.cursor/mcp.json` 或 `.codex/config.toml`。
+以仓库根目录的 `.agents/config/agent-mcp.json` 为唯一配置来源。不要直接修改 `.cursor/mcp.json` 或 `.codex/config.toml`。
 
 从仓库根目录执行：
 
@@ -48,7 +48,7 @@ MCP Server 自身的工具列表、Agent 文字约束与客户端 UI 都**不是
 
 已沿用项目历史配置的 npm MCP 包名。部分 package 尚包含 `@latest` 或未固定版本，**这是一项需要按真实环境验证的供应链风险**，不是已经完成版本锁定；变更版本须在 Windows 上测试启动、工具列表和最小读操作后更新统一配置源。严禁直接从未知网络源自动执行未审查的 npm 包或授予自动批准权限。
 
-当前工具组合：GitHub、Context7、CodeGraph、AgentMemory；MySQL 默认关闭。所有 Credential 必须通过环境变量或客户端安全存储提供，不能写到 `config/agent-mcp.json`、Git 提交、Issue、日志或快照中。
+当前工具组合：GitHub、Context7、CodeGraph、AgentMemory；MySQL 默认关闭。所有 Credential 必须通过环境变量或客户端安全存储提供，不能写到 `.agents/config/agent-mcp.json`、Git 提交、Issue、日志或快照中。
 
 - Cursor：查看 MCP Servers / Logs；确认环境变量正确解析，不应看到 mysql 默认启用。
 - Codex：从可信项目根目录读取 `.codex/config.toml`；确认 disabled mysql 不会启动。
@@ -57,4 +57,4 @@ MCP Server 自身的工具列表、Agent 文字约束与客户端 UI 都**不是
 
 ## 4. 变更流程
 
-修改 `config/agent-mcp.json` → 运行生成器 → 运行 `--check` 和单测 → 校验 Cursor/Codex 两套文件 → Draft PR。CI 将验证三个文件保持一致；禁止直接手工只更新某个平台的副本。
+修改 `.agents/config/agent-mcp.json` → 运行生成器 → 运行 `--check` 和单测 → 校验 Cursor/Codex 两套文件 → Draft PR。CI 将验证三个文件保持一致；禁止直接手工只更新某个平台的副本。

@@ -6,7 +6,7 @@
 
 PR-2 [Java Agent Quality workflow](https://github.com/Ryan-Guizhou/otryx/actions/runs/37757406984) 对 **212 个 Java 文件**执行 `--audit`，结果为：**0 个错误级匹配、11 个需人工审查的 `catch (Throwable)` 告警**。该审计仅覆盖明确规则集，不等于深入语义与敏感信息数据流证明。
 
-首次规则扫描中曾出现 8 条假阳性：5 条 SLF4J 的**编译期常量字面量拼接**和 3 条 `tools/rpc-comparison` 命令行测试输出。经复核后，Lint 只禁止真正的运行时动态日志拼接，并排除独立 Benchmark CLI，新增了回归测试。不能因为扫描 0 错误就把人工审查清空。
+首次规则扫描中曾出现 8 条假阳性：5 条 SLF4J 的**编译期常量字面量拼接**和 3 条 `benchmarks/rpc-comparison` 命令行测试输出。经复核后，Lint 只禁止真正的运行时动态日志拼接，并排除独立 Benchmark CLI，新增了回归测试。不能因为扫描 0 错误就把人工审查清空。
 
 ## 2. 第一批已修改源码（不改公开契约）
 

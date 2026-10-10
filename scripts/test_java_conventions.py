@@ -76,7 +76,7 @@ class JavaConventionsTest(unittest.TestCase):
         self.assertFalse(self.findings(self.runtime, code))
 
     def test_cli_harness_is_not_treated_as_runtime(self):
-        cli = "tools/rpc-comparison/common/src/main/java/ComparisonHarness.java"
+        cli = "benchmarks/rpc-comparison/common/src/main/java/ComparisonHarness.java"
         self.assertFalse(self.findings(
             cli, 'System.out.println("Benchmark completed");'))
 
