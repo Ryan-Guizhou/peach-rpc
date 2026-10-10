@@ -74,23 +74,31 @@ jobs:
           git fetch origin "$BASELINE_REF" --depth=1 || true
           git worktree add target/compat-n "$BASELINE_REF"
 
-      - name: Install version N annotation processor
-        working-directory: target/compat-n
-        run: >
-          mvn -B -ntp
-          -pl otryx-codegen
-          -am
-          install
-          -DskipTests
+      - name: Detect API generation boundary
+        id: baseline
+        run: |
+          if test -d target/compat-n/peach-rpc-core; then
+            echo "family=peach" >> "$GITHUB_OUTPUT"
+          elif test -d target/compat-n/otryx-core; then
+            echo "family=otryx" >> "$GITHUB_OUTPUT"
+          else
+            echo "Unknown baseline layout"
+            exit 1
+          fi
 
-      - name: Build version N examples
+      - name: Build historical Peach RPC baseline
+        if: steps.baseline.outputs.family == 'peach'
         working-directory: target/compat-n
-        run: >
-          mvn -B -ntp
-          -pl otryx-examples/otryx-example-provider,otryx-examples/otryx-example-consumer
-          -am
-          package
-          -DskipTests
+        run: |
+          mvn -B -ntp -pl peach-rpc-codegen -am install -DskipTests
+          mvn -B -ntp -pl peach-rpc-examples/peach-rpc-example-provider,peach-rpc-examples/peach-rpc-example-consumer -am package -DskipTests
+
+      - name: Build same-generation OTRYX baseline
+        if: steps.baseline.outputs.family == 'otryx'
+        working-directory: target/compat-n
+        run: |
+          mvn -B -ntp -pl otryx-codegen -am install -DskipTests
+          mvn -B -ntp -pl otryx-examples/otryx-example-provider,otryx-examples/otryx-example-consumer -am package -DskipTests
 
       - name: Install version N+1 annotation processor
         run: >
@@ -108,8 +116,22 @@ jobs:
           package
           -DskipTests
 
-      - name: Verify N/N+1 and rollback compatibility
+      - name: Verify N/N+1 and rollback (same API generation only)
+        if: steps.baseline.outputs.family == 'otryx'
         run: >
           bash scripts/run_rolling_compatibility_e2e.sh
           "$PWD/target/compat-n"
           "$PWD"
+
+      - name: Verify breaking Peach-to-OTRYX migration boundary
+        if: steps.baseline.outputs.family == 'peach'
+        run: |
+          python3 scripts/check_migration_readiness.py
+          bash scripts/run_example_process_e2e.sh
+          {
+            echo "## Explicit 1.x to 2.0 breaking API migration"
+            echo "The old Peach API generation was independently built."
+            echo "The new OTRYX generation was independently tested."
+            echo "Cross-generation rolling compatibility has **not** been established."
+            echo "Use service/registry isolation and the documented blue-green migration."
+          } >> "$GITHUB_STEP_SUMMARY"
