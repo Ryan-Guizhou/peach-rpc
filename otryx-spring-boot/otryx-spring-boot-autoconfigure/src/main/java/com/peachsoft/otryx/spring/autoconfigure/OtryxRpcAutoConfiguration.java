@@ -36,6 +36,10 @@ import org.springframework.context.annotation.Lazy;
 
 /**
  * OTRYX RPC Spring Boot 自动配置。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 @AutoConfiguration
 @ConditionalOnClass(OtryxRpcClient.class)

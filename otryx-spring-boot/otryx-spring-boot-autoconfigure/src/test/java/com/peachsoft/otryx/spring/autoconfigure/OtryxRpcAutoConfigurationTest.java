@@ -18,7 +18,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Scope;
 
-/** OTRYX RPC 注解驱动自动配置测试。 */
+/**
+ * OTRYX RPC 注解驱动自动配置测试。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 public class OtryxRpcAutoConfigurationTest {
 
     private final ApplicationContextRunner contextRunner =
