@@ -1,5 +1,7 @@
 # OTRYX RPC 快速开始
 
+> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration-to-otryx.md)。
+
 > 目标：从干净环境运行一个真实的 Provider/Consumer 独立进程调用。
 
 ## 1. 前置条件
@@ -15,6 +17,8 @@ java -version
 mvn -version
 docker version
 ```
+
+当前 GitHub 仓库在正式改名前仍位于 [Ryan-Guizhou/peach-rpc](https://github.com/Ryan-Guizhou/peach-rpc)。本页面所示未来 OTRYX 地址需等仓库设置更名后才可直接使用。
 
 ## 2. 获取源码
 

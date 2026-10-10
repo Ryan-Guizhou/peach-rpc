@@ -1,6 +1,10 @@
-# OTRYX RPC 1.0 详细设计
+# OTRYX RPC 2.0 详细设计
+
+> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration-to-otryx.md)。
 
 > 状态：**Current / 2.0.0-SNAPSHOT Migration**
+
+![单次 RPC 调用链](images/flows/rpc-lifecycle.svg)
 
 ## 1. Consumer 调用链
 

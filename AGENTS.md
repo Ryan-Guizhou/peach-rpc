@@ -2,6 +2,15 @@
 
 本文件为 Cursor、Codex 和其他 Agent 的统一工作入口。唯一事实源：当前分支源码、测试、POM、构建结果 > 当前依赖版本官方文档 > 仓库技术文档和 CONTRIBUTING > 共享 Skills > 运行时适配 > 历史对话。不得根据旧资料声称某功能已实现。
 
+
+## OTRYX 2.0 破坏性 API 迁移实施契约（2026-10-10）
+
+- 用户已明确授权一次性迁移 peach-rpc 到 OTRYX RPC，版本标记为 2.0.0-SNAPSHOT；迁移范围为 Maven GAV、公开 Java 包/API、SPI、Spring 配置、文档及品牌图片。
+- 重构前可恢复快照为 `stable/peach-rpc-1.0.1-pre-otryx-2026-10-10`，SHA `a4175635aef8702cab613b9c672ca7edbaae6a94`，不改动旧版已发布坐标和历史 Release Notes。
+- 1.0.x 历史版的公开 Java API 冻结边界不代表本次 2.0 包名升级是向后兼容的；不得将 Wire v1 不变写成跨包名 Type ID/Method ID/Schema Fingerprint 兼容保证。
+- Wire v1 的 Magic、Header、消息/Codec IDs 和历史 Registry Metadata 键继续冻结。本次重命名 PR 必须通过 `scripts/check_migration_readiness.py` 和所有实际适用 CI，确认后才可合并 main；合并后再次验证主分支 CI。
+- GitHub 仓库设置更名与 Maven Central 发布属于独立管理/发布步骤，不可用代码替代已完成声明。
+
 ## 工作引擎与授权
 
 Task Intake → Source/Impact Analysis → Complexity Gate → Implementation Contract（复杂任务）→ 用户确认 → Implement → Verify → Mainline PR → 检查通过后合并 main → 核验 main CI。
@@ -23,7 +32,7 @@ Task Intake → Source/Impact Analysis → Complexity Gate → Implementation Co
 ## 工程和兼容性红线
 
 - JDK 21、Maven 多模块、Spring Boot 3.5.4；以实际 POM 为准。4 空格、UTF-8、LF、无通配符 import，参见 .editorconfig、[Java 编码规范](docs/engineering/java-coding-standard.md) 与 CONTRIBUTING.md。
-- 1.0.x 冻结 Wire Protocol v1、Public Core API、Stable Type ID、Schema Fingerprint v1、Codec/Message IDs、Registry Compatibility Metadata。**禁止以风格/命名修复为由改变公开签名、Record 字段、序列化行为及兼容键。**
+- 历史 Peach RPC 1.0.x 冻结 Wire Protocol v1、Public Core API、Stable Type ID、Schema Fingerprint v1、Codec/Message IDs 与 Registry Metadata；OTRYX 2.0 已获单次公开 API 重命名授权，但必须保留冻结 Wire 元数据和迁移风险说明。未来的兼容性变更仍需专门评审。
 - 中文 Javadoc/必要行内注释、英文 SLF4J 参数化日志；OTRYX RPC 仅使用标准 Javadoc 标签（`@since` 必须真实），不复制 Peach Cloud 自定义 `@Author/@Version/@CreateTime`。
 - 公开 API/SPI、Starter、Registry、Codec、Transport 的契约必须明确 null、异常、生命周期、线程归属、背压/取消、资源所有权。不要为注释覆盖率制造无意义注释。
 - Core 不允许直接依赖 Vert.x / Nacos / Etcd / Fory / Spring 等实现；第三方技术通过 SPI/Adapter。Core 字节码层依赖规则见 [ArchUnit 架构门禁](docs/engineering/architecture-guardrails.md)，使用 Maven 测试自动执行。

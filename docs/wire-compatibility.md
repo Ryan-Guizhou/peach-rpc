@@ -3,6 +3,8 @@
 > 状态：**1.0.x GA Contract / Wire v1 Frozen**  
 > 本文定义 1.0.x 的稳定标识、Schema Fingerprint 与滚动升级语义。
 
+> OTRYX 2.0 保留 Wire v1，但 Java 类型全限定名和 Maven 坐标已迁移；跨 Peach RPC 1.0.x 的 Type ID/Method ID/Schema Fingerprint **不自动兼容**。详见 [迁移指南](migration-to-otryx.md)。
+
 ## 1. 兼容模型
 
 OTRYX RPC 将以下概念明确分离：
