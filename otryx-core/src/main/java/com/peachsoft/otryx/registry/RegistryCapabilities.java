@@ -7,6 +7,10 @@ import java.util.Set;
  * 注册中心能力集合。
  *
  * @param values 能力集合
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
  */
 public record RegistryCapabilities(Set<RegistryCapability> values) {
 

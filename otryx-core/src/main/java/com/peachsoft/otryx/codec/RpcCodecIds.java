@@ -1,6 +1,12 @@
 package com.peachsoft.otryx.codec;
 
-/** OTRYX RPC 官方 Codec 线协议编号。 */
+/**
+ * OTRYX RPC 官方 Codec 线协议编号。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
+ */
 public final class RpcCodecIds {
 
     /** 连接控制帧保留编号，不允许业务 Codec 使用。 */

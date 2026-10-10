@@ -2,7 +2,13 @@ package com.peachsoft.otryx.registry;
 
 import com.peachsoft.otryx.spi.SPI;
 
-/** Registry 构造扩展点。 */
+/**
+ * Registry 构造扩展点。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 @SPI("memory")
 public interface RegistryFactory {
 

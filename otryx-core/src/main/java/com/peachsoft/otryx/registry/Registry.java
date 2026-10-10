@@ -7,6 +7,10 @@ import java.util.Optional;
  *
  * <p>所有注册中心必须提供服务发现能力；Provider 主动注册能力是可选的，
  * 用于兼容 Kubernetes EndpointSlice 等 discovery-only 控制面。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 public interface Registry extends ServiceDiscovery, AutoCloseable {
 

@@ -14,6 +14,10 @@ import java.time.Duration;
  * @param handshakeTimeout TLS 握手超时
  * @param reloadInterval 证书文件变更检查周期
  * @param expiryWarningThreshold 证书过期前告警窗口
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 14:54
  */
 public record RpcTransportSecurityOptions(
         RpcSecurityMode mode,

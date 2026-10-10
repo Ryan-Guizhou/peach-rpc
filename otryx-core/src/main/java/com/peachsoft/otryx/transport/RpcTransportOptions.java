@@ -25,6 +25,10 @@ import java.util.Set;
  * @param reconnectMaxBackoff 重连退避最大窗口
  * @param observer 连接生命周期 Observer
  * @param security TLS/mTLS 配置
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 public record RpcTransportOptions(
         int maxInflightPerConnection,

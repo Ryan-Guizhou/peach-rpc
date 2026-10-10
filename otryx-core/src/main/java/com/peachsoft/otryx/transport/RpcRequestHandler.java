@@ -3,7 +3,13 @@ package com.peachsoft.otryx.transport;
 import com.peachsoft.otryx.api.RpcEndpoint;
 import java.util.concurrent.CompletionStage;
 
-/** Provider 收到完整协议帧后的异步处理器。 */
+/**
+ * Provider 收到完整协议帧后的异步处理器。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 @FunctionalInterface
 public interface RpcRequestHandler {
 
