@@ -33,8 +33,8 @@ bash scripts/run_example_process_e2e.sh
 
 ## 4. 兼容、回滚与风险边界
 
-- Peach RPC 1.x 到 OTRYX 2.0 的公开 API 命名空间变更属于 Breaking Change；**不要直接将两代服务混部视为受支持**。
+- Peach RPC 1.x 到 OTRYX 1.0 的公开 API 命名空间变更属于 Breaking Change；**不要直接将两代服务混部视为受支持**。
 - 保留旧版稳定分支，先使用分区部署或蓝绿过渡，并以真实业务契约验证互通边界。
-- `2.0.0-SNAPSHOT` 非 GA；商标、参考素材和 Maven Central 发布权限仍有独立验收前置条件。
+- `1.0.0-SNAPSHOT` 非 GA；商标、参考素材和 Maven Central 发布权限仍有独立验收前置条件。
 
 参见 [迁移指南](migration.md)、[Wire 兼容性](wire-compatibility.md) 与 [公开发布核查](publication-readiness.md)。

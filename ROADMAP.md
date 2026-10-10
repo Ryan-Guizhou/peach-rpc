@@ -1,8 +1,8 @@
 # OTRYX RPC Roadmap
 
-> 当前主线是 **OTRYX 2.0.0-SNAPSHOT** 品牌/API 迁移。以下条目仅为技术候选路线，不构成日期、已发布版本或性能承诺。
+> 当前主线是 **OTRYX 1.0.0-SNAPSHOT** 品牌/API 迁移。以下条目仅为技术候选路线，不构成日期、已发布版本或性能承诺。
 
-## 2.0.x：OTRYX API 迁移与稳定化
+## OTRYX 1.0.x：首发 API 迁移与稳定化
 
 - 全仓从 io.peach.rpc / peach-rpc-* 迁移为 com.peachsoft.otryx / otryx-*。
 - 准确说明跨包名 Stable Type ID、Method ID、Schema Fingerprint 兼容边界。

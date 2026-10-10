@@ -1,10 +1,10 @@
 # Changelog
 
-## 2.0.0-SNAPSHOT（OTRYX 品牌/API 迁移，尚未正式发布）
+## 1.0.0-SNAPSHOT（OTRYX 品牌/API 迁移，尚未正式发布）
 
 - 项目品牌更名为 OTRYX RPC，Java 包名统一 com.peachsoft.otryx，Maven groupId 统一 com.peachsoft.otryx，artifactId 改为 otryx-*。
 - 公开 PeachRpc* API/注解迁移为 OtryxRpc*；Spring 配置改用 otryx.rpc，新增完整中英文迁移指南。
-- 继续使用 Wire v1 及历史 Registry Metadata 字段；**Java Type/Method IDs 与 Schema Fingerprint 跨主版本不保证兼容**。
+- 继续使用 Wire v1 及历史 Registry Metadata 字段；**Java Type/Method IDs 与 Schema Fingerprint 跨项目/命名空间不保证兼容**。
 - 保留旧版稳定快照 stable/peach-rpc-1.0.1-pre-otryx-2026-10-10；新坐标目前处于开发测试，尚未在 Maven Central 发布。
 - 增加 Otti 吉祥物、品牌 Banner、架构和调用链插图，完善 Agent/质量与迁移门禁。
 

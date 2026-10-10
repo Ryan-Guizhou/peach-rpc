@@ -1,6 +1,6 @@
 # OTRYX RPC 可观测性
 
-> 状态：**2.0.0-SNAPSHOT Migration**  
+> 状态：**1.0.0-SNAPSHOT Migration**  
 > Core 不直接依赖 Micrometer、OpenTelemetry 或 JFR。
 
 ## 1. 架构边界
@@ -33,7 +33,7 @@ flowchart LR
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-observability-micrometer</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -88,7 +88,7 @@ client.retries = attempts - 1
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-observability-opentelemetry</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -119,7 +119,7 @@ sequenceDiagram
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-observability-jfr</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
 

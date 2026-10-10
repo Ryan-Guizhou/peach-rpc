@@ -225,6 +225,33 @@ def check_current_dependency_coordinates() -> None:
                 fail(f"Legacy 1.0.1 dependency in current documentation: {path.relative_to(ROOT)}")
 
 
+def check_current_documentation_version() -> None:
+    """Enforce active OTRYX docs against the source release-status version."""
+    version = properties(ROOT / "docs" / "release-status.properties")["version"]
+    stale_versions = ("2.0.0-SNAPSHOT", "OTRYX RPC 2.0", "OTRYX 2.0")
+    current_files = [
+        ROOT / "ROADMAP.md",
+        ROOT / "CHANGELOG.md",
+        *(ROOT / "docs").glob("*.md"),
+        *(ROOT / "docs" / "design").glob("*.md"),
+        *(ROOT / "docs" / "reference").glob("*.md"),
+    ]
+    for path in current_files:
+        data = path.read_text(encoding="utf-8")
+        for stale in stale_versions:
+            if stale in data:
+                fail(f"Stale OTRYX version in {path.relative_to(ROOT)}: {stale}")
+    active_coordinates = (
+        ROOT / "docs" / "getting-started.md",
+        ROOT / "docs" / "user-guide.md",
+        ROOT / "docs" / "reference" / "starter.md",
+    )
+    for path in active_coordinates:
+        data = path.read_text(encoding="utf-8")
+        if version not in data:
+            fail(f"Missing source version {version} in {path.relative_to(ROOT)}")
+
+
 def check_chinese_first_docs() -> None:
     for path in [ROOT / "CONTRIBUTING.md", *(ROOT / "docs").glob("*.md")]:
         if not CHINESE.search(path.read_text(encoding="utf-8")):
@@ -332,6 +359,7 @@ def main() -> int:
     check_readme_parity()
     check_public_docs_are_ga_clean()
     check_current_dependency_coordinates()
+    check_current_documentation_version()
     check_chinese_first_docs()
     check_markdown_links()
     check_retired_paths()

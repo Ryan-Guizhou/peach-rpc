@@ -1,6 +1,6 @@
 # OTRYX RPC 文档中心
 
-> **版本状态**：源码为 `2.0.0-SNAPSHOT`；JDK 21、Spring Boot 3.5.4，**尚未公开发布到 Maven Central**。Peach RPC 1.x 到 OTRYX 2.0 属于破坏性 Java API / Type ID / Method ID / Schema Fingerprint 迁移，Wire v1 不代表跨版本可直接互通。
+> **版本状态**：源码为 `1.0.0-SNAPSHOT`；JDK 21、Spring Boot 3.5.4，**尚未公开发布到 Maven Central**。Peach RPC 1.x 到 OTRYX 1.0 属于破坏性 Java API / Type ID / Method ID / Schema Fingerprint 迁移，Wire v1 不代表跨版本可直接互通。
 
 ![OTRYX RPC 架构](images/architecture/system-overview.svg)
 

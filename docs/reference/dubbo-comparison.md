@@ -1,12 +1,12 @@
 # PR-C：OTRYX RPC 与 Apache Dubbo 独立进程对比基准
 
-> **状态：OTRYX 2.0.0-SNAPSHOT 的可执行 Smoke 对比工具（非正式性能结论）。** 下述脚本构成可执行的、独立 JVM 的 **Smoke 基线**，并不表示已完成固定硬件性能矩阵。任何 p99、QPS、吞吐领先结论必须建立在后续受控 Evidence 上。
+> **状态：OTRYX 1.0.0-SNAPSHOT 的可执行 Smoke 对比工具（非正式性能结论）。** 下述脚本构成可执行的、独立 JVM 的 **Smoke 基线**，并不表示已完成固定硬件性能矩阵。任何 p99、QPS、吞吐领先结论必须建立在后续受控 Evidence 上。
 
 ## 1. 对比边界
 
 | 项目 | OTRYX RPC | Apache Dubbo |
 |---|---|---|
-| 代码基线 | OTRYX RPC 2.0.0-SNAPSHOT，PR-A/PR-B 后 | 3.3.6（实验依赖固定） |
+| 代码基线 | OTRYX RPC 1.0.0-SNAPSHOT，PR-A/PR-B 后 | 3.3.6（实验依赖固定） |
 | 协议 | Peach Wire v1 / Vert.x TCP | Dubbo TCP |
 | 序列化 | Fory Native | Hessian2 |
 | 测试服务 | `byte[] echo(byte[])` | `byte[] echo(byte[])` |

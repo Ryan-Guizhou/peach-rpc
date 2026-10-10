@@ -1,10 +1,12 @@
-# 从 Peach RPC 1.0.x 迁移到 OTRYX RPC 2.0
+# 从 Peach RPC 1.0.x 迁移到 OTRYX RPC 1.0
 
-> **迁移状态：2.0.0-SNAPSHOT；尚未形成新旧版本直接互通保证。**
+> **迁移状态：OTRYX `1.0.0-SNAPSHOT`；尚未形成新旧版本直接互通保证。**
+>
+> Peach RPC 1.x 与 OTRYX RPC 1.0 属于不同的 Maven/Java 命名空间。即使两者均使用 `1.0.x` 版本编号，也**不表示**可以直接混部、滚动升级或回滚。
 
 ## Maven 与 Java API
 
-| 类型 | Peach RPC 1.0.x | OTRYX 2.0 |
+| 类型 | Peach RPC 1.0.x | OTRYX 1.0 |
 |---|---|---|
 | Maven groupId | io.peach.rpc | com.peachsoft.otryx |
 | Maven artifactId | peach-rpc-* | otryx-* |

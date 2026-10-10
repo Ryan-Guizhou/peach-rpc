@@ -1,6 +1,6 @@
 # Spring Boot Starter 与配置
 
-> 当前 Maven 坐标：`com.peachsoft.otryx:otryx-* : 2.0.0-SNAPSHOT`（源码开发版，须本地 install，尚未从 Maven Central 发布）。历史 Peach RPC 1.0.x Java API 不与 OTRYX 2.0 自动兼容。参见[迁移指南](../migration.md)。
+> 当前 Maven 坐标：`com.peachsoft.otryx:otryx-* : 1.0.0-SNAPSHOT`（源码开发版，须本地 install，尚未从 Maven Central 发布）。历史 Peach RPC 1.0.x Java API 不与 OTRYX 1.0 自动兼容。参见[迁移指南](../migration.md)。
 
 ## 1. 引入
 
@@ -12,7 +12,7 @@
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-spring-boot-starter-lite</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -22,7 +22,7 @@
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-registry-nacos</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -36,7 +36,7 @@ Etcd 则引入 `otryx-registry-etcd`，CGLIB fallback 则引入 `otryx-proxy-cgl
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-spring-boot-starter</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -234,7 +234,7 @@ Core 的 `RpcObserver`、`RpcTracingBridge`、`RpcMetadataPropagator` 不依赖�
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-observability-micrometer</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ~~~
 
@@ -242,7 +242,7 @@ Core 的 `RpcObserver`、`RpcTracingBridge`、`RpcMetadataPropagator` 不依赖�
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-observability-opentelemetry</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ~~~
 
@@ -250,7 +250,7 @@ Core 的 `RpcObserver`、`RpcTracingBridge`、`RpcMetadataPropagator` 不依赖�
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-observability-jfr</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ~~~
 

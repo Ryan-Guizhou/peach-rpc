@@ -1,6 +1,6 @@
 # Peach RPC 1.0 发布策略
 
-> **历史归档说明：** 以下是 Peach RPC 1.0.x 的历史发布策略与门禁说明，不适用于尚未发布的 OTRYX 2.0.0-SNAPSHOT。2.0 公开发布需单独完成新 GAV/namespace、迁移与 CI 认证。参见 [OTRYX 迁移指南](../../migration.md)。
+> **历史归档说明：** 以下是 Peach RPC 1.0.x 的历史发布策略与门禁说明，不适用于尚未发布的 OTRYX 1.0.0-SNAPSHOT。OTRYX 首发公开发布需单独完成新 GAV/namespace、迁移与 CI 认证。参见 [OTRYX 迁移指南](../../migration.md)。
 
 > 状态：**1.0.1 Release Prep / 1.0.x Maintenance**
 

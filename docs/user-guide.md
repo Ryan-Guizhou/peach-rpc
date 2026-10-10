@@ -6,7 +6,7 @@
 
 - JDK **21**、Maven、Git。
 - Spring Boot **3.5.4**（Spring 集成示例）。
-- 项目源码与 Maven 坐标均为 **`2.0.0-SNAPSHOT`**。当前不能从 Maven Central 直接下载安装，先本地构建。
+- 项目源码与 Maven 坐标均为 **`1.0.0-SNAPSHOT`**。当前不能从 Maven Central 直接下载安装，先本地构建。
 
 ## 先运行真实 RPC
 
@@ -39,7 +39,7 @@ java -jar otryx-examples/otryx-example-consumer/target/*-exec.jar
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-spring-boot-starter-lite</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -60,6 +60,6 @@ otryx:
 - 本项目目前优先支持 **Unary RPC**，不声明 Streaming RPC 能力。
 - Retry 只能用于业务明示幂等的请求；超时、Admission 和队列上限应随真实负载测试。
 - PLAINTEXT 仅用于受信实验环境，跨信任边界须配置 TLS/mTLS。
-- Wire v1 保留不代表 Peach RPC 1.x 与 OTRYX 2.0 互通，尤其是 Java 类名变化造成的 Type ID、Method ID 和 Schema Fingerprint 变更。
+- Wire v1 保留不代表 Peach RPC 1.x 与 OTRYX 1.0 互通，尤其是 Java 类名变化造成的 Type ID、Method ID 和 Schema Fingerprint 变更。
 
 继续阅读：[配置](configuration.md) · [安全](security.md) · [兼容迁移](migration.md) · [FAQ](faq.md)。

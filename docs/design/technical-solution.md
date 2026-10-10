@@ -1,8 +1,8 @@
-# OTRYX RPC 2.0 技术方案
+# OTRYX RPC 1.0 技术方案
 
-> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](../migration.md)。
+> OTRYX 1.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](../migration.md)。
 
-> 状态：**Current / 2.0.0-SNAPSHOT Migration**  
+> 状态：**Current / 1.0.0-SNAPSHOT Migration**  
 > 本文解释当前实现为什么这样设计，以及各边界如何协同。
 
 ![控制面与数据面](../images/architecture/control-data-plane.svg)
