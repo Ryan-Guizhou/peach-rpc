@@ -11,6 +11,10 @@ import java.util.Set;
  * @param compressionIds 支持的压缩编号
  * @param features 支持的协议特性
  * @param maxFrameBytes 单帧最大字节数
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
  */
 public record RpcConnectionCapabilities(
         Set<Byte> protocolVersions,

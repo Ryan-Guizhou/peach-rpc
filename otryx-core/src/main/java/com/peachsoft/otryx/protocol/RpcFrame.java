@@ -14,6 +14,10 @@ import java.util.Map;
  * @param methodId 方法标识
  * @param metadata 调用元数据
  * @param payload 消息体
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 public record RpcFrame(
         RpcMessageType messageType,

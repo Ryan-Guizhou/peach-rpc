@@ -16,7 +16,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-/** Provider 启动阶段预解析的服务分派表。 */
+/**
+ * Provider 启动阶段预解析的服务分派表。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 final class ServiceBinding {
     private final Map<Integer, Invoker> methods;
     private final RpcGeneratedServerDispatcher generatedDispatcher;

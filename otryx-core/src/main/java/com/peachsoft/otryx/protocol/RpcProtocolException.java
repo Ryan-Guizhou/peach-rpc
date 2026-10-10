@@ -1,6 +1,12 @@
 package com.peachsoft.otryx.protocol;
 
-/** RPC 线协议格式、长度或版本不合法时抛出的异常。 */
+/**
+ * RPC 线协议格式、长度或版本不合法时抛出的异常。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 public final class RpcProtocolException extends RuntimeException {
 
     /**

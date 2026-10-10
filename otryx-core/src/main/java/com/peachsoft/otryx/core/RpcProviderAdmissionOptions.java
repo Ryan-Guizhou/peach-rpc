@@ -13,6 +13,10 @@ package com.peachsoft.otryx.core;
  * @param maxConcurrentPerMethod 方法并发硬上限；0 为所属服务全部额度
  * @param maxInflightBytesPerService 服务请求字节硬上限；0 为自动按服务数分配
  * @param maxInflightBytesPerMethod 方法请求字节硬上限；0 为所属服务全部额度
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/10/8 15:49
  */
 public record RpcProviderAdmissionOptions(
         long maxInflightBytes,

@@ -1,6 +1,12 @@
 package com.peachsoft.otryx.protocol;
 
-/** RPC 协议消息类型。 */
+/**
+ * RPC 协议消息类型。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 public enum RpcMessageType {
     /** Unary 请求。 */
     REQUEST((byte) 1),

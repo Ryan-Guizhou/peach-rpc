@@ -14,6 +14,10 @@ import java.util.List;
  * 将事件映射为指标、Trace 或 JFR Event。默认 NOOP Observer 的热路径不创建事件对象。
  *
  * <p>实现不应阻塞调用线程，也不应把异常传播回 RPC 主链。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/28 10:13
  */
 public interface RpcObserver {
 

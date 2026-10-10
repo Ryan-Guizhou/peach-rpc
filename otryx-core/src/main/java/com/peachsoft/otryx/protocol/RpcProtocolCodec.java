@@ -15,6 +15,10 @@ import java.util.Map;
  * <p>Wire v1 已冻结：不得以重构、格式化或代码生成便利为由改变
  * Header 布局、Codec/Message Type ID 或 Metadata 编码语义。
  * 所有兼容性变更需要配套现有 Rolling Compatibility 验证。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 public final class RpcProtocolCodec {
 

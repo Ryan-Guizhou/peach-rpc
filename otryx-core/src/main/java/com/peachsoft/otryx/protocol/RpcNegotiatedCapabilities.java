@@ -10,6 +10,10 @@ import java.util.Set;
  * @param compressionIds 双端均支持的压缩算法
  * @param features 双端均支持的特性
  * @param maxFrameBytes 双端共同接受的最大帧大小
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
  */
 public record RpcNegotiatedCapabilities(
         byte protocolVersion,

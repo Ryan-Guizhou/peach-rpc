@@ -5,7 +5,13 @@ import java.nio.ByteOrder;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-/** HELLO / HELLO_ACK 能力载荷编解码与协商工具。 */
+/**
+ * HELLO / HELLO_ACK 能力载荷编解码与协商工具。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
+ */
 public final class RpcHandshakeCodec {
 
     private static final byte PAYLOAD_VERSION = 1;

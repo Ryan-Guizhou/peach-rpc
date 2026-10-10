@@ -5,7 +5,13 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
-/** OTRYX RPC 框架级远端错误的稳定二进制编解码器。 */
+/**
+ * OTRYX RPC 框架级远端错误的稳定二进制编解码器。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
+ */
 public final class RpcErrorCodec {
     private static final byte VERSION = 1;
     private static final int MAX_FIELD_BYTES = 16 * 1024;

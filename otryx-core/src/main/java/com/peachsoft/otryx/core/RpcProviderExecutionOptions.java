@@ -6,6 +6,10 @@ package com.peachsoft.otryx.core;
  * @param allowDirect 是否允许显式 DIRECT 方法运行在 Transport Event Loop
  * @param cpuParallelism CPU 执行池线程数
  * @param cpuQueueCapacity CPU 执行池有界队列容量
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/28 10:13
  */
 public record RpcProviderExecutionOptions(
         boolean allowDirect,

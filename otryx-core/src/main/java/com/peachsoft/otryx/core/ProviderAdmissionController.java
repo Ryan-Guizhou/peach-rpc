@@ -18,6 +18,10 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * <p>预算仅统计已准入请求原始 Frame，不包括 Transport 排队数据、
  * 待写响应、反序列化对象图或业务对象。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/10/8 15:51
  */
 final class ProviderAdmissionController {
 
