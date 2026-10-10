@@ -5,8 +5,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 OUTPUT_DIR="${RPC_COMPARISON_OUTPUT_DIR:-target/rpc-comparison-smoke}"
-OTRYX_JAR="tools/rpc-comparison/otryx/target/otryx-comparison.jar"
-DUBBO_JAR="tools/rpc-comparison/dubbo/target/dubbo-comparison.jar"
+OTRYX_JAR="benchmarks/rpc-comparison/otryx/target/otryx-comparison.jar"
+DUBBO_JAR="benchmarks/rpc-comparison/dubbo/target/dubbo-comparison.jar"
 CONCURRENCY="${RPC_COMPARISON_CONCURRENCY:-16}"
 WARMUP="${RPC_COMPARISON_WARMUP_SECONDS:-2}"
 DURATION="${RPC_COMPARISON_DURATION_SECONDS:-3}"
@@ -32,7 +32,7 @@ mvn -B -ntp -DskipTests \
   -am install
 
 echo "Building isolated Maven runtimes"
-mvn -B -ntp -f tools/rpc-comparison/pom.xml clean package
+mvn -B -ntp -f benchmarks/rpc-comparison/pom.xml clean package
 
 if [[ ! -s "$OTRYX_JAR" || ! -s "$DUBBO_JAR" ]]; then
   echo "Comparison jars were not produced" >&2

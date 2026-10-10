@@ -6,7 +6,7 @@ on:
       - "**/*.java"
       - "AGENTS.md"
       - ".agents/**"
-      - "config/java-api-rules.json"
+      - "scripts/rules/java-api-rules.json"
       - "scripts/check_java_conventions.py"
       - "scripts/test_java_conventions.py"
       - "scripts/validate_repo_skills.py"

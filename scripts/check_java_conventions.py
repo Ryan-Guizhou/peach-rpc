@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RULES = ROOT / "config/java-api-rules.json"
+RULES = ROOT / "scripts/rules/java-api-rules.json"
 
 
 def mask(text: str, hide_strings: bool) -> str:

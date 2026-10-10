@@ -67,7 +67,7 @@ List<RpcEndpoint> findEndpoints(ServiceKey serviceKey);
 - 用户可见错误提示由 API/业务的国际化机制决定，技术内部异常消息英文优先；不要把日志语言强制应用于国际化响应。
 - Metrics 标签必须低基数；禁止把完整 endpoint、动态业务 ID、MessageId、Secret 直接作为 Metric Tag。
 
-## 5. 禁止/受限 API（见 config/java-api-rules.json）
+## 5. 禁止/受限 API（见 scripts/rules/java-api-rules.json）
 
 | 分类 | 规则 | 理由 |
 |---|---|---|
@@ -94,7 +94,7 @@ List<RpcEndpoint> findEndpoints(ServiceKey serviceKey);
 
 `N001` 将新增 `IConnectionFactory` 一类 I 前缀接口标为审查项。**对于历史已公开的接口，不得直接因该规则更名**；若需改名必须提供迁移、二进制兼容和 SPI 检查。
 
-上述检查由 `config/java-api-rules.json` 和对应正反向 fixture 管理，历史审计仅生成报告；改变代码前应区分真实风险与误报。
+上述检查由 `scripts/rules/java-api-rules.json` 和对应正反向 fixture 管理，历史审计仅生成报告；改变代码前应区分真实风险与误报。
 
 ## 6. 并发、性能与安全
 

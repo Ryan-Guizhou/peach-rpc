@@ -26,7 +26,7 @@
 
 目前治理能力包括：
 
-- `config/agent-mcp.json` 唯一 Cursor/Codex MCP 事实源；MySQL 默认未启用，真正只读依赖数据库授权。
+- `.agents/config/agent-mcp.json` 唯一 Cursor/Codex MCP 事实源；MySQL 默认未启用，真正只读依赖数据库授权。
 - 4 个共享 Skills，`AGENTS.md` 工程角色/审批/兼容约束。
 - 高置信度 Java 禁用 API 和日志文字门禁，ArchUnit 模块依赖边界。
 - Checkstyle 对完整 Maven Reactor 的公共 Javadoc、命名、Import、行长等规则实现 **零违规的严格 CI Gate**（仅在配置的规则范围内）。

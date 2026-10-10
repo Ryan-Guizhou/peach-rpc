@@ -56,7 +56,7 @@ class CheckstyleAuditTest(unittest.TestCase):
 
     def test_production_javadocs_are_audited_without_test_fixture_noise(self):
         config = (Path(__file__).resolve().parents[1] /
-                  "config/otryx-checkstyle.xml")
+                  ".github/checkstyle/otryx-checkstyle.xml")
         root = ET.parse(config).getroot()
         modules = list(root.iter("module"))
         self.assertIn("MissingJavadocType",

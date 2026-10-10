@@ -32,7 +32,7 @@ python3 scripts/summarize_checkstyle_audit.py \
     --enforce-zero
 ~~~
 
-Checkstyle 原始 XML 位于各 Maven 子模块的 `target/checkstyle-result.xml`。PR-13 的汇总器会解析根 POM 和嵌套 `modules`，**要求每一个真实 Maven Reactor 模块都有对应 XML**，且其 `src/main/java` 和 `src/test/java` 下每个 `.java` 文件都包含在 Checkstyle 的来源清单中；缺失/额外模块报告、遗漏 Java 源码、异常来源路径、未知 XML 根节点或缺失文件名均会导致失败。汇总器把来源路径正规化后写入 JSON；``--enforce-zero`` 在报告生成后拒绝**任何严重级别**的 Checkstyle 违规（包括 `warning`），仍保留原始 XML 供排查。独立 `tools/rpc-comparison` POM 不属于主 Maven Reactor，不被错误纳入该门禁。
+Checkstyle 原始 XML 位于各 Maven 子模块的 `target/checkstyle-result.xml`。PR-13 的汇总器会解析根 POM 和嵌套 `modules`，**要求每一个真实 Maven Reactor 模块都有对应 XML**，且其 `src/main/java` 和 `src/test/java` 下每个 `.java` 文件都包含在 Checkstyle 的来源清单中；缺失/额外模块报告、遗漏 Java 源码、异常来源路径、未知 XML 根节点或缺失文件名均会导致失败。汇总器把来源路径正规化后写入 JSON；``--enforce-zero`` 在报告生成后拒绝**任何严重级别**的 Checkstyle 违规（包括 `warning`），仍保留原始 XML 供排查。独立 `benchmarks/rpc-comparison` POM 不属于主 Maven Reactor，不被错误纳入该门禁。
 
 ## 2.1 首轮结果与规则修正
 
