@@ -3,7 +3,13 @@ package com.peachsoft.otryx.api;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 
-/** 稳定 RPC 标识计算工具。 */
+/**
+ * 稳定 RPC 标识计算工具。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 public final class RpcIds {
 
     private RpcIds() {

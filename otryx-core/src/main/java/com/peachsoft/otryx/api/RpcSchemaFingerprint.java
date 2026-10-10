@@ -22,6 +22,10 @@ import java.util.Set;
  *
  * <p>Fingerprint 覆盖服务键、方法签名以及用户 DTO 的可序列化结构，
  * 不依赖方法枚举顺序、反射字段返回顺序或 Codec 注册顺序。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/30 11:16
  */
 public final class RpcSchemaFingerprint {
 

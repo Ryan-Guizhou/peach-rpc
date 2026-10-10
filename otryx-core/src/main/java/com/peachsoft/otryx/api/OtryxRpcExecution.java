@@ -11,6 +11,10 @@ import java.lang.annotation.Target;
  *
  * <p>未标注时使用 {@link RpcExecutionMode#BLOCKING_VIRTUAL}。DIRECT 只适合确定不阻塞、
  * 不等待外部资源且执行时间极短的逻辑，并且需要 Provider 显式开启。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/10/10 11:43
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

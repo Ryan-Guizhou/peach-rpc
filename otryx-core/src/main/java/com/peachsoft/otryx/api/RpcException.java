@@ -1,6 +1,12 @@
 package com.peachsoft.otryx.api;
 
-/** RPC 基础运行时异常。 */
+/**
+ * RPC 基础运行时异常。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 public class RpcException extends RuntimeException {
 
     /**

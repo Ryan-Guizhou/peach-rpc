@@ -14,6 +14,10 @@ import java.util.StringJoiner;
  *
  * <p>1..1023 保留给框架内部类型；用户契约类型使用 1024..Integer.MAX_VALUE-1。
  * 标识只依赖规范化 Java Type 名称，不依赖 Classpath 顺序或 Codec 注册顺序。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/30 11:16
  */
 public final class RpcTypeIds {
 

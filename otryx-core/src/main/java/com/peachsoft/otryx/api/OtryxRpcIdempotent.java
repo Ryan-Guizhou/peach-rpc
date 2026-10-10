@@ -11,6 +11,10 @@ import java.lang.annotation.Target;
  *
  * <p>调用方必须保证相同参数重复执行不会产生不可接受的重复副作用。
  * 未标记的方法即使配置了重试次数也不会进行自动重试。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/10/10 11:43
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

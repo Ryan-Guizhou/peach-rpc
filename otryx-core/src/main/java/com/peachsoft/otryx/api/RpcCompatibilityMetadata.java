@@ -7,6 +7,10 @@ import java.util.Objects;
 
 /**
  * Registry 中的 RPC Wire/Schema 兼容元数据。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/30 11:16
  */
 public final class RpcCompatibilityMetadata {
 

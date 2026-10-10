@@ -11,6 +11,10 @@ import java.util.Objects;
  * @param endpoint 服务地址
  * @param weight 静态路由权重，必须大于零
  * @param metadata 扩展元数据
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 public record ServiceInstance(
         String instanceId,
