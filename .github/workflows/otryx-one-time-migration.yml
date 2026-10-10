@@ -6,7 +6,7 @@ permissions:
   contents: write
 jobs:
   migrate:
-    if: github.event.head_commit.message == 'chore: bootstrap OTRYX one-time migration'
+    if: contains(github.event.head_commit.message, 'bootstrap OTRYX one-time migration')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
