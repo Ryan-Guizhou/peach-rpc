@@ -19,7 +19,7 @@ Meet Otti, the engineering otter: **Simple to Call. Built to Scale.**
 **GitHub:** [Ryan-Guizhou/otryx-rpc](https://github.com/Ryan-Guizhou/otryx-rpc). Trademark use, original artwork provenance and Maven Central namespace ownership still need external clearance; see [Publication readiness](docs/publication-readiness.md).
 · **Java 21** · **Spring Boot 3.5.4** · **Wire v1** · **MIT**
 
-This release migrates Maven coordinates, Java namespaces and public APIs. It retains Wire v1 framing, **but it does not promise compatibility with Peach RPC 1.0.x Java APIs, Type IDs, Method IDs or schema fingerprints**. See the [migration guide](docs/migration-to-otryx.md).
+This release migrates Maven coordinates, Java namespaces and public APIs. It retains Wire v1 framing, **but it does not promise compatibility with Peach RPC 1.0.x Java APIs, Type IDs, Method IDs or schema fingerprints**. See the [migration guide](docs/migration.md).
 
 <!-- doc-section:capabilities -->
 ## Core capabilities
@@ -53,7 +53,7 @@ However, full Java class names affect type and method identifiers and schema fin
 - Isolate deployments or use blue/green upgrades until cross-version service contract compatibility is independently verified.
 - Frozen registry keys remain peach.rpc.protocol.version / peach.rpc.schema.version / peach.rpc.schema.fingerprint.
 
-[Wire compatibility](docs/wire-compatibility.md) · [Migration/rollback](docs/migration-to-otryx.md)
+[Wire compatibility](docs/wire-compatibility.md) · [Migration/rollback](docs/migration.md)
 
 <!-- doc-section:quick-start -->
 ## Quick start
@@ -93,19 +93,19 @@ otryx:
       type: memory
 ~~~
 
-See [Starter guide](docs/starter.md) and [Production configuration](docs/production-configuration.md) for validated options, TLS and registry setup.
+See [Starter guide](docs/reference/starter.md) and [Production configuration](docs/configuration.md) for validated options, TLS and registry setup.
 
 <!-- doc-section:operations -->
 ## Performance and operations
 
 Validate deadline, admission, backpressure, retries, TLS and observability against your actual workloads. Shared CI-runner smoke results are not production throughput, p99 or capacity claims.
 
-[Performance evidence](docs/performance-evidence.md) · [Capacity planning](docs/capacity-planning.md) · [Observability](docs/observability.md)
+[Performance evidence](docs/reference/performance-evidence.md) · [Capacity planning](docs/reference/capacity-planning.md) · [Observability](docs/observability.md)
 
 <!-- doc-section:documentation -->
 ## Documentation
 
-[Documentation index](docs/index.md) · [Getting started](docs/getting-started.md) · [User guide](docs/user-guide.md) · [Operations & troubleshooting](docs/operations.md) · [Architecture](docs/architecture.md) · [SPI](docs/spi.md) · [Security](docs/security.md) · [Brand](docs/brand-guidelines.md) · [Migration](docs/migration-to-otryx.md) · [Publication readiness](docs/publication-readiness.md)
+[Documentation index](docs/index.md) · [Getting started](docs/getting-started.md) · [User guide](docs/user-guide.md) · [Operations & troubleshooting](docs/operations.md) · [Architecture](docs/architecture.md) · [SPI](docs/spi.md) · [Security](docs/security.md) · [Brand](docs/brand-guidelines.md) · [Migration](docs/migration.md) · [Publication readiness](docs/publication-readiness.md)
 
 <!-- doc-section:development -->
 ## Development and contributing
