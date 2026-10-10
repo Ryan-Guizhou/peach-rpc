@@ -7,7 +7,13 @@ import com.peachsoft.otryx.api.ServiceKey;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Nacos Instance 与 OTRYX RPC ServiceInstance 的映射器。 */
+/**
+ * Nacos Instance 与 OTRYX RPC ServiceInstance 的映射器。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/28 11:35
+ */
 final class NacosInstanceMapper {
 
     static final int CORE_WEIGHT_SCALE = 100;

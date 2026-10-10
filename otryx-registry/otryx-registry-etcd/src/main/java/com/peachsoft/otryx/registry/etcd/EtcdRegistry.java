@@ -49,6 +49,10 @@ import org.slf4j.LoggerFactory;
  * 基于 Etcd Lease 与 Watch 的注册中心实现。
  *
  * <p>Etcd 只位于控制面。Consumer 的请求热路径读取 Core 中的本地服务目录，不访问 Etcd。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 final class EtcdRegistry implements Registry, ServiceRegistrar {
     private static final Logger LOGGER = LoggerFactory.getLogger(EtcdRegistry.class);

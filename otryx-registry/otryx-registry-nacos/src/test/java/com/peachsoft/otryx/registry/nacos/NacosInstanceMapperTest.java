@@ -13,6 +13,13 @@ import com.peachsoft.otryx.api.ServiceKey;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证 Nacos 与 RPC 实例模型的双向映射。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/28 11:35
+ */
 class NacosInstanceMapperTest {
 
     private static final ServiceKey KEY =

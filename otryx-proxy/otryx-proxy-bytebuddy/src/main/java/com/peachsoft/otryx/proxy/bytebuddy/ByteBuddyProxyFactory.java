@@ -17,6 +17,10 @@ import net.bytebuddy.matcher.ElementMatchers;
  *
  * <p>Generated Stub 仍然是高性能默认路径；该实现用于没有编译期产物时
  * 的运行时代码生成 fallback。当前只支持 RPC 服务接口。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 15:46
  */
 @Extension("bytebuddy")
 public final class ByteBuddyProxyFactory implements ProxyFactory {

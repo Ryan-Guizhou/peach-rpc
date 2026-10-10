@@ -18,7 +18,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
-/** Nacos 控制面执行器背压测试。 */
+/**
+ * Nacos 控制面执行器背压测试。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/28 11:54
+ */
 class NacosControlExecutorTest {
 
     @Test

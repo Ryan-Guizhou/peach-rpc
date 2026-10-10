@@ -24,7 +24,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** 单个 Nacos 服务订阅的生命周期与有序快照发布器。 */
+/**
+ * 单个 Nacos 服务订阅的生命周期与有序快照发布器。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/28 11:35
+ */
 final class NacosRegistrySubscription implements RegistrySubscription {
 
     private static final Logger LOGGER =

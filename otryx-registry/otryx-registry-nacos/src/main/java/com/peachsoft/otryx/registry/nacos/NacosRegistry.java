@@ -28,7 +28,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** 基于 Nacos NamingService 的 Registry Adapter。 */
+/**
+ * 基于 Nacos NamingService 的 Registry Adapter。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/28 11:35
+ */
 final class NacosRegistry implements Registry, ServiceRegistrar {
 
     private static final Logger LOGGER =

@@ -11,7 +11,13 @@ import com.peachsoft.otryx.spi.Extension;
 import java.util.List;
 import java.util.Properties;
 
-/** Nacos 注册中心工厂。 */
+/**
+ * Nacos 注册中心工厂。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/28 11:35
+ */
 @Extension("nacos")
 public final class NacosRegistryFactory implements RegistryFactory {
 

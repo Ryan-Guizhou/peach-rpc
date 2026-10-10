@@ -15,6 +15,10 @@ import java.util.Set;
  * @param maxDepth 最大对象图嵌套深度
  * @param maxGraphMemoryBytes 单次反序列化对象图近似内存上限
  * @param maxPayloadBytes 单个 Fory Payload 字节数上限
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/10/8 14:52
  */
 public record ForyRpcSecurityOptions(
         Mode mode,

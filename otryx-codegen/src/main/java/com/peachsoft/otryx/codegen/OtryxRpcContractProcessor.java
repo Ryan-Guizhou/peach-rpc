@@ -33,6 +33,10 @@ import javax.tools.JavaFileObject;
 
 /**
  * 为 {@code @OtryxRpcContract} 服务接口生成无动态代理的 Consumer Stub。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
  */
 @SupportedAnnotationTypes("com.peachsoft.otryx.api.OtryxRpcContract")
 @SupportedSourceVersion(SourceVersion.RELEASE_21)

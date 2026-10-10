@@ -21,6 +21,10 @@ import org.apache.fory.ThreadSafeFory;
  * <p>无参构造器保留历史可信环境的兼容模式；处理不可信输入前需明确启用
  * 严格类型白名单和对象图/长度预算。类型允许规则以及滚动部署兼容性
  * 不能由本 Codec 自动推断，应由应用配置和测试验证。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 @Extension("fory")
 public final class ForyRpcCodec implements RpcCodec {

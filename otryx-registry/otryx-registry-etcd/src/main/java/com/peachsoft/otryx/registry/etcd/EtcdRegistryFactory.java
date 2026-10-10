@@ -6,7 +6,13 @@ import com.peachsoft.otryx.registry.RegistryOptions;
 import com.peachsoft.otryx.spi.Extension;
 import java.util.List;
 
-/** Etcd 注册中心工厂。 */
+/**
+ * Etcd 注册中心工厂。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 @Extension("etcd")
 public final class EtcdRegistryFactory implements RegistryFactory {
 
