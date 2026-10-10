@@ -61,7 +61,7 @@ flowchart TB
 flowchart LR
     Stub[Generated Stub / Proxy]
     Call[Logical Call]
-    Dir[ServiceInstance[] Snapshot]
+    Dir["ServiceInstance[] Snapshot"]
     Compat[Compatibility Filtered]
     LB[P2C + EWMA]
     Codec[Method Codec]
