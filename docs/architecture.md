@@ -58,7 +58,7 @@ flowchart TB
 单次调用：
 
 ```mermaid
-flowchart LR
+flowchart TB
     Stub[Generated Stub / Proxy]
     Call[Logical Call]
     Dir["ServiceInstance[] Snapshot"]
