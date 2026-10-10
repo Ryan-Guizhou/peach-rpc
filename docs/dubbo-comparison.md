@@ -49,7 +49,7 @@ bash scripts/run_rpc_comparison_smoke.sh
 脚本的实际行为：
 
 1. 编译并安装比较所需的 OTRYX RPC reactor 模块；
-2. 独立构建 `tools/rpc-comparison/otryx` 和 `tools/rpc-comparison/dubbo`，输出各自独立的 shaded JAR；
+2. 独立构建 `benchmarks/rpc-comparison/otryx` 和 `benchmarks/rpc-comparison/dubbo`，输出各自独立的 shaded JAR；
 3. 启动 Peach Provider JVM，执行独立 Consumer JVM，结束后停止；
 4. 再以同样方式运行 Dubbo；
 5. 生成 `target/rpc-comparison-smoke/` 下的 `peach.json`、`dubbo.json`、`environment.json`、`report.md` 和 Provider 日志。
@@ -70,10 +70,10 @@ bash scripts/run_rpc_comparison_smoke.sh
 
 ~~~bash
 # Peach Provider 主机
-java -jar tools/rpc-comparison/otryx/target/peach-comparison.jar provider 19501
+java -jar benchmarks/rpc-comparison/otryx/target/peach-comparison.jar provider 19501
 
 # Dubbo Provider 主机（另一个终端或实例）
-java -jar tools/rpc-comparison/dubbo/target/dubbo-comparison.jar provider 19502
+java -jar benchmarks/rpc-comparison/dubbo/target/dubbo-comparison.jar provider 19502
 ~~~
 
 在 Consumer 负载机执行，使用相同并发、预热和测量窗口：
@@ -83,10 +83,10 @@ export RPC_COMPARISON_GIT_SHA="$(git rev-parse HEAD)"
 export RPC_COMPARISON_RUN_ID="local-lab-1"
 export RPC_COMPARISON_EVIDENCE_CLASS="smoke"
 
-java -jar tools/rpc-comparison/otryx/target/peach-comparison.jar \
+java -jar benchmarks/rpc-comparison/otryx/target/peach-comparison.jar \
   client <peach-provider-host> 19501 32 5 15 1024 peach.json
 
-java -jar tools/rpc-comparison/dubbo/target/dubbo-comparison.jar \
+java -jar benchmarks/rpc-comparison/dubbo/target/dubbo-comparison.jar \
   client <dubbo-provider-host> 19502 32 5 15 1024 dubbo.json
 ~~~
 
