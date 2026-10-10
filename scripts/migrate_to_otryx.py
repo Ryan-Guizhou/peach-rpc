@@ -29,14 +29,14 @@ for rel in paths:
     new = new.replace("PEACH_RPC", "OTRYX_RPC")
     new = new.replace("peach.rpc", "otryx.rpc")
     new = re.sub(r"^(\s*)peach:", r"\1otryx:", new, flags=re.M)
-    new = new.replace("tools/rpc-comparison/peach", "tools/rpc-comparison/otryx")
+    new = new.replace("benchmarks/rpc-comparison/peach", "benchmarks/rpc-comparison/otryx")
     new = new.replace("<module>peach</module>", "<module>otryx</module>")
     new = new.replace("peach.version", "otryx.version")
     for key in reserved:
         new = new.replace("otryx.rpc." + key, "peach.rpc." + key)
     if rel == "pom.xml":
         new = new.replace("<revision>1.0.1</revision>", "<revision>2.0.0-SNAPSHOT</revision>")
-    if rel == "tools/rpc-comparison/pom.xml":
+    if rel == "benchmarks/rpc-comparison/pom.xml":
         new = new.replace("<otryx.version>1.0.1</otryx.version>",
                           "<otryx.version>2.0.0-SNAPSHOT</otryx.version>")
     if rel == "docs/release-status.properties":

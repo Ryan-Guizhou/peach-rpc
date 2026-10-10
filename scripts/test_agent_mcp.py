@@ -40,7 +40,7 @@ class AgentMcpTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             (root / "config").mkdir()
-            (root / "config/agent-mcp.json").write_text(
+            (root / ".agents/config/agent-mcp.json").write_text(
                 mcp.SOURCE.read_text(encoding="utf-8"), encoding="utf-8")
             self.assertEqual(
                 [".cursor/mcp.json", ".codex/config.toml"],
