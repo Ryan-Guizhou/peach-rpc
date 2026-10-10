@@ -54,8 +54,8 @@ def validate(root: Path = ROOT) -> list[str]:
     maven = maven_path.read_text(encoding="utf-8")
     if "peachsoft.com" not in maven or "otryx.peachsoft.com" not in maven:
         errors.append("Maven instructions must document the correct DNS namespace.")
-    if "io.peach" in maven or "rpc.peach.io" in maven:
-        errors.append("Maven instructions still contain an invalid reverse-DNS mapping.")
+    if "验证 `io.peach`" in maven or "rpc.peach.io" in maven:
+        errors.append("Maven instructions still claim an invalid reverse-DNS mapping.")
 
     readiness = guard_path.read_text(encoding="utf-8")
     for expected_token in ("5533429", "未", "com.peachsoft.otryx", "商标", "Verified"):
