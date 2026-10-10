@@ -146,7 +146,7 @@ flowchart LR
 
 ## 11. 相关文档
 
-- [性能指南](performance.md)
+- [性能指南](../performance.md)
 - [容量规划](capacity-planning.md)
-- [生产配置](production-configuration.md)
-- [发布就绪](release-readiness.md)
+- [生产配置](../configuration.md)
+- [发布就绪](../archive/releases/release-readiness.md)

@@ -87,4 +87,4 @@ mvn -B -ntp clean verify -Pquality
 
 ## 7. 限制
 
-见 [FAQ](faq.md) 和 [ROADMAP](../ROADMAP.md)。
+见 [FAQ](../../faq.md) 和 [ROADMAP](../../../ROADMAP.md)。
