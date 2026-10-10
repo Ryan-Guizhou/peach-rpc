@@ -1,4 +1,4 @@
-package io.peach.rpc.protocol;
+package com.peachsoft.otryx.protocol;
 
 /** RPC 线协议格式、长度或版本不合法时抛出的异常。 */
 public final class RpcProtocolException extends RuntimeException {

@@ -1,13 +1,13 @@
-package io.peach.rpc.codec.fory;
+package com.peachsoft.otryx.codec.fory;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.peach.rpc.api.RpcMethodDescriptor;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.codec.RpcMethodCodec;
+import com.peachsoft.otryx.api.RpcMethodDescriptor;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.codec.RpcMethodCodec;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Set;
@@ -76,7 +76,7 @@ class ForyRpcCodecTest {
     void strictAllowlistMustAcceptExplicitApplicationContracts() throws Exception {
         ForyRpcCodec strict = new ForyRpcCodec(
                 ForyRpcSecurityOptions.strictAllowlist(
-                        Set.of("io.peach.rpc.codec.fory.*")));
+                        Set.of("com.peachsoft.otryx.codec.fory.*")));
         Method method = SampleService.class.getMethod(
                 "echo", String.class);
         RpcMethodCodec binding = strict.bind(RpcMethodDescriptor.from(
@@ -95,7 +95,7 @@ class ForyRpcCodecTest {
         ForyRpcCodec legacy = new ForyRpcCodec();
         ForyRpcCodec strict = new ForyRpcCodec(
                 ForyRpcSecurityOptions.strictAllowlist(
-                        Set.of("io.peach.rpc.codec.fory.allowed.*")));
+                        Set.of("com.peachsoft.otryx.codec.fory.allowed.*")));
         byte[] payload = legacy.encode(new ForbiddenPayload("secret"));
         assertThrows(RuntimeException.class,
                 () -> strict.decode(payload, Object.class));

@@ -1,4 +1,4 @@
-package io.peach.rpc.examples.api;
+package com.peachsoft.otryx.examples.api;
 
 import java.io.Serializable;
 

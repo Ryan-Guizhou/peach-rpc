@@ -1,6 +1,6 @@
-package io.peach.rpc.registry;
+package com.peachsoft.otryx.registry;
 
-import io.peach.rpc.api.ServiceKey;
+import com.peachsoft.otryx.api.ServiceKey;
 import java.util.concurrent.CompletionStage;
 
 /** Consumer 服务发现控制面。 */

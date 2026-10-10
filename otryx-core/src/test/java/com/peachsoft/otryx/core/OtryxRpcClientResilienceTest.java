@@ -1,4 +1,4 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -6,27 +6,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.peach.rpc.api.PeachRpcIdempotent;
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.RpcMethodDescriptor;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.RpcUnavailableException;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.codec.RpcCodec;
-import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.codec.RpcMethodCodec;
-import io.peach.rpc.observability.RpcObserver;
-import io.peach.rpc.observability.RpcMetadataPropagator;
-import io.peach.rpc.api.RpcTimeoutException;
-import io.peach.rpc.observability.RpcRetryExhaustionReason;
-import io.peach.rpc.protocol.RpcFrameView;
-import io.peach.rpc.protocol.RpcProtocolCodec;
-import io.peach.rpc.registry.RegistryListener;
-import io.peach.rpc.registry.RegistrySnapshot;
-import io.peach.rpc.registry.RegistrySubscription;
-import io.peach.rpc.registry.ServiceDiscovery;
-import io.peach.rpc.transport.RpcTransportClient;
+import com.peachsoft.otryx.api.OtryxRpcIdempotent;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.RpcMethodDescriptor;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.RpcUnavailableException;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.codec.RpcCodec;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.codec.RpcMethodCodec;
+import com.peachsoft.otryx.observability.RpcObserver;
+import com.peachsoft.otryx.observability.RpcMetadataPropagator;
+import com.peachsoft.otryx.api.RpcTimeoutException;
+import com.peachsoft.otryx.observability.RpcRetryExhaustionReason;
+import com.peachsoft.otryx.protocol.RpcFrameView;
+import com.peachsoft.otryx.protocol.RpcProtocolCodec;
+import com.peachsoft.otryx.registry.RegistryListener;
+import com.peachsoft.otryx.registry.RegistrySnapshot;
+import com.peachsoft.otryx.registry.RegistrySubscription;
+import com.peachsoft.otryx.registry.ServiceDiscovery;
+import com.peachsoft.otryx.transport.RpcTransportClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -40,12 +40,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
-class PeachRpcClientResilienceTest {
+class OtryxRpcClientResilienceTest {
 
     @Test
     void shouldRetryOnlyIdempotentMethodWithinBudget() {
         AtomicInteger attempts = new AtomicInteger();
-        try (PeachRpcClient client = client((endpoint, frame, timeout) -> {
+        try (OtryxRpcClient client = client((endpoint, frame, timeout) -> {
             if (attempts.incrementAndGet() == 1) {
                 return CompletableFuture.failedFuture(
                         new RpcUnavailableException("temporary"));
@@ -80,7 +80,7 @@ class PeachRpcClientResilienceTest {
             }
         };
 
-        try (PeachRpcClient client = client(
+        try (OtryxRpcClient client = client(
                 (endpoint, frame, timeout) -> {
                     attempts.incrementAndGet();
                     return CompletableFuture.failedFuture(
@@ -112,7 +112,7 @@ class PeachRpcClientResilienceTest {
     @Test
     void shouldNotRetryMethodWithoutIdempotentContract() {
         AtomicInteger attempts = new AtomicInteger();
-        try (PeachRpcClient client = client((endpoint, frame, timeout) -> {
+        try (OtryxRpcClient client = client((endpoint, frame, timeout) -> {
             attempts.incrementAndGet();
             return CompletableFuture.failedFuture(
                     new RpcUnavailableException("temporary"));
@@ -171,7 +171,7 @@ class PeachRpcClientResilienceTest {
             }
         };
 
-        try (PeachRpcClient client = client(
+        try (OtryxRpcClient client = client(
                 (endpoint, frame, timeout) -> {
                     attemptCount.incrementAndGet();
                     return CompletableFuture.completedFuture(
@@ -212,7 +212,7 @@ class PeachRpcClientResilienceTest {
             }
         };
 
-        try (PeachRpcClient client = client(
+        try (OtryxRpcClient client = client(
                 (endpoint, frame, timeout) -> {
                     attempts.incrementAndGet();
                     return CompletableFuture.failedFuture(
@@ -253,7 +253,7 @@ class PeachRpcClientResilienceTest {
             }
         });
 
-        try (PeachRpcClient client = PeachRpcClient.builder()
+        try (OtryxRpcClient client = OtryxRpcClient.builder()
                 .serviceDiscovery(new StaticDiscovery())
                 .transportClient(new TestTransport((endpoint, frame, timeout) -> {
                     capturedRequest.set(frame);
@@ -278,7 +278,7 @@ class PeachRpcClientResilienceTest {
                 assertFalse(eventLoop.isAlive(),
                         "Transport completion must not block on decode");
                 assertTrue(decodeThread.get()
-                        .startsWith("peach-rpc-client-completion-"));
+                        .startsWith("otryx-client-completion-"));
             } finally {
                 releaseDecode.countDown();
             }
@@ -295,7 +295,7 @@ class PeachRpcClientResilienceTest {
                 new java.util.concurrent.CopyOnWriteArrayList<>();
         CountDownLatch admitted = new CountDownLatch(2);
         AtomicInteger encodedCalls = new AtomicInteger();
-        try (PeachRpcClient client = PeachRpcClient.builder()
+        try (OtryxRpcClient client = OtryxRpcClient.builder()
                 .serviceDiscovery(new StaticDiscovery())
                 .transportClient(new TestTransport(
                         (endpoint, frame, timeout) -> {
@@ -324,7 +324,7 @@ class PeachRpcClientResilienceTest {
                     CompletionException.class,
                     () -> service.find("three"));
             assertInstanceOf(
-                    io.peach.rpc.api.RpcOverloadedException.class,
+                    com.peachsoft.otryx.api.RpcOverloadedException.class,
                     rejected.getCause());
             assertEquals(2, frames.size());
             assertEquals(2, encodedCalls.get(),
@@ -348,7 +348,7 @@ class PeachRpcClientResilienceTest {
                     encodes.incrementAndGet();
                     throw new IllegalStateException("Argument encoder failed");
                 });
-        try (PeachRpcClient client = PeachRpcClient.builder()
+        try (OtryxRpcClient client = OtryxRpcClient.builder()
                 .serviceDiscovery(new StaticDiscovery())
                 .transportClient(new TestTransport((endpoint, frame, timeout) ->
                         CompletableFuture.completedFuture(
@@ -380,7 +380,7 @@ class PeachRpcClientResilienceTest {
             }
         };
         AtomicInteger sent = new AtomicInteger();
-        try (PeachRpcClient client = PeachRpcClient.builder()
+        try (OtryxRpcClient client = OtryxRpcClient.builder()
                 .serviceDiscovery(new StaticDiscovery())
                 .transportClient(new TestTransport((endpoint, frame, timeout) -> {
                     sent.incrementAndGet();
@@ -405,7 +405,7 @@ class PeachRpcClientResilienceTest {
     @Test
     void hangingTransportShouldFinishAtLogicalDeadline() throws Exception {
         CompletableFuture<byte[]> neverFinishes = new CompletableFuture<>();
-        try (PeachRpcClient client = PeachRpcClient.builder()
+        try (OtryxRpcClient client = OtryxRpcClient.builder()
                 .serviceDiscovery(new StaticDiscovery())
                 .transportClient(new TestTransport(
                         (endpoint, frame, timeout) -> neverFinishes))
@@ -423,7 +423,7 @@ class PeachRpcClientResilienceTest {
     @Test
     void retiredEndpointsShouldNotAccumulateConsumerStatistics() {
         MutableDiscovery discovery = new MutableDiscovery();
-        try (PeachRpcClient client = PeachRpcClient.builder()
+        try (OtryxRpcClient client = OtryxRpcClient.builder()
                 .serviceDiscovery(discovery)
                 .transportClient(new TestTransport((endpoint, frame, timeout) ->
                         CompletableFuture.completedFuture(
@@ -443,14 +443,14 @@ class PeachRpcClientResilienceTest {
         }
     }
 
-    private static PeachRpcClient client(
+    private static OtryxRpcClient client(
             RequestFunction request) {
         return client(
                 request,
                 RpcObserver.noop());
     }
 
-    private static PeachRpcClient client(
+    private static OtryxRpcClient client(
             RequestFunction request,
             RpcObserver observer) {
         RpcClientResilienceOptions resilience =
@@ -465,7 +465,7 @@ class PeachRpcClientResilienceTest {
                         Duration.ofSeconds(1),
                         100,
                         Duration.ofSeconds(1));
-        return PeachRpcClient.builder()
+        return OtryxRpcClient.builder()
                 .serviceDiscovery(new StaticDiscovery())
                 .transportClient(new TestTransport(request))
                 .codecRegistry(RpcCodecRegistry.of(new StringCodec()))
@@ -490,7 +490,7 @@ class PeachRpcClientResilienceTest {
 
     interface RetryService {
 
-        @PeachRpcIdempotent
+        @OtryxRpcIdempotent
         String find(String value);
 
         String create(String value);

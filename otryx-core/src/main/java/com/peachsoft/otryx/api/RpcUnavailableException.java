@@ -1,4 +1,4 @@
-package io.peach.rpc.api;
+package com.peachsoft.otryx.api;
 
 /** RPC 服务或传输端点当前不可用时抛出的异常。 */
 public final class RpcUnavailableException extends RpcException {

@@ -4,27 +4,27 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.peach.rpc</groupId>
-        <artifactId>peach-rpc-parent</artifactId>
+        <groupId>com.peachsoft.otryx</groupId>
+        <artifactId>otryx-parent</artifactId>
         <version>${revision}</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>peach-rpc-example-consumer</artifactId>
-    <name>peach-rpc-example-consumer</name>
-    <description>Standalone Peach RPC consumer example.</description>
+    <artifactId>otryx-example-consumer</artifactId>
+    <name>otryx-example-consumer</name>
+    <description>Standalone OTRYX RPC consumer example.</description>
     <dependencies>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-example-api</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-example-api</artifactId>
             <version>${revision}</version>
         </dependency>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-spring-boot-starter</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-spring-boot-starter</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-example-provider</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-example-provider</artifactId>
             <version>${revision}</version>
             <scope>test</scope>
         </dependency>

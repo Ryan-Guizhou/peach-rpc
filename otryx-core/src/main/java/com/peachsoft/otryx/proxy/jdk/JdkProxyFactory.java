@@ -1,8 +1,8 @@
-package io.peach.rpc.proxy.jdk;
+package com.peachsoft.otryx.proxy.jdk;
 
-import io.peach.rpc.proxy.ProxyFactory;
-import io.peach.rpc.proxy.RpcInvocation;
-import io.peach.rpc.spi.Extension;
+import com.peachsoft.otryx.proxy.ProxyFactory;
+import com.peachsoft.otryx.proxy.RpcInvocation;
+import com.peachsoft.otryx.spi.Extension;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.CompletionStage;
@@ -52,7 +52,7 @@ public final class JdkProxyFactory implements ProxyFactory {
     private static Object invokeObjectMethod(
             Object proxy, Class<?> serviceType, Method method, Object[] arguments) {
         return switch (method.getName()) {
-            case "toString" -> "PeachRpcProxy(" + serviceType.getName() + ")";
+            case "toString" -> "OtryxRpcProxy(" + serviceType.getName() + ")";
             case "hashCode" -> System.identityHashCode(proxy);
             case "equals" -> proxy == arguments[0];
             default -> throw new UnsupportedOperationException(method.getName());

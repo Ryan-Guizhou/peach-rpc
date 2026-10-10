@@ -1,16 +1,16 @@
-package io.peach.rpc.registry.nacos;
+package com.peachsoft.otryx.registry.nacos;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryContractTestKit;
-import io.peach.rpc.registry.RegistryOptions;
-import io.peach.rpc.registry.RegistrySnapshot;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.registry.RegistryContractTestKit;
+import com.peachsoft.otryx.registry.RegistryOptions;
+import com.peachsoft.otryx.registry.RegistrySnapshot;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +27,7 @@ class NacosRegistryIntegrationTest {
             throws Exception {
         Registry registry = registry(
                 endpoint(),
-                unique("PEACH_RPC_CONTRACT"),
+                unique("OTRYX_RPC_CONTRACT"),
                 "DEFAULT");
         ServiceKey key = new ServiceKey(
                 "demo.NacosContract",
@@ -53,7 +53,7 @@ class NacosRegistryIntegrationTest {
     void shouldRegisterSubscribeLookupAndUnregister()
             throws Exception {
         String endpoint = endpoint();
-        String group = unique("PEACH_RPC_IT");
+        String group = unique("OTRYX_RPC_IT");
         Registry registry = registry(
                 endpoint,
                 group,
@@ -135,7 +135,7 @@ class NacosRegistryIntegrationTest {
     void remoteProviderRemovalShouldPublishEmptySnapshot()
             throws Exception {
         String endpoint = endpoint();
-        String group = unique("PEACH_RPC_REMOTE");
+        String group = unique("OTRYX_RPC_REMOTE");
         Registry provider = registry(
                 endpoint,
                 group,
@@ -194,11 +194,11 @@ class NacosRegistryIntegrationTest {
         String endpoint = endpoint();
         Registry left = registry(
                 endpoint,
-                unique("PEACH_RPC_GROUP_A"),
+                unique("OTRYX_RPC_GROUP_A"),
                 "DEFAULT");
         Registry right = registry(
                 endpoint,
-                unique("PEACH_RPC_GROUP_B"),
+                unique("OTRYX_RPC_GROUP_B"),
                 "DEFAULT");
         ServiceKey key = new ServiceKey(
                 "demo.GroupIsolation",
@@ -238,7 +238,7 @@ class NacosRegistryIntegrationTest {
     @Test
     void shouldIsolateClusters() throws Exception {
         String endpoint = endpoint();
-        String group = unique("PEACH_RPC_CLUSTER");
+        String group = unique("OTRYX_RPC_CLUSTER");
         Registry left = registry(
                 endpoint,
                 group,
@@ -288,7 +288,7 @@ class NacosRegistryIntegrationTest {
         String endpoint = endpoint();
         Registry registry = registry(
                 endpoint,
-                unique("PEACH_RPC_KEY"),
+                unique("OTRYX_RPC_KEY"),
                 "DEFAULT");
         ServiceKey registeredKey = new ServiceKey(
                 "demo.KeyIsolation",
@@ -342,7 +342,7 @@ class NacosRegistryIntegrationTest {
     void closeShouldBeIdempotent() {
         Registry registry = registry(
                 endpoint(),
-                unique("PEACH_RPC_CLOSE"),
+                unique("OTRYX_RPC_CLOSE"),
                 "DEFAULT");
 
         registry.close();

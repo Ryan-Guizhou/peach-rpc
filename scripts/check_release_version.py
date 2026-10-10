@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Peach RPC release channel and semantic version."""
+"""Validate OTRYX RPC release channel and semantic version."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def main() -> int:
         return 1
 
     print(
-        "Peach RPC release version accepted: "
+        "OTRYX RPC release version accepted: "
         f"stage={args.stage}, version={args.version}"
     )
     return 0

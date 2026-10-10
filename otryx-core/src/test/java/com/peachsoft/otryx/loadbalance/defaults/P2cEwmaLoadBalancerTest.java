@@ -1,13 +1,13 @@
-package io.peach.rpc.loadbalance.defaults;
+package com.peachsoft.otryx.loadbalance.defaults;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.loadbalance.LoadBalanceContext;
-import io.peach.rpc.loadbalance.LoadBalanceMetrics;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.loadbalance.LoadBalanceContext;
+import com.peachsoft.otryx.loadbalance.LoadBalanceMetrics;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

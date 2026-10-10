@@ -4,17 +4,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.peach.rpc</groupId>
-        <artifactId>peach-rpc-parent</artifactId>
+        <groupId>com.peachsoft.otryx</groupId>
+        <artifactId>otryx-parent</artifactId>
         <version>${revision}</version>
     </parent>
-    <artifactId>peach-rpc-observability-opentelemetry</artifactId>
-    <name>peach-rpc-observability-opentelemetry</name>
-    <description>OpenTelemetry tracing adapter for Peach RPC.</description>
+    <artifactId>otryx-observability-opentelemetry</artifactId>
+    <name>otryx-observability-opentelemetry</name>
+    <description>OpenTelemetry tracing adapter for OTRYX RPC.</description>
     <dependencies>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-core</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
@@ -30,13 +30,13 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-codec-fory</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-codec-fory</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-transport-vertx</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-transport-vertx</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

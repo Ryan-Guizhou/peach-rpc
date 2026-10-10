@@ -1,4 +1,4 @@
-package io.peach.rpc.observability.jfr;
+package com.peachsoft.otryx.observability.jfr;
 
 import jdk.jfr.Category;
 import jdk.jfr.Event;
@@ -6,9 +6,9 @@ import jdk.jfr.Label;
 import jdk.jfr.Name;
 
 /** Consumer Retry 调度 JFR Event。 */
-@Name("io.peach.rpc.Retry")
-@Label("Peach RPC Retry")
-@Category({"Peach RPC", "Client"})
+@Name("com.peachsoft.otryx.Retry")
+@Label("OTRYX RPC Retry")
+@Category({"OTRYX RPC", "Client"})
 public final class RpcRetryJfrEvent extends Event {
 
     /** 创建 Retry JFR Event。 */

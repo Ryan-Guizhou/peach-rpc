@@ -1,4 +1,4 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
 /** RPC 连接在本地进程中的角色。 */
 public enum RpcConnectionRole {

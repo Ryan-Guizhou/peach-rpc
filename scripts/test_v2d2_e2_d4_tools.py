@@ -85,7 +85,7 @@ def candidate(
 
 
 def main() -> int:
-    with tempfile.TemporaryDirectory(prefix="peach-rpc-e2-d4-") as raw:
+    with tempfile.TemporaryDirectory(prefix="otryx-e2-d4-") as raw:
         root = Path(raw)
         e1 = root / "e1.json"
         repeatability = root / "repeatability.json"

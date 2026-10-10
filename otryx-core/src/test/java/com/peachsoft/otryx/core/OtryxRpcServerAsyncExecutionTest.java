@@ -1,4 +1,4 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -7,20 +7,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import io.peach.rpc.api.PeachRpcExecution;
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.RpcExecutionMode;
-import io.peach.rpc.api.RpcIds;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.observability.RpcObserver;
-import io.peach.rpc.codec.RpcCodec;
-import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.protocol.RpcProtocolCodec;
-import io.peach.rpc.registry.ServiceRegistrar;
-import io.peach.rpc.transport.RpcRequestHandler;
-import io.peach.rpc.transport.RpcTransportServer;
+import com.peachsoft.otryx.api.OtryxRpcExecution;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.RpcExecutionMode;
+import com.peachsoft.otryx.api.RpcIds;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.observability.RpcObserver;
+import com.peachsoft.otryx.codec.RpcCodec;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.protocol.RpcProtocolCodec;
+import com.peachsoft.otryx.registry.ServiceRegistrar;
+import com.peachsoft.otryx.transport.RpcRequestHandler;
+import com.peachsoft.otryx.transport.RpcTransportServer;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
-public class PeachRpcServerAsyncExecutionTest {
+public class OtryxRpcServerAsyncExecutionTest {
 
     @Test
     void failingProviderObserverMustNotLeakAdmissionOrMaskOverload()
@@ -82,7 +82,7 @@ public class PeachRpcServerAsyncExecutionTest {
             }
         };
 
-        PeachRpcServer server = PeachRpcServer.builder()
+        OtryxRpcServer server = OtryxRpcServer.builder()
                 .serviceRegistrar(new NoopRegistry())
                 .transportServer(transport)
                 .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
@@ -137,7 +137,7 @@ public class PeachRpcServerAsyncExecutionTest {
     void asyncStageShouldNotBlockCpuWorker() throws Exception {
         CapturingTransportServer transport = new CapturingTransportServer();
         AsyncServiceImpl service = new AsyncServiceImpl();
-        PeachRpcServer server = createServer(
+        OtryxRpcServer server = createServer(
                 transport,
                 service,
                 2,
@@ -174,7 +174,7 @@ public class PeachRpcServerAsyncExecutionTest {
         CapturingTransportServer transport = new CapturingTransportServer();
         AsyncServiceImpl service = new AsyncServiceImpl();
         TrackingCodec codec = new TrackingCodec();
-        PeachRpcServer server = createServer(
+        OtryxRpcServer server = createServer(
                 transport,
                 service,
                 2,
@@ -204,7 +204,7 @@ public class PeachRpcServerAsyncExecutionTest {
                     RpcProtocolCodec.view(completed).status());
             assertTrue(
                     codec.encodeThreadName.get()
-                            .startsWith("peach-rpc-cpu-"));
+                            .startsWith("otryx-cpu-"));
         } finally {
             server.close();
         }
@@ -224,7 +224,7 @@ public class PeachRpcServerAsyncExecutionTest {
                 }
             }
         };
-        PeachRpcServer server = createServer(
+        OtryxRpcServer server = createServer(
                 transport,
                 service,
                 3,
@@ -303,7 +303,7 @@ public class PeachRpcServerAsyncExecutionTest {
                 }
             }
         };
-        PeachRpcServer server = createServer(
+        OtryxRpcServer server = createServer(
                 transport,
                 service,
                 1,
@@ -338,13 +338,13 @@ public class PeachRpcServerAsyncExecutionTest {
             throws Exception {
         CapturingTransportServer transport = new CapturingTransportServer();
         AsyncServiceImpl service = new AsyncServiceImpl();
-        PeachRpcServer server = createServer(
+        OtryxRpcServer server = createServer(
                 transport,
                 service,
                 1,
                 19101);
         Logger logger =
-                (Logger) LoggerFactory.getLogger(PeachRpcServer.class);
+                (Logger) LoggerFactory.getLogger(OtryxRpcServer.class);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
@@ -390,7 +390,7 @@ public class PeachRpcServerAsyncExecutionTest {
                 }
             }
         };
-        PeachRpcServer server = createServer(
+        OtryxRpcServer server = createServer(
                 transport,
                 service,
                 1,
@@ -436,7 +436,7 @@ public class PeachRpcServerAsyncExecutionTest {
                 }
             }
         };
-        PeachRpcServer server = createServer(
+        OtryxRpcServer server = createServer(
                 transport,
                 service,
                 1,
@@ -492,7 +492,7 @@ public class PeachRpcServerAsyncExecutionTest {
                 }
             }
         };
-        PeachRpcServer server = PeachRpcServer.builder()
+        OtryxRpcServer server = OtryxRpcServer.builder()
                 .serviceRegistrar(new NoopRegistry())
                 .transportServer(transport)
                 .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
@@ -575,7 +575,7 @@ public class PeachRpcServerAsyncExecutionTest {
                 }
             }
         };
-        PeachRpcServer server = PeachRpcServer.builder()
+        OtryxRpcServer server = OtryxRpcServer.builder()
                 .serviceRegistrar(new NoopRegistry())
                 .transportServer(transport)
                 .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
@@ -622,10 +622,10 @@ public class PeachRpcServerAsyncExecutionTest {
     }
 
     public interface UncooperativeService {
-        @PeachRpcExecution(RpcExecutionMode.CPU)
+        @OtryxRpcExecution(RpcExecutionMode.CPU)
         String stall();
 
-        @PeachRpcExecution(RpcExecutionMode.CPU)
+        @OtryxRpcExecution(RpcExecutionMode.CPU)
         String fast();
     }
 
@@ -670,7 +670,7 @@ public class PeachRpcServerAsyncExecutionTest {
         }
     }
 
-    private static PeachRpcServer createServer(
+    private static OtryxRpcServer createServer(
             CapturingTransportServer transport,
             AsyncServiceImpl service,
             int maxConcurrent,
@@ -683,7 +683,7 @@ public class PeachRpcServerAsyncExecutionTest {
                 new NoopCodec());
     }
 
-    private static PeachRpcServer createServer(
+    private static OtryxRpcServer createServer(
             CapturingTransportServer transport,
             AsyncServiceImpl service,
             int maxConcurrent,
@@ -694,14 +694,14 @@ public class PeachRpcServerAsyncExecutionTest {
                 RpcObserver.noop());
     }
 
-    private static PeachRpcServer createServer(
+    private static OtryxRpcServer createServer(
             CapturingTransportServer transport,
             AsyncServiceImpl service,
             int maxConcurrent,
             int port,
             RpcCodec codec,
             RpcObserver observer) {
-        return PeachRpcServer.builder()
+        return OtryxRpcServer.builder()
                 .serviceRegistrar(new NoopRegistry())
                 .transportServer(transport)
                 .codecRegistry(RpcCodecRegistry.of(codec))
@@ -744,19 +744,19 @@ public class PeachRpcServerAsyncExecutionTest {
 
     public interface AsyncService {
 
-        @PeachRpcExecution(RpcExecutionMode.CPU)
+        @OtryxRpcExecution(RpcExecutionMode.CPU)
         CompletionStage<String> slow();
 
-        @PeachRpcExecution(RpcExecutionMode.CPU)
+        @OtryxRpcExecution(RpcExecutionMode.CPU)
         String fast();
 
-        @PeachRpcExecution(RpcExecutionMode.CPU)
+        @OtryxRpcExecution(RpcExecutionMode.CPU)
         String blocking();
 
-        @PeachRpcExecution(RpcExecutionMode.CPU)
+        @OtryxRpcExecution(RpcExecutionMode.CPU)
         String queued();
 
-        @PeachRpcExecution(RpcExecutionMode.CPU)
+        @OtryxRpcExecution(RpcExecutionMode.CPU)
         String failing();
     }
 

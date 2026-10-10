@@ -1,4 +1,4 @@
-package io.peach.rpc.registry.etcd;
+package com.peachsoft.otryx.registry.etcd;
 
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
@@ -13,19 +13,19 @@ import io.etcd.jetcd.options.LeaseOption;
 import io.etcd.jetcd.options.PutOption;
 import io.etcd.jetcd.options.WatchOption;
 import io.grpc.stub.StreamObserver;
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.observability.RpcObserver;
-import io.peach.rpc.observability.RpcRegistryOperation;
-import io.peach.rpc.observability.RpcRegistryRecoveryAction;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryCapabilities;
-import io.peach.rpc.registry.RegistryCapability;
-import io.peach.rpc.registry.RegistryListener;
-import io.peach.rpc.registry.RegistrySnapshot;
-import io.peach.rpc.registry.RegistrySubscription;
-import io.peach.rpc.registry.ServiceRegistrar;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.observability.RpcObserver;
+import com.peachsoft.otryx.observability.RpcRegistryOperation;
+import com.peachsoft.otryx.observability.RpcRegistryRecoveryAction;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.registry.RegistryCapabilities;
+import com.peachsoft.otryx.registry.RegistryCapability;
+import com.peachsoft.otryx.registry.RegistryListener;
+import com.peachsoft.otryx.registry.RegistrySnapshot;
+import com.peachsoft.otryx.registry.RegistrySubscription;
+import com.peachsoft.otryx.registry.ServiceRegistrar;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
  */
 final class EtcdRegistry implements Registry, ServiceRegistrar {
     private static final Logger LOGGER = LoggerFactory.getLogger(EtcdRegistry.class);
-    private static final String DEFAULT_ROOT = "/peach-rpc/";
+    private static final String DEFAULT_ROOT = "/otryx/";
     private static final long RECOVERY_BASE_DELAY_MILLIS = 200L;
     private static final long RECOVERY_MAX_DELAY_MILLIS = 30_000L;
     private static final RegistryCapabilities CAPABILITIES = RegistryCapabilities.of(

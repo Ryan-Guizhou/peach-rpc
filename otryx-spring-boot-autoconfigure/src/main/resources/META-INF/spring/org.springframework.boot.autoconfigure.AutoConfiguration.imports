@@ -1,1 +1,1 @@
-io.peach.rpc.spring.autoconfigure.PeachRpcAutoConfiguration
+com.peachsoft.otryx.spring.autoconfigure.OtryxRpcAutoConfiguration

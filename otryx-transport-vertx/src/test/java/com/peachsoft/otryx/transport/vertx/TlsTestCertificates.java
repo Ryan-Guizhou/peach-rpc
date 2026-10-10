@@ -1,4 +1,4 @@
-package io.peach.rpc.transport.vertx;
+package com.peachsoft.otryx.transport.vertx;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -89,10 +89,10 @@ final class TlsTestCertificates implements AutoCloseable {
     static TlsTestCertificates create() throws Exception {
         Path directory =
                 Files.createTempDirectory(
-                        "peach-rpc-tls-");
+                        "otryx-tls-");
         KeyPair caKey = keyPair();
         X509Certificate ca = caCertificate(
-                "Peach RPC Test CA",
+                "OTRYX RPC Test CA",
                 caKey);
         Path caCertificate =
                 writeCertificate(
@@ -104,7 +104,7 @@ final class TlsTestCertificates implements AutoCloseable {
 
         KeyPair wrongCaKey = keyPair();
         X509Certificate wrongCa = caCertificate(
-                "Peach RPC Wrong CA",
+                "OTRYX RPC Wrong CA",
                 wrongCaKey);
         Path wrongCaCertificate =
                 writeCertificate(
@@ -150,7 +150,7 @@ final class TlsTestCertificates implements AutoCloseable {
         KeyPair client = keyPair();
         X509Certificate clientCertificateValue =
                 leafCertificate(
-                        "peach-rpc-test-client",
+                        "otryx-test-client",
                         client,
                         ca,
                         caKey,

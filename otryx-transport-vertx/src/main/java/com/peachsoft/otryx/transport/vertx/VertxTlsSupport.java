@@ -1,9 +1,9 @@
-package io.peach.rpc.transport.vertx;
+package com.peachsoft.otryx.transport.vertx;
 
-import io.peach.rpc.observability.RpcCertificateReloadOutcome;
-import io.peach.rpc.observability.RpcObserver;
-import io.peach.rpc.observability.RpcSecurityMode;
-import io.peach.rpc.transport.RpcTransportSecurityOptions;
+import com.peachsoft.otryx.observability.RpcCertificateReloadOutcome;
+import com.peachsoft.otryx.observability.RpcObserver;
+import com.peachsoft.otryx.observability.RpcSecurityMode;
+import com.peachsoft.otryx.transport.RpcTransportSecurityOptions;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetServerOptions;

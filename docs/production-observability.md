@@ -1,11 +1,11 @@
-# Peach RPC 生产可观测与 SLO 模板
+# OTRYX RPC 生产可观测与 SLO 模板
 
-> 状态：**1.0.1 Release Prep / SLO Values Environment-specific**  
+> 状态：**2.0.0-SNAPSHOT Migration / SLO Values Environment-specific**  
 > 本文提供指标语义、Dashboard、告警模板和 SLO 建模方式。项目不预设 Production SLO 数字。
 
 ## 1. Golden Signals
 
-Peach RPC 生产观测按四类信号组织：
+OTRYX RPC 生产观测按四类信号组织：
 
 | 信号 | 主要指标 |
 |---|---|
@@ -20,9 +20,9 @@ Peach RPC 生产观测按四类信号组织：
 
 因此：
 
-- peach.rpc.client.calls：逻辑调用，一次用户调用只计一次；
-- peach.rpc.client.attempts：网络 Attempt，可被 Retry 放大；
-- peach.rpc.client.retries：Retry 调度次数。
+- otryx.rpc.client.calls：逻辑调用，一次用户调用只计一次；
+- otryx.rpc.client.attempts：网络 Attempt，可被 Retry 放大；
+- otryx.rpc.client.retries：Retry 调度次数。
 
 业务 QPS、业务成功率和业务延迟 SLO 应以 logical call 为主，Attempt 用于诊断 Retry Amplification。
 
@@ -30,30 +30,30 @@ Peach RPC 生产观测按四类信号组织：
 
 核心指标包括：
 
-- peach.rpc.client.calls
-- peach.rpc.client.attempts
-- peach.rpc.client.retries
-- peach.rpc.client.retry.exhausted
-- peach.rpc.client.inflight
-- peach.rpc.client.timeouts
-- peach.rpc.client.circuit.rejected
-- peach.rpc.client.circuit.state
-- peach.rpc.client.outlier.ejected
-- peach.rpc.server.invocations
-- peach.rpc.server.inflight
-- peach.rpc.server.inflight.bytes（PR-D：Core 已准入请求的 Frame 字节数，不含 Transport 队列与对象图）
-- peach.rpc.server.admission.rejected
-- peach.rpc.server.overloaded
-- peach.rpc.connection.active
-- peach.rpc.connection.reconnects
-- peach.rpc.connection.heartbeat.timeouts
-- peach.rpc.registry.operations
-- peach.rpc.registry.failures
-- peach.rpc.registry.recoveries
-- peach.rpc.tls.handshake
-- peach.rpc.tls.handshake.failures
-- peach.rpc.tls.certificate.reload
-- peach.rpc.tls.certificate.expiry.warnings
+- otryx.rpc.client.calls
+- otryx.rpc.client.attempts
+- otryx.rpc.client.retries
+- otryx.rpc.client.retry.exhausted
+- otryx.rpc.client.inflight
+- otryx.rpc.client.timeouts
+- otryx.rpc.client.circuit.rejected
+- otryx.rpc.client.circuit.state
+- otryx.rpc.client.outlier.ejected
+- otryx.rpc.server.invocations
+- otryx.rpc.server.inflight
+- otryx.rpc.server.inflight.bytes（PR-D：Core 已准入请求的 Frame 字节数，不含 Transport 队列与对象图）
+- otryx.rpc.server.admission.rejected
+- otryx.rpc.server.overloaded
+- otryx.rpc.connection.active
+- otryx.rpc.connection.reconnects
+- otryx.rpc.connection.heartbeat.timeouts
+- otryx.rpc.registry.operations
+- otryx.rpc.registry.failures
+- otryx.rpc.registry.recoveries
+- otryx.rpc.tls.handshake
+- otryx.rpc.tls.handshake.failures
+- otryx.rpc.tls.certificate.reload
+- otryx.rpc.tls.certificate.expiry.warnings
 
 Client Call/Attempt 和 Server Invocation 使用低基数 status/category 标签。
 
@@ -97,8 +97,8 @@ management:
   metrics:
     distribution:
       percentiles-histogram:
-        peach.rpc.client.calls: true
-        peach.rpc.server.invocations: true
+        otryx.rpc.client.calls: true
+        otryx.rpc.server.invocations: true
 ~~~
 
 是否启用更多 Timer Histogram 需要评估 Prometheus Series 数量。
@@ -107,7 +107,7 @@ management:
 
 仓库提供：
 
-[Grafana Dashboard](../deploy/observability/grafana/peach-rpc-dashboard.json)
+[Grafana Dashboard](../deploy/observability/grafana/otryx-dashboard.json)
 
 主要面板：
 
@@ -127,7 +127,7 @@ Dashboard 使用 Prometheus 常见 Micrometer 命名规则。
 
 仓库提供：
 
-[Prometheus Alert Example](../deploy/observability/prometheus/peach-rpc-alerts.example.yml)
+[Prometheus Alert Example](../deploy/observability/prometheus/otryx-alerts.example.yml)
 
 当前示例只对明确的运维异常信号给出基础告警：
 

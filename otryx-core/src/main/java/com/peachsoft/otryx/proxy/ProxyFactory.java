@@ -1,6 +1,6 @@
-package io.peach.rpc.proxy;
+package com.peachsoft.otryx.proxy;
 
-import io.peach.rpc.spi.SPI;
+import com.peachsoft.otryx.spi.SPI;
 
 /** Consumer 代理创建扩展点。 */
 @SPI("jdk")

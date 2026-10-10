@@ -1,20 +1,20 @@
-package io.peach.rpc.observability.micrometer;
+package com.peachsoft.otryx.observability.micrometer;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.peach.rpc.observability.RpcObserver;
+import com.peachsoft.otryx.observability.RpcObserver;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
-/** Peach RPC Micrometer 自动配置。 */
+/** OTRYX RPC Micrometer 自动配置。 */
 @AutoConfiguration
 @ConditionalOnClass(MeterRegistry.class)
-public class PeachRpcMicrometerAutoConfiguration {
+public class OtryxRpcMicrometerAutoConfiguration {
 
     /** 创建自动配置。 */
-    public PeachRpcMicrometerAutoConfiguration() {
+    public OtryxRpcMicrometerAutoConfiguration() {
     }
 
     /**

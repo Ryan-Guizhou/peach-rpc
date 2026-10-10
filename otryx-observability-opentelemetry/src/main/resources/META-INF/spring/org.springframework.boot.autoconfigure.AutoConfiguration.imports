@@ -1,1 +1,1 @@
-io.peach.rpc.observability.opentelemetry.PeachRpcOpenTelemetryAutoConfiguration
+com.peachsoft.otryx.observability.opentelemetry.OtryxRpcOpenTelemetryAutoConfiguration

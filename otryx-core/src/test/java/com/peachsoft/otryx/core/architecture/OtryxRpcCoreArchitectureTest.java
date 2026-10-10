@@ -1,4 +1,4 @@
-package io.peach.rpc.core.architecture;
+package com.peachsoft.otryx.core.architecture;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
@@ -8,13 +8,13 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
 
 /**
- * Peach RPC Core 的字节码级依赖边界约束。
+ * OTRYX RPC Core 的字节码级依赖边界约束。
  *
  * <p>测试仅扫描生产类，而不包含测试夹具。禁止 Core 直接耦合具体
  * Transport、Registry、Codec 与 Spring 适配器；技术集成必须经过
  * 对应的接口和独立 Adapter 模块。
  */
-class PeachRpcCoreArchitectureTest {
+class OtryxRpcCoreArchitectureTest {
 
     @Test
     void coreMustRemainIndependentOfInfrastructureFrameworks() {
@@ -22,11 +22,11 @@ class PeachRpcCoreArchitectureTest {
                 new ClassFileImporter()
                         .withImportOption(
                                 ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("io.peach.rpc");
+                        .importPackages("com.peachsoft.otryx");
 
         noClasses()
                 .that()
-                .resideInAPackage("io.peach.rpc..")
+                .resideInAPackage("com.peachsoft.otryx..")
                 .should()
                 .dependOnClassesThat()
                 .resideInAnyPackage(
@@ -35,10 +35,10 @@ class PeachRpcCoreArchitectureTest {
                         "io.etcd..",
                         "org.apache.fory..",
                         "org.springframework..",
-                        "io.peach.rpc.transport.vertx..",
-                        "io.peach.rpc.registry.nacos..",
-                        "io.peach.rpc.registry.etcd..",
-                        "io.peach.rpc.codec.fory..")
+                        "com.peachsoft.otryx.transport.vertx..",
+                        "com.peachsoft.otryx.registry.nacos..",
+                        "com.peachsoft.otryx.registry.etcd..",
+                        "com.peachsoft.otryx.codec.fory..")
                 .check(productionClasses);
     }
 
@@ -48,14 +48,14 @@ class PeachRpcCoreArchitectureTest {
                 new ClassFileImporter()
                         .withImportOption(
                                 ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                        .importPackages("io.peach.rpc.api");
+                        .importPackages("com.peachsoft.otryx.api");
 
         noClasses()
                 .that()
-                .resideInAPackage("io.peach.rpc.api..")
+                .resideInAPackage("com.peachsoft.otryx.api..")
                 .should()
                 .dependOnClassesThat()
-                .resideInAPackage("io.peach.rpc.core..")
+                .resideInAPackage("com.peachsoft.otryx.core..")
                 .check(productionClasses);
     }
 }

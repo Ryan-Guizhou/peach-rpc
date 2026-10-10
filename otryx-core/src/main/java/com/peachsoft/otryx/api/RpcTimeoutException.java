@@ -1,4 +1,4 @@
-package io.peach.rpc.api;
+package com.peachsoft.otryx.api;
 
 /** RPC 请求超过 Deadline 时抛出的异常。 */
 public final class RpcTimeoutException extends RpcException {

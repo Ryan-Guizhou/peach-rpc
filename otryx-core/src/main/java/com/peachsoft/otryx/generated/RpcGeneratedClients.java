@@ -1,4 +1,4 @@
-package io.peach.rpc.generated;
+package com.peachsoft.otryx.generated;
 
 import java.util.Optional;
 
@@ -6,7 +6,7 @@ import java.util.Optional;
 public final class RpcGeneratedClients {
 
     /** 生成类名称后缀。 */
-    public static final String FACTORY_SUFFIX = "PeachRpcClientFactory";
+    public static final String FACTORY_SUFFIX = "OtryxRpcClientFactory";
 
     private static final ClassValue<Optional<RpcGeneratedClientFactory<?>>> FACTORIES =
             new ClassValue<>() {

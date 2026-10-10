@@ -1,6 +1,6 @@
-package io.peach.rpc.protocol;
+package com.peachsoft.otryx.protocol;
 
-/** Peach RPC 官方压缩算法线协议编号。 */
+/** OTRYX RPC 官方压缩算法线协议编号。 */
 public final class RpcCompressionIds {
 
     /** 不压缩。 */

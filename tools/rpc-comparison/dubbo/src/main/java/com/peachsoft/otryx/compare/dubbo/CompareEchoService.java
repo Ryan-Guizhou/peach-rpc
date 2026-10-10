@@ -1,4 +1,4 @@
-package io.peach.rpc.compare.dubbo;
+package com.peachsoft.otryx.compare.dubbo;
 
 /** Dubbo 独立 JVM 中使用的相同 byte[] Echo 业务接口。 */
 public interface CompareEchoService {

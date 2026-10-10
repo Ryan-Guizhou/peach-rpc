@@ -1,19 +1,19 @@
-package io.peach.rpc.benchmarks;
+package com.peachsoft.otryx.benchmarks;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.codec.RpcCodecIds;
-import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.core.PeachRpcClient;
-import io.peach.rpc.core.PeachRpcServer;
-import io.peach.rpc.observability.RpcConnectionCloseReason;
-import io.peach.rpc.observability.RpcConnectionRole;
-import io.peach.rpc.observability.RpcObserver;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryFactory;
-import io.peach.rpc.registry.RegistryOptions;
-import io.peach.rpc.spi.ExtensionLoader;
-import io.peach.rpc.transport.RpcTransportFactory;
-import io.peach.rpc.transport.RpcTransportOptions;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.codec.RpcCodecIds;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.core.OtryxRpcClient;
+import com.peachsoft.otryx.core.OtryxRpcServer;
+import com.peachsoft.otryx.observability.RpcConnectionCloseReason;
+import com.peachsoft.otryx.observability.RpcConnectionRole;
+import com.peachsoft.otryx.observability.RpcObserver;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.registry.RegistryFactory;
+import com.peachsoft.otryx.registry.RegistryOptions;
+import com.peachsoft.otryx.spi.ExtensionLoader;
+import com.peachsoft.otryx.transport.RpcTransportFactory;
+import com.peachsoft.otryx.transport.RpcTransportOptions;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -83,14 +83,14 @@ public final class PerformanceSoakRunner {
         RpcCodecRegistry codecs = RpcCodecRegistry.fromSpi();
 
         try (registry;
-             PeachRpcServer server = server(
+             OtryxRpcServer server = server(
                      registry,
                      transportFactory,
                      transportOptions,
                      codecs,
                      config,
                      port);
-             PeachRpcClient client = client(
+             OtryxRpcClient client = client(
                      registry,
                      transportFactory,
                      transportOptions,
@@ -140,7 +140,7 @@ public final class PerformanceSoakRunner {
                         Map.of()));
     }
 
-    private static PeachRpcServer server(
+    private static OtryxRpcServer server(
             Registry registry,
             RpcTransportFactory transportFactory,
             RpcTransportOptions transportOptions,
@@ -150,7 +150,7 @@ public final class PerformanceSoakRunner {
         int maxConcurrent = Math.max(
                 16_384,
                 config.concurrency() * 2);
-        return PeachRpcServer.builder()
+        return OtryxRpcServer.builder()
                 .serviceRegistrar(
                         registry.registrar().orElseThrow())
                 .transportServer(
@@ -170,13 +170,13 @@ public final class PerformanceSoakRunner {
                         "benchmark");
     }
 
-    private static PeachRpcClient client(
+    private static OtryxRpcClient client(
             Registry registry,
             RpcTransportFactory transportFactory,
             RpcTransportOptions transportOptions,
             RpcCodecRegistry codecs,
             Config config) {
-        return PeachRpcClient.builder()
+        return OtryxRpcClient.builder()
                 .serviceDiscovery(registry)
                 .transportClient(
                         transportFactory.createClient(
@@ -746,7 +746,7 @@ public final class PerformanceSoakRunner {
 
         private static String benchmarkCommit() {
             String value = System.getenv(
-                    "PEACH_RPC_BENCHMARK_COMMIT");
+                    "OTRYX_RPC_BENCHMARK_COMMIT");
             if (value == null || value.isBlank()) {
                 value = System.getenv("GITHUB_SHA");
             }

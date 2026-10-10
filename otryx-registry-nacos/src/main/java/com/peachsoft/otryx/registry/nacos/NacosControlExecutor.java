@@ -1,6 +1,6 @@
-package io.peach.rpc.registry.nacos;
+package com.peachsoft.otryx.registry.nacos;
 
-import io.peach.rpc.api.ServiceKey;
+import com.peachsoft.otryx.api.ServiceKey;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -30,7 +30,7 @@ final class NacosControlExecutor implements AutoCloseable {
         AtomicInteger sequence = new AtomicInteger();
         ThreadFactory factory = task -> daemonThread(
                 task,
-                "peach-rpc-nacos-control-"
+                "otryx-nacos-control-"
                         + sequence.incrementAndGet());
         executor = new ThreadPoolExecutor(
                 2,
@@ -47,7 +47,7 @@ final class NacosControlExecutor implements AutoCloseable {
                 1,
                 task -> daemonThread(
                         task,
-                        "peach-rpc-nacos-scheduler-"
+                        "otryx-nacos-scheduler-"
                                 + schedulerSequence
                                         .incrementAndGet()));
         scheduler.setRemoveOnCancelPolicy(true);

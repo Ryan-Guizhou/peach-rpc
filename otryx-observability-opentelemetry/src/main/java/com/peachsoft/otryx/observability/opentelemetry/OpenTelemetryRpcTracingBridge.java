@@ -1,4 +1,4 @@
-package io.peach.rpc.observability.opentelemetry;
+package com.peachsoft.otryx.observability.opentelemetry;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
@@ -9,18 +9,18 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.observability.RpcMetadataScope;
-import io.peach.rpc.observability.RpcTraceContext;
-import io.peach.rpc.observability.RpcTracingBridge;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.observability.RpcMetadataScope;
+import com.peachsoft.otryx.observability.RpcTraceContext;
+import com.peachsoft.otryx.observability.RpcTracingBridge;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * OpenTelemetry Peach RPC 分布式 Trace Bridge。
+ * OpenTelemetry OTRYX RPC 分布式 Trace Bridge。
  *
  * <p>Span 仅记录有界 RPC 状态与错误类型，不直接记录第三方或业务异常消息、
  * StackTrace 和原始 RPC Metadata，避免 Trace 出口向外暴露用户数据。
@@ -30,7 +30,7 @@ public final class OpenTelemetryRpcTracingBridge
         implements RpcTracingBridge {
 
     private static final String INSTRUMENTATION_NAME =
-            "io.peach.rpc";
+            "com.peachsoft.otryx";
     private static final TextMapGetter<Map<String, String>>
             GETTER = new TextMapGetter<>() {
                 @Override
@@ -80,7 +80,7 @@ public final class OpenTelemetryRpcTracingBridge
                 .setSpanKind(SpanKind.CLIENT)
                 .setAttribute(
                         "rpc.system",
-                        "peach-rpc")
+                        "otryx")
                 .setAttribute(
                         "rpc.service",
                         serviceKey.canonicalName())
@@ -116,7 +116,7 @@ public final class OpenTelemetryRpcTracingBridge
                 .setSpanKind(SpanKind.SERVER)
                 .setAttribute(
                         "rpc.system",
-                        "peach-rpc")
+                        "otryx")
                 .setAttribute(
                         "rpc.service.id",
                         serviceId)

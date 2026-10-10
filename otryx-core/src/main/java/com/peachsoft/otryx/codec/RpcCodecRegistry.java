@@ -1,7 +1,7 @@
-package io.peach.rpc.codec;
+package com.peachsoft.otryx.codec;
 
-import io.peach.rpc.api.RpcMethodDescriptor;
-import io.peach.rpc.spi.ExtensionLoader;
+import com.peachsoft.otryx.api.RpcMethodDescriptor;
+import com.peachsoft.otryx.spi.ExtensionLoader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;

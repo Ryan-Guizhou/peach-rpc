@@ -1,10 +1,10 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
-import io.peach.rpc.api.ServiceKey;
+import com.peachsoft.otryx.api.ServiceKey;
 import java.util.Map;
 
 /**
- * Peach RPC 分布式 Trace 桥接契约。
+ * OTRYX RPC 分布式 Trace 桥接契约。
  *
  * <p>Core 不依赖 OpenTelemetry。具体 Adapter 负责创建 Consumer/Provider
  * Span，并把远端 Trace Context 编码到现有 RPC metadata。

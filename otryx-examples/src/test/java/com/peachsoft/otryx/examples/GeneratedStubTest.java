@@ -1,12 +1,12 @@
-package io.peach.rpc.examples;
+package com.peachsoft.otryx.examples;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.peach.rpc.api.RpcIds;
-import io.peach.rpc.generated.RpcGeneratedClients;
-import io.peach.rpc.generated.RpcGeneratedInvocation;
-import io.peach.rpc.generated.RpcGeneratedServers;
+import com.peachsoft.otryx.api.RpcIds;
+import com.peachsoft.otryx.generated.RpcGeneratedClients;
+import com.peachsoft.otryx.generated.RpcGeneratedInvocation;
+import com.peachsoft.otryx.generated.RpcGeneratedServers;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -47,7 +47,7 @@ class GeneratedStubTest {
                 actualMethodId.set(methodId);
                 invoke1Count.incrementAndGet();
                 assertEquals(
-                        new GreetingRequest("Peach RPC"),
+                        new GreetingRequest("OTRYX RPC"),
                         argument0);
                 return CompletableFuture.completedFuture(expected);
             }
@@ -88,7 +88,7 @@ class GeneratedStubTest {
         });
 
         GreetingReply actual =
-                client.hello(new GreetingRequest("Peach RPC"));
+                client.hello(new GreetingRequest("OTRYX RPC"));
         Method method = GreetingService.class.getMethod(
                 "hello",
                 GreetingRequest.class);
@@ -113,10 +113,10 @@ class GeneratedStubTest {
 
         Object result = dispatcher.invoke(
                 RpcIds.methodId(method),
-                new Object[] {new GreetingRequest("Peach RPC")});
+                new Object[] {new GreetingRequest("OTRYX RPC")});
 
         assertEquals(
-                new GreetingReply("Hello, Peach RPC!"),
+                new GreetingReply("Hello, OTRYX RPC!"),
                 result);
     }
 }

@@ -1,22 +1,22 @@
-package io.peach.rpc.observability.micrometer;
+package com.peachsoft.otryx.observability.micrometer;
 
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.RpcExecutionMode;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.observability.RpcCertificateReloadOutcome;
-import io.peach.rpc.observability.RpcCircuitState;
-import io.peach.rpc.observability.RpcConnectionCloseReason;
-import io.peach.rpc.observability.RpcConnectionRole;
-import io.peach.rpc.observability.RpcFailureClassifier;
-import io.peach.rpc.observability.RpcObserver;
-import io.peach.rpc.observability.RpcRegistryOperation;
-import io.peach.rpc.observability.RpcRegistryRecoveryAction;
-import io.peach.rpc.observability.RpcRetryExhaustionReason;
-import io.peach.rpc.observability.RpcSecurityMode;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.RpcExecutionMode;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.observability.RpcCertificateReloadOutcome;
+import com.peachsoft.otryx.observability.RpcCircuitState;
+import com.peachsoft.otryx.observability.RpcConnectionCloseReason;
+import com.peachsoft.otryx.observability.RpcConnectionRole;
+import com.peachsoft.otryx.observability.RpcFailureClassifier;
+import com.peachsoft.otryx.observability.RpcObserver;
+import com.peachsoft.otryx.observability.RpcRegistryOperation;
+import com.peachsoft.otryx.observability.RpcRegistryRecoveryAction;
+import com.peachsoft.otryx.observability.RpcRetryExhaustionReason;
+import com.peachsoft.otryx.observability.RpcSecurityMode;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 将 Peach RPC 低依赖 Observer 事件映射为 Micrometer 指标。
+ * 将 OTRYX RPC 低依赖 Observer 事件映射为 Micrometer 指标。
  *
  * <p>默认标签不包含 Endpoint、InstanceId、异常消息或 TraceId，避免高基数。
  */
@@ -59,29 +59,29 @@ public final class MicrometerRpcObserver implements RpcObserver {
                 registry,
                 "registry");
         Gauge.builder(
-                        "peach.rpc.connection.active",
+                        "otryx.rpc.connection.active",
                         activeConnections,
                         AtomicInteger::get)
-                .description("Active Peach RPC transport connections")
+                .description("Active OTRYX RPC transport connections")
                 .register(registry);
         Gauge.builder(
-                        "peach.rpc.client.inflight",
+                        "otryx.rpc.client.inflight",
                         clientInflight,
                         AtomicInteger::get)
-                .description("Inflight logical Peach RPC client calls")
+                .description("Inflight logical OTRYX RPC client calls")
                 .register(registry);
         Gauge.builder(
-                        "peach.rpc.server.inflight",
+                        "otryx.rpc.server.inflight",
                         serverInflight,
                         AtomicInteger::get)
-                .description("Inflight Peach RPC provider invocations")
+                .description("Inflight OTRYX RPC provider invocations")
                 .register(registry);
         Gauge.builder(
-                        "peach.rpc.server.inflight.bytes",
+                        "otryx.rpc.server.inflight.bytes",
                         serverInflightBytes,
                         AtomicLong::get)
                 .baseUnit("bytes")
-                .description("Accepted Peach RPC provider request Frame bytes")
+                .description("Accepted OTRYX RPC provider request Frame bytes")
                 .register(registry);
         registerCircuitGauge(
                 RpcCircuitState.CLOSED,
@@ -101,7 +101,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             long durationNanos) {
         activeConnections.incrementAndGet();
         timer(
-                "peach.rpc.connection.established",
+                "otryx.rpc.connection.established",
                 "role",
                 role.name())
                 .record(
@@ -115,7 +115,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             int attempt,
             long delayMillis) {
         registry.counter(
-                "peach.rpc.connection.reconnects")
+                "otryx.rpc.connection.reconnects")
                 .increment();
     }
 
@@ -125,7 +125,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             RpcEndpoint endpoint,
             long idleNanos) {
         registry.counter(
-                        "peach.rpc.connection.heartbeat.timeouts",
+                        "otryx.rpc.connection.heartbeat.timeouts",
                         "role",
                         role.name())
                 .increment();
@@ -140,7 +140,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
         activeConnections.updateAndGet(
                 current -> Math.max(0, current - 1));
         registry.counter(
-                        "peach.rpc.connection.closed",
+                        "otryx.rpc.connection.closed",
                         "role",
                         role.name(),
                         "reason",
@@ -155,7 +155,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             long durationNanos,
             Throwable error) {
         timer(
-                "peach.rpc.registry.operations",
+                "otryx.rpc.registry.operations",
                 "registry",
                 safe(registryType),
                 "operation",
@@ -166,7 +166,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
                         Math.max(0L, durationNanos)));
         if (error != null) {
             registry.counter(
-                            "peach.rpc.registry.failures",
+                            "otryx.rpc.registry.failures",
                             "registry",
                             safe(registryType),
                             "operation",
@@ -182,7 +182,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             long durationNanos,
             Throwable error) {
         timer(
-                "peach.rpc.registry.recoveries",
+                "otryx.rpc.registry.recoveries",
                 "registry",
                 safe(registryType),
                 "action",
@@ -201,7 +201,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             long durationNanos,
             Throwable error) {
         timer(
-                "peach.rpc.tls.handshake",
+                "otryx.rpc.tls.handshake",
                 "role",
                 role.name(),
                 "mode",
@@ -212,7 +212,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
                         Math.max(0L, durationNanos)));
         if (error != null) {
             registry.counter(
-                            "peach.rpc.tls.handshake.failures",
+                            "otryx.rpc.tls.handshake.failures",
                             "role",
                             role.name(),
                             "mode",
@@ -228,7 +228,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             long durationNanos,
             Throwable error) {
         registry.counter(
-                        "peach.rpc.tls.certificate.reload",
+                        "otryx.rpc.tls.certificate.reload",
                         "mode",
                         mode.name(),
                         "outcome",
@@ -241,7 +241,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             RpcSecurityMode mode,
             long remainingMillis) {
         registry.counter(
-                        "peach.rpc.tls.certificate.expiry.warnings",
+                        "otryx.rpc.tls.certificate.expiry.warnings",
                         "mode",
                         mode.name())
                 .increment();
@@ -257,7 +257,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             RpcStatus status,
             Throwable error) {
         timer(
-                "peach.rpc.client.attempts",
+                "otryx.rpc.client.attempts",
                 "status",
                 status.name(),
                 "category",
@@ -269,7 +269,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
                         Math.max(0L, durationNanos)));
         if (error != null || status != RpcStatus.OK) {
             registry.counter(
-                            "peach.rpc.client.failures",
+                            "otryx.rpc.client.failures",
                             "status",
                             status.name())
                     .increment();
@@ -324,7 +324,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             RpcStatus status,
             Throwable error) {
         timer(
-                "peach.rpc.client.calls",
+                "otryx.rpc.client.calls",
                 "status",
                 status.name(),
                 "category",
@@ -336,7 +336,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
                         Math.max(0L, durationNanos)));
         if (status == RpcStatus.DEADLINE_EXCEEDED) {
             registry.counter(
-                    "peach.rpc.client.timeouts")
+                    "otryx.rpc.client.timeouts")
                     .increment();
         }
     }
@@ -348,7 +348,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             RpcRetryExhaustionReason reason,
             Throwable cause) {
         registry.counter(
-                        "peach.rpc.client.retry.exhausted",
+                        "otryx.rpc.client.retry.exhausted",
                         "reason",
                         reason.name())
                 .increment();
@@ -359,7 +359,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             ServiceKey serviceKey,
             int methodId) {
         registry.counter(
-                "peach.rpc.client.circuit.rejected")
+                "otryx.rpc.client.circuit.rejected")
                 .increment();
     }
 
@@ -369,7 +369,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             RpcEndpoint endpoint,
             long ejectionMillis) {
         registry.counter(
-                "peach.rpc.client.outlier.ejected")
+                "otryx.rpc.client.outlier.ejected")
                 .increment();
     }
 
@@ -381,7 +381,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             long delayMillis,
             Throwable cause) {
         registry.counter(
-                        "peach.rpc.client.retries")
+                        "otryx.rpc.client.retries")
                 .increment();
     }
 
@@ -391,7 +391,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             int methodId,
             String reason) {
         registry.counter(
-                        "peach.rpc.server.admission.rejected",
+                        "otryx.rpc.server.admission.rejected",
                         "reason",
                         safe(reason))
                 .increment();
@@ -406,7 +406,7 @@ public final class MicrometerRpcObserver implements RpcObserver {
             RpcStatus status,
             Throwable error) {
         timer(
-                "peach.rpc.server.invocations",
+                "otryx.rpc.server.invocations",
                 "execution",
                 executionMode.name(),
                 "status",
@@ -420,14 +420,14 @@ public final class MicrometerRpcObserver implements RpcObserver {
                         Math.max(0L, durationNanos)));
         if (error != null || status != RpcStatus.OK) {
             registry.counter(
-                            "peach.rpc.server.failures",
+                            "otryx.rpc.server.failures",
                             "status",
                             status.name())
                     .increment();
         }
         if (status == RpcStatus.OVERLOADED) {
             registry.counter(
-                            "peach.rpc.server.overloaded",
+                            "otryx.rpc.server.overloaded",
                             "execution",
                             executionMode.name())
                     .increment();
@@ -438,12 +438,12 @@ public final class MicrometerRpcObserver implements RpcObserver {
             RpcCircuitState state,
             AtomicInteger value) {
         Gauge.builder(
-                        "peach.rpc.client.circuit.state",
+                        "otryx.rpc.client.circuit.state",
                         value,
                         AtomicInteger::get)
                 .tag("state", state.name())
                 .description(
-                        "Peach RPC client method circuit breakers by state")
+                        "OTRYX RPC client method circuit breakers by state")
                 .register(registry);
     }
 

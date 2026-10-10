@@ -1,9 +1,9 @@
-package io.peach.rpc.examples.consumer;
+package com.peachsoft.otryx.examples.consumer;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-/** Peach RPC Consumer 示例应用。 */
+/** OTRYX RPC Consumer 示例应用。 */
 @SpringBootApplication
 public class ConsumerApplication {
 

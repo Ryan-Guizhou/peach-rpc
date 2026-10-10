@@ -1,4 +1,4 @@
-package io.peach.rpc.registry;
+package com.peachsoft.otryx.registry;
 
 /** 注册中心适配器可声明的能力。 */
 public enum RegistryCapability {

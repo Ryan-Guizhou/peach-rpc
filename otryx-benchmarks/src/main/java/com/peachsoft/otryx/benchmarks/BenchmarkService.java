@@ -1,10 +1,10 @@
-package io.peach.rpc.benchmarks;
+package com.peachsoft.otryx.benchmarks;
 
-import io.peach.rpc.api.PeachRpcContract;
-import io.peach.rpc.api.PeachRpcIdempotent;
+import com.peachsoft.otryx.api.OtryxRpcContract;
+import com.peachsoft.otryx.api.OtryxRpcIdempotent;
 
 /** 代理调用开销基准服务。 */
-@PeachRpcContract
+@OtryxRpcContract
 public interface BenchmarkService {
 
     /**
@@ -13,6 +13,6 @@ public interface BenchmarkService {
      * @param value 输入
      * @return 输入字符串
      */
-    @PeachRpcIdempotent
+    @OtryxRpcIdempotent
     String echo(String value);
 }

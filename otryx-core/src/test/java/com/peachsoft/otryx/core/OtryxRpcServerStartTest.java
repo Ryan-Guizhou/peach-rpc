@@ -1,18 +1,18 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.peach.rpc.api.PeachRpcExecution;
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.RpcExecutionMode;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.codec.RpcCodec;
-import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.registry.ServiceRegistrar;
-import io.peach.rpc.transport.RpcRequestHandler;
-import io.peach.rpc.transport.RpcTransportServer;
+import com.peachsoft.otryx.api.OtryxRpcExecution;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.RpcExecutionMode;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.codec.RpcCodec;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.registry.ServiceRegistrar;
+import com.peachsoft.otryx.transport.RpcRequestHandler;
+import com.peachsoft.otryx.transport.RpcTransportServer;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
-public class PeachRpcServerStartTest {
+public class OtryxRpcServerStartTest {
 
     @Test
     void shouldRejectDirectExecutionUnlessExplicitlyEnabled() {
@@ -30,7 +30,7 @@ public class PeachRpcServerStartTest {
         RpcCodecRegistry codecs =
                 RpcCodecRegistry.of(new NoopCodec());
 
-        PeachRpcServer safeDefault = PeachRpcServer.builder()
+        OtryxRpcServer safeDefault = OtryxRpcServer.builder()
                 .serviceRegistrar(registry)
                 .transportServer(transport)
                 .codecRegistry(codecs)
@@ -48,7 +48,7 @@ public class PeachRpcServerStartTest {
             safeDefault.close();
         }
 
-        PeachRpcServer explicitlyEnabled = PeachRpcServer.builder()
+        OtryxRpcServer explicitlyEnabled = OtryxRpcServer.builder()
                 .serviceRegistrar(registry)
                 .transportServer(new TestTransportServer())
                 .codecRegistry(codecs)
@@ -74,7 +74,7 @@ public class PeachRpcServerStartTest {
     void closeShouldNotBlockForeverWhenRegistryUnregisterHangs() {
         HangingUnregisterRegistry registry =
                 new HangingUnregisterRegistry();
-        PeachRpcServer server = PeachRpcServer.builder()
+        OtryxRpcServer server = OtryxRpcServer.builder()
                 .serviceRegistrar(registry)
                 .transportServer(new TestTransportServer())
                 .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
@@ -100,7 +100,7 @@ public class PeachRpcServerStartTest {
 
     @Test
     void wildcardBindShouldRequireAdvertisedHost() {
-        PeachRpcServer server = PeachRpcServer.builder()
+        OtryxRpcServer server = OtryxRpcServer.builder()
                 .serviceRegistrar(new NoopRegistry())
                 .transportServer(new TestTransportServer())
                 .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
@@ -124,7 +124,7 @@ public class PeachRpcServerStartTest {
     @Test
     void dynamicPortShouldPublishActualTransportPort() {
         CapturingRegistry registry = new CapturingRegistry();
-        PeachRpcServer server = PeachRpcServer.builder()
+        OtryxRpcServer server = OtryxRpcServer.builder()
                 .serviceRegistrar(registry)
                 .transportServer(new DynamicPortTransportServer(24567))
                 .codecRegistry(RpcCodecRegistry.of(new NoopCodec()))
@@ -152,7 +152,7 @@ public class PeachRpcServerStartTest {
         FailingRegistry registry = new FailingRegistry();
         TestTransportServer transport = new TestTransportServer();
         RpcCodec codec = new NoopCodec();
-        PeachRpcServer server = PeachRpcServer.builder()
+        OtryxRpcServer server = OtryxRpcServer.builder()
                 .serviceRegistrar(registry)
                 .transportServer(transport)
                 .codecRegistry(RpcCodecRegistry.of(codec))
@@ -174,7 +174,7 @@ public class PeachRpcServerStartTest {
 
     public interface DirectService {
 
-        @PeachRpcExecution(RpcExecutionMode.DIRECT)
+        @OtryxRpcExecution(RpcExecutionMode.DIRECT)
         String call();
     }
 

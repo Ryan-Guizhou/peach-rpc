@@ -1,29 +1,29 @@
-package io.peach.rpc.spring.autoconfigure;
+package com.peachsoft.otryx.spring.autoconfigure;
 
-import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.codec.fory.ForyRpcCodec;
-import io.peach.rpc.codec.fory.ForyRpcSecurityOptions;
-import io.peach.rpc.core.PeachRpcClient;
-import io.peach.rpc.core.PeachRpcServer;
-import io.peach.rpc.core.RpcClientResilienceOptions;
-import io.peach.rpc.core.RpcProviderExecutionOptions;
-import io.peach.rpc.loadbalance.LoadBalancer;
-import io.peach.rpc.observability.RpcMetadataPropagator;
-import io.peach.rpc.observability.RpcObserver;
-import io.peach.rpc.observability.RpcTracingBridge;
-import io.peach.rpc.proxy.ProxyFactory;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryFactory;
-import io.peach.rpc.registry.RegistryOptions;
-import io.peach.rpc.spi.ExtensionLoader;
-import io.peach.rpc.spring.lifecycle.PeachRpcServerLifecycle;
-import io.peach.rpc.spring.processor.PeachRpcReferenceBeanPostProcessor;
-import io.peach.rpc.spring.processor.PeachRpcServiceBeanDefinitionValidator;
-import io.peach.rpc.spring.processor.PeachRpcServiceBeanPostProcessor;
-import io.peach.rpc.spring.runtime.PeachRpcRuntimeCoordinator;
-import io.peach.rpc.transport.RpcTransportFactory;
-import io.peach.rpc.transport.RpcTransportOptions;
-import io.peach.rpc.transport.RpcTransportSecurityOptions;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.codec.fory.ForyRpcCodec;
+import com.peachsoft.otryx.codec.fory.ForyRpcSecurityOptions;
+import com.peachsoft.otryx.core.OtryxRpcClient;
+import com.peachsoft.otryx.core.OtryxRpcServer;
+import com.peachsoft.otryx.core.RpcClientResilienceOptions;
+import com.peachsoft.otryx.core.RpcProviderExecutionOptions;
+import com.peachsoft.otryx.loadbalance.LoadBalancer;
+import com.peachsoft.otryx.observability.RpcMetadataPropagator;
+import com.peachsoft.otryx.observability.RpcObserver;
+import com.peachsoft.otryx.observability.RpcTracingBridge;
+import com.peachsoft.otryx.proxy.ProxyFactory;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.registry.RegistryFactory;
+import com.peachsoft.otryx.registry.RegistryOptions;
+import com.peachsoft.otryx.spi.ExtensionLoader;
+import com.peachsoft.otryx.spring.lifecycle.OtryxRpcServerLifecycle;
+import com.peachsoft.otryx.spring.processor.OtryxRpcReferenceBeanPostProcessor;
+import com.peachsoft.otryx.spring.processor.OtryxRpcServiceBeanDefinitionValidator;
+import com.peachsoft.otryx.spring.processor.OtryxRpcServiceBeanPostProcessor;
+import com.peachsoft.otryx.spring.runtime.OtryxRpcRuntimeCoordinator;
+import com.peachsoft.otryx.transport.RpcTransportFactory;
+import com.peachsoft.otryx.transport.RpcTransportOptions;
+import com.peachsoft.otryx.transport.RpcTransportSecurityOptions;
 import java.util.Map;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -35,36 +35,36 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 
 /**
- * Peach RPC Spring Boot 自动配置。
+ * OTRYX RPC Spring Boot 自动配置。
  */
 @AutoConfiguration
-@ConditionalOnClass(PeachRpcClient.class)
-@ConditionalOnProperty(prefix = "peach.rpc", name = "enabled", havingValue = "true", matchIfMissing = true)
-@EnableConfigurationProperties(PeachRpcProperties.class)
-public class PeachRpcAutoConfiguration {
+@ConditionalOnClass(OtryxRpcClient.class)
+@ConditionalOnProperty(prefix = "otryx.rpc", name = "enabled", havingValue = "true", matchIfMissing = true)
+@EnableConfigurationProperties(OtryxRpcProperties.class)
+public class OtryxRpcAutoConfiguration {
 
     /**
-     * 创建 Peach RPC 自动配置。
+     * 创建 OTRYX RPC 自动配置。
      */
-    public PeachRpcAutoConfiguration() {
+    public OtryxRpcAutoConfiguration() {
     }
 
     /**
      * 创建注册中心实例。
      *
-     * @param properties Peach RPC 配置
+     * @param properties OTRYX RPC 配置
      * @param observerProvider Registry 控制面 Observer 提供器
      * @return 注册中心实例
      */
     @Bean(destroyMethod = "close")
     @ConditionalOnMissingBean
     public Registry peachRpcRegistry(
-            PeachRpcProperties properties,
+            OtryxRpcProperties properties,
             ObjectProvider<RpcObserver> observerProvider) {
-        PeachRpcProperties.Registry registry = properties.getRegistry();
+        OtryxRpcProperties.Registry registry = properties.getRegistry();
         RegistryFactory factory = requireExtension(
                 RegistryFactory.class,
-                "peach.rpc.registry.type",
+                "otryx.rpc.registry.type",
                 registry.getType());
         return factory.create(RegistryOptions.fromCsv(
                 registry.getEndpoints(),
@@ -92,8 +92,8 @@ public class PeachRpcAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public RpcCodecRegistry peachRpcCodecRegistry(PeachRpcProperties properties) {
-        PeachRpcProperties.ForySecurity security = properties.getCodec().getFory();
+    public RpcCodecRegistry peachRpcCodecRegistry(OtryxRpcProperties properties) {
+        OtryxRpcProperties.ForySecurity security = properties.getCodec().getFory();
         ForyRpcSecurityOptions options = new ForyRpcSecurityOptions(
                 security.getMode(),
                 java.util.Set.copyOf(security.getAllowedClassPatterns()),
@@ -107,32 +107,32 @@ public class PeachRpcAutoConfiguration {
     /**
      * 创建 Transport 工厂。
      *
-     * @param properties Peach RPC 配置
+     * @param properties OTRYX RPC 配置
      * @return Transport 工厂
      */
     @Bean
     @ConditionalOnMissingBean
-    public RpcTransportFactory peachRpcTransportFactory(PeachRpcProperties properties) {
+    public RpcTransportFactory peachRpcTransportFactory(OtryxRpcProperties properties) {
         return requireExtension(
                 RpcTransportFactory.class,
-                "peach.rpc.transport.type",
+                "otryx.rpc.transport.type",
                 properties.getTransport().getType());
     }
 
     /**
      * 创建 Transport 运行参数。
      *
-     * @param properties Peach RPC 配置
+     * @param properties OTRYX RPC 配置
      * @param codecRegistry Codec 注册表
      * @return Transport 运行参数
      */
     @Bean
     @ConditionalOnMissingBean
     public RpcTransportOptions peachRpcTransportOptions(
-            PeachRpcProperties properties,
+            OtryxRpcProperties properties,
             RpcCodecRegistry codecRegistry) {
-        PeachRpcProperties.Transport transport = properties.getTransport();
-        PeachRpcProperties.Security security =
+        OtryxRpcProperties.Transport transport = properties.getTransport();
+        OtryxRpcProperties.Security security =
                 transport.getSecurity();
         RpcTransportSecurityOptions securityOptions =
                 new RpcTransportSecurityOptions(
@@ -162,14 +162,14 @@ public class PeachRpcAutoConfiguration {
     /**
      * 创建 Consumer 容错参数。
      *
-     * @param properties Peach RPC 配置
+     * @param properties OTRYX RPC 配置
      * @return Consumer 容错参数
      */
     @Bean
     @ConditionalOnMissingBean
     public RpcClientResilienceOptions peachRpcClientResilienceOptions(
-            PeachRpcProperties properties) {
-        PeachRpcProperties.Resilience resilience =
+            OtryxRpcProperties properties) {
+        OtryxRpcProperties.Resilience resilience =
                 properties.getClient().getResilience();
         return new RpcClientResilienceOptions(
                 resilience.getMaxAttempts(),
@@ -187,14 +187,14 @@ public class PeachRpcAutoConfiguration {
     /**
      * 创建 Provider 执行资源参数。
      *
-     * @param properties Peach RPC 配置
+     * @param properties OTRYX RPC 配置
      * @return Provider 执行资源参数
      */
     @Bean
     @ConditionalOnMissingBean
     public RpcProviderExecutionOptions peachRpcProviderExecutionOptions(
-            PeachRpcProperties properties) {
-        PeachRpcProperties.Execution execution =
+            OtryxRpcProperties properties) {
+        OtryxRpcProperties.Execution execution =
                 properties.getServer().getExecution();
         return new RpcProviderExecutionOptions(
                 execution.isAllowDirect(),
@@ -205,30 +205,30 @@ public class PeachRpcAutoConfiguration {
     /**
      * 创建 Consumer 负载均衡器。
      *
-     * @param properties Peach RPC 配置
+     * @param properties OTRYX RPC 配置
      * @return 负载均衡器
      */
     @Bean
     @ConditionalOnMissingBean
-    public LoadBalancer peachRpcLoadBalancer(PeachRpcProperties properties) {
+    public LoadBalancer peachRpcLoadBalancer(OtryxRpcProperties properties) {
         return requireExtension(
                 LoadBalancer.class,
-                "peach.rpc.client.load-balancer",
+                "otryx.rpc.client.load-balancer",
                 properties.getClient().getLoadBalancer());
     }
 
     /**
      * 创建 Consumer 代理工厂。
      *
-     * @param properties Peach RPC 配置
+     * @param properties OTRYX RPC 配置
      * @return 代理工厂
      */
     @Bean
     @ConditionalOnMissingBean
-    public ProxyFactory peachRpcProxyFactory(PeachRpcProperties properties) {
+    public ProxyFactory peachRpcProxyFactory(OtryxRpcProperties properties) {
         return requireExtension(
                 ProxyFactory.class,
-                "peach.rpc.client.proxy",
+                "otryx.rpc.client.proxy",
                 properties.getClient().getProxy());
     }
 
@@ -250,7 +250,7 @@ public class PeachRpcAutoConfiguration {
         } catch (IllegalArgumentException error) {
             throw new IllegalStateException(
                     "Invalid " + propertyName + "='" + name
-                            + "': install the matching Peach RPC adapter "
+                            + "': install the matching OTRYX RPC adapter "
                             + "or select an available SPI implementation. "
                             + error.getMessage(),
                     error);
@@ -271,12 +271,12 @@ public class PeachRpcAutoConfiguration {
      * @param observerProvider 可观测性 Observer 提供器
      * @param metadataPropagatorProvider Metadata 传播器提供器
      * @param tracingBridgeProvider 分布式 Trace Bridge 提供器
-     * @param properties Peach RPC 配置
+     * @param properties OTRYX RPC 配置
      * @return 运行时协调器
      */
     @Bean(destroyMethod = "close")
     @ConditionalOnMissingBean
-    public PeachRpcRuntimeCoordinator peachRpcRuntimeCoordinator(
+    public OtryxRpcRuntimeCoordinator peachRpcRuntimeCoordinator(
             Registry registry,
             RpcCodecRegistry codecRegistry,
             RpcTransportFactory transportFactory,
@@ -288,8 +288,8 @@ public class PeachRpcAutoConfiguration {
             ObjectProvider<RpcObserver> observerProvider,
             ObjectProvider<RpcMetadataPropagator> metadataPropagatorProvider,
             ObjectProvider<RpcTracingBridge> tracingBridgeProvider,
-            PeachRpcProperties properties) {
-        return new PeachRpcRuntimeCoordinator(
+            OtryxRpcProperties properties) {
+        return new OtryxRpcRuntimeCoordinator(
                 registry,
                 codecRegistry,
                 transportFactory,
@@ -313,7 +313,7 @@ public class PeachRpcAutoConfiguration {
     @Bean(destroyMethod = "")
     @Lazy
     @ConditionalOnMissingBean
-    public PeachRpcClient peachRpcClient(PeachRpcRuntimeCoordinator coordinator) {
+    public OtryxRpcClient peachRpcClient(OtryxRpcRuntimeCoordinator coordinator) {
         return coordinator.client();
     }
 
@@ -326,7 +326,7 @@ public class PeachRpcAutoConfiguration {
     @Bean(destroyMethod = "")
     @Lazy
     @ConditionalOnMissingBean
-    public PeachRpcServer peachRpcServer(PeachRpcRuntimeCoordinator coordinator) {
+    public OtryxRpcServer peachRpcServer(OtryxRpcRuntimeCoordinator coordinator) {
         return coordinator.server();
     }
 
@@ -337,9 +337,9 @@ public class PeachRpcAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public static PeachRpcServiceBeanDefinitionValidator
+    public static OtryxRpcServiceBeanDefinitionValidator
             peachRpcServiceBeanDefinitionValidator() {
-        return new PeachRpcServiceBeanDefinitionValidator();
+        return new OtryxRpcServiceBeanDefinitionValidator();
     }
 
     /**
@@ -350,9 +350,9 @@ public class PeachRpcAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public static PeachRpcReferenceBeanPostProcessor peachRpcReferenceBeanPostProcessor(
-            ObjectProvider<PeachRpcRuntimeCoordinator> coordinatorProvider) {
-        return new PeachRpcReferenceBeanPostProcessor(coordinatorProvider);
+    public static OtryxRpcReferenceBeanPostProcessor peachRpcReferenceBeanPostProcessor(
+            ObjectProvider<OtryxRpcRuntimeCoordinator> coordinatorProvider) {
+        return new OtryxRpcReferenceBeanPostProcessor(coordinatorProvider);
     }
 
     /**
@@ -363,9 +363,9 @@ public class PeachRpcAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public static PeachRpcServiceBeanPostProcessor peachRpcServiceBeanPostProcessor(
-            ObjectProvider<PeachRpcRuntimeCoordinator> coordinatorProvider) {
-        return new PeachRpcServiceBeanPostProcessor(coordinatorProvider);
+    public static OtryxRpcServiceBeanPostProcessor peachRpcServiceBeanPostProcessor(
+            ObjectProvider<OtryxRpcRuntimeCoordinator> coordinatorProvider) {
+        return new OtryxRpcServiceBeanPostProcessor(coordinatorProvider);
     }
 
     /**
@@ -376,9 +376,9 @@ public class PeachRpcAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public PeachRpcServerLifecycle peachRpcServerLifecycle(
-            PeachRpcRuntimeCoordinator coordinator) {
-        return new PeachRpcServerLifecycle(coordinator);
+    public OtryxRpcServerLifecycle peachRpcServerLifecycle(
+            OtryxRpcRuntimeCoordinator coordinator) {
+        return new OtryxRpcServerLifecycle(coordinator);
     }
 
 }

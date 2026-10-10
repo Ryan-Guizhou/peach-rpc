@@ -4,17 +4,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.peach.rpc</groupId>
-        <artifactId>peach-rpc-parent</artifactId>
+        <groupId>com.peachsoft.otryx</groupId>
+        <artifactId>otryx-parent</artifactId>
         <version>${revision}</version>
     </parent>
-    <artifactId>peach-rpc-proxy-cglib</artifactId>
-    <name>peach-rpc-proxy-cglib</name>
-    <description>Optional CGLIB proxy adapter for Peach RPC.</description>
+    <artifactId>otryx-proxy-cglib</artifactId>
+    <name>otryx-proxy-cglib</name>
+    <description>Optional CGLIB proxy adapter for OTRYX RPC.</description>
     <dependencies>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-core</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-core</artifactId>
         </dependency>
         <dependency>
             <groupId>cglib</groupId>

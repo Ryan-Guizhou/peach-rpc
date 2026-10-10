@@ -1,4 +1,4 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
 /** Consumer 自动重试无法继续时的低基数原因。 */
 public enum RpcRetryExhaustionReason {

@@ -1,23 +1,23 @@
-package io.peach.rpc.observability.jfr;
+package com.peachsoft.otryx.observability.jfr;
 
-import io.peach.rpc.observability.RpcObserver;
+import com.peachsoft.otryx.observability.RpcObserver;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
-/** Peach RPC JFR 自动配置。 */
+/** OTRYX RPC JFR 自动配置。 */
 @AutoConfiguration
 @ConditionalOnProperty(
-        prefix = "peach.rpc.observability.jfr",
+        prefix = "otryx.rpc.observability.jfr",
         name = "enabled",
         havingValue = "true")
-@EnableConfigurationProperties(PeachRpcJfrProperties.class)
-public class PeachRpcJfrAutoConfiguration {
+@EnableConfigurationProperties(OtryxRpcJfrProperties.class)
+public class OtryxRpcJfrAutoConfiguration {
 
     /** 创建自动配置。 */
-    public PeachRpcJfrAutoConfiguration() {
+    public OtryxRpcJfrAutoConfiguration() {
     }
 
     /**
@@ -30,7 +30,7 @@ public class PeachRpcJfrAutoConfiguration {
     @ConditionalOnMissingBean(
             name = "peachRpcJfrObserver")
     public RpcObserver peachRpcJfrObserver(
-            PeachRpcJfrProperties properties) {
+            OtryxRpcJfrProperties properties) {
         return new JfrRpcObserver(
                 properties.getSlowThreshold());
     }

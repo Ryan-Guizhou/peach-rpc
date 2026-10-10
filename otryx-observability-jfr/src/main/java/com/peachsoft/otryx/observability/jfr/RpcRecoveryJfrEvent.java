@@ -1,4 +1,4 @@
-package io.peach.rpc.observability.jfr;
+package com.peachsoft.otryx.observability.jfr;
 
 import jdk.jfr.Category;
 import jdk.jfr.Event;
@@ -6,9 +6,9 @@ import jdk.jfr.Label;
 import jdk.jfr.Name;
 
 /** 连接/Registry/TLS 恢复类 JFR Event。 */
-@Name("io.peach.rpc.Recovery")
-@Label("Peach RPC Recovery")
-@Category({"Peach RPC", "Recovery"})
+@Name("com.peachsoft.otryx.Recovery")
+@Label("OTRYX RPC Recovery")
+@Category({"OTRYX RPC", "Recovery"})
 public final class RpcRecoveryJfrEvent extends Event {
 
     /** 创建恢复类 JFR Event。 */

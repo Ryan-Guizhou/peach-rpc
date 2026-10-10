@@ -1,9 +1,9 @@
-package io.peach.rpc.benchmarks;
+package com.peachsoft.otryx.benchmarks;
 
-import io.peach.rpc.api.RpcMethodDescriptor;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.codec.RpcMethodCodec;
-import io.peach.rpc.codec.fory.ForyRpcCodec;
+import com.peachsoft.otryx.api.RpcMethodDescriptor;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.codec.RpcMethodCodec;
+import com.peachsoft.otryx.codec.fory.ForyRpcCodec;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -31,7 +31,7 @@ import org.openjdk.jmh.annotations.Warmup;
 @State(Scope.Thread)
 public class ForyArgumentEncodingBenchmark {
 
-    private static final String ARGUMENT = "peach-rpc";
+    private static final String ARGUMENT = "otryx";
     private RpcMethodCodec zeroArguments;
     private RpcMethodCodec oneArgument;
     private RpcMethodCodec fourArguments;

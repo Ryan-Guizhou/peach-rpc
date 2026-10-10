@@ -1,4 +1,4 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
 /** RPC 失败的低基数运维分类。 */
 public enum RpcFailureCategory {

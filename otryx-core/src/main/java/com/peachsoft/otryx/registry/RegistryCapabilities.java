@@ -1,4 +1,4 @@
-package io.peach.rpc.registry;
+package com.peachsoft.otryx.registry;
 
 import java.util.Arrays;
 import java.util.Set;

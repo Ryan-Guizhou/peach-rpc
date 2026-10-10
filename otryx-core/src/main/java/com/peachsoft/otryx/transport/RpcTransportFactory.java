@@ -1,6 +1,6 @@
-package io.peach.rpc.transport;
+package com.peachsoft.otryx.transport;
 
-import io.peach.rpc.spi.SPI;
+import com.peachsoft.otryx.spi.SPI;
 
 /** Transport 构造扩展点。 */
 @SPI("vertx")

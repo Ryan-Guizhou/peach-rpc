@@ -1,49 +1,49 @@
 groups:
-  - name: peach-rpc-operational-signals
+  - name: otryx-operational-signals
     rules:
       # These are operational signal examples, not Production SLO thresholds.
       # Tune duration, routing and severity for the target environment.
-      - alert: PeachRpcTlsHandshakeFailures
+      - alert: OtryxRpcTlsHandshakeFailures
         expr: increase(peach_rpc_tls_handshake_failures_total[5m]) > 0
         for: 2m
         labels:
           severity: warning
         annotations:
-          summary: Peach RPC TLS handshake failures detected
+          summary: OTRYX RPC TLS handshake failures detected
           description: Check trust material, hostname verification and certificate rotation.
 
-      - alert: PeachRpcRegistryFailures
+      - alert: OtryxRpcRegistryFailures
         expr: increase(peach_rpc_registry_failures_total[5m]) > 0
         for: 2m
         labels:
           severity: warning
         annotations:
-          summary: Peach RPC registry operations are failing
+          summary: OTRYX RPC registry operations are failing
           description: Check Etcd/Nacos availability, credentials and control-plane latency.
 
-      - alert: PeachRpcHeartbeatTimeouts
+      - alert: OtryxRpcHeartbeatTimeouts
         expr: increase(peach_rpc_connection_heartbeat_timeouts_total[5m]) > 0
         for: 2m
         labels:
           severity: warning
         annotations:
-          summary: Peach RPC heartbeat timeouts detected
+          summary: OTRYX RPC heartbeat timeouts detected
           description: Check network reachability, event-loop stalls and remote process health.
 
-      - alert: PeachRpcProviderAdmissionRejections
+      - alert: OtryxRpcProviderAdmissionRejections
         expr: increase(peach_rpc_server_admission_rejected_total[5m]) > 0
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: Peach RPC provider is rejecting work
+          summary: OTRYX RPC provider is rejecting work
           description: Review max-concurrent, CPU queue, downstream latency and capacity.
 
-      - alert: PeachRpcCircuitStuckOpen
+      - alert: OtryxRpcCircuitStuckOpen
         expr: sum(peach_rpc_client_circuit_state{state="OPEN"}) > 0
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: Peach RPC circuit breaker remains open
+          summary: OTRYX RPC circuit breaker remains open
           description: Check downstream availability, retry amplification and provider saturation.

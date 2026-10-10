@@ -1,11 +1,11 @@
-package io.peach.rpc.benchmarks;
+package com.peachsoft.otryx.benchmarks;
 
-import io.peach.rpc.api.PeachRpcContract;
-import io.peach.rpc.api.PeachRpcExecution;
-import io.peach.rpc.api.RpcExecutionMode;
+import com.peachsoft.otryx.api.OtryxRpcContract;
+import com.peachsoft.otryx.api.OtryxRpcExecution;
+import com.peachsoft.otryx.api.RpcExecutionMode;
 
 /** V2-D.2 Provider 执行与过载场景基准契约。 */
-@PeachRpcContract
+@OtryxRpcContract
 public interface ScenarioBenchmarkService {
 
     /**
@@ -20,7 +20,7 @@ public interface ScenarioBenchmarkService {
      *
      * @return 固定结果
      */
-    @PeachRpcExecution(RpcExecutionMode.CPU)
+    @OtryxRpcExecution(RpcExecutionMode.CPU)
     int cpu();
 
     /**

@@ -1,35 +1,35 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
-import io.peach.rpc.api.PeachRpcIdempotent;
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.RpcSchemaFingerprint;
-import io.peach.rpc.api.RpcException;
-import io.peach.rpc.api.RpcMethodDescriptor;
-import io.peach.rpc.api.RpcOverloadedException;
-import io.peach.rpc.api.RpcRemoteException;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.RpcTimeoutException;
-import io.peach.rpc.api.RpcUnavailableException;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.codec.RpcMethodCodec;
-import io.peach.rpc.generated.RpcGeneratedClients;
-import io.peach.rpc.generated.RpcGeneratedInvocation;
-import io.peach.rpc.loadbalance.LoadBalanceMetrics;
-import io.peach.rpc.loadbalance.LoadBalancer;
-import io.peach.rpc.observability.RpcMetadataPropagator;
-import io.peach.rpc.observability.RpcObserver;
-import io.peach.rpc.observability.RpcRetryExhaustionReason;
-import io.peach.rpc.observability.RpcTraceContext;
-import io.peach.rpc.observability.RpcTracingBridge;
-import io.peach.rpc.protocol.RpcErrorCodec;
-import io.peach.rpc.protocol.RpcFrameView;
-import io.peach.rpc.protocol.RpcProtocolCodec;
-import io.peach.rpc.proxy.ProxyFactory;
-import io.peach.rpc.registry.ServiceDiscovery;
-import io.peach.rpc.spi.ExtensionLoader;
-import io.peach.rpc.transport.RpcTransportClient;
+import com.peachsoft.otryx.api.OtryxRpcIdempotent;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.RpcSchemaFingerprint;
+import com.peachsoft.otryx.api.RpcException;
+import com.peachsoft.otryx.api.RpcMethodDescriptor;
+import com.peachsoft.otryx.api.RpcOverloadedException;
+import com.peachsoft.otryx.api.RpcRemoteException;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.RpcTimeoutException;
+import com.peachsoft.otryx.api.RpcUnavailableException;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.codec.RpcMethodCodec;
+import com.peachsoft.otryx.generated.RpcGeneratedClients;
+import com.peachsoft.otryx.generated.RpcGeneratedInvocation;
+import com.peachsoft.otryx.loadbalance.LoadBalanceMetrics;
+import com.peachsoft.otryx.loadbalance.LoadBalancer;
+import com.peachsoft.otryx.observability.RpcMetadataPropagator;
+import com.peachsoft.otryx.observability.RpcObserver;
+import com.peachsoft.otryx.observability.RpcRetryExhaustionReason;
+import com.peachsoft.otryx.observability.RpcTraceContext;
+import com.peachsoft.otryx.observability.RpcTracingBridge;
+import com.peachsoft.otryx.protocol.RpcErrorCodec;
+import com.peachsoft.otryx.protocol.RpcFrameView;
+import com.peachsoft.otryx.protocol.RpcProtocolCodec;
+import com.peachsoft.otryx.proxy.ProxyFactory;
+import com.peachsoft.otryx.registry.ServiceDiscovery;
+import com.peachsoft.otryx.spi.ExtensionLoader;
+import com.peachsoft.otryx.transport.RpcTransportClient;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.HashMap;
@@ -55,7 +55,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Peach RPC Consumer 运行时，负责从本地服务目录选取端点并执行请求。
+ * OTRYX RPC Consumer 运行时，负责从本地服务目录选取端点并执行请求。
  *
  * <p>重试、Circuit Breaker、Deadline 和完成回调的资源由该运行时管理。
  * 响应解码和用户完成回调不得阻塞 Vert.x EventLoop；异步完成通过
@@ -64,7 +64,7 @@ import java.util.concurrent.TimeUnit;
  * <p>实例由 Builder 构建，使用者应在不再发起调用时调用 {@link #close()}，
  * 避免遗留连接、服务发现订阅和执行资源。
  */
-public final class PeachRpcClient implements AutoCloseable {
+public final class OtryxRpcClient implements AutoCloseable {
     private final ServiceDiscovery discovery;
     private final RpcTransportClient transport;
     private final RpcCodecRegistry codecs;
@@ -105,7 +105,7 @@ public final class PeachRpcClient implements AutoCloseable {
                 }
             };
 
-    private PeachRpcClient(Builder builder) {
+    private OtryxRpcClient(Builder builder) {
         this.discovery = Objects.requireNonNull(builder.discovery, "serviceDiscovery");
         this.transport = Objects.requireNonNull(builder.transport, "transportClient");
         this.codecs = Objects.requireNonNull(builder.codecs, "codecRegistry");
@@ -132,14 +132,14 @@ public final class PeachRpcClient implements AutoCloseable {
                 new ArrayBlockingQueue<>(
                         builder.responseCompletionQueueCapacity),
                 Thread.ofPlatform()
-                        .name("peach-rpc-client-completion-", 0)
+                        .name("otryx-client-completion-", 0)
                         .factory(),
                 new ThreadPoolExecutor.AbortPolicy());
         this.deadlineScheduler = new ScheduledThreadPoolExecutor(
                 2,
                 Thread.ofPlatform()
                         .daemon(true)
-                        .name("peach-rpc-client-deadline-", 0)
+                        .name("otryx-client-deadline-", 0)
                         .factory());
         this.deadlineScheduler.setRemoveOnCancelPolicy(true);
         this.deadlineScheduler.scheduleWithFixedDelay(
@@ -491,7 +491,7 @@ public final class PeachRpcClient implements AutoCloseable {
         }
         long remainingNanos = deadlineNanos - System.nanoTime();
         if (remainingNanos <= 0L) {
-            var timeoutError = new io.peach.rpc.api.RpcTimeoutException(
+            var timeoutError = new com.peachsoft.otryx.api.RpcTimeoutException(
                     "RPC request deadline exceeded");
             observeClientAttempt(
                     reference,
@@ -869,7 +869,7 @@ public final class PeachRpcClient implements AutoCloseable {
         if (error instanceof RpcOverloadedException) {
             return RpcStatus.OVERLOADED;
         }
-        if (error instanceof io.peach.rpc.api.RpcTimeoutException) {
+        if (error instanceof com.peachsoft.otryx.api.RpcTimeoutException) {
             return RpcStatus.DEADLINE_EXCEEDED;
         }
         if (error instanceof RpcUnavailableException) {
@@ -1001,7 +1001,7 @@ public final class PeachRpcClient implements AutoCloseable {
                 ClientMethodBinding binding = new ClientMethodBinding(
                         descriptor.methodId(),
                         codecs.bind(descriptor, codecId),
-                        method.isAnnotationPresent(PeachRpcIdempotent.class),
+                        method.isAnnotationPresent(OtryxRpcIdempotent.class),
                         new RpcCircuitBreaker(
                                 resilienceOptions.circuitConsecutiveFailureThreshold(),
                                 resilienceOptions.circuitOpenDuration()));
@@ -1019,7 +1019,7 @@ public final class PeachRpcClient implements AutoCloseable {
             }
             return new ClientReference(
                     key,
-                    io.peach.rpc.api.RpcIds.serviceId(key),
+                    com.peachsoft.otryx.api.RpcIds.serviceId(key),
                     directory,
                     Map.copyOf(methods),
                     Map.copyOf(methodsById));
@@ -1060,7 +1060,7 @@ public final class PeachRpcClient implements AutoCloseable {
 
         @Override
         public CompletionStage<Object> invoke0(int methodId) {
-            return PeachRpcClient.this.invoke0(
+            return OtryxRpcClient.this.invoke0(
                     reference,
                     reference.require(methodId));
         }
@@ -1069,7 +1069,7 @@ public final class PeachRpcClient implements AutoCloseable {
         public CompletionStage<Object> invoke1(
                 int methodId,
                 Object argument0) {
-            return PeachRpcClient.this.invoke1(
+            return OtryxRpcClient.this.invoke1(
                     reference,
                     reference.require(methodId),
                     argument0);
@@ -1080,7 +1080,7 @@ public final class PeachRpcClient implements AutoCloseable {
                 int methodId,
                 Object argument0,
                 Object argument1) {
-            return PeachRpcClient.this.invoke2(
+            return OtryxRpcClient.this.invoke2(
                     reference,
                     reference.require(methodId),
                     argument0,
@@ -1093,7 +1093,7 @@ public final class PeachRpcClient implements AutoCloseable {
                 Object argument0,
                 Object argument1,
                 Object argument2) {
-            return PeachRpcClient.this.invoke3(
+            return OtryxRpcClient.this.invoke3(
                     reference,
                     reference.require(methodId),
                     argument0,
@@ -1108,7 +1108,7 @@ public final class PeachRpcClient implements AutoCloseable {
                 Object argument1,
                 Object argument2,
                 Object argument3) {
-            return PeachRpcClient.this.invoke4(
+            return OtryxRpcClient.this.invoke4(
                     reference,
                     reference.require(methodId),
                     argument0,
@@ -1121,7 +1121,7 @@ public final class PeachRpcClient implements AutoCloseable {
         public CompletionStage<Object> invokeN(
                 int methodId,
                 Object[] arguments) {
-            return PeachRpcClient.this.invokeN(
+            return OtryxRpcClient.this.invokeN(
                     reference,
                     reference.require(methodId),
                     arguments);
@@ -1309,8 +1309,8 @@ public final class PeachRpcClient implements AutoCloseable {
          *
          * @return Consumer 运行时
          */
-        public PeachRpcClient build() {
-            return new PeachRpcClient(this);
+        public OtryxRpcClient build() {
+            return new OtryxRpcClient(this);
         }
     }
 }

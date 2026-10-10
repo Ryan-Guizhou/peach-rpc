@@ -1,13 +1,13 @@
-package io.peach.rpc.protocol;
+package com.peachsoft.otryx.protocol;
 
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.codec.RpcCodecIds;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.codec.RpcCodecIds;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Peach RPC Wire v1 二进制协议编解码器。
+ * OTRYX RPC Wire v1 二进制协议编解码器。
  *
  * <p>负责编码和解析固定长度 Header、RPC 状态和 Payload 边界，
  * 并拒绝不符合协议长度、Magic 或版本约束的输入。
@@ -18,7 +18,7 @@ import java.util.Map;
  */
 public final class RpcProtocolCodec {
 
-    /** Peach RPC 协议魔数。 */
+    /** OTRYX RPC 协议魔数。 */
     public static final short MAGIC = (short) 0xCAFE;
     /** 当前协议版本。 */
     public static final byte VERSION = 1;

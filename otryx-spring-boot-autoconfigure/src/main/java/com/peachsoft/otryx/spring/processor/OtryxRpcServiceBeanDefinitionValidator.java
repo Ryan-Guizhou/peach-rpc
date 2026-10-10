@@ -1,6 +1,6 @@
-package io.peach.rpc.spring.processor;
+package com.peachsoft.otryx.spring.processor;
 
-import io.peach.rpc.spring.annotation.PeachRpcService;
+import com.peachsoft.otryx.spring.annotation.OtryxRpcService;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -11,11 +11,11 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
 /**
  * 在 Provider 实例化前校验 Bean 生命周期，避免 Server 启动后才出现服务。
  */
-public final class PeachRpcServiceBeanDefinitionValidator
+public final class OtryxRpcServiceBeanDefinitionValidator
         implements BeanFactoryPostProcessor, PriorityOrdered {
 
     /** 创建 Provider Bean 定义校验器。 */
-    public PeachRpcServiceBeanDefinitionValidator() {
+    public OtryxRpcServiceBeanDefinitionValidator() {
     }
 
     @Override
@@ -27,21 +27,21 @@ public final class PeachRpcServiceBeanDefinitionValidator
             if (type == null
                     || AnnotatedElementUtils.findMergedAnnotation(
                             type,
-                            PeachRpcService.class) == null) {
+                            OtryxRpcService.class) == null) {
                 continue;
             }
             BeanDefinition definition =
                     beanFactory.getBeanDefinition(beanName);
             if (definition.isLazyInit()) {
                 throw new IllegalStateException(
-                        "@PeachRpcService must not be lazy: bean="
+                        "@OtryxRpcService must not be lazy: bean="
                                 + beanName
                                 + ", type="
                                 + type.getName());
             }
             if (!beanFactory.isSingleton(beanName)) {
                 throw new IllegalStateException(
-                        "@PeachRpcService must be singleton: bean="
+                        "@OtryxRpcService must be singleton: bean="
                                 + beanName
                                 + ", type="
                                 + type.getName());

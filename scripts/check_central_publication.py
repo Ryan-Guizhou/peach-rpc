@@ -12,28 +12,28 @@ ROOT = Path(__file__).resolve().parents[1]
 NS = {"m": "http://maven.apache.org/POM/4.0.0"}
 
 PUBLIC_MODULES = (
-    "peach-rpc-core",
-    "peach-rpc-codegen",
-    "peach-rpc-codec-fory",
-    "peach-rpc-transport-vertx",
-    "peach-rpc-registry-etcd",
-    "peach-rpc-registry-nacos",
-    "peach-rpc-proxy-cglib",
-    "peach-rpc-proxy-bytebuddy",
-    "peach-rpc-observability-micrometer",
-    "peach-rpc-observability-opentelemetry",
-    "peach-rpc-observability-jfr",
-    "peach-rpc-spring-boot-autoconfigure",
-    "peach-rpc-spring-boot-starter",
-    "peach-rpc-spring-boot-starter-lite",
+    "otryx-core",
+    "otryx-codegen",
+    "otryx-codec-fory",
+    "otryx-transport-vertx",
+    "otryx-registry-etcd",
+    "otryx-registry-nacos",
+    "otryx-proxy-cglib",
+    "otryx-proxy-bytebuddy",
+    "otryx-observability-micrometer",
+    "otryx-observability-opentelemetry",
+    "otryx-observability-jfr",
+    "otryx-spring-boot-autoconfigure",
+    "otryx-spring-boot-starter",
+    "otryx-spring-boot-starter-lite",
 )
 
 NON_PUBLIC_ARTIFACTS = {
-    "peach-rpc-examples",
-    "peach-rpc-example-api",
-    "peach-rpc-example-provider",
-    "peach-rpc-example-consumer",
-    "peach-rpc-benchmarks",
+    "otryx-examples",
+    "otryx-example-api",
+    "otryx-example-provider",
+    "otryx-example-consumer",
+    "otryx-benchmarks",
 }
 
 
@@ -188,8 +188,8 @@ def check_profiles(root: ET.Element) -> None:
 
 def check_dependency_only_starter() -> None:
     for module in (
-        "peach-rpc-spring-boot-starter",
-        "peach-rpc-spring-boot-starter-lite",
+        "otryx-spring-boot-starter",
+        "otryx-spring-boot-starter-lite",
     ):
         starter_pom_path = ROOT / module / "pom.xml"
         starter = ET.parse(starter_pom_path).getroot()
@@ -266,25 +266,25 @@ def check_starter_dependency_boundaries() -> None:
             if node.text
         }
 
-    full = direct_artifacts("peach-rpc-spring-boot-starter")
-    lite = direct_artifacts("peach-rpc-spring-boot-starter-lite")
-    auto = direct_artifacts("peach-rpc-spring-boot-autoconfigure")
+    full = direct_artifacts("otryx-spring-boot-starter")
+    lite = direct_artifacts("otryx-spring-boot-starter-lite")
+    auto = direct_artifacts("otryx-spring-boot-autoconfigure")
     optional = {
-        "peach-rpc-registry-etcd",
-        "peach-rpc-registry-nacos",
-        "peach-rpc-proxy-cglib",
-        "peach-rpc-proxy-bytebuddy",
+        "otryx-registry-etcd",
+        "otryx-registry-nacos",
+        "otryx-proxy-cglib",
+        "otryx-proxy-bytebuddy",
     }
     if optional.intersection(lite) or optional.intersection(auto):
         fail("Minimal Starter / AutoConfiguration must not pull optional adapters")
     if not {
-        "peach-rpc-registry-etcd",
-        "peach-rpc-registry-nacos",
-        "peach-rpc-proxy-cglib",
+        "otryx-registry-etcd",
+        "otryx-registry-nacos",
+        "otryx-proxy-cglib",
     }.issubset(full):
         fail("Legacy full Starter must retain its original adapter capabilities")
     if not {
-        "peach-rpc-spring-boot-autoconfigure",
+        "otryx-spring-boot-autoconfigure",
         "spring-boot-starter",
     }.issubset(lite):
         fail("Minimal Starter must provide auto-configuration and Boot starter")
@@ -351,7 +351,7 @@ def main() -> int:
         check_artifacts(args.version)
 
     print(
-        "Peach RPC Maven Central publication checks passed"
+        "OTRYX RPC Maven Central publication checks passed"
         + (
             f": version={args.version}"
             if args.version

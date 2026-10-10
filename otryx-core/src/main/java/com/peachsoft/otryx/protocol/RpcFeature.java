@@ -1,4 +1,4 @@
-package io.peach.rpc.protocol;
+package com.peachsoft.otryx.protocol;
 
 /** 连接握手可协商的协议能力。 */
 public enum RpcFeature {

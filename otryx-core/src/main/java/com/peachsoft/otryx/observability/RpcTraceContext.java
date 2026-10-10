@@ -1,6 +1,6 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
-import io.peach.rpc.api.RpcStatus;
+import com.peachsoft.otryx.api.RpcStatus;
 import java.util.Map;
 
 /**

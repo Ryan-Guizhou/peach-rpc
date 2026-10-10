@@ -2,8 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="${1:-target/v2d2-e1-controlled}"
-RUNS="${PEACH_RPC_EVIDENCE_RUNS:-3}"
-COOLDOWN_SECONDS="${PEACH_RPC_EVIDENCE_COOLDOWN_SECONDS:-60}"
+RUNS="${OTRYX_RPC_EVIDENCE_RUNS:-3}"
+COOLDOWN_SECONDS="${OTRYX_RPC_EVIDENCE_COOLDOWN_SECONDS:-60}"
 
 if (( RUNS < 3 )); then
   echo "V2-D.2-E1 requires at least 3 controlled runs" >&2
@@ -23,8 +23,8 @@ for (( index=1; index<=RUNS; index++ )); do
   run_dir="$ROOT_DIR/$run_id"
   echo "Starting V2-D.2-E1 $run_id of $RUNS"
 
-  PEACH_RPC_EVIDENCE_RUN_ID="$run_id" \
-  PEACH_RPC_RUNNER_BASELINE="$BASELINE" \
+  OTRYX_RPC_EVIDENCE_RUN_ID="$run_id" \
+  OTRYX_RPC_RUNNER_BASELINE="$BASELINE" \
     bash scripts/run_v2d2_fixed_evidence.sh "$run_dir"
 
   RUN_ARGS+=(--run "$run_dir")

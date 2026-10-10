@@ -1,10 +1,10 @@
-# Peach RPC 项目构造思路与模块结构
+# OTRYX RPC 项目构造思路与模块结构
 
-> 状态：**1.0.1 Release Prep**
+> 状态：**2.0.0-SNAPSHOT Migration**
 
 ## 1. 构造原则
 
-Peach RPC 的模块不是按“功能名越细越好”拆分，而是按**第三方依赖隔离、生命周期边界和可替换性**拆分。
+OTRYX RPC 的模块不是按“功能名越细越好”拆分，而是按**第三方依赖隔离、生命周期边界和可替换性**拆分。
 
 原则：
 
@@ -21,29 +21,29 @@ Peach RPC 的模块不是按“功能名越细越好”拆分，而是按**第�
 
 | 模块 | 责任 |
 |---|---|
-| peach-rpc-core | API、协议、运行时、Registry/Transport/Codec SPI、Resilience |
-| peach-rpc-codegen | 编译期 Consumer Stub / Provider Dispatcher |
-| peach-rpc-codec-fory | Fory Codec Adapter |
-| peach-rpc-transport-vertx | Vert.x TCP/TLS/mTLS Transport |
-| peach-rpc-registry-etcd | Etcd Registry Adapter |
-| peach-rpc-registry-nacos | Nacos Registry Adapter |
-| peach-rpc-proxy-cglib | CGLIB fallback |
-| peach-rpc-proxy-bytebuddy | Byte Buddy fallback |
-| peach-rpc-observability-micrometer | Metrics Adapter |
-| peach-rpc-observability-opentelemetry | Tracing Adapter |
-| peach-rpc-observability-jfr | JFR Adapter |
-| peach-rpc-spring-boot-autoconfigure | Spring Boot AutoConfiguration |
-| peach-rpc-spring-boot-starter | 兼容完整业务依赖入口（Etcd/Nacos/CGLIB） |
-| peach-rpc-spring-boot-starter-lite | 推荐新业务的轻量依赖入口 |
-| peach-rpc-examples | 独立 Provider/Consumer 示例 |
-| peach-rpc-benchmarks | JMH/Soak 性能工具 |
+| otryx-core | API、协议、运行时、Registry/Transport/Codec SPI、Resilience |
+| otryx-codegen | 编译期 Consumer Stub / Provider Dispatcher |
+| otryx-codec-fory | Fory Codec Adapter |
+| otryx-transport-vertx | Vert.x TCP/TLS/mTLS Transport |
+| otryx-registry-etcd | Etcd Registry Adapter |
+| otryx-registry-nacos | Nacos Registry Adapter |
+| otryx-proxy-cglib | CGLIB fallback |
+| otryx-proxy-bytebuddy | Byte Buddy fallback |
+| otryx-observability-micrometer | Metrics Adapter |
+| otryx-observability-opentelemetry | Tracing Adapter |
+| otryx-observability-jfr | JFR Adapter |
+| otryx-spring-boot-autoconfigure | Spring Boot AutoConfiguration |
+| otryx-spring-boot-starter | 兼容完整业务依赖入口（Etcd/Nacos/CGLIB） |
+| otryx-spring-boot-starter-lite | 推荐新业务的轻量依赖入口 |
+| otryx-examples | 独立 Provider/Consumer 示例 |
+| otryx-benchmarks | JMH/Soak 性能工具 |
 
 ## 3. 依赖方向
 
 ```mermaid
 flowchart TB
-    Core[peach-rpc-core]
-    Codegen[peach-rpc-codegen]
+    Core[otryx-core]
+    Codegen[otryx-codegen]
     Fory[codec-fory]
     Vertx[transport-vertx]
     Etcd[registry-etcd]
@@ -107,7 +107,7 @@ Core 禁止直接 import：
 ```text
 Java Interface
    |
-@PeachRpcContract
+@OtryxRpcContract
    |
 Annotation Processor
    +--> Generated Consumer Factory
@@ -126,8 +126,8 @@ Runtime
 
 ```xml
 <dependency>
-    <groupId>io.peach.rpc</groupId>
-    <artifactId>peach-rpc-spring-boot-starter-lite</artifactId>
+    <groupId>com.peachsoft.otryx</groupId>
+    <artifactId>otryx-spring-boot-starter-lite</artifactId>
     <version>1.0.1</version>
 </dependency>
 ```

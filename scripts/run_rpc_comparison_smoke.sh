@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 OUTPUT_DIR="${RPC_COMPARISON_OUTPUT_DIR:-target/rpc-comparison-smoke}"
-PEACH_JAR="tools/rpc-comparison/peach/target/peach-comparison.jar"
+PEACH_JAR="tools/rpc-comparison/otryx/target/peach-comparison.jar"
 DUBBO_JAR="tools/rpc-comparison/dubbo/target/dubbo-comparison.jar"
 CONCURRENCY="${RPC_COMPARISON_CONCURRENCY:-16}"
 WARMUP="${RPC_COMPARISON_WARMUP_SECONDS:-2}"
@@ -26,9 +26,9 @@ export RPC_COMPARISON_RUN_ID="${RPC_COMPARISON_RUN_ID:-smoke-${RPC_COMPARISON_GI
 
 mkdir -p "$OUTPUT_DIR"
 
-echo "Building the installed Peach RPC dependency graph"
+echo "Building the installed OTRYX RPC dependency graph"
 mvn -B -ntp -DskipTests \
-  -pl peach-rpc-codegen,peach-rpc-codec-fory,peach-rpc-transport-vertx \
+  -pl otryx-codegen,otryx-codec-fory,otryx-transport-vertx \
   -am install
 
 echo "Building isolated Maven runtimes"
@@ -50,7 +50,7 @@ def capture(*command):
     return subprocess.check_output(command, text=True, stderr=subprocess.STDOUT).strip()
 
 environment = {
-    "schema": "peach.rpc.comparison.environment.v1",
+    "schema": "otryx.rpc.comparison.environment.v1",
     "evidence_class": "smoke",
     "run_id": os.environ["RPC_COMPARISON_RUN_ID"],
     "git_sha": os.environ["RPC_COMPARISON_GIT_SHA"],

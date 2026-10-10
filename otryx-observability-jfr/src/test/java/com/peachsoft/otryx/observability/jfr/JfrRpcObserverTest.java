@@ -1,10 +1,10 @@
-package io.peach.rpc.observability.jfr;
+package com.peachsoft.otryx.observability.jfr;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.ServiceKey;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.ServiceKey;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 

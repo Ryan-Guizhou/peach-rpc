@@ -145,7 +145,7 @@ def summarize(report_files: list[Path], root: Path) -> dict:
     findings.sort(key=lambda item: (
         item["file"], item["line"], item["column"], item["check"]))
     return {
-        "schema": "peach.rpc.checkstyle.audit.v1",
+        "schema": "otryx.rpc.checkstyle.audit.v1",
         "reports": len(report_files),
         "source_files": len(scanned_files),
         "scanned_paths": sorted(scanned_files),
@@ -159,8 +159,8 @@ def summarize(report_files: list[Path], root: Path) -> dict:
 
 
 def markdown(report: dict, enforced: bool = False) -> str:
-    title = ("# Peach RPC Checkstyle (strict CI gate)"
-             if enforced else "# Peach RPC Checkstyle baseline (advisory only)")
+    title = ("# OTRYX RPC Checkstyle (strict CI gate)"
+             if enforced else "# OTRYX RPC Checkstyle baseline (advisory only)")
     explanation = (
         "**All configured Checkstyle findings block this CI run.** "
         "This is a scoped naming, import, Javadoc and formatting gate, "

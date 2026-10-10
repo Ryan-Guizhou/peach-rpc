@@ -1,18 +1,18 @@
-package io.peach.rpc.benchmarks;
+package com.peachsoft.otryx.benchmarks;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.codec.RpcCodecIds;
-import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.core.PeachRpcClient;
-import io.peach.rpc.core.PeachRpcServer;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryFactory;
-import io.peach.rpc.registry.RegistryOptions;
-import io.peach.rpc.observability.RpcSecurityMode;
-import io.peach.rpc.spi.ExtensionLoader;
-import io.peach.rpc.transport.RpcTransportFactory;
-import io.peach.rpc.transport.RpcTransportOptions;
-import io.peach.rpc.transport.RpcTransportSecurityOptions;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.codec.RpcCodecIds;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.core.OtryxRpcClient;
+import com.peachsoft.otryx.core.OtryxRpcServer;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.registry.RegistryFactory;
+import com.peachsoft.otryx.registry.RegistryOptions;
+import com.peachsoft.otryx.observability.RpcSecurityMode;
+import com.peachsoft.otryx.spi.ExtensionLoader;
+import com.peachsoft.otryx.transport.RpcTransportFactory;
+import com.peachsoft.otryx.transport.RpcTransportOptions;
+import com.peachsoft.otryx.transport.RpcTransportSecurityOptions;
 import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.List;
@@ -34,7 +34,7 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 
 /**
- * Peach RPC 完整 Unary byte[] 往返性能矩阵。
+ * OTRYX RPC 完整 Unary byte[] 往返性能矩阵。
  *
  * <p>Payload 与每 Endpoint 连接分片通过 Param 控制；并发通过 JMH
  * `-t` 参数控制。该基准保留完整 Generated Stub、Fory、Protocol、
@@ -61,8 +61,8 @@ public class EndToEndPayloadBenchmark {
     public String transportSecurity;
 
     private Registry registry;
-    private PeachRpcServer server;
-    private PeachRpcClient client;
+    private OtryxRpcServer server;
+    private OtryxRpcClient client;
     private PayloadBenchmarkService service;
     private byte[] payload;
 
@@ -71,7 +71,7 @@ public class EndToEndPayloadBenchmark {
     }
 
     /**
-     * 启动完整 Peach RPC loopback。
+     * 启动完整 OTRYX RPC loopback。
      *
      * @throws Exception 端口初始化失败
      */
@@ -109,7 +109,7 @@ public class EndToEndPayloadBenchmark {
                 baseTransportOptions.withSecurity(
                         clientSecurity());
 
-        server = PeachRpcServer.builder()
+        server = OtryxRpcServer.builder()
                 .serviceRegistrar(
                         registry.registrar().orElseThrow())
                 .transportServer(
@@ -131,7 +131,7 @@ public class EndToEndPayloadBenchmark {
                 .toCompletableFuture()
                 .join();
 
-        client = PeachRpcClient.builder()
+        client = OtryxRpcClient.builder()
                 .serviceDiscovery(registry)
                 .transportClient(
                         transportFactory.createClient(
@@ -148,7 +148,7 @@ public class EndToEndPayloadBenchmark {
     }
 
     /**
-     * 测量完整 Peach RPC byte[] echo 往返。
+     * 测量完整 OTRYX RPC byte[] echo 往返。
      *
      * @return 返回 Payload 长度
      */
@@ -181,8 +181,8 @@ public class EndToEndPayloadBenchmark {
         }
         return new RpcTransportSecurityOptions(
                 RpcSecurityMode.TLS,
-                requiredEnvironment("PEACH_RPC_BENCHMARK_TLS_CERT"),
-                requiredEnvironment("PEACH_RPC_BENCHMARK_TLS_KEY"),
+                requiredEnvironment("OTRYX_RPC_BENCHMARK_TLS_CERT"),
+                requiredEnvironment("OTRYX_RPC_BENCHMARK_TLS_KEY"),
                 "",
                 true,
                 Duration.ofSeconds(3),
@@ -202,7 +202,7 @@ public class EndToEndPayloadBenchmark {
                 RpcSecurityMode.TLS,
                 "",
                 "",
-                requiredEnvironment("PEACH_RPC_BENCHMARK_TLS_CA"),
+                requiredEnvironment("OTRYX_RPC_BENCHMARK_TLS_CA"),
                 true,
                 Duration.ofSeconds(3),
                 Duration.ofHours(1),

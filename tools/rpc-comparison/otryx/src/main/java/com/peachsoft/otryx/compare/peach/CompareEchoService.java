@@ -1,9 +1,9 @@
-package io.peach.rpc.compare.peach;
+package com.peachsoft.otryx.compare.peach;
 
-import io.peach.rpc.api.PeachRpcContract;
+import com.peachsoft.otryx.api.OtryxRpcContract;
 
-/** Peach RPC 与 Dubbo 对比使用的相同语义的二进制 Echo 契约。 */
-@PeachRpcContract
+/** OTRYX RPC 与 Dubbo 对比使用的相同语义的二进制 Echo 契约。 */
+@OtryxRpcContract
 public interface CompareEchoService {
 
     /**

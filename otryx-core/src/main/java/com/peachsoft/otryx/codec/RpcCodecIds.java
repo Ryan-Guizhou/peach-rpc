@@ -1,6 +1,6 @@
-package io.peach.rpc.codec;
+package com.peachsoft.otryx.codec;
 
-/** Peach RPC 官方 Codec 线协议编号。 */
+/** OTRYX RPC 官方 Codec 线协议编号。 */
 public final class RpcCodecIds {
 
     /** 连接控制帧保留编号，不允许业务 Codec 使用。 */

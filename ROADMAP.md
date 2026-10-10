@@ -1,4 +1,4 @@
-# Peach RPC Roadmap
+# OTRYX RPC Roadmap
 
 > 1.0.0 GA 之后的方向。以下内容不是承诺日期，只有进入实现并通过相应 Gate 后才会成为 Current。
 

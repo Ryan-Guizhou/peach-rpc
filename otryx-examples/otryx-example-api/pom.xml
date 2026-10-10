@@ -4,18 +4,18 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.peach.rpc</groupId>
-        <artifactId>peach-rpc-parent</artifactId>
+        <groupId>com.peachsoft.otryx</groupId>
+        <artifactId>otryx-parent</artifactId>
         <version>${revision}</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>peach-rpc-example-api</artifactId>
-    <name>peach-rpc-example-api</name>
-    <description>Shared RPC contract for Peach RPC examples.</description>
+    <artifactId>otryx-example-api</artifactId>
+    <name>otryx-example-api</name>
+    <description>Shared RPC contract for OTRYX RPC examples.</description>
     <dependencies>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-core</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-core</artifactId>
         </dependency>
     </dependencies>
     <build>
@@ -26,8 +26,8 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>io.peach.rpc</groupId>
-                            <artifactId>peach-rpc-codegen</artifactId>
+                            <groupId>com.peachsoft.otryx</groupId>
+                            <artifactId>otryx-codegen</artifactId>
                             <version>${revision}</version>
                         </path>
                     </annotationProcessorPaths>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check checked-in Peach RPC skill entrypoints and Agent routing consistency."""
+"""Check checked-in OTRYX RPC skill entrypoints and Agent routing consistency."""
 
 import json
 import re
@@ -8,10 +8,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = (
-    "using-peach-rpc-java-engineering",
-    "using-peach-rpc-compatibility",
-    "using-peach-rpc-performance",
-    "review-peach-rpc-changes",
+    "using-otryx-java-engineering",
+    "using-otryx-compatibility",
+    "using-otryx-performance",
+    "review-otryx-changes",
 )
 
 

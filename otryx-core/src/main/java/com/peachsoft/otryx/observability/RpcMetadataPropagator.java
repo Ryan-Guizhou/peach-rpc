@@ -1,11 +1,11 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Peach RPC 低依赖 Metadata 上下文传播契约。
+ * OTRYX RPC 低依赖 Metadata 上下文传播契约。
  *
  * <p>Core 不依赖 OpenTelemetry。Adapter 可将 W3C Trace Context、Baggage
  * 或其他上下文注入现有 RPC metadata，并在 Provider 执行线程恢复。

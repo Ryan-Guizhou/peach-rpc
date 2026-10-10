@@ -1,4 +1,4 @@
-package io.peach.rpc.api;
+package com.peachsoft.otryx.api;
 
 /** RPC 资源达到并发上限时抛出的异常。 */
 public final class RpcOverloadedException extends RpcException {

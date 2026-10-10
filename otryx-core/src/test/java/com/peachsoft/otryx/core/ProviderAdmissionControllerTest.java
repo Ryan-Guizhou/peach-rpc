@@ -1,4 +1,4 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

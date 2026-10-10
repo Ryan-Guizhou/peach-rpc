@@ -1,13 +1,13 @@
-# Peach RPC 1.0 详细设计
+# OTRYX RPC 1.0 详细设计
 
-> 状态：**Current / 1.0.1 Release Prep**
+> 状态：**Current / 2.0.0-SNAPSHOT Migration**
 
 ## 1. Consumer 调用链
 
 ```mermaid
 sequenceDiagram
     participant A as Application
-    participant C as PeachRpcClient
+    participant C as OtryxRpcClient
     participant D as ServiceDirectory
     participant L as P2C/EWMA
     participant T as Vertx Transport

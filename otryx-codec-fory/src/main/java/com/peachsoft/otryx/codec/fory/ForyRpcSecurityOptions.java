@@ -1,4 +1,4 @@
-package io.peach.rpc.codec.fory;
+package com.peachsoft.otryx.codec.fory;
 
 import java.util.LinkedHashSet;
 import java.util.Objects;

@@ -19,14 +19,14 @@ done
 
 [[ "$(uname -s)" == "Linux" ]] || fail "Controlled performance evidence currently requires Linux"
 
-EVIDENCE_CLASS="${PEACH_RPC_EVIDENCE_CLASS:-controlled}"
-RUNNER_ID="${PEACH_RPC_RUNNER_ID:-}"
-[[ "$EVIDENCE_CLASS" == "controlled" ]] || fail "PEACH_RPC_EVIDENCE_CLASS must be controlled"
-[[ -n "$RUNNER_ID" ]] || fail "PEACH_RPC_RUNNER_ID is required"
-JVM_FLAGS="${PEACH_RPC_JVM_FLAGS:-}"
-[[ -n "$JVM_FLAGS" ]] || fail "PEACH_RPC_JVM_FLAGS must explicitly define the controlled JVM configuration"
+EVIDENCE_CLASS="${OTRYX_RPC_EVIDENCE_CLASS:-controlled}"
+RUNNER_ID="${OTRYX_RPC_RUNNER_ID:-}"
+[[ "$EVIDENCE_CLASS" == "controlled" ]] || fail "OTRYX_RPC_EVIDENCE_CLASS must be controlled"
+[[ -n "$RUNNER_ID" ]] || fail "OTRYX_RPC_RUNNER_ID is required"
+JVM_FLAGS="${OTRYX_RPC_JVM_FLAGS:-}"
+[[ -n "$JVM_FLAGS" ]] || fail "OTRYX_RPC_JVM_FLAGS must explicitly define the controlled JVM configuration"
 [[ "$RUNNER_ID" != "github-hosted-ephemeral" ]] || fail "A stable runner ID is required"
-EXPECTED_RUNNER_ID="${PEACH_RPC_EXPECT_RUNNER_ID:-}"
+EXPECTED_RUNNER_ID="${OTRYX_RPC_EXPECT_RUNNER_ID:-}"
 if [[ -n "$EXPECTED_RUNNER_ID" && "$RUNNER_ID" != "$EXPECTED_RUNNER_ID" ]]; then
   fail "Runner ID mismatch: expected '$EXPECTED_RUNNER_ID', actual '$RUNNER_ID'"
 fi
@@ -40,16 +40,16 @@ if [[ -r /sys/class/dmi/id/product_uuid ]]; then
 fi
 [[ -n "$host_identity_material" ]] || fail "Unable to derive a stable host identity"
 HOST_FINGERPRINT_SHA256="$(printf '%s' "$host_identity_material" | sha256sum | awk '{print $1}')"
-EXPECTED_HOST_FINGERPRINT_SHA256="${PEACH_RPC_EXPECT_HOST_FINGERPRINT_SHA256:-}"
+EXPECTED_HOST_FINGERPRINT_SHA256="${OTRYX_RPC_EXPECT_HOST_FINGERPRINT_SHA256:-}"
 if [[ -n "$EXPECTED_HOST_FINGERPRINT_SHA256" && "$HOST_FINGERPRINT_SHA256" != "$EXPECTED_HOST_FINGERPRINT_SHA256" ]]; then
   fail "Host fingerprint mismatch: expected '$EXPECTED_HOST_FINGERPRINT_SHA256', actual '$HOST_FINGERPRINT_SHA256'"
 fi
 
 GIT_HEAD="$(git rev-parse HEAD)"
-EXPECTED_COMMIT="${PEACH_RPC_BENCHMARK_COMMIT:-$GIT_HEAD}"
+EXPECTED_COMMIT="${OTRYX_RPC_BENCHMARK_COMMIT:-$GIT_HEAD}"
 [[ "$EXPECTED_COMMIT" == "$GIT_HEAD" ]] || fail "Benchmark commit $EXPECTED_COMMIT does not match git HEAD $GIT_HEAD"
 
-if [[ "${PEACH_RPC_REQUIRE_CLEAN_GIT:-true}" == "true" ]] && [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+if [[ "${OTRYX_RPC_REQUIRE_CLEAN_GIT:-true}" == "true" ]] && [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
   fail "Controlled evidence requires a clean tracked working tree"
 fi
 
@@ -84,27 +84,27 @@ CONTAINERIZED=false
 if [[ -f /.dockerenv || -f /run/.containerenv ]]; then
   CONTAINERIZED=true
 fi
-if [[ "${PEACH_RPC_REQUIRE_BARE_METAL:-false}" == "true" && "$CONTAINERIZED" == "true" ]]; then
-  fail "PEACH_RPC_REQUIRE_BARE_METAL=true but the runner is containerized"
+if [[ "${OTRYX_RPC_REQUIRE_BARE_METAL:-false}" == "true" && "$CONTAINERIZED" == "true" ]]; then
+  fail "OTRYX_RPC_REQUIRE_BARE_METAL=true but the runner is containerized"
 fi
 
-if [[ -n "${PEACH_RPC_EXPECT_CPU_MODEL:-}" && "$CPU_MODEL" != "$PEACH_RPC_EXPECT_CPU_MODEL" ]]; then
-  fail "CPU model mismatch: expected '$PEACH_RPC_EXPECT_CPU_MODEL', found '$CPU_MODEL'"
+if [[ -n "${OTRYX_RPC_EXPECT_CPU_MODEL:-}" && "$CPU_MODEL" != "$OTRYX_RPC_EXPECT_CPU_MODEL" ]]; then
+  fail "CPU model mismatch: expected '$OTRYX_RPC_EXPECT_CPU_MODEL', found '$CPU_MODEL'"
 fi
-if [[ -n "${PEACH_RPC_EXPECT_LOGICAL_CORES:-}" && "$LOGICAL_CORES" != "$PEACH_RPC_EXPECT_LOGICAL_CORES" ]]; then
-  fail "Logical core mismatch: expected $PEACH_RPC_EXPECT_LOGICAL_CORES, found $LOGICAL_CORES"
+if [[ -n "${OTRYX_RPC_EXPECT_LOGICAL_CORES:-}" && "$LOGICAL_CORES" != "$OTRYX_RPC_EXPECT_LOGICAL_CORES" ]]; then
+  fail "Logical core mismatch: expected $OTRYX_RPC_EXPECT_LOGICAL_CORES, found $LOGICAL_CORES"
 fi
-if [[ -n "${PEACH_RPC_EXPECT_PHYSICAL_CORES:-}" && "$PHYSICAL_CORES" != "$PEACH_RPC_EXPECT_PHYSICAL_CORES" ]]; then
-  fail "Physical core mismatch: expected $PEACH_RPC_EXPECT_PHYSICAL_CORES, found $PHYSICAL_CORES"
+if [[ -n "${OTRYX_RPC_EXPECT_PHYSICAL_CORES:-}" && "$PHYSICAL_CORES" != "$OTRYX_RPC_EXPECT_PHYSICAL_CORES" ]]; then
+  fail "Physical core mismatch: expected $OTRYX_RPC_EXPECT_PHYSICAL_CORES, found $PHYSICAL_CORES"
 fi
-if [[ -n "${PEACH_RPC_EXPECT_CPU_GOVERNOR:-}" && "$CPU_GOVERNOR" != "$PEACH_RPC_EXPECT_CPU_GOVERNOR" ]]; then
-  fail "CPU governor mismatch: expected $PEACH_RPC_EXPECT_CPU_GOVERNOR, found $CPU_GOVERNOR"
+if [[ -n "${OTRYX_RPC_EXPECT_CPU_GOVERNOR:-}" && "$CPU_GOVERNOR" != "$OTRYX_RPC_EXPECT_CPU_GOVERNOR" ]]; then
+  fail "CPU governor mismatch: expected $OTRYX_RPC_EXPECT_CPU_GOVERNOR, found $CPU_GOVERNOR"
 fi
-if [[ -n "${PEACH_RPC_MIN_MEMORY_BYTES:-}" ]] && (( MEMORY_BYTES < PEACH_RPC_MIN_MEMORY_BYTES )); then
-  fail "Memory is below PEACH_RPC_MIN_MEMORY_BYTES: $MEMORY_BYTES"
+if [[ -n "${OTRYX_RPC_MIN_MEMORY_BYTES:-}" ]] && (( MEMORY_BYTES < OTRYX_RPC_MIN_MEMORY_BYTES )); then
+  fail "Memory is below OTRYX_RPC_MIN_MEMORY_BYTES: $MEMORY_BYTES"
 fi
 
-RUN_ID="${PEACH_RPC_EVIDENCE_RUN_ID:-unknown}"
+RUN_ID="${OTRYX_RPC_EVIDENCE_RUN_ID:-unknown}"
 CAPTURED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 cat > "$OUTPUT_DIR/preflight.properties" <<EOF

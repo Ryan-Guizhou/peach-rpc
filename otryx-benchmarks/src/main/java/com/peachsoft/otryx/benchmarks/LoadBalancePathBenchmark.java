@@ -1,11 +1,11 @@
-package io.peach.rpc.benchmarks;
+package com.peachsoft.otryx.benchmarks;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.loadbalance.LoadBalanceContext;
-import io.peach.rpc.loadbalance.LoadBalanceMetrics;
-import io.peach.rpc.loadbalance.defaults.P2cEwmaLoadBalancer;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.loadbalance.LoadBalanceContext;
+import com.peachsoft.otryx.loadbalance.LoadBalanceMetrics;
+import com.peachsoft.otryx.loadbalance.defaults.P2cEwmaLoadBalancer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

@@ -1,29 +1,29 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
-import io.peach.rpc.api.RpcCompatibilityMetadata;
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.RpcException;
-import io.peach.rpc.api.RpcExecutionMode;
-import io.peach.rpc.api.RpcIds;
-import io.peach.rpc.api.RpcRemoteError;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.codec.RpcMethodCodec;
-import io.peach.rpc.codec.RpcCodecIds;
-import io.peach.rpc.observability.RpcMetadataPropagator;
-import io.peach.rpc.observability.RpcMetadataScope;
-import io.peach.rpc.observability.RpcObserver;
-import io.peach.rpc.observability.RpcTraceContext;
-import io.peach.rpc.observability.RpcTracingBridge;
-import io.peach.rpc.protocol.RpcErrorCodec;
-import io.peach.rpc.protocol.RpcFrameView;
-import io.peach.rpc.protocol.RpcMessageType;
-import io.peach.rpc.protocol.RpcProtocolCodec;
-import io.peach.rpc.protocol.RpcProtocolException;
-import io.peach.rpc.registry.ServiceRegistrar;
-import io.peach.rpc.transport.RpcTransportServer;
+import com.peachsoft.otryx.api.RpcCompatibilityMetadata;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.RpcException;
+import com.peachsoft.otryx.api.RpcExecutionMode;
+import com.peachsoft.otryx.api.RpcIds;
+import com.peachsoft.otryx.api.RpcRemoteError;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.codec.RpcMethodCodec;
+import com.peachsoft.otryx.codec.RpcCodecIds;
+import com.peachsoft.otryx.observability.RpcMetadataPropagator;
+import com.peachsoft.otryx.observability.RpcMetadataScope;
+import com.peachsoft.otryx.observability.RpcObserver;
+import com.peachsoft.otryx.observability.RpcTraceContext;
+import com.peachsoft.otryx.observability.RpcTracingBridge;
+import com.peachsoft.otryx.protocol.RpcErrorCodec;
+import com.peachsoft.otryx.protocol.RpcFrameView;
+import com.peachsoft.otryx.protocol.RpcMessageType;
+import com.peachsoft.otryx.protocol.RpcProtocolCodec;
+import com.peachsoft.otryx.protocol.RpcProtocolException;
+import com.peachsoft.otryx.registry.ServiceRegistrar;
+import com.peachsoft.otryx.transport.RpcTransportServer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,7 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Peach RPC Provider 运行时，协调服务注册、请求准入、执行与响应。
+ * OTRYX RPC Provider 运行时，协调服务注册、请求准入、执行与响应。
  *
  * <p>Provider 启动会先监听网络端点、注册服务实例，随后进入可处理请求的
  * STARTED 状态。仅 TCP 端口可连接不代表业务已就绪。
@@ -63,8 +63,8 @@ import org.slf4j.LoggerFactory;
  * <p>使用者负责在停止服务时调用 {@link #close()}，等待排空期间的资源管理
  * 以实际关闭策略为准。
  */
-public final class PeachRpcServer implements AutoCloseable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PeachRpcServer.class);
+public final class OtryxRpcServer implements AutoCloseable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OtryxRpcServer.class);
 
     private final ServiceRegistrar registrar;
     private final RpcTransportServer transport;
@@ -94,7 +94,7 @@ public final class PeachRpcServer implements AutoCloseable {
     private volatile RpcEndpoint actualEndpoint;
     private volatile RpcEndpoint advertisedEndpoint;
 
-    private PeachRpcServer(Builder builder) {
+    private OtryxRpcServer(Builder builder) {
         this.registrar = Objects.requireNonNull(
                 builder.registrar,
                 "serviceRegistrar");
@@ -142,7 +142,7 @@ public final class PeachRpcServer implements AutoCloseable {
                 new LinkedBlockingQueue<>(
                         executionOptions.cpuQueueCapacity()),
                 Thread.ofPlatform()
-                        .name("peach-rpc-cpu-", 0)
+                        .name("otryx-cpu-", 0)
                         .factory(),
                 new ThreadPoolExecutor.AbortPolicy());
     }
@@ -165,7 +165,7 @@ public final class PeachRpcServer implements AutoCloseable {
      * @param group 服务分组
      * @return 当前 Server
      */
-    public PeachRpcServer registerService(
+    public OtryxRpcServer registerService(
             Class<?> api,
             Object implementation,
             String version,
@@ -269,7 +269,7 @@ public final class PeachRpcServer implements AutoCloseable {
                                 }
                                 state.set(State.STARTED);
                                 LOGGER.info(
-                                        "Peach RPC server started: bind={}, advertised={}",
+                                        "OTRYX RPC server started: bind={}, advertised={}",
                                         endpoint.authority(),
                                         published.authority());
                                 started.complete(endpoint);
@@ -1184,8 +1184,8 @@ public final class PeachRpcServer implements AutoCloseable {
          *
          * @return Provider 运行时
          */
-        public PeachRpcServer build() {
-            return new PeachRpcServer(this);
+        public OtryxRpcServer build() {
+            return new OtryxRpcServer(this);
         }
     }
 }

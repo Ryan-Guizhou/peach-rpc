@@ -1,11 +1,11 @@
-package io.peach.rpc.codec;
+package com.peachsoft.otryx.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import io.peach.rpc.api.RpcMethodDescriptor;
-import io.peach.rpc.api.ServiceKey;
+import com.peachsoft.otryx.api.RpcMethodDescriptor;
+import com.peachsoft.otryx.api.ServiceKey;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
 

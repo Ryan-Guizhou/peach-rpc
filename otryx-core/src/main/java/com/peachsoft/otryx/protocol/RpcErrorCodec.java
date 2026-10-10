@@ -1,11 +1,11 @@
-package io.peach.rpc.protocol;
+package com.peachsoft.otryx.protocol;
 
-import io.peach.rpc.api.RpcRemoteError;
+import com.peachsoft.otryx.api.RpcRemoteError;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
-/** Peach RPC 框架级远端错误的稳定二进制编解码器。 */
+/** OTRYX RPC 框架级远端错误的稳定二进制编解码器。 */
 public final class RpcErrorCodec {
     private static final byte VERSION = 1;
     private static final int MAX_FIELD_BYTES = 16 * 1024;

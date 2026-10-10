@@ -2,16 +2,16 @@
 
 ## 1. 定位
 
-`peach-rpc-registry-nacos` 将 Nacos NamingService 适配为 Peach RPC 的 `Registry` / `ServiceRegistrar`。它只属于控制面：Consumer 单次 RPC 热路径读取 Core 的本地 `ServiceDirectory`，不会访问 Nacos。
+`otryx-registry-nacos` 将 Nacos NamingService 适配为 OTRYX RPC 的 `Registry` / `ServiceRegistrar`。它只属于控制面：Consumer 单次 RPC 热路径读取 Core 的本地 `ServiceDirectory`，不会访问 Nacos。
 
 当前基线使用 Nacos Client 3.2.4。
 
 ## 2. 坐标映射
 
-| Peach RPC | Nacos | 说明 |
+| OTRYX RPC | Nacos | 说明 |
 |---|---|---|
 | `RegistryOptions.namespace` | namespaceId | 空值时使用 `public` |
-| `registry.nacos.group` | groupName | 默认 `PEACH_RPC` |
+| `registry.nacos.group` | groupName | 默认 `OTRYX_RPC` |
 | `ServiceKey.canonicalName()` | serviceName | 接口名、版本和 RPC group 组成稳定身份 |
 | `registry.nacos.cluster` | clusterName | 默认 `DEFAULT` |
 | `RpcEndpoint` | Instance ip/port | 必须是 Consumer 可路由地址 |
@@ -22,16 +22,16 @@ Nacos group 与 RPC `ServiceKey.group` 不可混用：前者是 Registry 管理�
 
 ## 3. 保留元数据
 
-`peach.rpc.*` 是框架命名空间，分为两类：
+`otryx.rpc.*` 是框架命名空间，分为两类：
 
 **Nacos Adapter 生成的身份键**：
 
-- `peach.rpc.instance-id`
-- `peach.rpc.interface`
-- `peach.rpc.version`
-- `peach.rpc.group`
-- `peach.rpc.protocol`
-- `peach.rpc.cluster`
+- `otryx.rpc.instance-id`
+- `otryx.rpc.interface`
+- `otryx.rpc.version`
+- `otryx.rpc.group`
+- `otryx.rpc.protocol`
+- `otryx.rpc.cluster`
 
 这些键由 Adapter 根据 `ServiceInstance` 写入，输入 metadata 覆盖它们会在注册前 fail-fast。
 
@@ -65,7 +65,7 @@ Nacos group 与 RPC `ServiceKey.group` 不可混用：前者是 Registry 管理�
 
 ## 5. 线程与资源
 
-Nacos Java SDK 的注册、注销、查询和订阅初始化可能阻塞。Adapter 使用名称以 `peach-rpc-nacos-control-` 开头的私有有界 ThreadPoolExecutor：
+Nacos Java SDK 的注册、注销、查询和订阅初始化可能阻塞。Adapter 使用名称以 `otryx-nacos-control-` 开头的私有有界 ThreadPoolExecutor：
 
 - core threads：2；
 - max threads：4；
@@ -80,14 +80,14 @@ Registry 关闭先取消订阅，再关闭 NamingService，最后关闭控制面
 ## 6. 配置
 
 ```yaml
-peach:
+otryx:
   rpc:
     registry:
       type: nacos
       endpoints: 127.0.0.1:8848
       namespace: public
       nacos:
-        group: PEACH_RPC
+        group: OTRYX_RPC
         cluster: DEFAULT
         username: ${NACOS_USERNAME:}
         password: ${NACOS_PASSWORD:}
@@ -100,7 +100,7 @@ peach:
 监听地址与注册中心发布地址是不同概念：
 
 ```yaml
-peach:
+otryx:
   rpc:
     server:
       host: 0.0.0.0

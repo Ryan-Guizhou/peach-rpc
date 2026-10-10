@@ -2,10 +2,10 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PROVIDER_JAR="$(find "$ROOT_DIR/peach-rpc-examples/peach-rpc-example-provider/target" -maxdepth 1 -name '*-exec.jar' -print -quit)"
-CONSUMER_JAR="$(find "$ROOT_DIR/peach-rpc-examples/peach-rpc-example-consumer/target" -maxdepth 1 -name '*-exec.jar' -print -quit)"
+PROVIDER_JAR="$(find "$ROOT_DIR/otryx-examples/otryx-example-provider/target" -maxdepth 1 -name '*-exec.jar' -print -quit)"
+CONSUMER_JAR="$(find "$ROOT_DIR/otryx-examples/otryx-example-consumer/target" -maxdepth 1 -name '*-exec.jar' -print -quit)"
 NACOS_ENDPOINT="${NACOS_TEST_ENDPOINT:-127.0.0.1:8848}"
-RESTART_NACOS="${PEACH_RPC_E2E_RESTART_NACOS:-${CI:-false}}"
+RESTART_NACOS="${OTRYX_RPC_E2E_RESTART_NACOS:-${CI:-false}}"
 
 if [[ -z "$PROVIDER_JAR" || -z "$CONSUMER_JAR" ]]; then
   echo "Executable example JARs were not found. Build the reactor first." >&2
@@ -34,9 +34,9 @@ start_provider() {
   local port="$1"
   : >"$PROVIDER_LOG"
   java -jar "$PROVIDER_JAR" \
-    --peach.rpc.registry.endpoints="$NACOS_ENDPOINT" \
-    --peach.rpc.server.port="$port" \
-    --peach.rpc.server.advertised-port="$port" \
+    --otryx.rpc.registry.endpoints="$NACOS_ENDPOINT" \
+    --otryx.rpc.server.port="$port" \
+    --otryx.rpc.server.advertised-port="$port" \
     >"$PROVIDER_LOG" 2>&1 &
   PROVIDER_PID=$!
 
@@ -48,7 +48,7 @@ start_provider() {
       cat "$PROVIDER_LOG" >&2
       exit 1
     fi
-    if grep -F "Peach RPC server started:" "$PROVIDER_LOG" | \
+    if grep -F "OTRYX RPC server started:" "$PROVIDER_LOG" | \
         grep -Fq "advertised=127.0.0.1:$port" \
         && timeout 1 bash -c "</dev/tcp/127.0.0.1/$port" 2>/dev/null; then
       return
@@ -71,7 +71,7 @@ stop_provider() {
 }
 
 success_count() {
-  grep -c "RPC demo completed successfully: Hello, Peach RPC!" "$CONSUMER_LOG" || true
+  grep -c "RPC demo completed successfully: Hello, OTRYX RPC!" "$CONSUMER_LOG" || true
 }
 
 wait_for_success_count() {
@@ -117,12 +117,12 @@ probe_fresh_consumer() {
   for _ in {1..3}; do
     : >"$probe_log"
     java -jar "$CONSUMER_JAR" \
-      --peach.rpc.registry.endpoints="$NACOS_ENDPOINT" \
+      --otryx.rpc.registry.endpoints="$NACOS_ENDPOINT" \
       >"$probe_log" 2>&1 &
     probe_pid=$!
 
     for _ in {1..150}; do
-      if grep -q "RPC demo completed successfully: Hello, Peach RPC!" "$probe_log"; then
+      if grep -q "RPC demo completed successfully: Hello, OTRYX RPC!" "$probe_log"; then
         kill "$probe_pid" 2>/dev/null || true
         wait "$probe_pid" 2>/dev/null || true
         rm -f "$probe_log"
@@ -148,10 +148,10 @@ probe_fresh_consumer() {
 start_provider 19090
 
 java -jar "$CONSUMER_JAR" \
-  --peach.rpc.registry.endpoints="$NACOS_ENDPOINT" \
-  --peach.rpc.example.repeat-interval-millis=200 \
-  --peach.rpc.client.resilience.circuit-open-duration=500ms \
-  --peach.rpc.client.resilience.outlier-ejection-duration=500ms \
+  --otryx.rpc.registry.endpoints="$NACOS_ENDPOINT" \
+  --otryx.rpc.example.repeat-interval-millis=200 \
+  --otryx.rpc.client.resilience.circuit-open-duration=500ms \
+  --otryx.rpc.client.resilience.outlier-ejection-duration=500ms \
   >"$CONSUMER_LOG" 2>&1 &
 CONSUMER_PID=$!
 

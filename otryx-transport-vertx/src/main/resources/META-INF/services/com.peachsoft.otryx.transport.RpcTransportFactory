@@ -1,1 +1,1 @@
-io.peach.rpc.transport.vertx.VertxRpcTransportFactory
+com.peachsoft.otryx.transport.vertx.VertxRpcTransportFactory

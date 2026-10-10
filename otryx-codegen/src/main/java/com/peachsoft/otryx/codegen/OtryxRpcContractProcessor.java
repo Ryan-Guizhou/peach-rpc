@@ -1,4 +1,4 @@
-package io.peach.rpc.codegen;
+package com.peachsoft.otryx.codegen;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -32,14 +32,14 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
 /**
- * 为 {@code @PeachRpcContract} 服务接口生成无动态代理的 Consumer Stub。
+ * 为 {@code @OtryxRpcContract} 服务接口生成无动态代理的 Consumer Stub。
  */
-@SupportedAnnotationTypes("io.peach.rpc.api.PeachRpcContract")
+@SupportedAnnotationTypes("com.peachsoft.otryx.api.OtryxRpcContract")
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
-public final class PeachRpcContractProcessor extends AbstractProcessor {
+public final class OtryxRpcContractProcessor extends AbstractProcessor {
 
-    /** 创建 Peach RPC 契约处理器。 */
-    public PeachRpcContractProcessor() {
+    /** 创建 OTRYX RPC 契约处理器。 */
+    public OtryxRpcContractProcessor() {
     }
 
     @Override
@@ -58,7 +58,7 @@ public final class PeachRpcContractProcessor extends AbstractProcessor {
 
     private void processService(TypeElement service) {
         if (service.getKind() != ElementKind.INTERFACE) {
-            error(service, "@PeachRpcContract can only target interfaces");
+            error(service, "@OtryxRpcContract can only target interfaces");
             return;
         }
         if (!service.getTypeParameters().isEmpty()) {
@@ -80,8 +80,8 @@ public final class PeachRpcContractProcessor extends AbstractProcessor {
                 .getQualifiedName()
                 .toString();
         String serviceName = service.getSimpleName().toString();
-        String clientFactoryName = serviceName + "PeachRpcClientFactory";
-        String serverFactoryName = serviceName + "PeachRpcServerFactory";
+        String clientFactoryName = serviceName + "OtryxRpcClientFactory";
+        String serverFactoryName = serviceName + "OtryxRpcServerFactory";
         writeSource(
                 packageName,
                 clientFactoryName,
@@ -153,7 +153,7 @@ public final class PeachRpcContractProcessor extends AbstractProcessor {
         } catch (IOException error) {
             processingEnv.getMessager().printMessage(
                     Diagnostic.Kind.ERROR,
-                    "Failed to generate Peach RPC source: " + error.getMessage(),
+                    "Failed to generate OTRYX RPC source: " + error.getMessage(),
                     service);
         }
     }
@@ -170,11 +170,11 @@ public final class PeachRpcContractProcessor extends AbstractProcessor {
             source.append("package ").append(packageName).append(";\n\n");
         }
         source.append("/** ").append(service.getSimpleName())
-                .append(" 的 Peach RPC 编译期 Consumer Stub 工厂。 */\n")
+                .append(" 的 OTRYX RPC 编译期 Consumer Stub 工厂。 */\n")
                 .append("@").append(Generated.class.getName())
                 .append("(\"").append(getClass().getName()).append("\")\n")
                 .append("public final class ").append(factoryName)
-                .append(" implements io.peach.rpc.generated.RpcGeneratedClientFactory<")
+                .append(" implements com.peachsoft.otryx.generated.RpcGeneratedClientFactory<")
                 .append(serviceType).append("> {\n\n")
                 .append("    /** 创建生成式 Consumer Stub 工厂。 */\n")
                 .append("    public ").append(factoryName).append("() {\n")
@@ -198,7 +198,7 @@ public final class PeachRpcContractProcessor extends AbstractProcessor {
                 .append("    }\n\n")
                 .append("    @Override\n")
                 .append("    public ").append(serviceType)
-                .append(" create(io.peach.rpc.generated.RpcGeneratedInvocation invocation) {\n")
+                .append(" create(com.peachsoft.otryx.generated.RpcGeneratedInvocation invocation) {\n")
                 .append("        return new ").append(clientName)
                 .append("(invocation);\n")
                 .append("    }\n\n")
@@ -206,9 +206,9 @@ public final class PeachRpcContractProcessor extends AbstractProcessor {
                 .append("    @SuppressWarnings(\"unchecked\")\n")
                 .append("    private static final class ").append(clientName)
                 .append(" implements ").append(serviceType).append(" {\n")
-                .append("        private final io.peach.rpc.generated.RpcGeneratedInvocation invocation;\n\n")
+                .append("        private final com.peachsoft.otryx.generated.RpcGeneratedInvocation invocation;\n\n")
                 .append("        private ").append(clientName)
-                .append("(io.peach.rpc.generated.RpcGeneratedInvocation invocation) {\n")
+                .append("(com.peachsoft.otryx.generated.RpcGeneratedInvocation invocation) {\n")
                 .append("            this.invocation = java.util.Objects.requireNonNull(invocation, \"invocation\");\n")
                 .append("        }\n\n");
 
@@ -330,11 +330,11 @@ public final class PeachRpcContractProcessor extends AbstractProcessor {
             source.append("package ").append(packageName).append(";\n\n");
         }
         source.append("/** ").append(service.getSimpleName())
-                .append(" 的 Peach RPC 编译期 Provider Dispatcher 工厂。 */\n")
+                .append(" 的 OTRYX RPC 编译期 Provider Dispatcher 工厂。 */\n")
                 .append("@").append(Generated.class.getName())
                 .append("(\"").append(getClass().getName()).append("\")\n")
                 .append("public final class ").append(factoryName)
-                .append(" implements io.peach.rpc.generated.RpcGeneratedServerFactory<")
+                .append(" implements com.peachsoft.otryx.generated.RpcGeneratedServerFactory<")
                 .append(serviceType).append("> {\n\n")
                 .append("    /** 创建生成式 Provider Dispatcher 工厂。 */\n")
                 .append("    public ").append(factoryName).append("() {\n")
@@ -357,7 +357,7 @@ public final class PeachRpcContractProcessor extends AbstractProcessor {
                 .append("        return ").append(serviceType).append(".class;\n")
                 .append("    }\n\n")
                 .append("    @Override\n")
-                .append("    public io.peach.rpc.generated.RpcGeneratedServerDispatcher create(")
+                .append("    public com.peachsoft.otryx.generated.RpcGeneratedServerDispatcher create(")
                 .append(serviceType)
                 .append(" target) {\n")
                 .append("        java.util.Objects.requireNonNull(target, \"target\");\n")

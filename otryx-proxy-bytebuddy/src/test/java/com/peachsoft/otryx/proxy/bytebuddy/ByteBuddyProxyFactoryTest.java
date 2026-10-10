@@ -1,4 +1,4 @@
-package io.peach.rpc.proxy.bytebuddy;
+package com.peachsoft.otryx.proxy.bytebuddy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

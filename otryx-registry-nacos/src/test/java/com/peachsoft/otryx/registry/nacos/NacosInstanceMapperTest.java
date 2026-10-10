@@ -1,4 +1,4 @@
-package io.peach.rpc.registry.nacos;
+package com.peachsoft.otryx.registry.nacos;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -6,10 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.alibaba.nacos.api.naming.pojo.Instance;
-import io.peach.rpc.api.RpcCompatibilityMetadata;
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
+import com.peachsoft.otryx.api.RpcCompatibilityMetadata;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -226,7 +226,7 @@ class NacosInstanceMapperTest {
                 mapped.metadata().get(
                         NacosReservedMetadata.INTERFACE));
         assertEquals(
-                "peach-rpc",
+                "otryx",
                 mapped.metadata().get(
                         NacosReservedMetadata.PROTOCOL));
     }

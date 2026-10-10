@@ -1,6 +1,6 @@
-package io.peach.rpc.transport;
+package com.peachsoft.otryx.transport;
 
-import io.peach.rpc.api.RpcEndpoint;
+import com.peachsoft.otryx.api.RpcEndpoint;
 import java.util.concurrent.CompletionStage;
 
 /** Provider 收到完整协议帧后的异步处理器。 */

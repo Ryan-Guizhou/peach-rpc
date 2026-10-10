@@ -1,4 +1,4 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
 /** TLS 证书热更新结果。 */
 public enum RpcCertificateReloadOutcome {

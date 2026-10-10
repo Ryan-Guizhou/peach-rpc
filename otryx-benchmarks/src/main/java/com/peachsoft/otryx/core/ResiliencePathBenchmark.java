@@ -1,4 +1,4 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;

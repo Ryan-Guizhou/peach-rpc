@@ -1,4 +1,4 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
 /**
  * 从 RPC Metadata 恢复出的调用上下文作用域。

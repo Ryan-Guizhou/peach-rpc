@@ -1,1 +1,1 @@
-io.peach.rpc.proxy.cglib.CglibProxyFactory
+com.peachsoft.otryx.proxy.cglib.CglibProxyFactory

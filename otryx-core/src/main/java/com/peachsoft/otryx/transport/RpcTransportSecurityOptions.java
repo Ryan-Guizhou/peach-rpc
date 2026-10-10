@@ -1,6 +1,6 @@
-package io.peach.rpc.transport;
+package com.peachsoft.otryx.transport;
 
-import io.peach.rpc.observability.RpcSecurityMode;
+import com.peachsoft.otryx.observability.RpcSecurityMode;
 import java.time.Duration;
 
 /**

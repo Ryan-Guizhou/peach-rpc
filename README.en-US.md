@@ -1,4 +1,4 @@
-# Peach RPC
+# OTRYX RPC
 
 [简体中文](README.md) | English
 
@@ -9,7 +9,7 @@
 <!-- doc-section:overview -->
 ## Overview
 
-Peach RPC is a lightweight, high-performance, extensible RPC framework for **Java service-to-service communication**. Version 1.0.1 keeps the Wire v1 and Public Core API compatibility boundary established by 1.0.0 GA while hardening asynchronous Provider completion, reducing healthy-path hot-spot overhead, and adding Maven Central patch-release engineering.
+OTRYX RPC is a lightweight, high-performance, extensible RPC framework for **Java service-to-service communication**. Version 1.0.1 keeps the Wire v1 and Public Core API compatibility boundary established by 1.0.0 GA while hardening asynchronous Provider completion, reducing healthy-path hot-spot overhead, and adding Maven Central patch-release engineering.
 
 **Current source version: 1.0.1 Release Prep**  
 **Java: 21**  
@@ -17,7 +17,7 @@ Peach RPC is a lightweight, high-performance, extensible RPC framework for **Jav
 **Wire: v1 (frozen for 1.0.x)**  
 **License: MIT**
 
-Peach RPC does not turn shared CI-runner numbers into production performance claims. Official performance or capacity numbers require controlled fixed-environment evidence.
+OTRYX RPC does not turn shared CI-runner numbers into production performance claims. Official performance or capacity numbers require controlled fixed-environment evidence.
 
 <!-- doc-section:capabilities -->
 ## Core capabilities
@@ -105,17 +105,17 @@ See [Wire Compatibility](docs/wire-compatibility.md) and [Upgrade/Rollback](docs
 
 ### Minimal Spring Boot integration
 
-For Java 21 / Spring Boot 3.5.4 applications, the minimal Starter includes Memory Registry, JDK Proxy, Fory and Vert.x without Etcd/Nacos SDK dependencies. Add the Nacos or Etcd adapter only when needed. The original full `peach-rpc-spring-boot-starter` remains available for dependency compatibility; see the [Starter guide](docs/starter.md).
+For Java 21 / Spring Boot 3.5.4 applications, the minimal Starter includes Memory Registry, JDK Proxy, Fory and Vert.x without Etcd/Nacos SDK dependencies. Add the Nacos or Etcd adapter only when needed. The original full `otryx-spring-boot-starter` remains available for dependency compatibility; see the [Starter guide](docs/starter.md).
 
 ```xml
 <dependency>
-    <groupId>io.peach.rpc</groupId>
-    <artifactId>peach-rpc-spring-boot-starter-lite</artifactId>
+    <groupId>com.peachsoft.otryx</groupId>
+    <artifactId>otryx-spring-boot-starter-lite</artifactId>
     <version>1.0.1</version>
 </dependency>
 ```
 
-The repository is currently at Release Prep; public artifact availability depends on a subsequent Maven Central release. Startup performs fail-fast validation of `peach.rpc.*` options and emits a credential-free diagnostic summary. See the [Starter guide](docs/starter.md) for a real loopback RPC test that needs no Docker.
+The repository is currently at Release Prep; public artifact availability depends on a subsequent Maven Central release. Startup performs fail-fast validation of `otryx.rpc.*` options and emits a credential-free diagnostic summary. See the [Starter guide](docs/starter.md) for a real loopback RPC test that needs no Docker.
 
 ### Prerequisites
 
@@ -126,29 +126,29 @@ The repository is currently at Release Prep; public artifact availability depend
 ### Run the independent-process example from source
 
 ```bash
-git clone https://github.com/Ryan-Guizhou/peach-rpc.git
-cd peach-rpc
+git clone https://github.com/Ryan-Guizhou/otryx.git
+cd otryx
 
-docker compose -f peach-rpc-examples/docker-compose.yml up -d
-mvn -B -ntp -pl peach-rpc-examples -am clean package
+docker compose -f otryx-examples/docker-compose.yml up -d
+mvn -B -ntp -pl otryx-examples -am clean package
 ```
 
 Start the Provider:
 
 ```bash
-java -jar peach-rpc-examples/peach-rpc-example-provider/target/*-exec.jar
+java -jar otryx-examples/otryx-example-provider/target/*-exec.jar
 ```
 
 Start the Consumer in another terminal:
 
 ```bash
-java -jar peach-rpc-examples/peach-rpc-example-consumer/target/*-exec.jar
+java -jar otryx-examples/otryx-example-consumer/target/*-exec.jar
 ```
 
 Expected output:
 
 ```text
-RPC demo completed successfully: Hello, Peach RPC!
+RPC demo completed successfully: Hello, OTRYX RPC!
 ```
 
 See [Getting Started](docs/getting-started.md).
@@ -160,8 +160,8 @@ See [Getting Started](docs/getting-started.md).
 
 ```xml
 <dependency>
-    <groupId>io.peach.rpc</groupId>
-    <artifactId>peach-rpc-spring-boot-starter</artifactId>
+    <groupId>com.peachsoft.otryx</groupId>
+    <artifactId>otryx-spring-boot-starter</artifactId>
     <version>1.0.1</version>
 </dependency>
 ```
@@ -180,7 +180,7 @@ The same 1.0.1 coordinates will then resolve from your local Maven repository.
 Provider:
 
 ```java
-@PeachRpcService(
+@OtryxRpcService(
         interfaceClass = OrderService.class,
         version = "1.0.0")
 public class OrderServiceImpl implements OrderService {
@@ -190,7 +190,7 @@ public class OrderServiceImpl implements OrderService {
 Consumer:
 
 ```java
-@PeachRpcReference(version = "1.0.0")
+@OtryxRpcReference(version = "1.0.0")
 private OrderService orderService;
 ```
 

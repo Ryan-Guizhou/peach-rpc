@@ -1,4 +1,4 @@
-package io.peach.rpc.api;
+package com.peachsoft.otryx.api;
 
 import java.util.Map;
 import java.util.Objects;

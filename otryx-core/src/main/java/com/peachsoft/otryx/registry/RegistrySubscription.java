@@ -1,4 +1,4 @@
-package io.peach.rpc.registry;
+package com.peachsoft.otryx.registry;
 
 /** 注册中心订阅句柄，用于显式释放 Watch 或监听资源。 */
 @FunctionalInterface

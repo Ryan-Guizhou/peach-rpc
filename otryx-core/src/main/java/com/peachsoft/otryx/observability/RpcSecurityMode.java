@@ -1,4 +1,4 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
 /** RPC Transport 安全模式。 */
 public enum RpcSecurityMode {

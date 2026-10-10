@@ -1,9 +1,9 @@
-package io.peach.rpc.examples.provider;
+package com.peachsoft.otryx.examples.provider;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-/** Peach RPC Provider 示例应用。 */
+/** OTRYX RPC Provider 示例应用。 */
 @SpringBootApplication
 public class ProviderApplication {
 

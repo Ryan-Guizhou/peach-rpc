@@ -1,13 +1,13 @@
-package io.peach.rpc.registry.nacos;
+package com.peachsoft.otryx.registry.nacos;
 
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryFactory;
-import io.peach.rpc.registry.RegistryOptions;
-import io.peach.rpc.spi.Extension;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.registry.RegistryFactory;
+import com.peachsoft.otryx.registry.RegistryOptions;
+import com.peachsoft.otryx.spi.Extension;
 import java.util.List;
 import java.util.Properties;
 
@@ -17,7 +17,7 @@ public final class NacosRegistryFactory implements RegistryFactory {
 
     static final String DEFAULT_ENDPOINT = "127.0.0.1:8848";
     static final String DEFAULT_NAMESPACE = "public";
-    static final String DEFAULT_GROUP = "PEACH_RPC";
+    static final String DEFAULT_GROUP = "OTRYX_RPC";
     static final String DEFAULT_CLUSTER = "DEFAULT";
 
     /** 创建 Nacos 注册中心工厂。 */

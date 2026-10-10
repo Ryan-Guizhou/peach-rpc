@@ -1,6 +1,6 @@
-# Peach RPC 协议 v1
+# OTRYX RPC 协议 v1
 
-Peach RPC v1 使用 32 字节固定大端 Header，后接 Metadata 与 Payload。TLS/mTLS 位于该协议之下的 Transport 层，因此启用安全通道不会改变 v1 Header 或 Message Type。
+OTRYX RPC v1 使用 32 字节固定大端 Header，后接 Metadata 与 Payload。TLS/mTLS 位于该协议之下的 Transport 层，因此启用安全通道不会改变 v1 Header 或 Message Type。
 
 ## 1. 固定 Header
 
@@ -138,7 +138,7 @@ PING/PONG 已接入真实连接生命周期。
 - Metadata 总长度受 16-bit Metadata Length 限制；
 - 旧 Provider 会忽略未知 Trace Metadata，因此可以滚动升级。
 
-OpenTelemetry Adapter 已通过真实 Peach RPC Transport E2E 验证 CLIENT/SERVER Span 的 Trace ID 与 parent relationship。
+OpenTelemetry Adapter 已通过真实 OTRYX RPC Transport E2E 验证 CLIENT/SERVER Span 的 Trace ID 与 parent relationship。
 
 ## 11. 当前限制
 

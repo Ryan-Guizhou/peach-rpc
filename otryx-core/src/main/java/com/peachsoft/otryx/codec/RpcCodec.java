@@ -1,7 +1,7 @@
-package io.peach.rpc.codec;
+package com.peachsoft.otryx.codec;
 
-import io.peach.rpc.api.RpcMethodDescriptor;
-import io.peach.rpc.spi.SPI;
+import com.peachsoft.otryx.api.RpcMethodDescriptor;
+import com.peachsoft.otryx.spi.SPI;
 
 /** RPC 消息体编解码扩展点。 */
 @SPI("fory")

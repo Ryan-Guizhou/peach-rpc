@@ -1,9 +1,9 @@
-package io.peach.rpc.registry.etcd;
+package com.peachsoft.otryx.registry.etcd;
 
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryFactory;
-import io.peach.rpc.registry.RegistryOptions;
-import io.peach.rpc.spi.Extension;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.registry.RegistryFactory;
+import com.peachsoft.otryx.registry.RegistryOptions;
+import com.peachsoft.otryx.spi.Extension;
 import java.util.List;
 
 /** Etcd 注册中心工厂。 */

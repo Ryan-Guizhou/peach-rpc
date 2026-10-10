@@ -1,7 +1,7 @@
-package io.peach.rpc.spring.autoconfigure;
+package com.peachsoft.otryx.spring.autoconfigure;
 
-import io.peach.rpc.observability.RpcSecurityMode;
-import io.peach.rpc.codec.fory.ForyRpcSecurityOptions;
+import com.peachsoft.otryx.observability.RpcSecurityMode;
+import com.peachsoft.otryx.codec.fory.ForyRpcSecurityOptions;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.time.Duration;
@@ -9,19 +9,19 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Peach RPC Spring Boot 配置属性，统一承载 {@code peach.rpc} 下的装配参数。
+ * OTRYX RPC Spring Boot 配置属性，统一承载 {@code otryx.rpc} 下的装配参数。
  *
  * <p>内部属性组包括 Registry、Transport、Client、Server 与 Codec。
  * 字段默认值应以当前代码和对应启动测试为准；影响 TLS、重试、背压和
  * 线程资源的配置必须验证合法范围及生效时机，不能只依赖 Javadoc。
  */
-@ConfigurationProperties(prefix = "peach.rpc")
-public class PeachRpcProperties implements InitializingBean {
+@ConfigurationProperties(prefix = "otryx.rpc")
+public class OtryxRpcProperties implements InitializingBean {
 
     /**
-     * 创建 Peach RPC 配置属性。
+     * 创建 OTRYX RPC 配置属性。
      */
-    public PeachRpcProperties() {
+    public OtryxRpcProperties() {
     }
 
     /**
@@ -29,7 +29,7 @@ public class PeachRpcProperties implements InitializingBean {
      */
     @Override
     public void afterPropertiesSet() {
-        PeachRpcStartupDiagnostics.validateAndReport(this);
+        OtryxRpcStartupDiagnostics.validateAndReport(this);
     }
 
     private boolean enabled = true;
@@ -40,18 +40,18 @@ public class PeachRpcProperties implements InitializingBean {
     private final Codec codec = new Codec();
 
     /**
-     * 返回 Peach RPC 总开关。
+     * 返回 OTRYX RPC 总开关。
      *
-     * @return 是否启用 Peach RPC
+     * @return 是否启用 OTRYX RPC
      */
     public boolean isEnabled() {
         return enabled;
     }
 
     /**
-     * 设置 Peach RPC 总开关。
+     * 设置 OTRYX RPC 总开关。
      *
-     * @param enabled 是否启用 Peach RPC
+     * @param enabled 是否启用 OTRYX RPC
      */
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
@@ -329,7 +329,7 @@ public class PeachRpcProperties implements InitializingBean {
         public Nacos() {
         }
 
-        private String group = "PEACH_RPC";
+        private String group = "OTRYX_RPC";
         private String cluster = "DEFAULT";
         private String username = "";
         private String password = "";

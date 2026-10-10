@@ -4,14 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.peach.rpc</groupId>
-        <artifactId>peach-rpc-parent</artifactId>
+        <groupId>com.peachsoft.otryx</groupId>
+        <artifactId>otryx-parent</artifactId>
         <version>${revision}</version>
     </parent>
 
-    <artifactId>peach-rpc-codegen</artifactId>
-    <name>peach-rpc-codegen</name>
-    <description>Compile-time client stub generator for Peach RPC.</description>
+    <artifactId>otryx-codegen</artifactId>
+    <name>otryx-codegen</name>
+    <description>Compile-time client stub generator for OTRYX RPC.</description>
 
     <properties>
         <maven.compiler.proc>none</maven.compiler.proc>
@@ -19,8 +19,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-core</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-core</artifactId>
         </dependency>
     </dependencies>
 </project>

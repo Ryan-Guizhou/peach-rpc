@@ -1,10 +1,10 @@
-# Peach RPC 性能证据与容量验证
+# OTRYX RPC 性能证据与容量验证
 
 > 状态：**Tooling Current / Environment-specific Evidence Required for Numeric Claims**
 
 ## 1. 原则
 
-Peach RPC 区分：
+OTRYX RPC 区分：
 
 1. **性能工具是否可用**；
 2. **某个固定环境的结果是否可重复**；
@@ -140,7 +140,7 @@ flowchart LR
     Report --> Review[人工性能及兼容性评审]
 ```
 
-共享 GitHub Runner 的 PR 自动检查强制标记为 `shared-ci-smoke`，只执行一对短基准用于证明工具可运行。受控微基准需在实际固定主机上显式配置 `PEACH_RPC_FORY_EVIDENCE_CLASS=controlled-micro`、`PEACH_RPC_RUNNER_ID`、`PEACH_RPC_HOST_FINGERPRINT`，至少三轮；GitHub Actions 不允许将自己声明为受控主机。**任何结果都只有 `REPORT_ONLY`，不自动给性能验收 PASS。**
+共享 GitHub Runner 的 PR 自动检查强制标记为 `shared-ci-smoke`，只执行一对短基准用于证明工具可运行。受控微基准需在实际固定主机上显式配置 `OTRYX_RPC_FORY_EVIDENCE_CLASS=controlled-micro`、`OTRYX_RPC_RUNNER_ID`、`OTRYX_RPC_HOST_FINGERPRINT`，至少三轮；GitHub Actions 不允许将自己声明为受控主机。**任何结果都只有 `REPORT_ONLY`，不自动给性能验收 PASS。**
 
 报告包含相对差值与分配 CV，仍需要结合 JFR/AsyncProfiler、端到端 RPC p99/p99.9、CPU、GC 和长稳试验评估。零参数 `Object[0]` 在 JIT 优化后不一定形成实际分配；不能预设 B/op 一定下降。结果输出：`target/fory-allocation-comparison/`。
 

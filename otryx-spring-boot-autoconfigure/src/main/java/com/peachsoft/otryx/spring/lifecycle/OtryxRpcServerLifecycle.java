@@ -1,17 +1,17 @@
-package io.peach.rpc.spring.lifecycle;
+package com.peachsoft.otryx.spring.lifecycle;
 
-import io.peach.rpc.core.PeachRpcServer;
-import io.peach.rpc.spring.runtime.PeachRpcRuntimeCoordinator;
+import com.peachsoft.otryx.core.OtryxRpcServer;
+import com.peachsoft.otryx.spring.runtime.OtryxRpcRuntimeCoordinator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.context.SmartLifecycle;
 
 /**
- * 将已经创建的 Peach RPC Provider 接入 Spring 生命周期。
+ * 将已经创建的 OTRYX RPC Provider 接入 Spring 生命周期。
  */
-public final class PeachRpcServerLifecycle implements SmartLifecycle {
+public final class OtryxRpcServerLifecycle implements SmartLifecycle {
 
-    private final PeachRpcRuntimeCoordinator coordinator;
+    private final OtryxRpcRuntimeCoordinator coordinator;
     private final AtomicBoolean running = new AtomicBoolean();
 
     /**
@@ -19,7 +19,7 @@ public final class PeachRpcServerLifecycle implements SmartLifecycle {
      *
      * @param coordinator 运行时协调器
      */
-    public PeachRpcServerLifecycle(PeachRpcRuntimeCoordinator coordinator) {
+    public OtryxRpcServerLifecycle(OtryxRpcRuntimeCoordinator coordinator) {
         this.coordinator = Objects.requireNonNull(coordinator, "coordinator");
     }
 
@@ -28,7 +28,7 @@ public final class PeachRpcServerLifecycle implements SmartLifecycle {
         coordinator.autoStartServerIfCreated().ifPresent(this::startServer);
     }
 
-    private void startServer(PeachRpcServer server) {
+    private void startServer(OtryxRpcServer server) {
         if (running.compareAndSet(false, true)) {
             try {
                 server.start().toCompletableFuture().join();
@@ -42,7 +42,7 @@ public final class PeachRpcServerLifecycle implements SmartLifecycle {
     @Override
     public void stop() {
         if (running.compareAndSet(true, false)) {
-            coordinator.serverIfCreated().ifPresent(PeachRpcServer::close);
+            coordinator.serverIfCreated().ifPresent(OtryxRpcServer::close);
         }
     }
 

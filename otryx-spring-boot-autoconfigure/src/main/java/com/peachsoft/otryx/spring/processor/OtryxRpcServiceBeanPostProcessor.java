@@ -1,8 +1,8 @@
-package io.peach.rpc.spring.processor;
+package com.peachsoft.otryx.spring.processor;
 
-import io.peach.rpc.core.PeachRpcServer;
-import io.peach.rpc.spring.annotation.PeachRpcService;
-import io.peach.rpc.spring.runtime.PeachRpcRuntimeCoordinator;
+import com.peachsoft.otryx.core.OtryxRpcServer;
+import com.peachsoft.otryx.spring.annotation.OtryxRpcService;
+import com.peachsoft.otryx.spring.runtime.OtryxRpcRuntimeCoordinator;
 import java.util.Arrays;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
@@ -11,19 +11,19 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 
 /**
- * 将 {@link PeachRpcService} Spring Bean 注册到 Peach RPC Provider。
+ * 将 {@link OtryxRpcService} Spring Bean 注册到 OTRYX RPC Provider。
  */
-public final class PeachRpcServiceBeanPostProcessor implements BeanPostProcessor {
+public final class OtryxRpcServiceBeanPostProcessor implements BeanPostProcessor {
 
-    private final ObjectProvider<PeachRpcRuntimeCoordinator> coordinatorProvider;
+    private final ObjectProvider<OtryxRpcRuntimeCoordinator> coordinatorProvider;
 
     /**
      * 创建 Provider 服务导出处理器。
      *
      * @param coordinatorProvider 运行时协调器延迟提供器
      */
-    public PeachRpcServiceBeanPostProcessor(
-            ObjectProvider<PeachRpcRuntimeCoordinator> coordinatorProvider) {
+    public OtryxRpcServiceBeanPostProcessor(
+            ObjectProvider<OtryxRpcRuntimeCoordinator> coordinatorProvider) {
         this.coordinatorProvider = coordinatorProvider;
     }
 
@@ -32,20 +32,20 @@ public final class PeachRpcServiceBeanPostProcessor implements BeanPostProcessor
             Object bean,
             String beanName) throws BeansException {
         Class<?> targetClass = AopUtils.getTargetClass(bean);
-        PeachRpcService annotation = AnnotatedElementUtils.findMergedAnnotation(
+        OtryxRpcService annotation = AnnotatedElementUtils.findMergedAnnotation(
                 targetClass,
-                PeachRpcService.class);
+                OtryxRpcService.class);
         if (annotation == null) {
             return bean;
         }
 
         Class<?> serviceInterface = resolveServiceInterface(targetClass, annotation);
-        PeachRpcServer server;
+        OtryxRpcServer server;
         try {
             server = coordinatorProvider.getObject().serverForServiceExport();
         } catch (IllegalStateException error) {
             throw new IllegalStateException(
-                    "Failed to initialize @PeachRpcService: bean="
+                    "Failed to initialize @OtryxRpcService: bean="
                             + beanName
                             + ", interface="
                             + serviceInterface.getName(),
@@ -61,11 +61,11 @@ public final class PeachRpcServiceBeanPostProcessor implements BeanPostProcessor
 
     private static Class<?> resolveServiceInterface(
             Class<?> targetClass,
-            PeachRpcService annotation) {
+            OtryxRpcService annotation) {
         if (annotation.interfaceClass() != void.class) {
             if (!annotation.interfaceClass().isAssignableFrom(targetClass)) {
                 throw new IllegalStateException(
-                        "@PeachRpcService implementation does not implement interface: implementation="
+                        "@OtryxRpcService implementation does not implement interface: implementation="
                                 + targetClass.getName()
                                 + ", interface="
                                 + annotation.interfaceClass().getName());

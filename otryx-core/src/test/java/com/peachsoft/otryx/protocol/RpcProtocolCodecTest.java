@@ -1,12 +1,12 @@
-package io.peach.rpc.protocol;
+package com.peachsoft.otryx.protocol;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.codec.RpcCodecIds;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.codec.RpcCodecIds;
 import java.util.Arrays;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

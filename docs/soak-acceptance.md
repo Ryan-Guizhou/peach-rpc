@@ -1,4 +1,4 @@
-# Peach RPC 长稳 Soak 质量门禁与高可用验收
+# OTRYX RPC 长稳 Soak 质量门禁与高可用验收
 
 > 状态：**质量门禁已实现；固定主机 30 分钟以上运行与生产 SLO 仍待真实证据**。
 
@@ -31,9 +31,9 @@ flowchart LR
 
 受控模式在开始固定环境测试**之前**必须由使用者明确配置：
 
-- `PEACH_RPC_SOAK_MAX_ERROR_RATE`：应用可接受的最大错误率（0～1），不能沿用未知业务的假设；
-- `PEACH_RPC_SOAK_MIN_OBSERVED_INFLIGHT`：最低实际观测并发数，必须在 1 与配置调用者数之间；
-- 可选 `PEACH_RPC_SOAK_MAX_P99_MICROS`：本次环境容许的最大 p99（微秒）。
+- `OTRYX_RPC_SOAK_MAX_ERROR_RATE`：应用可接受的最大错误率（0～1），不能沿用未知业务的假设；
+- `OTRYX_RPC_SOAK_MIN_OBSERVED_INFLIGHT`：最低实际观测并发数，必须在 1 与配置调用者数之间；
+- 可选 `OTRYX_RPC_SOAK_MAX_P99_MICROS`：本次环境容许的最大 p99（微秒）。
 
 这三个阈值是使用者的 SLO 决策，框架不会擅自填入“行业通用”数值。
 
@@ -42,13 +42,13 @@ flowchart LR
 在仓库根目录，按实际工作负载配置完整矩阵、Runner ID、CPU/JVM 参数后运行：
 
 ```bash
-export PEACH_RPC_RUNNER_ID="<fixed-runner-id>"
-export PEACH_RPC_EVIDENCE_CLASS="controlled"
-export PEACH_RPC_SOAK_CONCURRENCY="10000"
-export PEACH_RPC_SOAK_DURATION_SECONDS="1800"
-export PEACH_RPC_SOAK_MAX_ERROR_RATE="<your-error-rate-limit>"
-export PEACH_RPC_SOAK_MIN_OBSERVED_INFLIGHT="<your-measured-concurrency-floor>"
-# 可选：PEACH_RPC_SOAK_MAX_P99_MICROS="<your-p99-budget>"
+export OTRYX_RPC_RUNNER_ID="<fixed-runner-id>"
+export OTRYX_RPC_EVIDENCE_CLASS="controlled"
+export OTRYX_RPC_SOAK_CONCURRENCY="10000"
+export OTRYX_RPC_SOAK_DURATION_SECONDS="1800"
+export OTRYX_RPC_SOAK_MAX_ERROR_RATE="<your-error-rate-limit>"
+export OTRYX_RPC_SOAK_MIN_OBSERVED_INFLIGHT="<your-measured-concurrency-floor>"
+# 可选：OTRYX_RPC_SOAK_MAX_P99_MICROS="<your-p99-budget>"
 bash scripts/run_v2d2_fixed_evidence.sh target/v2d2-fixed-evidence
 ```
 

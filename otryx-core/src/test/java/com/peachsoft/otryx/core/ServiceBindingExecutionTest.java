@@ -1,15 +1,15 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.peach.rpc.api.PeachRpcExecution;
-import io.peach.rpc.api.RpcExecutionMode;
-import io.peach.rpc.api.RpcIds;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.codec.RpcCodec;
-import io.peach.rpc.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.api.OtryxRpcExecution;
+import com.peachsoft.otryx.api.RpcExecutionMode;
+import com.peachsoft.otryx.api.RpcIds;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.codec.RpcCodec;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
 
@@ -58,10 +58,10 @@ public class ServiceBindingExecutionTest {
     public interface ExecutionService {
         String blocking();
 
-        @PeachRpcExecution(RpcExecutionMode.CPU)
+        @OtryxRpcExecution(RpcExecutionMode.CPU)
         String cpu();
 
-        @PeachRpcExecution(RpcExecutionMode.DIRECT)
+        @OtryxRpcExecution(RpcExecutionMode.DIRECT)
         String direct();
     }
 

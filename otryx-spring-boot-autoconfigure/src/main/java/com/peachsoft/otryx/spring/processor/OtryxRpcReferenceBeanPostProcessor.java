@@ -1,8 +1,8 @@
-package io.peach.rpc.spring.processor;
+package com.peachsoft.otryx.spring.processor;
 
-import io.peach.rpc.core.PeachRpcClient;
-import io.peach.rpc.spring.annotation.PeachRpcReference;
-import io.peach.rpc.spring.runtime.PeachRpcRuntimeCoordinator;
+import com.peachsoft.otryx.core.OtryxRpcClient;
+import com.peachsoft.otryx.spring.annotation.OtryxRpcReference;
+import com.peachsoft.otryx.spring.runtime.OtryxRpcRuntimeCoordinator;
 import java.lang.reflect.Field;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.ObjectProvider;
@@ -12,20 +12,20 @@ import org.springframework.core.PriorityOrdered;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * 将 {@link PeachRpcReference} 字段替换为 RPC Consumer 代理。
+ * 将 {@link OtryxRpcReference} 字段替换为 RPC Consumer 代理。
  */
-public final class PeachRpcReferenceBeanPostProcessor
+public final class OtryxRpcReferenceBeanPostProcessor
         implements InstantiationAwareBeanPostProcessor, PriorityOrdered {
 
-    private final ObjectProvider<PeachRpcRuntimeCoordinator> coordinatorProvider;
+    private final ObjectProvider<OtryxRpcRuntimeCoordinator> coordinatorProvider;
 
     /**
      * 创建 Consumer 引用注入处理器。
      *
      * @param coordinatorProvider 运行时协调器延迟提供器
      */
-    public PeachRpcReferenceBeanPostProcessor(
-            ObjectProvider<PeachRpcRuntimeCoordinator> coordinatorProvider) {
+    public OtryxRpcReferenceBeanPostProcessor(
+            ObjectProvider<OtryxRpcRuntimeCoordinator> coordinatorProvider) {
         this.coordinatorProvider = coordinatorProvider;
     }
 
@@ -43,25 +43,25 @@ public final class PeachRpcReferenceBeanPostProcessor
             Object bean,
             String beanName,
             Field field) {
-        PeachRpcReference reference = field.getAnnotation(PeachRpcReference.class);
+        OtryxRpcReference reference = field.getAnnotation(OtryxRpcReference.class);
         if (reference == null) {
             return;
         }
         if (!field.getType().isInterface()) {
             throw new IllegalStateException(
-                    "@PeachRpcReference requires an interface field: bean="
+                    "@OtryxRpcReference requires an interface field: bean="
                             + beanName
                             + ", field="
                             + field.getName()
                             + ", type="
                             + field.getType().getName());
         }
-        PeachRpcClient client;
+        OtryxRpcClient client;
         try {
             client = coordinatorProvider.getObject().client();
         } catch (IllegalStateException error) {
             throw new IllegalStateException(
-                    "Failed to initialize @PeachRpcReference: bean="
+                    "Failed to initialize @OtryxRpcReference: bean="
                             + beanName
                             + ", field="
                             + field.getName()

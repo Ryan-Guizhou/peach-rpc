@@ -1,6 +1,6 @@
-# Peach RPC 1.0 发布策略
+# OTRYX RPC 1.0 发布策略
 
-> 状态：**1.0.1 Release Prep / 1.0.x Maintenance**
+> 状态：**2.0.0-SNAPSHOT Migration / 1.0.x Maintenance**
 
 ## 1. 版本阶段
 
@@ -98,7 +98,7 @@ GitHub Release Bundle 额外包含：
 
 Maven Central 公开发布：
 
-- `peach-rpc-parent`；
+- `otryx-parent`；
 - Core；
 - Codegen；
 - Codec / Transport / Registry / Proxy Adapter；
@@ -130,7 +130,7 @@ POM 中的 `central-release` Profile 包含：
 
 正式 Central 发布要求项目维护者完成：
 
-- Central namespace verification 能够覆盖 `io.peach.rpc`（例如验证 `io.peach` 后发布其子组）；
+- Central namespace verification 能够覆盖 `com.peachsoft.otryx`（例如验证 `io.peach` 后发布其子组）；
 - Central Portal User Token；
 - PGP/GPG signing key；
 - GitHub Repository Secrets。

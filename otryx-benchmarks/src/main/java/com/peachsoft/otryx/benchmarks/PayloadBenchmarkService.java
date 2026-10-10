@@ -1,9 +1,9 @@
-package io.peach.rpc.benchmarks;
+package com.peachsoft.otryx.benchmarks;
 
-import io.peach.rpc.api.PeachRpcContract;
+import com.peachsoft.otryx.api.OtryxRpcContract;
 
 /** V2-D Payload 端到端基准服务。 */
-@PeachRpcContract
+@OtryxRpcContract
 public interface PayloadBenchmarkService {
 
     /**

@@ -1,4 +1,4 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
 /** Consumer 方法级 Circuit Breaker 的稳定观测状态。 */
 public enum RpcCircuitState {

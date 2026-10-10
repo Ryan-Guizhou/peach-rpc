@@ -1,14 +1,14 @@
-package io.peach.rpc.registry.etcd;
+package com.peachsoft.otryx.registry.etcd;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.etcd.jetcd.Client;
 import io.etcd.jetcd.test.EtcdClusterExtension;
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.registry.RegistrySnapshot;
-import io.peach.rpc.registry.RegistrySubscription;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.registry.RegistrySnapshot;
+import com.peachsoft.otryx.registry.RegistrySubscription;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
@@ -34,7 +34,7 @@ class EtcdRegistryChaosTest {
     static final EtcdClusterExtension CLUSTER =
             EtcdClusterExtension.builder()
                     .withClusterName(
-                            "peach-rpc-etcd-chaos-"
+                            "otryx-etcd-chaos-"
                                     + UUID.randomUUID())
                     .withNodes(3)
                     .withSsl(false)

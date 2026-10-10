@@ -4,17 +4,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.peach.rpc</groupId>
-        <artifactId>peach-rpc-parent</artifactId>
+        <groupId>com.peachsoft.otryx</groupId>
+        <artifactId>otryx-parent</artifactId>
         <version>${revision}</version>
     </parent>
-    <artifactId>peach-rpc-transport-vertx</artifactId>
-    <name>peach-rpc-transport-vertx</name>
-    <description>Vert.x TCP transport adapter for Peach RPC.</description>
+    <artifactId>otryx-transport-vertx</artifactId>
+    <name>otryx-transport-vertx</name>
+    <description>Vert.x TCP transport adapter for OTRYX RPC.</description>
     <dependencies>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-core</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>

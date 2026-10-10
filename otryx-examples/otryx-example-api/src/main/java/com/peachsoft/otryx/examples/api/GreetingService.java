@@ -1,10 +1,10 @@
-package io.peach.rpc.examples.api;
+package com.peachsoft.otryx.examples.api;
 
-import io.peach.rpc.api.PeachRpcContract;
-import io.peach.rpc.api.PeachRpcIdempotent;
+import com.peachsoft.otryx.api.OtryxRpcContract;
+import com.peachsoft.otryx.api.OtryxRpcIdempotent;
 
 /** 示例问候 RPC 契约。 */
-@PeachRpcContract
+@OtryxRpcContract
 public interface GreetingService {
 
     /**
@@ -13,6 +13,6 @@ public interface GreetingService {
      * @param request 问候请求
      * @return 问候响应
      */
-    @PeachRpcIdempotent
+    @OtryxRpcIdempotent
     GreetingReply hello(GreetingRequest request);
 }

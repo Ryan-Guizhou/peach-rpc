@@ -1,4 +1,4 @@
-package io.peach.rpc.observability.opentelemetry;
+package com.peachsoft.otryx.observability.opentelemetry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -20,9 +20,9 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.observability.RpcTraceContext;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.observability.RpcTraceContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

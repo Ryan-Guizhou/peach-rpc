@@ -4,19 +4,19 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.peach.rpc</groupId>
-        <artifactId>peach-rpc-parent</artifactId>
+        <groupId>com.peachsoft.otryx</groupId>
+        <artifactId>otryx-parent</artifactId>
         <version>${revision}</version>
     </parent>
 
-    <artifactId>peach-rpc-proxy-bytebuddy</artifactId>
-    <name>peach-rpc-proxy-bytebuddy</name>
-    <description>Optional Byte Buddy proxy fallback for Peach RPC.</description>
+    <artifactId>otryx-proxy-bytebuddy</artifactId>
+    <name>otryx-proxy-bytebuddy</name>
+    <description>Optional Byte Buddy proxy fallback for OTRYX RPC.</description>
 
     <dependencies>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-core</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-core</artifactId>
         </dependency>
         <dependency>
             <groupId>net.bytebuddy</groupId>

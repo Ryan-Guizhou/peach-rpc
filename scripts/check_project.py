@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Repository quality gate for Peach RPC 1.0.x."""
+"""Repository quality gate for OTRYX RPC 1.0.x."""
 
 from __future__ import annotations
 
@@ -21,22 +21,22 @@ LOGGER_WITH_CHINESE = re.compile(
 )
 
 EXPECTED_MODULES = (
-    "peach-rpc-core",
-    "peach-rpc-codegen",
-    "peach-rpc-codec-fory",
-    "peach-rpc-transport-vertx",
-    "peach-rpc-registry-etcd",
-    "peach-rpc-registry-nacos",
-    "peach-rpc-proxy-cglib",
-    "peach-rpc-proxy-bytebuddy",
-    "peach-rpc-observability-micrometer",
-    "peach-rpc-observability-opentelemetry",
-    "peach-rpc-observability-jfr",
-    "peach-rpc-spring-boot-autoconfigure",
-    "peach-rpc-spring-boot-starter",
-    "peach-rpc-spring-boot-starter-lite",
-    "peach-rpc-examples",
-    "peach-rpc-benchmarks",
+    "otryx-core",
+    "otryx-codegen",
+    "otryx-codec-fory",
+    "otryx-transport-vertx",
+    "otryx-registry-etcd",
+    "otryx-registry-nacos",
+    "otryx-proxy-cglib",
+    "otryx-proxy-bytebuddy",
+    "otryx-observability-micrometer",
+    "otryx-observability-opentelemetry",
+    "otryx-observability-jfr",
+    "otryx-spring-boot-autoconfigure",
+    "otryx-spring-boot-starter",
+    "otryx-spring-boot-starter-lite",
+    "otryx-examples",
+    "otryx-benchmarks",
 )
 
 FORBIDDEN_CORE_IMPORTS = (
@@ -242,7 +242,7 @@ def check_maven_reactor() -> None:
 
 
 def check_core_boundaries() -> None:
-    for path in (ROOT / "peach-rpc-core" / "src/main/java").rglob("*.java"):
+    for path in (ROOT / "otryx-core" / "src/main/java").rglob("*.java"):
         text = path.read_text(encoding="utf-8")
         for prefix in FORBIDDEN_CORE_IMPORTS:
             if f"import {prefix}" in text:
@@ -250,7 +250,7 @@ def check_core_boundaries() -> None:
 
 
 def check_java_hygiene() -> None:
-    for path in ROOT.glob("peach-rpc-*/src/**/*.java"):
+    for path in ROOT.glob("otryx-*/src/**/*.java"):
         text = path.read_text(encoding="utf-8")
         if "System.out" in text or "System.err" in text:
             fail(f"System output is not allowed: {path.relative_to(ROOT)}")
@@ -278,7 +278,7 @@ def main() -> int:
     check_maven_reactor()
     check_core_boundaries()
     check_java_hygiene()
-    print("Peach RPC 1.0.x repository checks passed.")
+    print("OTRYX RPC 1.0.x repository checks passed.")
     return 0
 
 

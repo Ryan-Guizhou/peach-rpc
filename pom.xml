@@ -4,14 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.peach.rpc</groupId>
-    <artifactId>peach-rpc-parent</artifactId>
+    <groupId>com.peachsoft.otryx</groupId>
+    <artifactId>otryx-parent</artifactId>
     <version>${revision}</version>
     <packaging>pom</packaging>
 
-    <name>Peach RPC</name>
+    <name>OTRYX RPC</name>
     <description>High-performance extensible Java RPC framework.</description>
-    <url>https://github.com/Ryan-Guizhou/peach-rpc</url>
+    <url>https://github.com/Ryan-Guizhou/otryx</url>
 
     <licenses>
         <license>
@@ -30,15 +30,15 @@
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/Ryan-Guizhou/peach-rpc.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/Ryan-Guizhou/peach-rpc.git</developerConnection>
-        <url>https://github.com/Ryan-Guizhou/peach-rpc</url>
+        <connection>scm:git:https://github.com/Ryan-Guizhou/otryx.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/Ryan-Guizhou/otryx.git</developerConnection>
+        <url>https://github.com/Ryan-Guizhou/otryx</url>
         <tag>HEAD</tag>
     </scm>
 
     <properties>
         <java.version>21</java.version>
-        <revision>1.0.1</revision>
+        <revision>2.0.0-SNAPSHOT</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>${java.version}</maven.compiler.release>
@@ -72,22 +72,22 @@
     </properties>
 
     <modules>
-        <module>peach-rpc-core</module>
-        <module>peach-rpc-codegen</module>
-        <module>peach-rpc-codec-fory</module>
-        <module>peach-rpc-transport-vertx</module>
-        <module>peach-rpc-registry-etcd</module>
-        <module>peach-rpc-registry-nacos</module>
-        <module>peach-rpc-proxy-cglib</module>
-        <module>peach-rpc-proxy-bytebuddy</module>
-        <module>peach-rpc-observability-micrometer</module>
-        <module>peach-rpc-observability-opentelemetry</module>
-        <module>peach-rpc-observability-jfr</module>
-        <module>peach-rpc-spring-boot-autoconfigure</module>
-        <module>peach-rpc-spring-boot-starter</module>
-        <module>peach-rpc-spring-boot-starter-lite</module>
-        <module>peach-rpc-examples</module>
-        <module>peach-rpc-benchmarks</module>
+        <module>otryx-core</module>
+        <module>otryx-codegen</module>
+        <module>otryx-codec-fory</module>
+        <module>otryx-transport-vertx</module>
+        <module>otryx-registry-etcd</module>
+        <module>otryx-registry-nacos</module>
+        <module>otryx-proxy-cglib</module>
+        <module>otryx-proxy-bytebuddy</module>
+        <module>otryx-observability-micrometer</module>
+        <module>otryx-observability-opentelemetry</module>
+        <module>otryx-observability-jfr</module>
+        <module>otryx-spring-boot-autoconfigure</module>
+        <module>otryx-spring-boot-starter</module>
+        <module>otryx-spring-boot-starter-lite</module>
+        <module>otryx-examples</module>
+        <module>otryx-benchmarks</module>
     </modules>
 
     <dependencyManagement>
@@ -172,73 +172,73 @@
             </dependency>
 
             <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-core</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-core</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-codegen</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-codegen</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-codec-fory</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-codec-fory</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-transport-vertx</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-transport-vertx</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-registry-etcd</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-registry-etcd</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-registry-nacos</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-registry-nacos</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-proxy-cglib</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-proxy-cglib</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-proxy-bytebuddy</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-proxy-bytebuddy</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-observability-micrometer</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-observability-micrometer</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-observability-opentelemetry</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-observability-opentelemetry</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-observability-jfr</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-observability-jfr</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-spring-boot-autoconfigure</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-spring-boot-autoconfigure</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-spring-boot-starter</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-spring-boot-starter</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-spring-boot-starter-lite</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-spring-boot-starter-lite</artifactId>
                 <version>${revision}</version>
             </dependency>
         </dependencies>
@@ -311,7 +311,7 @@
                             <rules>
                                 <requireJavaVersion>
                                     <version>[21,22)</version>
-                                    <message>Peach RPC requires JDK 21.</message>
+                                    <message>OTRYX RPC requires JDK 21.</message>
                                 </requireJavaVersion>
                             </rules>
                         </configuration>
@@ -391,7 +391,7 @@
                         <artifactId>maven-checkstyle-plugin</artifactId>
                         <version>${maven-checkstyle-plugin.version}</version>
                         <configuration>
-                            <configLocation>${maven.multiModuleProjectDirectory}/config/peach-rpc-checkstyle.xml</configLocation>
+                            <configLocation>${maven.multiModuleProjectDirectory}/config/otryx-checkstyle.xml</configLocation>
                             <includeTestSourceDirectory>true</includeTestSourceDirectory>
                             <includeResources>false</includeResources>
                             <consoleOutput>false</consoleOutput>
@@ -478,16 +478,16 @@
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>
-                            <deploymentName>Peach RPC ${revision}</deploymentName>
+                            <deploymentName>OTRYX RPC ${revision}</deploymentName>
                             <autoPublish>${central.autoPublish}</autoPublish>
                             <waitUntil>${central.waitUntil}</waitUntil>
                             <checksums>all</checksums>
                             <excludeArtifacts>
-                                <excludeArtifact>peach-rpc-examples</excludeArtifact>
-                                <excludeArtifact>peach-rpc-example-api</excludeArtifact>
-                                <excludeArtifact>peach-rpc-example-provider</excludeArtifact>
-                                <excludeArtifact>peach-rpc-example-consumer</excludeArtifact>
-                                <excludeArtifact>peach-rpc-benchmarks</excludeArtifact>
+                                <excludeArtifact>otryx-examples</excludeArtifact>
+                                <excludeArtifact>otryx-example-api</excludeArtifact>
+                                <excludeArtifact>otryx-example-provider</excludeArtifact>
+                                <excludeArtifact>otryx-example-consumer</excludeArtifact>
+                                <excludeArtifact>otryx-benchmarks</excludeArtifact>
                             </excludeArtifacts>
                         </configuration>
                     </plugin>

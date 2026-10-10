@@ -1,11 +1,11 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
-import io.peach.rpc.api.RpcCompatibilityMetadata;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.registry.ServiceDiscovery;
-import io.peach.rpc.registry.RegistrySnapshot;
-import io.peach.rpc.registry.RegistrySubscription;
+import com.peachsoft.otryx.api.RpcCompatibilityMetadata;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.registry.ServiceDiscovery;
+import com.peachsoft.otryx.registry.RegistrySnapshot;
+import com.peachsoft.otryx.registry.RegistrySubscription;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Consumer 本地服务目录，热路径只读取不可变数组快照。 */

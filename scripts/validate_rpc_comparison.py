@@ -29,7 +29,7 @@ def require(condition, message):
 
 
 def validate_result(data, framework):
-    require(data.get("schema") == "peach.rpc.comparison.v1",
+    require(data.get("schema") == "otryx.rpc.comparison.v1",
             f"{framework}: unsupported comparison schema")
     require(data.get("framework") == framework,
             f"{framework}: wrong framework field")
@@ -87,7 +87,7 @@ def validate_pair(peach, dubbo, environment, max_error_rate=0.05):
     require(peach["evidence_class"] == dubbo["evidence_class"],
             "Mismatched evidence provenance class")
     require(environment.get("schema") ==
-            "peach.rpc.comparison.environment.v1",
+            "otryx.rpc.comparison.environment.v1",
             "Environment provenance record is missing")
     for field in ("run_id", "git_sha", "evidence_class"):
         require(environment.get(field) == peach.get(field),
@@ -112,12 +112,12 @@ def markdown(peach, dubbo, environment):
               if provenance == "smoke" else
               "CONTROLLED CANDIDATE - AWAITING INDEPENDENT REVIEW")
     values = [
-        f"# Peach RPC / Dubbo comparison — {header}",
+        f"# OTRYX RPC / Dubbo comparison — {header}",
         "",
         f"Source SHA: `{peach['git_sha']}`. Run: `{peach['run_id']}`.",
         f"Runner: `{environment.get('runner_id', 'unknown')}`.",
         "",
-        "| Metric | Peach RPC | Apache Dubbo |",
+        "| Metric | OTRYX RPC | Apache Dubbo |",
         "|---|---:|---:|",
     ]
     fields = (

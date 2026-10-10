@@ -1,23 +1,23 @@
-package io.peach.rpc.compare.peach;
+package com.peachsoft.otryx.compare.peach;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.codec.RpcCodecIds;
-import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.compare.ComparisonHarness;
-import io.peach.rpc.core.PeachRpcClient;
-import io.peach.rpc.core.PeachRpcServer;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryFactory;
-import io.peach.rpc.registry.RegistryListener;
-import io.peach.rpc.registry.RegistryOptions;
-import io.peach.rpc.registry.RegistrySnapshot;
-import io.peach.rpc.registry.RegistrySubscription;
-import io.peach.rpc.registry.ServiceDiscovery;
-import io.peach.rpc.spi.ExtensionLoader;
-import io.peach.rpc.transport.RpcTransportFactory;
-import io.peach.rpc.transport.RpcTransportOptions;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.codec.RpcCodecIds;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.compare.ComparisonHarness;
+import com.peachsoft.otryx.core.OtryxRpcClient;
+import com.peachsoft.otryx.core.OtryxRpcServer;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.registry.RegistryFactory;
+import com.peachsoft.otryx.registry.RegistryListener;
+import com.peachsoft.otryx.registry.RegistryOptions;
+import com.peachsoft.otryx.registry.RegistrySnapshot;
+import com.peachsoft.otryx.registry.RegistrySubscription;
+import com.peachsoft.otryx.registry.ServiceDiscovery;
+import com.peachsoft.otryx.spi.ExtensionLoader;
+import com.peachsoft.otryx.transport.RpcTransportFactory;
+import com.peachsoft.otryx.transport.RpcTransportOptions;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -32,12 +32,12 @@ import java.util.concurrent.CountDownLatch;
  * <p>基准使用固定 Endpoint，不引入 Nacos/Etcd 控制面开销；Provider/Consumer
  * 可在不同主机启动。该入口绝不能与 Dubbo 依赖打包在同一个 JVM 中。
  */
-public final class PeachComparisonMain {
+public final class OtryxComparisonMain {
 
     private static final String VERSION = "1.0.0";
     private static final String GROUP = "comparison";
 
-    private PeachComparisonMain() {
+    private OtryxComparisonMain() {
     }
 
     /**
@@ -73,7 +73,7 @@ public final class PeachComparisonMain {
         RpcTransportFactory transport = transportFactory();
         RpcCodecRegistry codecs = RpcCodecRegistry.fromSpi();
         try (registry;
-             PeachRpcServer server = PeachRpcServer.builder()
+             OtryxRpcServer server = OtryxRpcServer.builder()
                      .serviceRegistrar(registry.registrar().orElseThrow())
                      .transportServer(transport.createServer(options()))
                      .codecRegistry(codecs)
@@ -99,7 +99,7 @@ public final class PeachComparisonMain {
         int port = Integer.parseInt(args[2]);
         int concurrency = Integer.parseInt(args[3]);
         RpcTransportFactory transport = transportFactory();
-        try (PeachRpcClient client = PeachRpcClient.builder()
+        try (OtryxRpcClient client = OtryxRpcClient.builder()
                 .serviceDiscovery(new DirectDiscovery(
                         new RpcEndpoint(host, port)))
                 .transportClient(transport.createClient(options()))

@@ -3,15 +3,15 @@ set -euo pipefail
 
 # Manual GC/allocation microbenchmark. Results on shared runners are smoke only.
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-JAR="${PEACH_RPC_BENCHMARK_JAR:-$ROOT/peach-rpc-benchmarks/target/benchmarks.jar}"
+JAR="${OTRYX_RPC_BENCHMARK_JAR:-$ROOT/otryx-benchmarks/target/benchmarks.jar}"
 OUTPUT="${1:-$ROOT/target/fory-argument-allocation}"
-WARMUP="${PEACH_RPC_FORY_JMH_WARMUP:-2}"
-MEASUREMENT="${PEACH_RPC_FORY_JMH_MEASUREMENT:-3}"
-JVM_FLAGS="${PEACH_RPC_ALLOCATION_JVM_FLAGS:--Xms256m -Xmx256m}"
+WARMUP="${OTRYX_RPC_FORY_JMH_WARMUP:-2}"
+MEASUREMENT="${OTRYX_RPC_FORY_JMH_MEASUREMENT:-3}"
+JVM_FLAGS="${OTRYX_RPC_ALLOCATION_JVM_FLAGS:--Xms256m -Xmx256m}"
 
 if [[ ! -s "$JAR" ]]; then
   echo "Missing benchmark JAR: $JAR" >&2
-  echo "Build it first: mvn -B -ntp -pl peach-rpc-benchmarks -am -DskipTests package" >&2
+  echo "Build it first: mvn -B -ntp -pl otryx-benchmarks -am -DskipTests package" >&2
   exit 1
 fi
 

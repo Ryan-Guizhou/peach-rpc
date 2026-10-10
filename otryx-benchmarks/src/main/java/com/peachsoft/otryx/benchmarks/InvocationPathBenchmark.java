@@ -1,9 +1,9 @@
-package io.peach.rpc.benchmarks;
+package com.peachsoft.otryx.benchmarks;
 
-import io.peach.rpc.generated.RpcGeneratedClients;
-import io.peach.rpc.generated.RpcGeneratedInvocation;
-import io.peach.rpc.proxy.bytebuddy.ByteBuddyProxyFactory;
-import io.peach.rpc.proxy.jdk.JdkProxyFactory;
+import com.peachsoft.otryx.generated.RpcGeneratedClients;
+import com.peachsoft.otryx.generated.RpcGeneratedInvocation;
+import com.peachsoft.otryx.proxy.bytebuddy.ByteBuddyProxyFactory;
+import com.peachsoft.otryx.proxy.jdk.JdkProxyFactory;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +25,7 @@ import org.openjdk.jmh.annotations.State;
 @State(Scope.Thread)
 public class InvocationPathBenchmark {
 
-    private static final String VALUE = "peach-rpc";
+    private static final String VALUE = "otryx";
     private static final CompletableFuture<Object> RESULT =
             CompletableFuture.completedFuture(VALUE);
 

@@ -1,6 +1,6 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
-import io.peach.rpc.observability.RpcCircuitState;
+import com.peachsoft.otryx.observability.RpcCircuitState;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 

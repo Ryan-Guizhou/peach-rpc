@@ -1,12 +1,12 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.ServiceKey;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.ServiceKey;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;

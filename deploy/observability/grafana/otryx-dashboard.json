@@ -72,7 +72,7 @@
     {
       "type": "timeseries",
       "title": "Client Call Latency Quantiles",
-      "description": "Requires Prometheus histogram publication for peach.rpc.client.calls.",
+      "description": "Requires Prometheus histogram publication for otryx.rpc.client.calls.",
       "targets": [
         {
           "expr": "histogram_quantile(0.50, sum by (le) (rate(peach_rpc_client_calls_seconds_bucket[5m])))",
@@ -215,7 +215,7 @@
   ],
   "schemaVersion": 39,
   "tags": [
-    "peach-rpc",
+    "otryx",
     "rpc"
   ],
   "templating": {
@@ -225,7 +225,7 @@
     "from": "now-1h",
     "to": "now"
   },
-  "title": "Peach RPC Production Overview",
-  "uid": "peach-rpc-production",
+  "title": "OTRYX RPC Production Overview",
+  "uid": "otryx-production",
   "version": 1
 }

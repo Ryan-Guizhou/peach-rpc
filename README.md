@@ -1,4 +1,4 @@
-# Peach RPC
+# OTRYX RPC
 
 简体中文 | [English](README.en-US.md)
 
@@ -9,7 +9,7 @@
 <!-- doc-section:overview -->
 ## 项目简介
 
-Peach RPC 是一个面向 **Java 服务间通信** 的轻量、高性能、可扩展 RPC 框架。1.0.1 在 1.0.0 GA 的 Wire v1 与 Public Core API 兼容边界上，补齐 Provider 异步完成线程隔离、健康路径热区优化以及 Maven Central Patch Release 工程。
+OTRYX RPC 是一个面向 **Java 服务间通信** 的轻量、高性能、可扩展 RPC 框架。1.0.1 在 1.0.0 GA 的 Wire v1 与 Public Core API 兼容边界上，补齐 Provider 异步完成线程隔离、健康路径热区优化以及 Maven Central Patch Release 工程。
 
 **当前源码版本：1.0.1 Release Prep**  
 **Java：21**  
@@ -105,17 +105,17 @@ N+1 Consumer -> N Provider rollback
 
 ### Spring Boot 轻量接入
 
-Java 21 / Spring Boot 3.5.4 项目可引入以下依赖，默认使用 Memory Registry、JDK Proxy、Fory 和 Vert.x，无须安装 Etcd/Nacos。需要生产注册中心时按需添加 Nacos 或 Etcd Adapter。完整兼容 Starter `peach-rpc-spring-boot-starter` 仍然保留，参见 [Starter 配置指南](docs/starter.md)。
+Java 21 / Spring Boot 3.5.4 项目可引入以下依赖，默认使用 Memory Registry、JDK Proxy、Fory 和 Vert.x，无须安装 Etcd/Nacos。需要生产注册中心时按需添加 Nacos 或 Etcd Adapter。完整兼容 Starter `otryx-spring-boot-starter` 仍然保留，参见 [Starter 配置指南](docs/starter.md)。
 
 ```xml
 <dependency>
-    <groupId>io.peach.rpc</groupId>
-    <artifactId>peach-rpc-spring-boot-starter-lite</artifactId>
+    <groupId>com.peachsoft.otryx</groupId>
+    <artifactId>otryx-spring-boot-starter-lite</artifactId>
     <version>1.0.1</version>
 </dependency>
 ```
 
-当前仓库版本为 Release Prep；公开仓库构件是否可下载取决于后续 Maven Central 发布。启动时会对 `peach.rpc.*` 配置执行 Fail-fast 校验并输出不含凭据的诊断摘要。无需 Docker 的真实回环 RPC 测试见 [Starter 指南](docs/starter.md)。
+当前仓库版本为 Release Prep；公开仓库构件是否可下载取决于后续 Maven Central 发布。启动时会对 `otryx.rpc.*` 配置执行 Fail-fast 校验并输出不含凭据的诊断摘要。无需 Docker 的真实回环 RPC 测试见 [Starter 指南](docs/starter.md)。
 
 ### 环境
 
@@ -126,29 +126,29 @@ Java 21 / Spring Boot 3.5.4 项目可引入以下依赖，默认使用 Memory Re
 ### 从源码运行官方独立进程示例
 
 ```bash
-git clone https://github.com/Ryan-Guizhou/peach-rpc.git
-cd peach-rpc
+git clone https://github.com/Ryan-Guizhou/otryx.git
+cd otryx
 
-docker compose -f peach-rpc-examples/docker-compose.yml up -d
-mvn -B -ntp -pl peach-rpc-examples -am clean package
+docker compose -f otryx-examples/docker-compose.yml up -d
+mvn -B -ntp -pl otryx-examples -am clean package
 ```
 
 启动 Provider：
 
 ```bash
-java -jar peach-rpc-examples/peach-rpc-example-provider/target/*-exec.jar
+java -jar otryx-examples/otryx-example-provider/target/*-exec.jar
 ```
 
 另一个终端启动 Consumer：
 
 ```bash
-java -jar peach-rpc-examples/peach-rpc-example-consumer/target/*-exec.jar
+java -jar otryx-examples/otryx-example-consumer/target/*-exec.jar
 ```
 
 预期：
 
 ```text
-RPC demo completed successfully: Hello, Peach RPC!
+RPC demo completed successfully: Hello, OTRYX RPC!
 ```
 
 完整说明见 [快速开始](docs/getting-started.md)。
@@ -160,8 +160,8 @@ RPC demo completed successfully: Hello, Peach RPC!
 
 ```xml
 <dependency>
-    <groupId>io.peach.rpc</groupId>
-    <artifactId>peach-rpc-spring-boot-starter</artifactId>
+    <groupId>com.peachsoft.otryx</groupId>
+    <artifactId>otryx-spring-boot-starter</artifactId>
     <version>1.0.1</version>
 </dependency>
 ```
@@ -180,7 +180,7 @@ mvn -B -ntp clean install -DskipTests
 Provider：
 
 ```java
-@PeachRpcService(
+@OtryxRpcService(
         interfaceClass = OrderService.class,
         version = "1.0.0")
 public class OrderServiceImpl implements OrderService {
@@ -190,7 +190,7 @@ public class OrderServiceImpl implements OrderService {
 Consumer：
 
 ```java
-@PeachRpcReference(version = "1.0.0")
+@OtryxRpcReference(version = "1.0.0")
 private OrderService orderService;
 ```
 

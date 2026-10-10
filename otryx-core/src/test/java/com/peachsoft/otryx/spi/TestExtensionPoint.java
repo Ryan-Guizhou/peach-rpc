@@ -1,4 +1,4 @@
-package io.peach.rpc.spi;
+package com.peachsoft.otryx.spi;
 
 @SPI("one")
 interface TestExtensionPoint {

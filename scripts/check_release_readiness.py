@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static RC1 / GA / patch release-readiness gate for Peach RPC."""
+"""Static RC1 / GA / patch release-readiness gate for OTRYX RPC."""
 
 from __future__ import annotations
 
@@ -38,12 +38,12 @@ REQUIRED_FILES = (
     "docs/release-notes-1.0.0-RC1.md",
     "docs/release-notes-1.0.0.md",
     "docs/release-status.properties",
-    "deploy/observability/grafana/peach-rpc-dashboard.json",
-    "deploy/observability/prometheus/peach-rpc-alerts.example.yml",
-    "peach-rpc-core/src/main/java/io/peach/rpc/api/RpcTypeIds.java",
-    "peach-rpc-core/src/main/java/io/peach/rpc/api/RpcSchemaFingerprint.java",
-    "peach-rpc-core/src/main/java/io/peach/rpc/api/RpcCompatibilityMetadata.java",
-    "peach-rpc-core/src/main/java/io/peach/rpc/observability/RpcFailureClassifier.java",
+    "deploy/observability/grafana/otryx-dashboard.json",
+    "deploy/observability/prometheus/otryx-alerts.example.yml",
+    "otryx-core/src/main/java/io/peach/rpc/api/RpcTypeIds.java",
+    "otryx-core/src/main/java/io/peach/rpc/api/RpcSchemaFingerprint.java",
+    "otryx-core/src/main/java/io/peach/rpc/api/RpcCompatibilityMetadata.java",
+    "otryx-core/src/main/java/io/peach/rpc/observability/RpcFailureClassifier.java",
     ".github/workflows/etcd-chaos.yml",
     ".github/workflows/nacos-chaos.yml",
     ".github/workflows/rolling-compatibility.yml",
@@ -139,24 +139,24 @@ def main() -> int:
         )
 
     dashboard = json.loads(
-        (ROOT / "deploy/observability/grafana/peach-rpc-dashboard.json").read_text(
+        (ROOT / "deploy/observability/grafana/otryx-dashboard.json").read_text(
             encoding="utf-8"
         )
     )
-    if dashboard.get("uid") != "peach-rpc-production":
+    if dashboard.get("uid") != "otryx-production":
         fail("Unexpected Grafana dashboard UID")
     if len(dashboard.get("panels", [])) < 6:
         fail("Production dashboard is incomplete")
 
     alerts = (
-        ROOT / "deploy/observability/prometheus/peach-rpc-alerts.example.yml"
+        ROOT / "deploy/observability/prometheus/otryx-alerts.example.yml"
     ).read_text(encoding="utf-8")
     for alert in (
-        "PeachRpcTlsHandshakeFailures",
-        "PeachRpcRegistryFailures",
-        "PeachRpcHeartbeatTimeouts",
-        "PeachRpcProviderAdmissionRejections",
-        "PeachRpcCircuitStuckOpen",
+        "OtryxRpcTlsHandshakeFailures",
+        "OtryxRpcRegistryFailures",
+        "OtryxRpcHeartbeatTimeouts",
+        "OtryxRpcProviderAdmissionRejections",
+        "OtryxRpcCircuitStuckOpen",
     ):
         if alert not in alerts:
             fail(f"Missing alert example: {alert}")
@@ -201,7 +201,7 @@ def main() -> int:
         fail("GA must retain the MIT License")
 
     print(
-        "Peach RPC release-readiness static checks passed: "
+        "OTRYX RPC release-readiness static checks passed: "
         f"stage={args.stage}, version={version}"
     )
     return 0

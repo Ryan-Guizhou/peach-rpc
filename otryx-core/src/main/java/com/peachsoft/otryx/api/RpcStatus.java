@@ -1,4 +1,4 @@
-package io.peach.rpc.api;
+package com.peachsoft.otryx.api;
 
 /** RPC 响应状态。 */
 public enum RpcStatus {

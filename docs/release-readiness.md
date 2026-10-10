@@ -1,4 +1,4 @@
-# Peach RPC 1.0.x 发布就绪清单
+# OTRYX RPC 1.0.x 发布就绪清单
 
 > 本文覆盖 1.0.0 历史 GA 与后续 1.0.x Patch Release。机器门禁由 `scripts/check_release_readiness.py`、`scripts/check_central_publication.py` 和 GitHub Actions 执行。
 
@@ -93,7 +93,7 @@ python3 scripts/check_central_publication.py \
 以下条件无法由仓库 CI 代替：
 
 - Central Publisher Portal 账号可用；
-- Central Portal 已验证能够覆盖 `io.peach.rpc` 的 namespace（例如 `io.peach` 或精确 `io.peach.rpc`）；
+- Central Portal 已验证能够覆盖 `com.peachsoft.otryx` 的 namespace（例如 `io.peach` 或精确 `com.peachsoft.otryx`）；
 - Portal User Token 已生成；
 - 发布签名私钥可用；
 - GitHub Repository Secrets 已配置。

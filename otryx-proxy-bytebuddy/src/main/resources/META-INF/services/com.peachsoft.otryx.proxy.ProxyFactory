@@ -1,1 +1,1 @@
-io.peach.rpc.proxy.bytebuddy.ByteBuddyProxyFactory
+com.peachsoft.otryx.proxy.bytebuddy.ByteBuddyProxyFactory

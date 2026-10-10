@@ -1,1 +1,1 @@
-io.peach.rpc.observability.jfr.PeachRpcJfrAutoConfiguration
+com.peachsoft.otryx.observability.jfr.OtryxRpcJfrAutoConfiguration

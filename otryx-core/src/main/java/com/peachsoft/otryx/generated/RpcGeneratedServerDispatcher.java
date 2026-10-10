@@ -1,4 +1,4 @@
-package io.peach.rpc.generated;
+package com.peachsoft.otryx.generated;
 
 /** 编译期生成的 Provider 方法分派器。 */
 @FunctionalInterface

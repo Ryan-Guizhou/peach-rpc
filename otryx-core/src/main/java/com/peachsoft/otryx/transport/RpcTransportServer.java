@@ -1,6 +1,6 @@
-package io.peach.rpc.transport;
+package com.peachsoft.otryx.transport;
 
-import io.peach.rpc.api.RpcEndpoint;
+import com.peachsoft.otryx.api.RpcEndpoint;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;

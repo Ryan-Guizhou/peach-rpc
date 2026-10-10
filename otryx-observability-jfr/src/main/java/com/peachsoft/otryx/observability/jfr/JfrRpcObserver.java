@@ -1,18 +1,18 @@
-package io.peach.rpc.observability.jfr;
+package com.peachsoft.otryx.observability.jfr;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.RpcExecutionMode;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.observability.RpcCertificateReloadOutcome;
-import io.peach.rpc.observability.RpcConnectionRole;
-import io.peach.rpc.observability.RpcObserver;
-import io.peach.rpc.observability.RpcRegistryRecoveryAction;
-import io.peach.rpc.observability.RpcSecurityMode;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.RpcExecutionMode;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.observability.RpcCertificateReloadOutcome;
+import com.peachsoft.otryx.observability.RpcConnectionRole;
+import com.peachsoft.otryx.observability.RpcObserver;
+import com.peachsoft.otryx.observability.RpcRegistryRecoveryAction;
+import com.peachsoft.otryx.observability.RpcSecurityMode;
 import java.time.Duration;
 
 /**
- * JFR Peach RPC Observer。
+ * JFR OTRYX RPC Observer。
  *
  * <p>仅记录失败、恢复以及超过阈值的调用，避免高频正常请求持续产生事件。
  */

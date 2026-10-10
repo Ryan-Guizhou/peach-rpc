@@ -1,4 +1,4 @@
-package io.peach.rpc.api;
+package com.peachsoft.otryx.api;
 
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;

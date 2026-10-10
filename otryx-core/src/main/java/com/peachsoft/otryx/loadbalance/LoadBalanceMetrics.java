@@ -1,6 +1,6 @@
-package io.peach.rpc.loadbalance;
+package com.peachsoft.otryx.loadbalance;
 
-import io.peach.rpc.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceInstance;
 
 /**
  * 负载均衡器读取的实时端点指标。

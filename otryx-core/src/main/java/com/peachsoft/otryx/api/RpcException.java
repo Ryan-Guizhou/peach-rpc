@@ -1,4 +1,4 @@
-package io.peach.rpc.api;
+package com.peachsoft.otryx.api;
 
 /** RPC 基础运行时异常。 */
 public class RpcException extends RuntimeException {

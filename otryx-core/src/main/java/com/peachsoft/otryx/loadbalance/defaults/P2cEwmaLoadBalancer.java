@@ -1,10 +1,10 @@
-package io.peach.rpc.loadbalance.defaults;
+package com.peachsoft.otryx.loadbalance.defaults;
 
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.loadbalance.LoadBalanceContext;
-import io.peach.rpc.loadbalance.LoadBalanceMetrics;
-import io.peach.rpc.loadbalance.LoadBalancer;
-import io.peach.rpc.spi.Extension;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.loadbalance.LoadBalanceContext;
+import com.peachsoft.otryx.loadbalance.LoadBalanceMetrics;
+import com.peachsoft.otryx.loadbalance.LoadBalancer;
+import com.peachsoft.otryx.spi.Extension;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 

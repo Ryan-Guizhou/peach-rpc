@@ -25,7 +25,7 @@
 
 ## 安全范围
 
-Peach RPC 安全边界包括：
+OTRYX RPC 安全边界包括：
 
 - Wire Protocol 输入校验；
 - TLS/mTLS；

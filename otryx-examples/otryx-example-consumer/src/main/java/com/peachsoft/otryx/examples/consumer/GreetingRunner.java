@@ -1,12 +1,12 @@
-package io.peach.rpc.examples.consumer;
+package com.peachsoft.otryx.examples.consumer;
 
-import io.peach.rpc.api.RpcRemoteException;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.RpcUnavailableException;
-import io.peach.rpc.examples.api.GreetingReply;
-import io.peach.rpc.examples.api.GreetingRequest;
-import io.peach.rpc.examples.api.GreetingService;
-import io.peach.rpc.spring.annotation.PeachRpcReference;
+import com.peachsoft.otryx.api.RpcRemoteException;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.RpcUnavailableException;
+import com.peachsoft.otryx.examples.api.GreetingReply;
+import com.peachsoft.otryx.examples.api.GreetingRequest;
+import com.peachsoft.otryx.examples.api.GreetingService;
+import com.peachsoft.otryx.spring.annotation.OtryxRpcReference;
 import java.time.Duration;
 import java.util.concurrent.CompletionException;
 import org.slf4j.Logger;
@@ -25,10 +25,10 @@ public class GreetingRunner implements ApplicationRunner {
     private static final Duration DISCOVERY_TIMEOUT =
             Duration.ofSeconds(10);
 
-    @PeachRpcReference(version = "1.0.0")
+    @OtryxRpcReference(version = "1.0.0")
     private GreetingService greetingService;
 
-    @Value("${peach.rpc.example.repeat-interval-millis:0}")
+    @Value("${otryx.rpc.example.repeat-interval-millis:0}")
     private long repeatIntervalMillis;
 
     /** 创建示例 Consumer。 */
@@ -53,7 +53,7 @@ public class GreetingRunner implements ApplicationRunner {
         while (System.nanoTime() < deadline) {
             try {
                 GreetingReply reply = greetingService.hello(
-                        new GreetingRequest("Peach RPC"));
+                        new GreetingRequest("OTRYX RPC"));
                 LOGGER.info(
                         "RPC demo completed successfully: {}",
                         reply.message());

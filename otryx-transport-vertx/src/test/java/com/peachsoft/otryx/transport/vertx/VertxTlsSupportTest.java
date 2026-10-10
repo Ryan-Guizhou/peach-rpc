@@ -1,9 +1,9 @@
-package io.peach.rpc.transport.vertx;
+package com.peachsoft.otryx.transport.vertx;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import io.peach.rpc.observability.RpcSecurityMode;
-import io.peach.rpc.transport.RpcTransportSecurityOptions;
+import com.peachsoft.otryx.observability.RpcSecurityMode;
+import com.peachsoft.otryx.transport.RpcTransportSecurityOptions;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -17,7 +17,7 @@ class VertxTlsSupportTest {
     void fileStateShouldDetectContentChangeWithSameSizeAndMtime()
             throws Exception {
         Path file = Files.createTempFile(
-                "peach-rpc-tls-state",
+                "otryx-tls-state",
                 ".pem");
         try {
             Files.writeString(file, "AAAA");

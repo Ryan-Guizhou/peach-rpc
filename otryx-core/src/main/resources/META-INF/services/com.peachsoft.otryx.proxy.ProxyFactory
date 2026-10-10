@@ -1,1 +1,1 @@
-io.peach.rpc.proxy.jdk.JdkProxyFactory
+com.peachsoft.otryx.proxy.jdk.JdkProxyFactory

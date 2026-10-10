@@ -1,6 +1,6 @@
-package io.peach.rpc.registry;
+package com.peachsoft.otryx.registry;
 
-import io.peach.rpc.observability.RpcObserver;
+import com.peachsoft.otryx.observability.RpcObserver;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;

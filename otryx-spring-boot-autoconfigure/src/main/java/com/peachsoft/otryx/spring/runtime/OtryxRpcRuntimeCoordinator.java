@@ -1,29 +1,29 @@
-package io.peach.rpc.spring.runtime;
+package com.peachsoft.otryx.spring.runtime;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.core.PeachRpcClient;
-import io.peach.rpc.core.PeachRpcServer;
-import io.peach.rpc.core.RpcProviderAdmissionOptions;
-import io.peach.rpc.core.RpcClientResilienceOptions;
-import io.peach.rpc.core.RpcProviderExecutionOptions;
-import io.peach.rpc.loadbalance.LoadBalancer;
-import io.peach.rpc.observability.RpcMetadataPropagator;
-import io.peach.rpc.observability.RpcObserver;
-import io.peach.rpc.observability.RpcTracingBridge;
-import io.peach.rpc.proxy.ProxyFactory;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.spring.autoconfigure.PeachRpcProperties;
-import io.peach.rpc.transport.RpcTransportFactory;
-import io.peach.rpc.transport.RpcTransportOptions;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.core.OtryxRpcClient;
+import com.peachsoft.otryx.core.OtryxRpcServer;
+import com.peachsoft.otryx.core.RpcProviderAdmissionOptions;
+import com.peachsoft.otryx.core.RpcClientResilienceOptions;
+import com.peachsoft.otryx.core.RpcProviderExecutionOptions;
+import com.peachsoft.otryx.loadbalance.LoadBalancer;
+import com.peachsoft.otryx.observability.RpcMetadataPropagator;
+import com.peachsoft.otryx.observability.RpcObserver;
+import com.peachsoft.otryx.observability.RpcTracingBridge;
+import com.peachsoft.otryx.proxy.ProxyFactory;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.spring.autoconfigure.OtryxRpcProperties;
+import com.peachsoft.otryx.transport.RpcTransportFactory;
+import com.peachsoft.otryx.transport.RpcTransportOptions;
 import java.util.Objects;
 import java.util.Optional;
 import org.springframework.beans.factory.ObjectProvider;
 
 /**
- * 按需创建并持有 Peach RPC Consumer / Provider 运行时。
+ * 按需创建并持有 OTRYX RPC Consumer / Provider 运行时。
  */
-public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
+public final class OtryxRpcRuntimeCoordinator implements AutoCloseable {
 
     private final Registry registry;
     private final RpcCodecRegistry codecRegistry;
@@ -38,9 +38,9 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
             metadataPropagatorProvider;
     private final ObjectProvider<RpcTracingBridge>
             tracingBridgeProvider;
-    private final PeachRpcProperties properties;
-    private volatile PeachRpcClient client;
-    private volatile PeachRpcServer server;
+    private final OtryxRpcProperties properties;
+    private volatile OtryxRpcClient client;
+    private volatile OtryxRpcServer server;
     private volatile boolean providerAutoStart;
 
     /**
@@ -57,9 +57,9 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
      * @param observerProvider 可观测性 Observer 提供器
      * @param metadataPropagatorProvider Metadata 传播器提供器
      * @param tracingBridgeProvider 分布式 Trace Bridge 提供器
-     * @param properties Peach RPC 配置
+     * @param properties OTRYX RPC 配置
      */
-    public PeachRpcRuntimeCoordinator(
+    public OtryxRpcRuntimeCoordinator(
             Registry registry,
             RpcCodecRegistry codecRegistry,
             RpcTransportFactory transportFactory,
@@ -71,7 +71,7 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
             ObjectProvider<RpcObserver> observerProvider,
             ObjectProvider<RpcMetadataPropagator> metadataPropagatorProvider,
             ObjectProvider<RpcTracingBridge> tracingBridgeProvider,
-            PeachRpcProperties properties) {
+            OtryxRpcProperties properties) {
         this.registry = Objects.requireNonNull(registry, "registry");
         this.codecRegistry = Objects.requireNonNull(codecRegistry, "codecRegistry");
         this.transportFactory = Objects.requireNonNull(transportFactory, "transportFactory");
@@ -105,12 +105,12 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
      *
      * @return Consumer 运行时
      */
-    public PeachRpcClient client() {
+    public OtryxRpcClient client() {
         if (!properties.getClient().isEnabled()) {
             throw new IllegalStateException(
-                    "Peach RPC Consumer capability is disabled by peach.rpc.client.enabled=false");
+                    "OTRYX RPC Consumer capability is disabled by otryx.rpc.client.enabled=false");
         }
-        PeachRpcClient current = client;
+        OtryxRpcClient current = client;
         if (current != null) {
             return current;
         }
@@ -127,12 +127,12 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
      *
      * @return Provider 运行时
      */
-    public PeachRpcServer server() {
+    public OtryxRpcServer server() {
         if (!properties.getServer().isEnabled()) {
             throw new IllegalStateException(
-                    "Peach RPC Provider capability is disabled by peach.rpc.server.enabled=false");
+                    "OTRYX RPC Provider capability is disabled by otryx.rpc.server.enabled=false");
         }
-        PeachRpcServer current = server;
+        OtryxRpcServer current = server;
         if (current != null) {
             return current;
         }
@@ -149,7 +149,7 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
      *
      * @return Provider 运行时
      */
-    public PeachRpcServer serverForServiceExport() {
+    public OtryxRpcServer serverForServiceExport() {
         providerAutoStart = true;
         return server();
     }
@@ -159,7 +159,7 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
      *
      * @return Consumer
      */
-    public Optional<PeachRpcClient> clientIfCreated() {
+    public Optional<OtryxRpcClient> clientIfCreated() {
         return Optional.ofNullable(client);
     }
 
@@ -168,7 +168,7 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
      *
      * @return Provider
      */
-    public Optional<PeachRpcServer> serverIfCreated() {
+    public Optional<OtryxRpcServer> serverIfCreated() {
         return Optional.ofNullable(server);
     }
 
@@ -177,15 +177,15 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
      *
      * @return 自动启动 Provider
      */
-    public Optional<PeachRpcServer> autoStartServerIfCreated() {
+    public Optional<OtryxRpcServer> autoStartServerIfCreated() {
         return providerAutoStart
                 ? Optional.ofNullable(server)
                 : Optional.empty();
     }
 
-    private PeachRpcClient createClient() {
-        PeachRpcProperties.Client clientProperties = properties.getClient();
-        return PeachRpcClient.builder()
+    private OtryxRpcClient createClient() {
+        OtryxRpcProperties.Client clientProperties = properties.getClient();
+        return OtryxRpcClient.builder()
                 .serviceDiscovery(registry)
                 .codecRegistry(codecRegistry)
                 .transportClient(transportFactory.createClient(
@@ -200,9 +200,9 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
                 .build();
     }
 
-    private PeachRpcServer createServer() {
-        PeachRpcProperties.Server serverProperties = properties.getServer();
-        return PeachRpcServer.builder()
+    private OtryxRpcServer createServer() {
+        OtryxRpcProperties.Server serverProperties = properties.getServer();
+        return OtryxRpcServer.builder()
                 .serviceRegistrar(registry.registrar().orElseThrow(() ->
                         new IllegalStateException(
                                 "Configured RPC registry does not support provider registration")))
@@ -227,7 +227,7 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
     }
 
     private static RpcProviderAdmissionOptions providerAdmissionOptions(
-            PeachRpcProperties.Admission policy) {
+            OtryxRpcProperties.Admission policy) {
         return new RpcProviderAdmissionOptions(
                 policy.getMaxInflightBytes(),
                 policy.getMaxConcurrentPerService(),
@@ -257,11 +257,11 @@ public final class PeachRpcRuntimeCoordinator implements AutoCloseable {
 
     @Override
     public void close() {
-        PeachRpcClient currentClient = client;
+        OtryxRpcClient currentClient = client;
         if (currentClient != null) {
             currentClient.close();
         }
-        PeachRpcServer currentServer = server;
+        OtryxRpcServer currentServer = server;
         if (currentServer != null) {
             currentServer.close();
         }

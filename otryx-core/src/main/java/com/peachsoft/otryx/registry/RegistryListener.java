@@ -1,4 +1,4 @@
-package io.peach.rpc.registry;
+package com.peachsoft.otryx.registry;
 
 /** 服务实例快照监听器。 */
 @FunctionalInterface

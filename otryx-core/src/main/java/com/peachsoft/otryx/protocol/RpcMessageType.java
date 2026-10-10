@@ -1,4 +1,4 @@
-package io.peach.rpc.protocol;
+package com.peachsoft.otryx.protocol;
 
 /** RPC 协议消息类型。 */
 public enum RpcMessageType {

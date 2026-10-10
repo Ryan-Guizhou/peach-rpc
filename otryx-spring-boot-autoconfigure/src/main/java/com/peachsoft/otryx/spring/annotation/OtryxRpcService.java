@@ -1,4 +1,4 @@
-package io.peach.rpc.spring.annotation;
+package com.peachsoft.otryx.spring.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -8,16 +8,16 @@ import java.lang.annotation.Target;
 import org.springframework.stereotype.Component;
 
 /**
- * 标记需要由 Peach RPC 暴露的 Spring Bean。
+ * 标记需要由 OTRYX RPC 暴露的 Spring Bean。
  *
  * <p>该注解同时是 Spring stereotype，服务实现类无需额外添加 {@code @Component}。
- * Bean 完成创建后会自动注册到 Peach RPC Provider。
+ * Bean 完成创建后会自动注册到 OTRYX RPC Provider。
  */
 @Documented
 @Component
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface PeachRpcService {
+public @interface OtryxRpcService {
 
     /**
      * RPC 服务接口。

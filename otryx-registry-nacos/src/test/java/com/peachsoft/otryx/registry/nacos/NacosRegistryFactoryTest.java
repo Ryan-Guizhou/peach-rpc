@@ -1,13 +1,13 @@
-package io.peach.rpc.registry.nacos;
+package com.peachsoft.otryx.registry.nacos;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.peach.rpc.registry.RegistryCapability;
-import io.peach.rpc.registry.RegistryFactory;
-import io.peach.rpc.registry.RegistryOptions;
-import io.peach.rpc.spi.ExtensionLoader;
+import com.peachsoft.otryx.registry.RegistryCapability;
+import com.peachsoft.otryx.registry.RegistryFactory;
+import com.peachsoft.otryx.registry.RegistryOptions;
+import com.peachsoft.otryx.spi.ExtensionLoader;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +55,7 @@ class NacosRegistryFactoryTest {
                 "public",
                 Map.of(
                         "nacosUsername",
-                        "peach-rpc",
+                        "otryx",
                         "nacosPassword",
                         secret));
 
@@ -70,7 +70,7 @@ class NacosRegistryFactoryTest {
                 properties.getProperty(
                         PropertyKeyConst.SERVER_ADDR));
         assertEquals(
-                "peach-rpc",
+                "otryx",
                 properties.getProperty(
                         PropertyKeyConst.USERNAME));
         assertEquals(

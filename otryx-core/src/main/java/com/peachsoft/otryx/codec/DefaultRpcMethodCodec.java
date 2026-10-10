@@ -1,4 +1,4 @@
-package io.peach.rpc.codec;
+package com.peachsoft.otryx.codec;
 
 import java.util.Objects;
 

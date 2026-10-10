@@ -1,1 +1,1 @@
-io.peach.rpc.registry.nacos.NacosRegistryFactory
+com.peachsoft.otryx.registry.nacos.NacosRegistryFactory

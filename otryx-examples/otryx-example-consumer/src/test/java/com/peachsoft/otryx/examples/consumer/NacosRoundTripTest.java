@@ -1,16 +1,16 @@
-package io.peach.rpc.examples.consumer;
+package com.peachsoft.otryx.examples.consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import io.peach.rpc.api.RpcUnavailableException;
-import io.peach.rpc.core.PeachRpcClient;
-import io.peach.rpc.examples.api.GreetingReply;
-import io.peach.rpc.examples.api.GreetingRequest;
-import io.peach.rpc.examples.api.GreetingService;
-import io.peach.rpc.examples.provider.ProviderApplication;
-import io.peach.rpc.generated.RpcGeneratedClients;
+import com.peachsoft.otryx.api.RpcUnavailableException;
+import com.peachsoft.otryx.core.OtryxRpcClient;
+import com.peachsoft.otryx.examples.api.GreetingReply;
+import com.peachsoft.otryx.examples.api.GreetingRequest;
+import com.peachsoft.otryx.examples.api.GreetingService;
+import com.peachsoft.otryx.examples.provider.ProviderApplication;
+import com.peachsoft.otryx.generated.RpcGeneratedClients;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletionException;
@@ -31,7 +31,7 @@ class NacosRoundTripTest {
                 endpoint != null && !endpoint.isBlank(),
                 "NACOS_TEST_ENDPOINT is required");
 
-        String group = "PEACH_RPC_E2E_"
+        String group = "OTRYX_RPC_E2E_"
                 + UUID.randomUUID()
                         .toString()
                         .replace("-", "");
@@ -46,10 +46,10 @@ class NacosRoundTripTest {
                                     endpoint,
                                     group))
                     .properties(
-                            "peach.rpc.server.host=127.0.0.1",
-                            "peach.rpc.server.port=0",
-                            "peach.rpc.server.advertised-host=127.0.0.1",
-                            "peach.rpc.server.advertised-port=0")
+                            "otryx.rpc.server.host=127.0.0.1",
+                            "otryx.rpc.server.port=0",
+                            "otryx.rpc.server.advertised-host=127.0.0.1",
+                            "otryx.rpc.server.advertised-port=0")
                     .run();
             consumer = new SpringApplicationBuilder(
                     ConsumerApplication.class)
@@ -64,16 +64,16 @@ class NacosRoundTripTest {
                     RpcGeneratedClients.find(
                                     GreetingService.class)
                             .isPresent());
-            PeachRpcClient client =
-                    consumer.getBean(PeachRpcClient.class);
+            OtryxRpcClient client =
+                    consumer.getBean(OtryxRpcClient.class);
             GreetingService service = client.refer(
                     GreetingService.class,
                     "1.0.0",
                     "default");
             GreetingReply reply = service.hello(
-                    new GreetingRequest("Peach RPC"));
+                    new GreetingRequest("OTRYX RPC"));
             assertEquals(
-                    "Hello, Peach RPC!",
+                    "Hello, OTRYX RPC!",
                     reply.message());
 
             provider.close();
@@ -134,11 +134,11 @@ class NacosRoundTripTest {
             String endpoint,
             String group) {
         return new String[]{
-                "peach.rpc.registry.type=nacos",
-                "peach.rpc.registry.endpoints=" + endpoint,
-                "peach.rpc.registry.namespace=public",
-                "peach.rpc.registry.nacos.group=" + group,
-                "peach.rpc.registry.nacos.cluster=DEFAULT"
+                "otryx.rpc.registry.type=nacos",
+                "otryx.rpc.registry.endpoints=" + endpoint,
+                "otryx.rpc.registry.namespace=public",
+                "otryx.rpc.registry.nacos.group=" + group,
+                "otryx.rpc.registry.nacos.cluster=DEFAULT"
         };
     }
 

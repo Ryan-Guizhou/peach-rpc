@@ -1,11 +1,11 @@
-# Peach RPC Wire Compatibility
+# OTRYX RPC Wire Compatibility
 
 > 状态：**1.0.x GA Contract / Wire v1 Frozen**  
 > 本文定义 1.0.x 的稳定标识、Schema Fingerprint 与滚动升级语义。
 
 ## 1. 兼容模型
 
-Peach RPC 将以下概念明确分离：
+OTRYX RPC 将以下概念明确分离：
 
 ~~~text
 Protocol Version

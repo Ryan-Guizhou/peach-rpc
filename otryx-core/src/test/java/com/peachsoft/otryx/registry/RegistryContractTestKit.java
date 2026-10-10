@@ -1,9 +1,9 @@
-package io.peach.rpc.registry;
+package com.peachsoft.otryx.registry;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;

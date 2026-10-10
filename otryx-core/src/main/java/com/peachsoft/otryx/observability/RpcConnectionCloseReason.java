@@ -1,4 +1,4 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
 /** RPC 连接关闭或摘除原因。 */
 public enum RpcConnectionCloseReason {

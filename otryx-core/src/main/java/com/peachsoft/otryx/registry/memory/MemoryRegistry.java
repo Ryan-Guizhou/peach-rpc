@@ -1,14 +1,14 @@
-package io.peach.rpc.registry.memory;
+package com.peachsoft.otryx.registry.memory;
 
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryCapabilities;
-import io.peach.rpc.registry.RegistryCapability;
-import io.peach.rpc.registry.RegistryListener;
-import io.peach.rpc.registry.RegistrySnapshot;
-import io.peach.rpc.registry.RegistrySubscription;
-import io.peach.rpc.registry.ServiceRegistrar;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.registry.RegistryCapabilities;
+import com.peachsoft.otryx.registry.RegistryCapability;
+import com.peachsoft.otryx.registry.RegistryListener;
+import com.peachsoft.otryx.registry.RegistrySnapshot;
+import com.peachsoft.otryx.registry.RegistrySubscription;
+import com.peachsoft.otryx.registry.ServiceRegistrar;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;

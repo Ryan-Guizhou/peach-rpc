@@ -1,8 +1,8 @@
-package io.peach.rpc.proxy.bytebuddy;
+package com.peachsoft.otryx.proxy.bytebuddy;
 
-import io.peach.rpc.proxy.ProxyFactory;
-import io.peach.rpc.proxy.RpcInvocation;
-import io.peach.rpc.spi.Extension;
+import com.peachsoft.otryx.proxy.ProxyFactory;
+import com.peachsoft.otryx.proxy.RpcInvocation;
+import com.peachsoft.otryx.spi.Extension;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletionStage;
@@ -68,7 +68,7 @@ public final class ByteBuddyProxyFactory implements ProxyFactory {
     private static String proxyName(Class<?> serviceType) {
         String packageName = serviceType.getPackageName();
         String simpleName = serviceType.getSimpleName()
-                + "$PeachRpcByteBuddy$"
+                + "$OtryxRpcByteBuddy$"
                 + PROXY_SEQUENCE.incrementAndGet();
         return packageName.isEmpty()
                 ? simpleName

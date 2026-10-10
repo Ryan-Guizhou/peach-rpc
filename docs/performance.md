@@ -1,10 +1,10 @@
-# Peach RPC 性能指南
+# OTRYX RPC 性能指南
 
 > 状态：**GA Tooling Current / Numeric Claims Require Controlled Evidence**
 
 ## 1. 性能设计原则
 
-Peach RPC 不以“理论零分配”为目标，而以可重复证据驱动：
+OTRYX RPC 不以“理论零分配”为目标，而以可重复证据驱动：
 
 - throughput；
 - p50/p99/p99.9；
@@ -29,7 +29,7 @@ Peach RPC 不以“理论零分配”为目标，而以可重复证据驱动：
 
 ## 2.1 Consumer 响应完成隔离（PR-A）
 
-Consumer 的 Transport 响应完成不直接执行 Fory 解码和业务 Future continuation，而是提交到独立有界执行器。默认线程数为 `max(2, min(16, availableProcessors))`，队列大小 4096，可以通过 `PeachRpcClient.Builder` 调整。队列饱和快速返回 `OVERLOADED`；拒绝处理不得回退到 EventLoop 上执行用户回调。
+Consumer 的 Transport 响应完成不直接执行 Fory 解码和业务 Future continuation，而是提交到独立有界执行器。默认线程数为 `max(2, min(16, availableProcessors))`，队列大小 4096，可以通过 `OtryxRpcClient.Builder` 调整。队列饱和快速返回 `OVERLOADED`；拒绝处理不得回退到 EventLoop 上执行用户回调。
 
 线程切换可能影响轻量报文的 p99，必须通过固定环境性能对比来确认；当前不能宣称没有回归。
 
@@ -56,8 +56,8 @@ Consumer 的 Transport 响应完成不直接执行 Fory 解码和业务 Future c
 从仓库根目录构建并运行：
 
 ```bash
-mvn -B -ntp -pl peach-rpc-codegen -am -DskipTests install
-mvn -B -ntp -pl peach-rpc-benchmarks -am -DskipTests package
+mvn -B -ntp -pl otryx-codegen -am -DskipTests install
+mvn -B -ntp -pl otryx-benchmarks -am -DskipTests package
 bash scripts/run_fory_argument_allocation.sh
 ```
 
@@ -68,7 +68,7 @@ bash scripts/run_fory_argument_allocation.sh
 Benchmark 模块：
 
 ```text
-peach-rpc-benchmarks
+otryx-benchmarks
 ```
 
 覆盖 payload、concurrency、connection shard、execution/fault scenario。

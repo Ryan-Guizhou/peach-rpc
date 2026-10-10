@@ -1,12 +1,12 @@
-package io.peach.rpc.examples.provider;
+package com.peachsoft.otryx.examples.provider;
 
-import io.peach.rpc.examples.api.GreetingReply;
-import io.peach.rpc.examples.api.GreetingRequest;
-import io.peach.rpc.examples.api.GreetingService;
-import io.peach.rpc.spring.annotation.PeachRpcService;
+import com.peachsoft.otryx.examples.api.GreetingReply;
+import com.peachsoft.otryx.examples.api.GreetingRequest;
+import com.peachsoft.otryx.examples.api.GreetingService;
+import com.peachsoft.otryx.spring.annotation.OtryxRpcService;
 
 /** 示例问候服务实现。 */
-@PeachRpcService(
+@OtryxRpcService(
         interfaceClass = GreetingService.class,
         version = "1.0.0")
 public class GreetingServiceImpl implements GreetingService {

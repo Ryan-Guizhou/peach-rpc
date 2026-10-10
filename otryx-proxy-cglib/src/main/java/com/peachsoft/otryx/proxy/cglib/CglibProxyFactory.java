@@ -1,8 +1,8 @@
-package io.peach.rpc.proxy.cglib;
+package com.peachsoft.otryx.proxy.cglib;
 
-import io.peach.rpc.proxy.ProxyFactory;
-import io.peach.rpc.proxy.RpcInvocation;
-import io.peach.rpc.spi.Extension;
+import com.peachsoft.otryx.proxy.ProxyFactory;
+import com.peachsoft.otryx.proxy.RpcInvocation;
+import com.peachsoft.otryx.spi.Extension;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletionStage;
 import net.sf.cglib.proxy.Enhancer;

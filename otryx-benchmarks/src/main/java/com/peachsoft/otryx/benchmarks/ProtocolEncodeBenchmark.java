@@ -1,10 +1,10 @@
-package io.peach.rpc.benchmarks;
+package com.peachsoft.otryx.benchmarks;
 
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.codec.RpcCodecIds;
-import io.peach.rpc.protocol.RpcFrame;
-import io.peach.rpc.protocol.RpcMessageType;
-import io.peach.rpc.protocol.RpcProtocolCodec;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.codec.RpcCodecIds;
+import com.peachsoft.otryx.protocol.RpcFrame;
+import com.peachsoft.otryx.protocol.RpcMessageType;
+import com.peachsoft.otryx.protocol.RpcProtocolCodec;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;

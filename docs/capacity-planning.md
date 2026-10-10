@@ -1,4 +1,4 @@
-# Peach RPC 容量规划指南
+# OTRYX RPC 容量规划指南
 
 > 状态：**GA Methodology / Environment-specific Numbers Required**
 

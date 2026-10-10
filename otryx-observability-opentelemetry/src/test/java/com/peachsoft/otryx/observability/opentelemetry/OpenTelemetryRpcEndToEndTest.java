@@ -1,4 +1,4 @@
-package io.peach.rpc.observability.opentelemetry;
+package com.peachsoft.otryx.observability.opentelemetry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -11,16 +11,16 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.core.PeachRpcClient;
-import io.peach.rpc.core.PeachRpcServer;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryOptions;
-import io.peach.rpc.registry.memory.MemoryRegistryFactory;
-import io.peach.rpc.spi.ExtensionLoader;
-import io.peach.rpc.transport.RpcTransportFactory;
-import io.peach.rpc.transport.RpcTransportOptions;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.core.OtryxRpcClient;
+import com.peachsoft.otryx.core.OtryxRpcServer;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.registry.RegistryOptions;
+import com.peachsoft.otryx.registry.memory.MemoryRegistryFactory;
+import com.peachsoft.otryx.spi.ExtensionLoader;
+import com.peachsoft.otryx.transport.RpcTransportFactory;
+import com.peachsoft.otryx.transport.RpcTransportOptions;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -65,7 +65,7 @@ class OpenTelemetryRpcEndToEndTest {
                 new OpenTelemetryRpcTracingBridge(
                         openTelemetry);
 
-        PeachRpcServer server = PeachRpcServer.builder()
+        OtryxRpcServer server = OtryxRpcServer.builder()
                 .serviceRegistrar(
                         registry.registrar().orElseThrow())
                 .transportServer(
@@ -82,11 +82,11 @@ class OpenTelemetryRpcEndToEndTest {
                         new GreetingServiceImpl(),
                         "1.0.0",
                         "default");
-        PeachRpcClient client = null;
+        OtryxRpcClient client = null;
         try {
             server.start().toCompletableFuture().join();
 
-            client = PeachRpcClient.builder()
+            client = OtryxRpcClient.builder()
                     .serviceDiscovery(registry)
                     .transportClient(
                             transportFactory.createClient(

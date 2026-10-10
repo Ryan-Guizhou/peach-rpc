@@ -1,7 +1,7 @@
-package io.peach.rpc.spring.autoconfigure;
+package com.peachsoft.otryx.spring.autoconfigure;
 
-import io.peach.rpc.codec.fory.ForyRpcSecurityOptions;
-import io.peach.rpc.observability.RpcSecurityMode;
+import com.peachsoft.otryx.codec.fory.ForyRpcSecurityOptions;
+import com.peachsoft.otryx.observability.RpcSecurityMode;
 import java.time.Duration;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -13,12 +13,12 @@ import org.slf4j.LoggerFactory;
  * <p>在 ConfigurationProperties 完成绑定后执行，不创建 Transport/Registry，
  * 不触发网络访问，也不会向日志输出注册中心凭据或证书内容。
  */
-final class PeachRpcStartupDiagnostics {
+final class OtryxRpcStartupDiagnostics {
     private static final Logger LOGGER =
-            LoggerFactory.getLogger(PeachRpcStartupDiagnostics.class);
-    private static final String PREFIX = "peach.rpc.";
+            LoggerFactory.getLogger(OtryxRpcStartupDiagnostics.class);
+    private static final String PREFIX = "otryx.rpc.";
 
-    private PeachRpcStartupDiagnostics() {
+    private OtryxRpcStartupDiagnostics() {
     }
 
     /**
@@ -26,8 +26,8 @@ final class PeachRpcStartupDiagnostics {
      *
      * @param properties 已完成 Spring 属性绑定的配置对象
      */
-    static void validateAndReport(PeachRpcProperties properties) {
-        PeachRpcProperties.Registry registry = properties.getRegistry();
+    static void validateAndReport(OtryxRpcProperties properties) {
+        OtryxRpcProperties.Registry registry = properties.getRegistry();
         requireText("registry.type", registry.getType());
         positive("registry.lease-ttl-seconds", registry.getLeaseTtlSeconds());
         if ("nacos".equals(registry.getType())) {
@@ -35,7 +35,7 @@ final class PeachRpcStartupDiagnostics {
             requireText("registry.nacos.cluster", registry.getNacos().getCluster());
         }
 
-        PeachRpcProperties.Transport transport = properties.getTransport();
+        OtryxRpcProperties.Transport transport = properties.getTransport();
         requireText("transport.type", transport.getType());
         positive("transport.max-inflight-per-connection",
                 transport.getMaxInflightPerConnection());
@@ -59,7 +59,7 @@ final class PeachRpcStartupDiagnostics {
                     "must not be shorter than reconnect-base-backoff");
         }
 
-        PeachRpcProperties.Security security = transport.getSecurity();
+        OtryxRpcProperties.Security security = transport.getSecurity();
         if (security.getMode() == null) {
             throw invalid("transport.security.mode", "must not be null");
         }
@@ -70,7 +70,7 @@ final class PeachRpcStartupDiagnostics {
         positive("transport.security.expiry-warning-threshold",
                 security.getExpiryWarningThreshold());
 
-        PeachRpcProperties.ForySecurity fory =
+        OtryxRpcProperties.ForySecurity fory =
                 properties.getCodec().getFory();
         if (fory.getMode() == null) {
             throw invalid("codec.fory.mode", "must not be null");
@@ -90,14 +90,14 @@ final class PeachRpcStartupDiagnostics {
             throw invalid("codec.fory", error.getMessage());
         }
 
-        PeachRpcProperties.Client client = properties.getClient();
+        OtryxRpcProperties.Client client = properties.getClient();
         if (client.isEnabled()) {
             positive("client.timeout", client.getTimeout());
             requireText("client.proxy", client.getProxy());
             requireText("client.load-balancer", client.getLoadBalancer());
             validateResilience(client.getResilience());
         }
-        PeachRpcProperties.Server server = properties.getServer();
+        OtryxRpcProperties.Server server = properties.getServer();
         if (server.isEnabled()) {
             requireText("server.host", server.getHost());
             port("server.port", server.getPort());
@@ -106,7 +106,7 @@ final class PeachRpcStartupDiagnostics {
             positive("server.drain-timeout", server.getDrainTimeout());
             positive("server.control-plane-timeout",
                     server.getControlPlaneTimeout());
-            PeachRpcProperties.Admission admission = server.getAdmission();
+            OtryxRpcProperties.Admission admission = server.getAdmission();
             positive("server.admission.max-inflight-bytes",
                     admission.getMaxInflightBytes());
             nonNegative("server.admission.max-concurrent-per-service",
@@ -117,7 +117,7 @@ final class PeachRpcStartupDiagnostics {
                     admission.getMaxInflightBytesPerService());
             nonNegative("server.admission.max-inflight-bytes-per-method",
                     admission.getMaxInflightBytesPerMethod());
-            PeachRpcProperties.Execution execution = server.getExecution();
+            OtryxRpcProperties.Execution execution = server.getExecution();
             positive("server.execution.cpu-parallelism",
                     execution.getCpuParallelism());
             positive("server.execution.cpu-queue-capacity",
@@ -125,7 +125,7 @@ final class PeachRpcStartupDiagnostics {
         }
 
         LOGGER.info(
-                "Peach RPC configured: registry={}, transport={}, client={}, provider={}, "
+                "OTRYX RPC configured: registry={}, transport={}, client={}, provider={}, "
                         + "proxy={}, codecMode={}, securityMode={}, connectionsPerEndpoint={}, "
                         + "providerMaxConcurrent={}",
                 registry.getType(),
@@ -139,17 +139,17 @@ final class PeachRpcStartupDiagnostics {
                 server.getMaxConcurrent());
         if (security.getMode() == RpcSecurityMode.PLAINTEXT) {
             LOGGER.warn(
-                    "Peach RPC uses PLAINTEXT transport; configure TLS/mTLS on untrusted networks");
+                    "OTRYX RPC uses PLAINTEXT transport; configure TLS/mTLS on untrusted networks");
         }
         if (fory.getMode() == ForyRpcSecurityOptions.Mode.TRUSTED_COMPATIBILITY) {
             LOGGER.warn(
-                    "Peach RPC Fory uses TRUSTED_COMPATIBILITY; enable STRICT_ALLOWLIST "
+                    "OTRYX RPC Fory uses TRUSTED_COMPATIBILITY; enable STRICT_ALLOWLIST "
                             + "when peers are not fully trusted");
         }
     }
 
     private static void validateResilience(
-            PeachRpcProperties.Resilience resilience) {
+            OtryxRpcProperties.Resilience resilience) {
         positive("client.resilience.max-attempts", resilience.getMaxAttempts());
         double ratio = resilience.getRetryBudgetRatio();
         if (!Double.isFinite(ratio) || ratio < 0.0d || ratio > 1.0d) {

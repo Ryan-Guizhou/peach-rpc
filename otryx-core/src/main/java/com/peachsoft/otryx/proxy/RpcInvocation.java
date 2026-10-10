@@ -1,4 +1,4 @@
-package io.peach.rpc.proxy;
+package com.peachsoft.otryx.proxy;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletionStage;

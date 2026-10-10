@@ -1,9 +1,9 @@
-package io.peach.rpc.registry.nacos;
+package com.peachsoft.otryx.registry.nacos;
 
-import io.peach.rpc.api.ServiceKey;
+import com.peachsoft.otryx.api.ServiceKey;
 import java.util.Objects;
 
-/** Peach RPC 服务键与 Nacos serviceName 的稳定映射。 */
+/** OTRYX RPC 服务键与 Nacos serviceName 的稳定映射。 */
 final class NacosServiceNames {
 
     private NacosServiceNames() {

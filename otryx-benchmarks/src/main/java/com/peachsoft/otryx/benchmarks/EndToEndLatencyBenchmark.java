@@ -1,15 +1,15 @@
-package io.peach.rpc.benchmarks;
+package com.peachsoft.otryx.benchmarks;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.core.PeachRpcClient;
-import io.peach.rpc.core.PeachRpcServer;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryFactory;
-import io.peach.rpc.registry.RegistryOptions;
-import io.peach.rpc.spi.ExtensionLoader;
-import io.peach.rpc.transport.RpcTransportFactory;
-import io.peach.rpc.transport.RpcTransportOptions;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.core.OtryxRpcClient;
+import com.peachsoft.otryx.core.OtryxRpcServer;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.registry.RegistryFactory;
+import com.peachsoft.otryx.registry.RegistryOptions;
+import com.peachsoft.otryx.spi.ExtensionLoader;
+import com.peachsoft.otryx.transport.RpcTransportFactory;
+import com.peachsoft.otryx.transport.RpcTransportOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetClient;
@@ -37,7 +37,7 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
 /**
- * Raw Vert.x loopback 与完整 Peach RPC 往返延迟基准。
+ * Raw Vert.x loopback 与完整 OTRYX RPC 往返延迟基准。
  *
  * <p>两个方法都固定单并发和相同字符串负载。两者 AverageTime 的差值可作为
  * 当前环境下的 RPC Added Latency；正式结果仍需记录机器、JVM、payload 与 fork 参数。
@@ -52,7 +52,7 @@ import org.openjdk.jmh.annotations.Warmup;
 public class EndToEndLatencyBenchmark {
 
     private static final String PAYLOAD =
-            "peach-rpc-end-to-end-latency-payload";
+            "otryx-end-to-end-latency-payload";
 
     private Vertx rawVertx;
     private NetServer rawServer;
@@ -62,19 +62,19 @@ public class EndToEndLatencyBenchmark {
             new AtomicReference<>();
 
     private Registry registry;
-    private PeachRpcServer rpcServer;
-    private PeachRpcClient rpcClient;
+    private OtryxRpcServer rpcServer;
+    private OtryxRpcClient rpcClient;
     private BenchmarkService rpcService;
 
     /**
-     * 启动 Raw Vert.x echo 与完整 Peach RPC loopback。
+     * 启动 Raw Vert.x echo 与完整 OTRYX RPC loopback。
      *
      * @throws Exception 端口或连接初始化失败
      */
     @Setup(Level.Trial)
     public void setup() throws Exception {
         setupRawVertx();
-        setupPeachRpc();
+        setupOtryxRpc();
     }
 
     private void setupRawVertx() throws Exception {
@@ -102,7 +102,7 @@ public class EndToEndLatencyBenchmark {
         });
     }
 
-    private void setupPeachRpc() throws Exception {
+    private void setupOtryxRpc() throws Exception {
         int port = freePort();
         registry = ExtensionLoader.getLoader(RegistryFactory.class)
                 .getExtension("memory")
@@ -121,7 +121,7 @@ public class EndToEndLatencyBenchmark {
                         1024 * 1024,
                         Duration.ofSeconds(3));
 
-        rpcServer = PeachRpcServer.builder()
+        rpcServer = OtryxRpcServer.builder()
                 .serviceRegistrar(registry.registrar().orElseThrow())
                 .transportServer(
                         transportFactory.createServer(transportOptions))
@@ -136,7 +136,7 @@ public class EndToEndLatencyBenchmark {
                         "benchmark");
         rpcServer.start().toCompletableFuture().join();
 
-        rpcClient = PeachRpcClient.builder()
+        rpcClient = OtryxRpcClient.builder()
                 .serviceDiscovery(registry)
                 .transportClient(
                         transportFactory.createClient(transportOptions))
@@ -151,7 +151,7 @@ public class EndToEndLatencyBenchmark {
     }
 
     /**
-     * 测量不包含 Peach RPC 协议/Codec/分派的 Raw Vert.x echo。
+     * 测量不包含 OTRYX RPC 协议/Codec/分派的 Raw Vert.x echo。
      *
      * @return 固定负载长度
      */
@@ -171,7 +171,7 @@ public class EndToEndLatencyBenchmark {
     }
 
     /**
-     * 测量完整 Peach RPC Consumer 到 Provider 的 Unary echo。
+     * 测量完整 OTRYX RPC Consumer 到 Provider 的 Unary echo。
      *
      * @return echo 结果长度
      */

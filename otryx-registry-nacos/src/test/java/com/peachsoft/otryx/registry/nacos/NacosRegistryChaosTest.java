@@ -1,16 +1,16 @@
-package io.peach.rpc.registry.nacos;
+package com.peachsoft.otryx.registry.nacos;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryOptions;
-import io.peach.rpc.registry.RegistrySnapshot;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.registry.RegistryOptions;
+import com.peachsoft.otryx.registry.RegistrySnapshot;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
@@ -46,7 +46,7 @@ class NacosRegistryChaosTest {
                 container != null && !container.isBlank(),
                 "NACOS_CHAOS_CONTAINER is required");
 
-        String group = unique("PEACH_RPC_CHAOS");
+        String group = unique("OTRYX_RPC_CHAOS");
         Registry consumer = registry(
                 endpoint,
                 group,

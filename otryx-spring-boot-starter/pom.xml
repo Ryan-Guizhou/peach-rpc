@@ -4,31 +4,31 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.peach.rpc</groupId>
-        <artifactId>peach-rpc-parent</artifactId>
+        <groupId>com.peachsoft.otryx</groupId>
+        <artifactId>otryx-parent</artifactId>
         <version>${revision}</version>
     </parent>
 
-    <artifactId>peach-rpc-spring-boot-starter</artifactId>
-    <name>peach-rpc-spring-boot-starter</name>
-    <description>Peach RPC Spring Boot starter.</description>
+    <artifactId>otryx-spring-boot-starter</artifactId>
+    <name>otryx-spring-boot-starter</name>
+    <description>OTRYX RPC Spring Boot starter.</description>
 
     <dependencies>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-spring-boot-autoconfigure</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-spring-boot-autoconfigure</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-registry-etcd</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-registry-etcd</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-registry-nacos</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-registry-nacos</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-proxy-cglib</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-proxy-cglib</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -1,4 +1,4 @@
-package io.peach.rpc.compare;
+package com.peachsoft.otryx.compare;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
@@ -166,7 +166,7 @@ public final class ComparisonHarness {
         long total = success.sum() + errors.sum();
 
         Map<String, Object> report = new LinkedHashMap<>();
-        report.put("schema", "peach.rpc.comparison.v1");
+        report.put("schema", "otryx.rpc.comparison.v1");
         report.put("recorded_at", Instant.now().toString());
         report.put("evidence_class", System.getenv().getOrDefault(
                 "RPC_COMPARISON_EVIDENCE_CLASS", "smoke"));

@@ -1,11 +1,11 @@
-package io.peach.rpc.examples.consumer;
+package com.peachsoft.otryx.examples.consumer;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.peach.rpc.api.RpcRemoteException;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.RpcUnavailableException;
+import com.peachsoft.otryx.api.RpcRemoteException;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.RpcUnavailableException;
 import java.util.concurrent.CompletionException;
 import org.junit.jupiter.api.Test;
 

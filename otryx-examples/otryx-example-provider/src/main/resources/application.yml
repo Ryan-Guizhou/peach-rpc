@@ -1,15 +1,15 @@
 spring:
   application:
-    name: peach-rpc-example-provider
+    name: otryx-example-provider
 
-peach:
+otryx:
   rpc:
     registry:
       type: nacos
       endpoints: 127.0.0.1:8848
       namespace: public
       nacos:
-        group: PEACH_RPC
+        group: OTRYX_RPC
         cluster: DEFAULT
     server:
       host: 0.0.0.0

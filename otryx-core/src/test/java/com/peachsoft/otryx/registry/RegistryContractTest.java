@@ -1,9 +1,9 @@
-package io.peach.rpc.registry;
+package com.peachsoft.otryx.registry;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.peach.rpc.api.ServiceKey;
+import com.peachsoft.otryx.api.ServiceKey;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;

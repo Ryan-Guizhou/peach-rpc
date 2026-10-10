@@ -161,7 +161,7 @@ def compare(baseline: dict, candidate: dict, metadata: dict) -> dict:
                 "jmh": reference_jmh,
             })
     return {
-        "schema": "peach.rpc.fory.allocation.ab.v1",
+        "schema": "otryx.rpc.fory.allocation.ab.v1",
         "status": "REPORT_ONLY",
         "evidence_class": evidence,
         "scope": "codec-local-JMH-not-end-to-end-RPC",

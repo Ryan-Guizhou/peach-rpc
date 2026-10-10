@@ -28,21 +28,21 @@
 ## 2. Reactor
 
 ```text
-peach-rpc-core
-├── peach-rpc-codegen
-├── peach-rpc-codec-fory
-├── peach-rpc-transport-vertx
-├── peach-rpc-registry-etcd
-├── peach-rpc-registry-nacos
-├── peach-rpc-proxy-cglib
-├── peach-rpc-proxy-bytebuddy
-├── peach-rpc-observability-micrometer
-├── peach-rpc-observability-opentelemetry
-├── peach-rpc-observability-jfr
-└── peach-rpc-spring-boot-autoconfigure
-    └── peach-rpc-spring-boot-starter
-peach-rpc-examples
-peach-rpc-benchmarks
+otryx-core
+├── otryx-codegen
+├── otryx-codec-fory
+├── otryx-transport-vertx
+├── otryx-registry-etcd
+├── otryx-registry-nacos
+├── otryx-proxy-cglib
+├── otryx-proxy-bytebuddy
+├── otryx-observability-micrometer
+├── otryx-observability-opentelemetry
+├── otryx-observability-jfr
+└── otryx-spring-boot-autoconfigure
+    └── otryx-spring-boot-starter
+otryx-examples
+otryx-benchmarks
 ```
 
 实际构建顺序由 Maven 依赖图决定。
@@ -103,9 +103,9 @@ python3 scripts/check_central_publication.py \
 
 公开发布模块：
 
-- `peach-rpc-parent`；
-- `peach-rpc-core`；
-- `peach-rpc-codegen`；
+- `otryx-parent`；
+- `otryx-core`；
+- `otryx-codegen`；
 - Codec / Transport / Registry / Proxy Adapter；
 - Observability Adapter；
 - Spring Boot Autoconfigure；
@@ -113,15 +113,15 @@ python3 scripts/check_central_publication.py \
 
 不发布：
 
-- `peach-rpc-examples`；
-- `peach-rpc-example-api`；
-- `peach-rpc-example-provider`；
-- `peach-rpc-example-consumer`；
-- `peach-rpc-benchmarks`。
+- `otryx-examples`；
+- `otryx-example-api`；
+- `otryx-example-provider`；
+- `otryx-example-consumer`；
+- `otryx-benchmarks`。
 
 ### 5.1 纯依赖 Starter 的 Source/Javadoc
 
-`peach-rpc-spring-boot-starter` 是依赖聚合 Starter，本身不承载实现类。Maven Central 对 JAR 包仍要求 `sources` / `javadoc` classifier，因此该模块在 `release` Profile 中：
+`otryx-spring-boot-starter` 是依赖聚合 Starter，本身不承载实现类。Maven Central 对 JAR 包仍要求 `sources` / `javadoc` classifier，因此该模块在 `release` Profile 中：
 
 - 跳过标准 Source Plugin 的空源码归档；
 - 跳过 JDK Javadoc Tool；
@@ -134,7 +134,7 @@ python3 scripts/check_central_publication.py \
 真正发布前必须由项目维护者完成：
 
 1. 在 Central Publisher Portal 注册组织/账号；
-2. 验证能够覆盖 `io.peach.rpc` 的 Central namespace 权限；例如拥有 `peach.io` 时可验证 `io.peach`，并在其下发布子组 `io.peach.rpc`；
+2. 验证能够覆盖 `com.peachsoft.otryx` 的 Central namespace 权限；例如拥有 `peach.io` 时可验证 `io.peach`，并在其下发布子组 `com.peachsoft.otryx`；
 3. 生成 Portal User Token；
 4. 准备用于 Maven Central 的 PGP/GPG signing key；
 5. 在 GitHub Repository Secrets 配置：
@@ -143,7 +143,7 @@ python3 scripts/check_central_publication.py \
    - `MAVEN_GPG_PRIVATE_KEY`；
    - `MAVEN_GPG_PASSPHRASE`。
 
-> **Namespace 阻塞条件**：Central 使用反向 DNS 规则。若维护者控制 `peach.io`，可验证 `io.peach` 并发布其子组 `io.peach.rpc`；如果申请精确 namespace `io.peach.rpc`，对应 DNS 域名是 `rpc.peach.io`。如果两者都无法证明所有权，则第一次公开 Central Release 前必须重新决定 groupId，例如使用 Central Portal 已验证的自有域名 namespace，或 GitHub 登录后自动/手动验证的 `io.github.<username>` namespace。这个决定属于公开坐标兼容性决策，不能由 CI 自动替代，也不应在未确认的情况下自动修改现有 `io.peach.rpc` 坐标。
+> **Namespace 阻塞条件**：Central 使用反向 DNS 规则。若维护者控制 `peach.io`，可验证 `io.peach` 并发布其子组 `com.peachsoft.otryx`；如果申请精确 namespace `com.peachsoft.otryx`，对应 DNS 域名是 `rpc.peach.io`。如果两者都无法证明所有权，则第一次公开 Central Release 前必须重新决定 groupId，例如使用 Central Portal 已验证的自有域名 namespace，或 GitHub 登录后自动/手动验证的 `io.github.<username>` namespace。这个决定属于公开坐标兼容性决策，不能由 CI 自动替代，也不应在未确认的情况下自动修改现有 `com.peachsoft.otryx` 坐标。
 
 Token、私钥和 passphrase 禁止写入 POM、workflow 文件、Release Bundle 或日志。
 
@@ -177,7 +177,7 @@ flowchart LR
 真正 publish 时还有两层不可变保护：
 
 - Git Tag 已存在则拒绝；
-- Maven Central 已存在相同 `io.peach.rpc:peach-rpc-parent:<version>` 则拒绝。
+- Maven Central 已存在相同 `com.peachsoft.otryx:otryx-parent:<version>` 则拒绝。
 
 因此不能通过 workflow 覆盖已发布版本。
 
@@ -207,8 +207,8 @@ Workflow 会等待 `PUBLISHED`，随后创建一个全新的 Maven local reposit
 
 ```xml
 <dependency>
-    <groupId>io.peach.rpc</groupId>
-    <artifactId>peach-rpc-spring-boot-starter</artifactId>
+    <groupId>com.peachsoft.otryx</groupId>
+    <artifactId>otryx-spring-boot-starter</artifactId>
     <version>&lt;release-version&gt;</version>
 </dependency>
 ```

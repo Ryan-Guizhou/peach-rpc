@@ -1,11 +1,11 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
-import io.peach.rpc.api.RpcOverloadedException;
-import io.peach.rpc.api.RpcRemoteException;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.RpcTimeoutException;
-import io.peach.rpc.api.RpcUnavailableException;
-import io.peach.rpc.protocol.RpcProtocolException;
+import com.peachsoft.otryx.api.RpcOverloadedException;
+import com.peachsoft.otryx.api.RpcRemoteException;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.RpcTimeoutException;
+import com.peachsoft.otryx.api.RpcUnavailableException;
+import com.peachsoft.otryx.protocol.RpcProtocolException;
 import java.util.concurrent.CancellationException;
 
 /** RPC 失败分类工具，供指标、日志和告警统一使用。 */

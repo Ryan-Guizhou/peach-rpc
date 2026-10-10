@@ -182,7 +182,7 @@ def main() -> int:
             json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
         lines = [
-            "# Peach RPC Soak Acceptance",
+            "# OTRYX RPC Soak Acceptance",
             "",
             f"- Status: **{result['status']}**",
             f"- Evidence mode: `{args.mode}`",

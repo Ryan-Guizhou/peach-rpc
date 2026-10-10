@@ -1,15 +1,15 @@
-package io.peach.rpc.registry.memory;
+package com.peachsoft.otryx.registry.memory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryCapability;
-import io.peach.rpc.registry.RegistryContractTestKit;
-import io.peach.rpc.registry.ServiceRegistrar;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.registry.RegistryCapability;
+import com.peachsoft.otryx.registry.RegistryContractTestKit;
+import com.peachsoft.otryx.registry.ServiceRegistrar;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;

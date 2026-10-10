@@ -23,7 +23,7 @@ class CheckstyleAuditTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             report = root / "checkstyle-result.xml"
-            source = root / "peach-rpc-core/src/main/java/Demo.java"
+            source = root / "otryx-core/src/main/java/Demo.java"
             report.write_text(
                 '<checkstyle version="10.0">'
                 f'<file name="{source}">'
@@ -38,7 +38,7 @@ class CheckstyleAuditTest(unittest.TestCase):
             self.assertEqual(1, result["violations"])
             self.assertEqual(12, result["findings"][0]["line"])
             self.assertEqual(
-                "peach-rpc-core/src/main/java/Demo.java",
+                "otryx-core/src/main/java/Demo.java",
                 result["findings"][0]["file"])
             self.assertIn(
                 "MissingJavadocTypeCheck",
@@ -56,7 +56,7 @@ class CheckstyleAuditTest(unittest.TestCase):
 
     def test_production_javadocs_are_audited_without_test_fixture_noise(self):
         config = (Path(__file__).resolve().parents[1] /
-                  "config/peach-rpc-checkstyle.xml")
+                  "config/otryx-checkstyle.xml")
         root = ET.parse(config).getroot()
         modules = list(root.iter("module"))
         self.assertIn("MissingJavadocType",
@@ -85,10 +85,10 @@ class CheckstyleAuditTest(unittest.TestCase):
         self.assertIn("MissingJavadoc", properties["checks"])
         self.assertTrue(re.search(
             properties["files"],
-            "/workspace/peach-rpc-core/src/test/java/Fixture.java"))
+            "/workspace/otryx-core/src/test/java/Fixture.java"))
         self.assertFalse(re.search(
             properties["files"],
-            "/workspace/peach-rpc-core/src/main/java/PublicApi.java"))
+            "/workspace/otryx-core/src/main/java/PublicApi.java"))
 
     def test_zero_violations_pass_strict_gate(self):
         report = {
@@ -112,7 +112,7 @@ class CheckstyleAuditTest(unittest.TestCase):
             "violations": 1,
             "findings": [
                 {
-                    "file": "peach-rpc-core/src/main/java/Demo.java",
+                    "file": "otryx-core/src/main/java/Demo.java",
                     "line": 12,
                     "check": "MethodNameCheck",
                     "severity": "warning",

@@ -1,4 +1,4 @@
-package io.peach.rpc.codec;
+package com.peachsoft.otryx.codec;
 
 /** 已在服务方法粒度预绑定的 Codec 热路径接口。 */
 public interface RpcMethodCodec {

@@ -1,11 +1,11 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.peach.rpc.observability.RpcCircuitState;
+import com.peachsoft.otryx.observability.RpcCircuitState;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;

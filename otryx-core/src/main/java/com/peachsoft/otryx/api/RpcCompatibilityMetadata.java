@@ -1,6 +1,6 @@
-package io.peach.rpc.api;
+package com.peachsoft.otryx.api;
 
-import io.peach.rpc.protocol.RpcProtocolCodec;
+import com.peachsoft.otryx.protocol.RpcProtocolCodec;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;

@@ -1,4 +1,4 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

@@ -1,10 +1,10 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.RpcTimeoutException;
-import io.peach.rpc.protocol.RpcProtocolException;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.RpcTimeoutException;
+import com.peachsoft.otryx.protocol.RpcProtocolException;
 import org.junit.jupiter.api.Test;
 
 class RpcFailureClassifierTest {

@@ -1,17 +1,17 @@
-package io.peach.rpc.benchmarks;
+package com.peachsoft.otryx.benchmarks;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.codec.RpcCodecIds;
-import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.core.PeachRpcClient;
-import io.peach.rpc.core.PeachRpcServer;
-import io.peach.rpc.core.RpcProviderExecutionOptions;
-import io.peach.rpc.registry.Registry;
-import io.peach.rpc.registry.RegistryFactory;
-import io.peach.rpc.registry.RegistryOptions;
-import io.peach.rpc.spi.ExtensionLoader;
-import io.peach.rpc.transport.RpcTransportFactory;
-import io.peach.rpc.transport.RpcTransportOptions;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.codec.RpcCodecIds;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.core.OtryxRpcClient;
+import com.peachsoft.otryx.core.OtryxRpcServer;
+import com.peachsoft.otryx.core.RpcProviderExecutionOptions;
+import com.peachsoft.otryx.registry.Registry;
+import com.peachsoft.otryx.registry.RegistryFactory;
+import com.peachsoft.otryx.registry.RegistryOptions;
+import com.peachsoft.otryx.spi.ExtensionLoader;
+import com.peachsoft.otryx.transport.RpcTransportFactory;
+import com.peachsoft.otryx.transport.RpcTransportOptions;
 import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.List;
@@ -58,8 +58,8 @@ public class ExecutionScenarioBenchmark {
     public int connectionsPerEndpoint;
 
     private Registry registry;
-    private PeachRpcServer server;
-    private PeachRpcClient client;
+    private OtryxRpcServer server;
+    private OtryxRpcClient client;
     private ScenarioBenchmarkService service;
 
     /** 创建场景 Benchmark。 */
@@ -109,7 +109,7 @@ public class ExecutionScenarioBenchmark {
                                 ? 8
                                 : 1024);
 
-        server = PeachRpcServer.builder()
+        server = OtryxRpcServer.builder()
                 .serviceRegistrar(
                         registry.registrar().orElseThrow())
                 .transportServer(
@@ -135,7 +135,7 @@ public class ExecutionScenarioBenchmark {
                 .toCompletableFuture()
                 .join();
 
-        client = PeachRpcClient.builder()
+        client = OtryxRpcClient.builder()
                 .serviceDiscovery(registry)
                 .transportClient(
                         transportFactory.createClient(

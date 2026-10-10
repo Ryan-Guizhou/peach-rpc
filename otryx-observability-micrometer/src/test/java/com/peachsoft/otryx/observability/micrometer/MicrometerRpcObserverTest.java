@@ -1,18 +1,18 @@
-package io.peach.rpc.observability.micrometer;
+package com.peachsoft.otryx.observability.micrometer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.RpcExecutionMode;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.observability.RpcConnectionCloseReason;
-import io.peach.rpc.observability.RpcCircuitState;
-import io.peach.rpc.observability.RpcConnectionRole;
-import io.peach.rpc.observability.RpcRetryExhaustionReason;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.RpcExecutionMode;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.observability.RpcConnectionCloseReason;
+import com.peachsoft.otryx.observability.RpcCircuitState;
+import com.peachsoft.otryx.observability.RpcConnectionRole;
+import com.peachsoft.otryx.observability.RpcRetryExhaustionReason;
 import org.junit.jupiter.api.Test;
 
 /** Micrometer Observer 指标映射测试。 */
@@ -102,13 +102,13 @@ class MicrometerRpcObserverTest {
                 null);
 
         assertNotNull(registry.find(
-                "peach.rpc.client.attempts").timer());
+                "otryx.rpc.client.attempts").timer());
         assertNotNull(registry.find(
-                "peach.rpc.client.calls").timer());
+                "otryx.rpc.client.calls").timer());
         assertEquals(
                 1.0,
                 registry.find(
-                                "peach.rpc.client.retry.exhausted")
+                                "otryx.rpc.client.retry.exhausted")
                         .tag(
                                 "reason",
                                 RpcRetryExhaustionReason
@@ -119,31 +119,31 @@ class MicrometerRpcObserverTest {
         assertEquals(
                 1.0,
                 registry.find(
-                                "peach.rpc.client.circuit.rejected")
+                                "otryx.rpc.client.circuit.rejected")
                         .counter()
                         .count());
         assertEquals(
                 1.0,
                 registry.find(
-                                "peach.rpc.client.outlier.ejected")
+                                "otryx.rpc.client.outlier.ejected")
                         .counter()
                         .count());
         assertEquals(
                 1.0,
                 registry.find(
-                                "peach.rpc.client.timeouts")
+                                "otryx.rpc.client.timeouts")
                         .counter()
                         .count());
         assertEquals(
                 0.0,
                 registry.find(
-                                "peach.rpc.client.inflight")
+                                "otryx.rpc.client.inflight")
                         .gauge()
                         .value());
         assertEquals(
                 1.0,
                 registry.find(
-                                "peach.rpc.client.circuit.state")
+                                "otryx.rpc.client.circuit.state")
                         .tag(
                                 "state",
                                 RpcCircuitState.CLOSED.name())
@@ -152,7 +152,7 @@ class MicrometerRpcObserverTest {
         assertEquals(
                 0.0,
                 registry.find(
-                                "peach.rpc.client.circuit.state")
+                                "otryx.rpc.client.circuit.state")
                         .tag(
                                 "state",
                                 RpcCircuitState.OPEN.name())
@@ -161,32 +161,32 @@ class MicrometerRpcObserverTest {
         assertEquals(
                 0.0,
                 registry.find(
-                                "peach.rpc.client.circuit.state")
+                                "otryx.rpc.client.circuit.state")
                         .tag(
                                 "state",
                                 RpcCircuitState.HALF_OPEN.name())
                         .gauge()
                         .value());
         assertNull(
-                registry.find("peach.rpc.client.attempts")
+                registry.find("otryx.rpc.client.attempts")
                         .timer()
                         .getId()
                         .getTag("service"));
         assertNull(
-                registry.find("peach.rpc.client.attempts")
+                registry.find("otryx.rpc.client.attempts")
                         .timer()
                         .getId()
                         .getTag("method"));
         assertEquals(
                 1.0,
                 registry.find(
-                                "peach.rpc.connection.closed")
+                                "otryx.rpc.connection.closed")
                         .counter()
                         .count());
         assertEquals(
                 0.0,
                 registry.find(
-                                "peach.rpc.connection.active")
+                                "otryx.rpc.connection.active")
                         .gauge()
                         .value());
     }
@@ -225,7 +225,7 @@ class MicrometerRpcObserverTest {
         observer.onServerInflightBytesChanged(128L);
         assertEquals(
                 128.0,
-                registry.find("peach.rpc.server.inflight.bytes")
+                registry.find("otryx.rpc.server.inflight.bytes")
                         .gauge()
                         .value());
         observer.onServerInflightBytesChanged(-128L);
@@ -236,44 +236,44 @@ class MicrometerRpcObserverTest {
 
         assertEquals(
                 1.0,
-                registry.find("peach.rpc.client.failures")
+                registry.find("otryx.rpc.client.failures")
                         .counter()
                         .count());
         assertEquals(
                 1.0,
-                registry.find("peach.rpc.server.failures")
+                registry.find("otryx.rpc.server.failures")
                         .counter()
                         .count());
         assertEquals(
                 1.0,
-                registry.find("peach.rpc.server.overloaded")
+                registry.find("otryx.rpc.server.overloaded")
                         .counter()
                         .count());
         assertEquals(
                 1.0,
                 registry.find(
-                                "peach.rpc.server.admission.rejected")
+                                "otryx.rpc.server.admission.rejected")
                         .counter()
                         .count());
         assertEquals(
                 0.0,
                 registry.find(
-                                "peach.rpc.server.inflight")
+                                "otryx.rpc.server.inflight")
                         .gauge()
                         .value());
         assertEquals(
                 0.0,
                 registry.find(
-                                "peach.rpc.server.inflight.bytes")
+                                "otryx.rpc.server.inflight.bytes")
                         .gauge()
                         .value());
         assertNull(
-                registry.find("peach.rpc.server.invocations")
+                registry.find("otryx.rpc.server.invocations")
                         .timer()
                         .getId()
                         .getTag("service"));
         assertNull(
-                registry.find("peach.rpc.server.invocations")
+                registry.find("otryx.rpc.server.invocations")
                         .timer()
                         .getId()
                         .getTag("method"));

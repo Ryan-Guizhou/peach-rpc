@@ -13,7 +13,7 @@ from compare_fory_allocation import (
 
 def row(method, mode, allocation=48.0):
     return {
-        "benchmark": "io.peach.rpc.benchmarks.ForyArgumentEncodingBenchmark." + method,
+        "benchmark": "com.peachsoft.otryx.benchmarks.ForyArgumentEncodingBenchmark." + method,
         "jdkVersion": "21",
         "jmhVersion": "1.37",
         "mode": mode,

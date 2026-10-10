@@ -1,11 +1,11 @@
-package io.peach.rpc.transport;
+package com.peachsoft.otryx.transport;
 
-import io.peach.rpc.codec.RpcCodecIds;
-import io.peach.rpc.protocol.RpcCompressionIds;
-import io.peach.rpc.protocol.RpcConnectionCapabilities;
-import io.peach.rpc.protocol.RpcFeature;
-import io.peach.rpc.protocol.RpcProtocolCodec;
-import io.peach.rpc.observability.RpcObserver;
+import com.peachsoft.otryx.codec.RpcCodecIds;
+import com.peachsoft.otryx.protocol.RpcCompressionIds;
+import com.peachsoft.otryx.protocol.RpcConnectionCapabilities;
+import com.peachsoft.otryx.protocol.RpcFeature;
+import com.peachsoft.otryx.protocol.RpcProtocolCodec;
+import com.peachsoft.otryx.observability.RpcObserver;
 import java.time.Duration;
 import java.util.Set;
 

@@ -1,4 +1,4 @@
-package io.peach.rpc.generated;
+package com.peachsoft.otryx.generated;
 
 import java.util.concurrent.CompletionStage;
 

@@ -8,7 +8,7 @@ from validate_rpc_comparison import markdown, validate_pair, validate_result
 
 def sample(framework="peach"):
     return {
-        "schema": "peach.rpc.comparison.v1",
+        "schema": "otryx.rpc.comparison.v1",
         "recorded_at": "2026-01-01T00:00:00Z",
         "evidence_class": "smoke",
         "run_id": "test-01",
@@ -52,7 +52,7 @@ def sample(framework="peach"):
 
 def environment():
     return {
-        "schema": "peach.rpc.comparison.environment.v1",
+        "schema": "otryx.rpc.comparison.environment.v1",
         "evidence_class": "smoke",
         "run_id": "test-01",
         "git_sha": "0123456789abcdef",

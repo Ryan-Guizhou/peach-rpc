@@ -1,14 +1,14 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
-import io.peach.rpc.api.PeachRpcExecution;
-import io.peach.rpc.api.RpcExecutionMode;
-import io.peach.rpc.api.RpcIds;
-import io.peach.rpc.api.RpcMethodDescriptor;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.codec.RpcCodecRegistry;
-import io.peach.rpc.codec.RpcMethodCodec;
-import io.peach.rpc.generated.RpcGeneratedServerDispatcher;
-import io.peach.rpc.generated.RpcGeneratedServers;
+import com.peachsoft.otryx.api.OtryxRpcExecution;
+import com.peachsoft.otryx.api.RpcExecutionMode;
+import com.peachsoft.otryx.api.RpcIds;
+import com.peachsoft.otryx.api.RpcMethodDescriptor;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.codec.RpcCodecRegistry;
+import com.peachsoft.otryx.codec.RpcMethodCodec;
+import com.peachsoft.otryx.generated.RpcGeneratedServerDispatcher;
+import com.peachsoft.otryx.generated.RpcGeneratedServers;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
@@ -110,8 +110,8 @@ final class ServiceBinding {
     }
 
     private static RpcExecutionMode executionMode(Method method) {
-        PeachRpcExecution annotation =
-                method.getAnnotation(PeachRpcExecution.class);
+        OtryxRpcExecution annotation =
+                method.getAnnotation(OtryxRpcExecution.class);
         return annotation == null
                 ? RpcExecutionMode.BLOCKING_VIRTUAL
                 : annotation.value();

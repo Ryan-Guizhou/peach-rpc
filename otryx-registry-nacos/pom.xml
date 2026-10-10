@@ -4,25 +4,25 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.peach.rpc</groupId>
-        <artifactId>peach-rpc-parent</artifactId>
+        <groupId>com.peachsoft.otryx</groupId>
+        <artifactId>otryx-parent</artifactId>
         <version>${revision}</version>
     </parent>
-    <artifactId>peach-rpc-registry-nacos</artifactId>
-    <name>peach-rpc-registry-nacos</name>
-    <description>Nacos registry adapter for Peach RPC.</description>
+    <artifactId>otryx-registry-nacos</artifactId>
+    <name>otryx-registry-nacos</name>
+    <description>Nacos registry adapter for OTRYX RPC.</description>
     <properties>
         <nacos.test.groups></nacos.test.groups>
         <nacos.test.excluded-groups>chaos</nacos.test.excluded-groups>
     </properties>
     <dependencies>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-core</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.peach.rpc</groupId>
-            <artifactId>peach-rpc-core</artifactId>
+            <groupId>com.peachsoft.otryx</groupId>
+            <artifactId>otryx-core</artifactId>
             <version>${revision}</version>
             <type>test-jar</type>
             <classifier>tests</classifier>

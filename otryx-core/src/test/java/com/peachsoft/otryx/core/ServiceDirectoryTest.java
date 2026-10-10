@@ -1,15 +1,15 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-import io.peach.rpc.api.RpcCompatibilityMetadata;
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
-import io.peach.rpc.registry.ServiceDiscovery;
-import io.peach.rpc.registry.RegistryListener;
-import io.peach.rpc.registry.RegistrySnapshot;
-import io.peach.rpc.registry.RegistrySubscription;
+import com.peachsoft.otryx.api.RpcCompatibilityMetadata;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
+import com.peachsoft.otryx.registry.ServiceDiscovery;
+import com.peachsoft.otryx.registry.RegistryListener;
+import com.peachsoft.otryx.registry.RegistrySnapshot;
+import com.peachsoft.otryx.registry.RegistrySubscription;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

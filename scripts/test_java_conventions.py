@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Positive and negative fixtures for Peach RPC scoped Java lint."""
+"""Positive and negative fixtures for OTRYX RPC scoped Java lint."""
 
 import unittest
 
@@ -12,11 +12,11 @@ class JavaConventionsTest(unittest.TestCase):
     def setUpClass(cls):
         cls.rules = lint.load_rules()
         cls.runtime = (
-            "peach-rpc-core/src/main/java/io/peach/rpc/core/Demo.java")
+            "otryx-core/src/main/java/io/peach/rpc/core/Demo.java")
         cls.transport = (
-            "peach-rpc-transport-vertx/src/main/java/io/peach/rpc/transport/vertx/Demo.java")
+            "otryx-transport-vertx/src/main/java/io/peach/rpc/transport/vertx/Demo.java")
         cls.test_path = (
-            "peach-rpc-transport-vertx/src/test/java/io/peach/rpc/transport/vertx/DemoTest.java")
+            "otryx-transport-vertx/src/test/java/io/peach/rpc/transport/vertx/DemoTest.java")
 
     def findings(self, path, source):
         return {f["rule"] for f in lint.scan_source(
@@ -96,7 +96,7 @@ class JavaConventionsTest(unittest.TestCase):
         self.assertNotIn("B001", self.findings(self.test_path, code))
         self.assertNotIn(
             "B001",
-            self.findings(self.runtime, "import io.peach.rpc.registry.ServiceDiscovery;"))
+            self.findings(self.runtime, "import com.peachsoft.otryx.registry.ServiceDiscovery;"))
 
     def test_rejects_unbounded_queues_and_cached_executors(self):
         code = (

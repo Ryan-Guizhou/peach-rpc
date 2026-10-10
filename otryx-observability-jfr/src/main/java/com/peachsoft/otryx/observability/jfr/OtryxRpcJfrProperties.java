@@ -1,18 +1,18 @@
-package io.peach.rpc.observability.jfr;
+package com.peachsoft.otryx.observability.jfr;
 
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/** Peach RPC JFR Adapter 配置。 */
-@ConfigurationProperties("peach.rpc.observability.jfr")
-public class PeachRpcJfrProperties {
+/** OTRYX RPC JFR Adapter 配置。 */
+@ConfigurationProperties("otryx.rpc.observability.jfr")
+public class OtryxRpcJfrProperties {
 
     private boolean enabled;
     private Duration slowThreshold =
             Duration.ofMillis(100);
 
     /** 创建配置。 */
-    public PeachRpcJfrProperties() {
+    public OtryxRpcJfrProperties() {
     }
 
     /**

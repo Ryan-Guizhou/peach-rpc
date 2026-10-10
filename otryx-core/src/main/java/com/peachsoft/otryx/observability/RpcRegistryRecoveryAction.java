@@ -1,4 +1,4 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
 /** Registry 控制面恢复动作。 */
 public enum RpcRegistryRecoveryAction {

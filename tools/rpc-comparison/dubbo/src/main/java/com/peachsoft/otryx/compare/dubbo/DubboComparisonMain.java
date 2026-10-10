@@ -1,6 +1,6 @@
-package io.peach.rpc.compare.dubbo;
+package com.peachsoft.otryx.compare.dubbo;
 
-import io.peach.rpc.compare.ComparisonHarness;
+import com.peachsoft.otryx.compare.ComparisonHarness;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.dubbo.config.ApplicationConfig;

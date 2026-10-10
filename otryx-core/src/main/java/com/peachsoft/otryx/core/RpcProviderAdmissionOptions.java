@@ -1,9 +1,9 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
 /**
  * Provider 并发准入与在途请求字节预算。
  *
- * <p>全局请求并发仍由 {@code PeachRpcServer.Builder.maxConcurrent} 控制。
+ * <p>全局请求并发仍由 {@code OtryxRpcServer.Builder.maxConcurrent} 控制。
  * 默认将全局并发与字节额度静态平均分配到启动时已注册服务，避免
  * 某个服务抢占其他服务的全部额度。方法级默认共享所属服务额度；
  * 方法级硬上限可按需显式启用。

@@ -1,7 +1,7 @@
-package io.peach.rpc.loadbalance;
+package com.peachsoft.otryx.loadbalance;
 
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.spi.SPI;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.spi.SPI;
 import java.util.ArrayList;
 import java.util.List;
 

@@ -1,6 +1,6 @@
-package io.peach.rpc.registry;
+package com.peachsoft.otryx.registry;
 
-import io.peach.rpc.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceInstance;
 import java.util.concurrent.CompletionStage;
 
 /** Provider 服务注册控制面。 */

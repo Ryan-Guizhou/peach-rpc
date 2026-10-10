@@ -1,4 +1,4 @@
-package io.peach.rpc.api;
+package com.peachsoft.otryx.api;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -15,5 +15,5 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface PeachRpcIdempotent {
+public @interface OtryxRpcIdempotent {
 }

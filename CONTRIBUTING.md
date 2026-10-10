@@ -1,6 +1,6 @@
-# Peach RPC 贡献与编码规范
+# OTRYX RPC 贡献与编码规范
 
-Peach RPC 将低延迟、有界资源、兼容性和故障行为视为正确性的一部分。任何改动如果降低这些属性，即使 API 更短，也不应视为优化。
+OTRYX RPC 将低延迟、有界资源、兼容性和故障行为视为正确性的一部分。任何改动如果降低这些属性，即使 API 更短，也不应视为优化。
 
 ## Agent 协作与远程权限
 
@@ -38,7 +38,7 @@ mvn -B -ntp clean verify -Pquality
 
 ## 1.0.x 兼容红线
 
-Peach RPC 1.0.x 已冻结：
+OTRYX RPC 1.0.x 已冻结：
 
 - Wire Protocol v1；
 - Public Core API；

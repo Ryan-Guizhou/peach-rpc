@@ -1,14 +1,14 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.RpcExecutionMode;
-import io.peach.rpc.api.RpcStatus;
-import io.peach.rpc.api.ServiceKey;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.RpcExecutionMode;
+import com.peachsoft.otryx.api.RpcStatus;
+import com.peachsoft.otryx.api.ServiceKey;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Peach RPC 低依赖可观测性事件契约。
+ * OTRYX RPC 低依赖可观测性事件契约。
  *
  * <p>Core 不依赖 Micrometer、OpenTelemetry 或 JFR Adapter。后续观测实现可消费本契约，
  * 将事件映射为指标、Trace 或 JFR Event。默认 NOOP Observer 的热路径不创建事件对象。

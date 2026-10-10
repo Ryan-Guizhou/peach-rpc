@@ -1,4 +1,4 @@
-package io.peach.rpc.core;
+package com.peachsoft.otryx.core;
 
 import java.time.Duration;
 
@@ -28,7 +28,7 @@ public record RpcClientResilienceOptions(
         int circuitConsecutiveFailureThreshold,
         Duration circuitOpenDuration) {
 
-    /** 默认生产保护参数；自动重试仅对 {@code @PeachRpcIdempotent} 方法生效。 */
+    /** 默认生产保护参数；自动重试仅对 {@code @OtryxRpcIdempotent} 方法生效。 */
     public static final RpcClientResilienceOptions DEFAULT =
             new RpcClientResilienceOptions(
                     2,

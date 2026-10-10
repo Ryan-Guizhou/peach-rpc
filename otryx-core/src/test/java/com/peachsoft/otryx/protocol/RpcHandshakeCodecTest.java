@@ -1,9 +1,9 @@
-package io.peach.rpc.protocol;
+package com.peachsoft.otryx.protocol;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.peach.rpc.codec.RpcCodecIds;
+import com.peachsoft.otryx.codec.RpcCodecIds;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.junit.jupiter.api.Test;

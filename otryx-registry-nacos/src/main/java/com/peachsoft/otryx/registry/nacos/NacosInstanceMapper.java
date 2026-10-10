@@ -1,13 +1,13 @@
-package io.peach.rpc.registry.nacos;
+package com.peachsoft.otryx.registry.nacos;
 
 import com.alibaba.nacos.api.naming.pojo.Instance;
-import io.peach.rpc.api.RpcEndpoint;
-import io.peach.rpc.api.ServiceInstance;
-import io.peach.rpc.api.ServiceKey;
+import com.peachsoft.otryx.api.RpcEndpoint;
+import com.peachsoft.otryx.api.ServiceInstance;
+import com.peachsoft.otryx.api.ServiceKey;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Nacos Instance 与 Peach RPC ServiceInstance 的映射器。 */
+/** Nacos Instance 与 OTRYX RPC ServiceInstance 的映射器。 */
 final class NacosInstanceMapper {
 
     static final int CORE_WEIGHT_SCALE = 100;
@@ -49,7 +49,7 @@ final class NacosInstanceMapper {
         metadata.put(
                 NacosReservedMetadata.GROUP,
                 source.serviceKey().group());
-        metadata.put(NacosReservedMetadata.PROTOCOL, "peach-rpc");
+        metadata.put(NacosReservedMetadata.PROTOCOL, "otryx");
         metadata.put(NacosReservedMetadata.CLUSTER, cluster);
 
         Instance target = new Instance();

@@ -1,4 +1,4 @@
-package io.peach.rpc.observability;
+package com.peachsoft.otryx.observability;
 
 /** Registry 控制面操作类型。 */
 public enum RpcRegistryOperation {

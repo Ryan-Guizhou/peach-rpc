@@ -1,6 +1,6 @@
-package io.peach.rpc.registry;
+package com.peachsoft.otryx.registry;
 
-import io.peach.rpc.spi.SPI;
+import com.peachsoft.otryx.spi.SPI;
 
 /** Registry 构造扩展点。 */
 @SPI("memory")

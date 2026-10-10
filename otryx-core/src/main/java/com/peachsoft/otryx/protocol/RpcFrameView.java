@@ -1,6 +1,6 @@
-package io.peach.rpc.protocol;
+package com.peachsoft.otryx.protocol;
 
-import io.peach.rpc.api.RpcStatus;
+import com.peachsoft.otryx.api.RpcStatus;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;

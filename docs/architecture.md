@@ -1,10 +1,10 @@
-# Peach RPC 1.0 架构设计
+# OTRYX RPC 1.0 架构设计
 
-> 状态：**Current / 1.0.1 Release Prep**
+> 状态：**Current / 2.0.0-SNAPSHOT Migration**
 
 ## 1. 核心原则
 
-Peach RPC 的设计目标是高吞吐、低尾延迟、可控资源和可预测故障行为，同时维持清晰扩展边界。
+OTRYX RPC 的设计目标是高吞吐、低尾延迟、可控资源和可预测故障行为，同时维持清晰扩展边界。
 
 > 能在编译期确定的信息，不放到启动阶段；能在启动阶段绑定的信息，不放进单次 RPC 热路径。
 
@@ -14,7 +14,7 @@ Peach RPC 的设计目标是高吞吐、低尾延迟、可控资源和可预测�
 
 ```mermaid
 flowchart TB
-    Contract[PeachRpcContract] --> Codegen[Compile-time Codegen]
+    Contract[OtryxRpcContract] --> Codegen[Compile-time Codegen]
     Codegen --> Stub[Generated Consumer Stub]
     Codegen --> Dispatcher[Generated Provider Dispatcher]
     Stub --> Core[Core Runtime]
@@ -184,7 +184,7 @@ Consumer 的 logical Deadline 覆盖连接获取、HELLO/ACK 和请求。
 
 ### Retry
 
-仅 `@PeachRpcIdempotent` 方法允许自动 Retry，并受：
+仅 `@OtryxRpcIdempotent` 方法允许自动 Retry，并受：
 
 - max attempts；
 - Retry Budget；
@@ -211,7 +211,7 @@ Provider 关闭顺序：
 
 ## 11. Security
 
-TLS/mTLS handshake 先于 Peach RPC HELLO。Consumer 默认开启 hostname verification。TLS 失败不会降级为 PLAINTEXT。
+TLS/mTLS handshake 先于 OTRYX RPC HELLO。Consumer 默认开启 hostname verification。TLS 失败不会降级为 PLAINTEXT。
 
 ## 12. Observability
 

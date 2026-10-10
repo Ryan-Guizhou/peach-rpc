@@ -1,4 +1,4 @@
-package io.peach.rpc.api;
+package com.peachsoft.otryx.api;
 
 /** Provider 业务方法的执行资源类型。 */
 public enum RpcExecutionMode {
