@@ -3,8 +3,8 @@ name: Fory Allocation Comparison
 on:
   pull_request:
     paths:
-      - "otryx-codec-fory/src/main/java/io/peach/rpc/codec/fory/ForyRpcCodec.java"
-      - "otryx-benchmarks/src/main/java/io/peach/rpc/benchmarks/ForyArgumentEncodingBenchmark.java"
+      - "otryx-codec-fory/src/main/java/com/peachsoft/otryx/codec/fory/ForyRpcCodec.java"
+      - "otryx-benchmarks/src/main/java/com/peachsoft/otryx/benchmarks/ForyArgumentEncodingBenchmark.java"
       - "scripts/compare_fory_allocation.py"
       - "scripts/test_compare_fory_allocation.py"
       - "scripts/run_fory_allocation_comparison.sh"
@@ -41,7 +41,19 @@ jobs:
       - name: Test evidence validator with negative cases
         run: python3 scripts/test_compare_fory_allocation.py
 
+      - name: Identify breaking API-generation migration
+        id: api_generation
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.baseline_sha }}
+        run: |
+          if git cat-file -e "${BASE_SHA}:peach-rpc-core/pom.xml" 2>/dev/null; then
+            echo "breaking=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "breaking=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Paired Fory JMH allocation smoke
+        if: steps.api_generation.outputs.breaking != 'true'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.baseline_sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || inputs.candidate_sha }}
@@ -52,6 +64,20 @@ jobs:
           OTRYX_RPC_FORY_JMH_TIME: "500ms"
           OTRYX_RPC_ALLOCATION_JVM_FLAGS: "-Xms256m -Xmx256m"
         run: bash scripts/run_fory_allocation_comparison.sh "$BASE_SHA" "$HEAD_SHA"
+
+      - name: OTRYX migration benchmark smoke (not a cross-generation performance comparison)
+        if: steps.api_generation.outputs.breaking == 'true'
+        run: |
+          python3 scripts/check_migration_readiness.py
+          mvn -B -ntp -pl otryx-benchmarks -am -DskipTests package
+          mkdir -p target/fory-migration-smoke
+          java -jar otryx-benchmarks/target/benchmarks.jar 'ForyArgumentEncodingBenchmark' -wi 1 -i 1 -w 200ms -r 200ms -f 1 -rf json -rff target/fory-migration-smoke/candidate.json
+          {
+            echo "## Major API rebrand: historical allocation pair not comparable"
+            echo "Only the OTRYX candidate JMH smoke was executed."
+            echo "The old Java API/class paths differ from the new generation."
+            echo "No allocation or p99 improvement claim can be derived from this run."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload JMH evidence and report
         if: always()
