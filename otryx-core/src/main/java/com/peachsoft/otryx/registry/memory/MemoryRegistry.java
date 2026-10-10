@@ -17,7 +17,13 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** 进程内注册中心。 */
+/**
+ * 进程内注册中心。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 final class MemoryRegistry implements Registry, ServiceRegistrar {
     private static final RegistryCapabilities CAPABILITIES = RegistryCapabilities.of(
             RegistryCapability.REGISTRATION,

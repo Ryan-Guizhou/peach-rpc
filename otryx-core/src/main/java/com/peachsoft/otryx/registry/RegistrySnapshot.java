@@ -8,6 +8,10 @@ import java.util.List;
  *
  * @param instances 当前可用服务实例
  * @param revision 快照单调版本；实现无法提供外部版本时也必须在进程内单调递增
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 public record RegistrySnapshot(List<ServiceInstance> instances, long revision) {
 

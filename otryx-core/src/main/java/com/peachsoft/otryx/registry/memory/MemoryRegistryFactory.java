@@ -5,7 +5,13 @@ import com.peachsoft.otryx.registry.RegistryFactory;
 import com.peachsoft.otryx.registry.RegistryOptions;
 import com.peachsoft.otryx.spi.Extension;
 
-/** 内存注册中心工厂，适合单 JVM 测试和本地开发。 */
+/**
+ * 内存注册中心工厂，适合单 JVM 测试和本地开发。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 @Extension("memory")
 public final class MemoryRegistryFactory implements RegistryFactory {
 

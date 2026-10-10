@@ -12,6 +12,10 @@ import java.util.Map;
  * @param namespace 逻辑命名空间
  * @param providerOptions Adapter 私有配置
  * @param observer 控制面 Observer
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
  */
 public record RegistryOptions(
         List<String> endpoints,

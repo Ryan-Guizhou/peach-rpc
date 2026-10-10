@@ -3,7 +3,13 @@ package com.peachsoft.otryx.codec;
 import com.peachsoft.otryx.api.RpcMethodDescriptor;
 import com.peachsoft.otryx.spi.SPI;
 
-/** RPC 消息体编解码扩展点。 */
+/**
+ * RPC 消息体编解码扩展点。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 @SPI("fory")
 public interface RpcCodec {
 

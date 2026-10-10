@@ -6,7 +6,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-/** 已解析 Codec 的只读运行时注册表。 */
+/**
+ * 已解析 Codec 的只读运行时注册表。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 public final class RpcCodecRegistry {
     private final Map<Byte, RpcCodec> byCode;
     private final RpcCodec defaultCodec;

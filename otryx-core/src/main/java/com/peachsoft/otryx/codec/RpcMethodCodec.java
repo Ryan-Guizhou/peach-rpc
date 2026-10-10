@@ -1,6 +1,12 @@
 package com.peachsoft.otryx.codec;
 
-/** 已在服务方法粒度预绑定的 Codec 热路径接口。 */
+/**
+ * 已在服务方法粒度预绑定的 Codec 热路径接口。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
+ */
 public interface RpcMethodCodec {
 
     /**

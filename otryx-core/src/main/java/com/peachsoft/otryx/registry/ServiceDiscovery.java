@@ -3,7 +3,13 @@ package com.peachsoft.otryx.registry;
 import com.peachsoft.otryx.api.ServiceKey;
 import java.util.concurrent.CompletionStage;
 
-/** Consumer 服务发现控制面。 */
+/**
+ * Consumer 服务发现控制面。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
+ */
 public interface ServiceDiscovery {
 
     /**

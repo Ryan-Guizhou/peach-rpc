@@ -1,6 +1,12 @@
 package com.peachsoft.otryx.registry;
 
-/** 注册中心适配器可声明的能力。 */
+/**
+ * 注册中心适配器可声明的能力。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
+ */
 public enum RegistryCapability {
     /** 支持 Provider 主动注册与注销。 */
     REGISTRATION,

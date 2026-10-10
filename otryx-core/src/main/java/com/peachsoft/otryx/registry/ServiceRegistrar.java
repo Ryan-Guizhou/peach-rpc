@@ -3,7 +3,13 @@ package com.peachsoft.otryx.registry;
 import com.peachsoft.otryx.api.ServiceInstance;
 import java.util.concurrent.CompletionStage;
 
-/** Provider 服务注册控制面。 */
+/**
+ * Provider 服务注册控制面。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 11:46
+ */
 public interface ServiceRegistrar {
 
     /**

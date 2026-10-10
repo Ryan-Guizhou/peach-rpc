@@ -19,6 +19,10 @@ import java.util.function.Supplier;
  * 不允许在单次 RPC 热路径触发首次扩展发现。
  *
  * @param <T> 扩展点类型
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 public final class ExtensionLoader<T> {
 

@@ -5,7 +5,13 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-/** RPC 服务端传输契约。 */
+/**
+ * RPC 服务端传输契约。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 public interface RpcTransportServer extends AutoCloseable {
 
     /**
