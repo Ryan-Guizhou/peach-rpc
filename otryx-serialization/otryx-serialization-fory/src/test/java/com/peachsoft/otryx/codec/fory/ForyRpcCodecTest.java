@@ -13,6 +13,13 @@ import java.util.Arrays;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证 Fory RPC 编解码的往返一致性和异常输入。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 15:46
+ */
 class ForyRpcCodecTest {
 
     @Test

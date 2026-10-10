@@ -12,6 +12,10 @@ import net.sf.cglib.proxy.MethodInterceptor;
  * CGLIB 代理兼容实现。
  *
  * <p>该实现用于兼容需要类代理的调用场景，不作为长期默认高性能路径。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 @Extension("cglib")
 public final class CglibProxyFactory implements ProxyFactory {

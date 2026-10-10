@@ -6,6 +6,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证 ByteBuddy 代理方法调用与异常传播。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 15:46
+ */
 class ByteBuddyProxyFactoryTest {
 
     @Test

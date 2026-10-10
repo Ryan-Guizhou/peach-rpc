@@ -28,6 +28,10 @@ import org.junit.jupiter.api.Timeout;
  *
  * <p>使用独立 Consumer、Provider A、Provider B Registry Client 模拟真实进程边界。
  * 该测试仅由 nacos-chaos Profile 执行，需要宿主机 Docker CLI。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/30 11:21
  */
 @Tag("chaos")
 @Timeout(value = 150, unit = TimeUnit.SECONDS)

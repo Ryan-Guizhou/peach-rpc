@@ -17,7 +17,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Nacos 阻塞控制面调用的有界线程隔离器。 */
+/**
+ * Nacos 阻塞控制面调用的有界线程隔离器。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/28 11:35
+ */
 final class NacosControlExecutor implements AutoCloseable {
 
     private static final Logger LOGGER =

@@ -19,7 +19,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
-/** 真实 Nacos 服务发现集成测试。 */
+/**
+ * 真实 Nacos 服务发现集成测试。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/28 11:38
+ */
 class NacosRegistryIntegrationTest {
 
     @Test
