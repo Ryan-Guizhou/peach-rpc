@@ -117,34 +117,34 @@ jobs:
       - name: Preflight controlled runner
         if: ${{ inputs.evidence_class == 'controlled' }}
         env:
-          PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
-          PEACH_RPC_EVIDENCE_CLASS: controlled
-          PEACH_RPC_EVIDENCE_RUN_ID: ${{ inputs.run_id }}
-          PEACH_RPC_RUNNER_ID: ${{ runner.name }}
-          PEACH_RPC_EXPECT_RUNNER_ID: ${{ inputs.runner_id }}
-          PEACH_RPC_EXPECT_HOST_FINGERPRINT_SHA256: ${{ inputs.host_fingerprint_sha256 }}
-          PEACH_RPC_JVM_FLAGS: ${{ inputs.jvm_flags }}
-          PEACH_RPC_RUNNER_LABELS: ${{ inputs.runner_labels_json }}
+          OTRYX_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
+          OTRYX_RPC_EVIDENCE_CLASS: controlled
+          OTRYX_RPC_EVIDENCE_RUN_ID: ${{ inputs.run_id }}
+          OTRYX_RPC_RUNNER_ID: ${{ runner.name }}
+          OTRYX_RPC_EXPECT_RUNNER_ID: ${{ inputs.runner_id }}
+          OTRYX_RPC_EXPECT_HOST_FINGERPRINT_SHA256: ${{ inputs.host_fingerprint_sha256 }}
+          OTRYX_RPC_JVM_FLAGS: ${{ inputs.jvm_flags }}
+          OTRYX_RPC_RUNNER_LABELS: ${{ inputs.runner_labels_json }}
         run: bash scripts/preflight_v2d2_runner.sh "target/v2d2-evidence-${{ inputs.run_id }}"
 
       - name: Capture evidence environment
         env:
-          PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
-          PEACH_RPC_EVIDENCE_CLASS: ${{ inputs.evidence_class }}
-          PEACH_RPC_EVIDENCE_RUN_ID: ${{ inputs.run_id }}
-          PEACH_RPC_RUNNER_ID: ${{ runner.name }}
-          PEACH_RPC_RUNNER_LABELS: ${{ inputs.runner_labels_json }}
-          PEACH_RPC_JVM_FLAGS: ${{ inputs.jvm_flags }}
+          OTRYX_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
+          OTRYX_RPC_EVIDENCE_CLASS: ${{ inputs.evidence_class }}
+          OTRYX_RPC_EVIDENCE_RUN_ID: ${{ inputs.run_id }}
+          OTRYX_RPC_RUNNER_ID: ${{ runner.name }}
+          OTRYX_RPC_RUNNER_LABELS: ${{ inputs.runner_labels_json }}
+          OTRYX_RPC_JVM_FLAGS: ${{ inputs.jvm_flags }}
         run: bash scripts/capture_v2d2_environment.sh "target/v2d2-evidence-${{ inputs.run_id }}"
 
       - name: Build benchmark runtime
-        run: mvn -B -ntp -pl peach-rpc-benchmarks -am clean package -DskipTests
+        run: mvn -B -ntp -pl otryx-benchmarks -am clean package -DskipTests
 
       - name: Run JMH matrix
         if: ${{ inputs.run_matrix }}
         env:
-          PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
-          PEACH_RPC_JVM_FLAGS: ${{ inputs.jvm_flags }}
+          OTRYX_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
+          OTRYX_RPC_JVM_FLAGS: ${{ inputs.jvm_flags }}
         run: >
           bash scripts/run_v2d2_benchmark_matrix.sh
           "${{ inputs.matrix_profile }}"
@@ -153,15 +153,15 @@ jobs:
       - name: Run virtual-thread soak
         if: ${{ inputs.run_soak }}
         env:
-          PEACH_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
-          PEACH_RPC_SOAK_CONCURRENCY: ${{ inputs.soak_concurrency }}
-          PEACH_RPC_SOAK_DURATION_SECONDS: ${{ inputs.soak_duration_seconds }}
-          PEACH_RPC_SOAK_PAYLOAD_SIZE: ${{ inputs.soak_payload_size }}
-          PEACH_RPC_SOAK_CONNECTIONS: ${{ inputs.soak_connections }}
-          PEACH_RPC_SOAK_WARMUP_SECONDS: "30"
-          PEACH_RPC_SOAK_CLIENT_TIMEOUT_MS: "15000"
-          PEACH_RPC_SOAK_OUTPUT: target/v2d2-evidence-${{ inputs.run_id }}/soak.json
-          PEACH_RPC_JVM_FLAGS: ${{ inputs.jvm_flags }}
+          OTRYX_RPC_BENCHMARK_COMMIT: ${{ github.sha }}
+          OTRYX_RPC_SOAK_CONCURRENCY: ${{ inputs.soak_concurrency }}
+          OTRYX_RPC_SOAK_DURATION_SECONDS: ${{ inputs.soak_duration_seconds }}
+          OTRYX_RPC_SOAK_PAYLOAD_SIZE: ${{ inputs.soak_payload_size }}
+          OTRYX_RPC_SOAK_CONNECTIONS: ${{ inputs.soak_connections }}
+          OTRYX_RPC_SOAK_WARMUP_SECONDS: "30"
+          OTRYX_RPC_SOAK_CLIENT_TIMEOUT_MS: "15000"
+          OTRYX_RPC_SOAK_OUTPUT: target/v2d2-evidence-${{ inputs.run_id }}/soak.json
+          OTRYX_RPC_JVM_FLAGS: ${{ inputs.jvm_flags }}
         run: bash scripts/run_v2d2_soak.sh
 
       - name: Validate evidence bundle

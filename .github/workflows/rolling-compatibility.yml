@@ -10,11 +10,11 @@ on:
         type: string
   pull_request:
     paths:
-      - 'peach-rpc-core/**'
-      - 'peach-rpc-codec-fory/**'
-      - 'peach-rpc-transport-vertx/**'
-      - 'peach-rpc-registry-*/**'
-      - 'peach-rpc-examples/**'
+      - 'otryx-core/**'
+      - 'otryx-codec-fory/**'
+      - 'otryx-transport-vertx/**'
+      - 'otryx-registry-*/**'
+      - 'otryx-examples/**'
       - 'pom.xml'
       - 'docs/release-status.properties'
       - 'scripts/run_rolling_compatibility_e2e.sh'
@@ -35,8 +35,8 @@ jobs:
           MODE: standalone
           NACOS_AUTH_ENABLE: "false"
           NACOS_AUTH_TOKEN: "UGVhY2hScGNDb250cm9sUGxhbmVTZWNyZXRLZXkxMjM0NTY3ODkwMTIzNDU2Nzg5MA=="
-          NACOS_AUTH_IDENTITY_KEY: peach-rpc-ci
-          NACOS_AUTH_IDENTITY_VALUE: peach-rpc-ci-secret
+          NACOS_AUTH_IDENTITY_KEY: otryx-ci
+          NACOS_AUTH_IDENTITY_VALUE: otryx-ci-secret
         ports:
           - 8848:8848
           - 9848:9848
@@ -78,7 +78,7 @@ jobs:
         working-directory: target/compat-n
         run: >
           mvn -B -ntp
-          -pl peach-rpc-codegen
+          -pl otryx-codegen
           -am
           install
           -DskipTests
@@ -87,7 +87,7 @@ jobs:
         working-directory: target/compat-n
         run: >
           mvn -B -ntp
-          -pl peach-rpc-examples/peach-rpc-example-provider,peach-rpc-examples/peach-rpc-example-consumer
+          -pl otryx-examples/otryx-example-provider,otryx-examples/otryx-example-consumer
           -am
           package
           -DskipTests
@@ -95,7 +95,7 @@ jobs:
       - name: Install version N+1 annotation processor
         run: >
           mvn -B -ntp
-          -pl peach-rpc-codegen
+          -pl otryx-codegen
           -am
           install
           -DskipTests
@@ -103,7 +103,7 @@ jobs:
       - name: Build version N+1 examples
         run: >
           mvn -B -ntp
-          -pl peach-rpc-examples/peach-rpc-example-provider,peach-rpc-examples/peach-rpc-example-consumer
+          -pl otryx-examples/otryx-example-provider,otryx-examples/otryx-example-consumer
           -am
           package
           -DskipTests

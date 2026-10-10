@@ -104,14 +104,14 @@ jobs:
         env:
           VERSION: ${{ steps.release.outputs.version }}
         run: |
-          POM_URL="https://repo1.maven.org/maven2/io/peach/rpc/peach-rpc-parent/$VERSION/peach-rpc-parent-$VERSION.pom"
+          POM_URL="https://repo1.maven.org/maven2/io/peach/rpc/otryx-parent/$VERSION/otryx-parent-$VERSION.pom"
           STATUS="$(curl --silent --show-error --location --output /dev/null --write-out '%{http_code}' "$POM_URL")"
           case "$STATUS" in
             404)
               echo "Maven Central version is available: $VERSION"
               ;;
             200)
-              echo "Maven Central already contains io.peach.rpc:peach-rpc-parent:$VERSION."
+              echo "Maven Central already contains com.peachsoft.otryx:otryx-parent:$VERSION."
               exit 1
               ;;
             *)
@@ -159,15 +159,15 @@ jobs:
             sha256sum ./*.jar LICENSE CHANGELOG.md RELEASE_NOTES.md > SHA256SUMS
           )
 
-          tar -czf "target/peach-rpc-$VERSION-artifacts.tar.gz" \
+          tar -czf "target/otryx-$VERSION-artifacts.tar.gz" \
             -C "$BUNDLE" .
 
       - name: Upload verified release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: peach-rpc-${{ steps.release.outputs.version }}
+          name: otryx-${{ steps.release.outputs.version }}
           path: |
-            target/peach-rpc-${{ steps.release.outputs.version }}-artifacts.tar.gz
+            target/otryx-${{ steps.release.outputs.version }}-artifacts.tar.gz
             target/release-bundle/SHA256SUMS
             target/release-bundle/artifact-inventory.txt
           if-no-files-found: error
@@ -231,8 +231,8 @@ jobs:
         env:
           VERSION: ${{ steps.release.outputs.version }}
         run: |
-          CONSUMER_DIR="$RUNNER_TEMP/peach-rpc-central-consumer"
-          LOCAL_REPO="$RUNNER_TEMP/peach-rpc-central-consumer-m2"
+          CONSUMER_DIR="$RUNNER_TEMP/otryx-central-consumer"
+          LOCAL_REPO="$RUNNER_TEMP/otryx-central-consumer-m2"
           mkdir -p "$CONSUMER_DIR"
 
           cat > "$CONSUMER_DIR/pom.xml" <<EOF
@@ -240,13 +240,13 @@ jobs:
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
             <modelVersion>4.0.0</modelVersion>
-            <groupId>io.peach.rpc.verification</groupId>
+            <groupId>com.peachsoft.otryx.verification</groupId>
             <artifactId>central-consumer</artifactId>
             <version>1.0.0</version>
             <dependencies>
               <dependency>
-                <groupId>io.peach.rpc</groupId>
-                <artifactId>peach-rpc-spring-boot-starter</artifactId>
+                <groupId>com.peachsoft.otryx</groupId>
+                <artifactId>otryx-spring-boot-starter</artifactId>
                 <version>$VERSION</version>
               </dependency>
             </dependencies>
@@ -259,14 +259,14 @@ jobs:
               -Dmaven.repo.local="$LOCAL_REPO" \
               -f "$CONSUMER_DIR/pom.xml" \
               org.apache.maven.plugins:maven-dependency-plugin:3.11.0:resolve; then
-              test -f "$LOCAL_REPO/io/peach/rpc/peach-rpc-spring-boot-starter/$VERSION/peach-rpc-spring-boot-starter-$VERSION.jar"
+              test -f "$LOCAL_REPO/io/peach/rpc/otryx-spring-boot-starter/$VERSION/otryx-spring-boot-starter-$VERSION.jar"
               exit 0
             fi
             echo "Maven Central propagation not visible yet; attempt $attempt/30"
             sleep 10
           done
 
-          echo "Published Peach RPC artifacts were not consumable from a clean Maven repository."
+          echo "Published OTRYX RPC artifacts were not consumable from a clean Maven repository."
           exit 1
 
       - name: Publish GitHub Release
@@ -279,7 +279,7 @@ jobs:
         run: |
           gh release create "v$VERSION" \
             --target "$GITHUB_SHA" \
-            --title "Peach RPC $VERSION" \
+            --title "OTRYX RPC $VERSION" \
             --notes-file "$NOTES" \
-            "target/peach-rpc-$VERSION-artifacts.tar.gz" \
+            "target/otryx-$VERSION-artifacts.tar.gz" \
             "target/release-bundle/SHA256SUMS"

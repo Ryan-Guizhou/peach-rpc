@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - 'peach-rpc-*/**'
+      - 'otryx-*/**'
       - 'README.md'
       - 'README.en-US.md'
       - 'CHANGELOG.md'
@@ -90,7 +90,7 @@ jobs:
       - name: Upload release artifact inventory
         uses: actions/upload-artifact@v4
         with:
-          name: peach-rpc-release-readiness-${{ steps.release.outputs.version }}-${{ github.run_id }}
+          name: otryx-release-readiness-${{ steps.release.outputs.version }}-${{ github.run_id }}
           path: target/release-artifacts.txt
           if-no-files-found: error
           retention-days: 30
