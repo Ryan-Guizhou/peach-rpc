@@ -3,8 +3,8 @@ name: Fory Allocation Comparison
 on:
   pull_request:
     paths:
-      - "peach-rpc-codec-fory/src/main/java/io/peach/rpc/codec/fory/ForyRpcCodec.java"
-      - "peach-rpc-benchmarks/src/main/java/io/peach/rpc/benchmarks/ForyArgumentEncodingBenchmark.java"
+      - "otryx-codec-fory/src/main/java/io/peach/rpc/codec/fory/ForyRpcCodec.java"
+      - "otryx-benchmarks/src/main/java/io/peach/rpc/benchmarks/ForyArgumentEncodingBenchmark.java"
       - "scripts/compare_fory_allocation.py"
       - "scripts/test_compare_fory_allocation.py"
       - "scripts/run_fory_allocation_comparison.sh"
@@ -45,12 +45,12 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.baseline_sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || inputs.candidate_sha }}
-          PEACH_RPC_FORY_COMPARE_RUNS: "1"
-          PEACH_RPC_FORY_EVIDENCE_CLASS: shared-ci-smoke
-          PEACH_RPC_FORY_JMH_WARMUP: "1"
-          PEACH_RPC_FORY_JMH_MEASUREMENT: "1"
-          PEACH_RPC_FORY_JMH_TIME: "500ms"
-          PEACH_RPC_ALLOCATION_JVM_FLAGS: "-Xms256m -Xmx256m"
+          OTRYX_RPC_FORY_COMPARE_RUNS: "1"
+          OTRYX_RPC_FORY_EVIDENCE_CLASS: shared-ci-smoke
+          OTRYX_RPC_FORY_JMH_WARMUP: "1"
+          OTRYX_RPC_FORY_JMH_MEASUREMENT: "1"
+          OTRYX_RPC_FORY_JMH_TIME: "500ms"
+          OTRYX_RPC_ALLOCATION_JVM_FLAGS: "-Xms256m -Xmx256m"
         run: bash scripts/run_fory_allocation_comparison.sh "$BASE_SHA" "$HEAD_SHA"
 
       - name: Upload JMH evidence and report

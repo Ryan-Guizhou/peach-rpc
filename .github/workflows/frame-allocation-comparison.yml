@@ -3,9 +3,9 @@ name: Frame Allocation Comparison
 on:
   pull_request:
     paths:
-      - "peach-rpc-transport-vertx/src/main/java/io/peach/rpc/transport/vertx/FrameAccumulator.java"
-      - "peach-rpc-transport-vertx/src/test/java/io/peach/rpc/transport/vertx/FrameAccumulatorTest.java"
-      - "peach-rpc-benchmarks/src/main/java/io/peach/rpc/transport/vertx/FrameAccumulatorBenchmark.java"
+      - "otryx-transport-vertx/src/main/java/io/peach/rpc/transport/vertx/FrameAccumulator.java"
+      - "otryx-transport-vertx/src/test/java/io/peach/rpc/transport/vertx/FrameAccumulatorTest.java"
+      - "otryx-benchmarks/src/main/java/io/peach/rpc/transport/vertx/FrameAccumulatorBenchmark.java"
       - "scripts/run_frame_allocation_comparison.sh"
       - "scripts/compare_frame_allocation.py"
       - "scripts/test_frame_allocation_evidence.py"
@@ -36,7 +36,7 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PEACH_RPC_ALLOCATION_JVM_FLAGS: "-Xms256m -Xmx256m"
+          OTRYX_RPC_ALLOCATION_JVM_FLAGS: "-Xms256m -Xmx256m"
         run: bash scripts/run_frame_allocation_comparison.sh "$BASE_SHA" "$HEAD_SHA"
 
       - name: Upload raw JMH and comparison reports

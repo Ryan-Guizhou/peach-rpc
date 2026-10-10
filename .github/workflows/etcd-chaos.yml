@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - 'peach-rpc-registry-etcd/**'
+      - 'otryx-registry-etcd/**'
       - '.github/workflows/etcd-chaos.yml'
 
 concurrency:
@@ -27,7 +27,7 @@ jobs:
       - name: Verify Etcd leader-transfer chaos
         run: >
           mvn -B -ntp
-          -pl peach-rpc-registry-etcd
+          -pl otryx-registry-etcd
           -am
           test
           -Petcd-chaos
