@@ -18,7 +18,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @Extension(P2cEwmaLoadBalancer.EXTENSION_NAME)
 public final class P2cEwmaLoadBalancer implements LoadBalancer {
 
-    private static final String EXTENSION_NAME = "p2c-ewma";
+    static final String EXTENSION_NAME = "p2c-ewma";
     private static final long MIN_EWMA_LATENCY_NANOS = 1_000_000L;
 
     /** 创建 P2C + EWMA 负载均衡器。 */

@@ -15,7 +15,7 @@ import com.peachsoft.otryx.spi.Extension;
 @Extension(MemoryRegistryFactory.EXTENSION_NAME)
 public final class MemoryRegistryFactory implements RegistryFactory {
 
-    private static final String EXTENSION_NAME = "memory";
+    static final String EXTENSION_NAME = "memory";
 
     private static final Registry SHARED = new MemoryRegistry();
 

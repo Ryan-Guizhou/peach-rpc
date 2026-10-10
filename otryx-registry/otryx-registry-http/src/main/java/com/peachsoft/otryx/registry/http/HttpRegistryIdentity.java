@@ -82,7 +82,7 @@ public final class HttpRegistryIdentity {
         if (host.isBlank()
                 || RpcEndpoint.UNSPECIFIED_IPV4_HOST.equals(host)
                 || RpcEndpoint.UNSPECIFIED_IPV6_HOST.equals(host)
-               
+
                 || RpcEndpoint.UNSPECIFIED_IPV6_BRACKETED_HOST.equals(host) || instance.endpoint().port() < 1) {
             throw new IllegalArgumentException("Registry endpoint must be routable");
         }
@@ -122,7 +122,7 @@ public final class HttpRegistryIdentity {
         if (metadata == null || !key.canonicalName().equals(metadata.get(SERVICE_KEY))
                 || host == null || host.isBlank()
                 || RpcEndpoint.UNSPECIFIED_IPV4_HOST.equals(host)
-               
+
                 || RpcEndpoint.UNSPECIFIED_IPV6_HOST.equals(host)
                 || RpcEndpoint.UNSPECIFIED_IPV6_BRACKETED_HOST.equals(host)
                 || port < 1 || port > RpcEndpoint.MAX_PORT) {

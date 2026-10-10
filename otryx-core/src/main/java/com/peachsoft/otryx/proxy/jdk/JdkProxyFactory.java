@@ -17,7 +17,7 @@ import java.util.concurrent.CompletionStage;
 @Extension(JdkProxyFactory.EXTENSION_NAME)
 public final class JdkProxyFactory implements ProxyFactory {
 
-    private static final String EXTENSION_NAME = "jdk";
+    static final String EXTENSION_NAME = "jdk";
     private static final String METHOD_TO_STRING = "toString";
     private static final String METHOD_HASH_CODE = "hashCode";
     private static final String METHOD_EQUALS = "equals";
