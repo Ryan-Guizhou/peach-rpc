@@ -5,7 +5,13 @@ import jdk.jfr.Event;
 import jdk.jfr.Label;
 import jdk.jfr.Name;
 
-/** Consumer Retry 调度 JFR Event。 */
+/**
+ * Consumer Retry 调度 JFR Event。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 17:33
+ */
 @Name("com.peachsoft.otryx.Retry")
 @Label("OTRYX RPC Retry")
 @Category({"OTRYX RPC", "Client"})

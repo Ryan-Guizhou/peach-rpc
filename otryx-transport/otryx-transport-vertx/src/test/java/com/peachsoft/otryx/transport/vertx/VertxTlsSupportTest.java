@@ -10,7 +10,13 @@ import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
-/** Vert.x TLS material 状态检测测试。 */
+/**
+ * Vert.x TLS material 状态检测测试。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 17:34
+ */
 class VertxTlsSupportTest {
 
     @Test

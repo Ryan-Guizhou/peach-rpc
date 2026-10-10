@@ -28,6 +28,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * 将 OTRYX RPC 低依赖 Observer 事件映射为 Micrometer 指标。
  *
  * <p>默认标签不包含 Endpoint、InstanceId、异常消息或 TraceId，避免高基数。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 14:51
  */
 public final class MicrometerRpcObserver implements RpcObserver {
 

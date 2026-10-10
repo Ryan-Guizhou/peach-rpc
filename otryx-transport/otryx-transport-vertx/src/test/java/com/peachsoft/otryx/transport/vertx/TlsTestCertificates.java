@@ -31,7 +31,13 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
-/** TLS 集成测试临时证书工厂。 */
+/**
+ * TLS 集成测试临时证书工厂。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 15:04
+ */
 final class TlsTestCertificates implements AutoCloseable {
 
     private static final SecureRandom RANDOM =

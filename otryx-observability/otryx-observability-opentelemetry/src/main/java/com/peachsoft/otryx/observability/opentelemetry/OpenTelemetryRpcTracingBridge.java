@@ -25,6 +25,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>Span 仅记录有界 RPC 状态与错误类型，不直接记录第三方或业务异常消息、
  * StackTrace 和原始 RPC Metadata，避免 Trace 出口向外暴露用户数据。
  * 对于需要诊断详情的调用方，应使用经过授权的受控日志或 Trace 采样策略。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 14:59
  */
 public final class OpenTelemetryRpcTracingBridge
         implements RpcTracingBridge {

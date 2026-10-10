@@ -29,7 +29,13 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-/** OpenTelemetry Trace Context 传播测试。 */
+/**
+ * OpenTelemetry Trace Context 传播测试。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 15:07
+ */
 class OpenTelemetryRpcTracingBridgeTest {
 
     @Test

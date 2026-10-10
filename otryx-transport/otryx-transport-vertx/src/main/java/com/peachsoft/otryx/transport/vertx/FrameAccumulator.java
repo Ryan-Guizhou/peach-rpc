@@ -15,6 +15,10 @@ import java.util.function.Consumer;
  * <p>只有 TCP 分片或粘包尾部不完整时才将未消费字节复制到 pending。
  * 固定 32B Header 仍复用数组；已发生分片时沿用原来的追加和压缩策略，
  * 不修改 Wire v1 帧格式，也不改变最大帧大小校验。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 final class FrameAccumulator {
 

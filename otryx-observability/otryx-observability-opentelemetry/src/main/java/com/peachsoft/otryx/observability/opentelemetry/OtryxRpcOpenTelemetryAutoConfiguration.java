@@ -8,7 +8,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
-/** OTRYX RPC OpenTelemetry 自动配置。 */
+/**
+ * OTRYX RPC OpenTelemetry 自动配置。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 14:59
+ */
 @AutoConfiguration
 @ConditionalOnClass(OpenTelemetry.class)
 public class OtryxRpcOpenTelemetryAutoConfiguration {

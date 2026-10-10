@@ -5,7 +5,13 @@ import jdk.jfr.Event;
 import jdk.jfr.Label;
 import jdk.jfr.Name;
 
-/** Consumer 慢调用/失败 JFR Event。 */
+/**
+ * Consumer 慢调用/失败 JFR Event。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 14:59
+ */
 @Name("com.peachsoft.otryx.ClientAttempt")
 @Label("OTRYX RPC Client Attempt")
 @Category({"OTRYX RPC", "Client"})

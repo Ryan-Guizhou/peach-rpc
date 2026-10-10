@@ -6,7 +6,13 @@ import com.peachsoft.otryx.transport.RpcTransportFactory;
 import com.peachsoft.otryx.transport.RpcTransportOptions;
 import com.peachsoft.otryx.transport.RpcTransportServer;
 
-/** Vert.x TCP 传输工厂。 */
+/**
+ * Vert.x TCP 传输工厂。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 @Extension("vertx")
 public final class VertxRpcTransportFactory implements RpcTransportFactory {
 

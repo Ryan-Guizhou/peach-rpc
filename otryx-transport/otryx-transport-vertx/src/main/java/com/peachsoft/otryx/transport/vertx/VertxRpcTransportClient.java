@@ -45,6 +45,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>每个连接的 pending table、inflight 与帧累积器都只在所属 Event Loop
  * 上访问，避免请求完成路径上的共享 ConcurrentHashMap 与原子计数竞争。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
  */
 final class VertxRpcTransportClient implements RpcTransportClient {
     private static final Logger LOGGER =

@@ -16,6 +16,13 @@ import java.util.Map;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 验证帧累积器的边界、拼装及异常输入处理。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 10:51
+ */
 class FrameAccumulatorTest {
 
     @Test

@@ -26,7 +26,13 @@ import java.util.HexFormat;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-/** Vert.x PEM TLS/mTLS 配置与证书校验工具。 */
+/**
+ * Vert.x PEM TLS/mTLS 配置与证书校验工具。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/29 14:55
+ */
 final class VertxTlsSupport {
 
     private VertxTlsSupport() {
