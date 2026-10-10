@@ -35,9 +35,14 @@ public final class ConsulRegistryFactory implements RegistryFactory {
         long heartbeat = number(options, "consulHeartbeatSeconds", 10L, 1L, ttl - 1);
         long poll = number(options, "consulPollIntervalMillis", 1000L, 200L, 60000L);
         long timeout = number(options, "consulRequestTimeoutMillis", 3000L, 100L, 60000L);
+        List<String> agentEndpoints = options.endpoints().isEmpty()
+                ? List.of("http://127.0.0.1:8500") : options.endpoints();
+        if (agentEndpoints.size() != 1) {
+            throw new IllegalArgumentException(
+                    "Consul Agent registration requires exactly one local Agent endpoint");
+        }
         HttpRegistryClient client = new HttpRegistryClient(
-                options.endpoints().isEmpty()
-                        ? List.of("http://127.0.0.1:8500") : options.endpoints(),
+                agentEndpoints,
                 "X-Consul-Token",
                 options.providerOption("consulToken", ""),
                 Duration.ofMillis(timeout));

@@ -43,7 +43,7 @@ otryx:
         request-timeout-millis: 3000
 ```
 
-`namespace` 是 OTRYX 自身的逻辑命名空间：与服务接口名、版本、RPC group 组合后散列为稳定 Consul Service Name。它**不等于** Consul Enterprise Namespace；后者单独通过 `enterprise-namespace` 配置，开源 Consul 部署通常留空。`endpoints` 为 HTTP(S) URL，无账户口令或 query；多节点以逗号分隔，网络/5xx 错误可按顺序尝试备用端点。
+`namespace` 是 OTRYX 自身的逻辑命名空间：与服务接口名、版本、RPC group 组合后散列为稳定 Consul Service Name。它**不等于** Consul Enterprise Namespace；后者单独通过 `enterprise-namespace` 配置，开源 Consul 部署通常留空。`endpoints` 为 HTTP(S) URL，无账户口令或 query；本实现要求**恰好一个本地 Consul Agent endpoint**；Agent service/register 与 TTL check/pass 都是同一 Agent 的本地状态，不能跨多个 Agent 随机轮换续约。故障时应由进程或编排系统重启并重新绑定目标 Agent，而不是对 Agent 注册请求做跨节点重试。
 
 Provider 仍需配置面向 Consumer 的 `server.advertised-host` 与 `server.advertised-port`，不能发布 `0.0.0.0`。若使用 Consul ACL Token，应通过环境变量或安全配置注入，不要在 Git 记录。Agent 注册属于**具体 Consul Agent**；切换到其他 Agent 时要重新注册，而非假设 Provider 租约已迁移。
 

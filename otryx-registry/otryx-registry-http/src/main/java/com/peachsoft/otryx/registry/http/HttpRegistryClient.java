@@ -107,8 +107,15 @@ public final class HttpRegistryClient implements AutoCloseable {
                         payload == null ? HttpRequest.BodyPublishers.noBody()
                                 : HttpRequest.BodyPublishers.ofString(
                                         body, StandardCharsets.UTF_8)).build();
-                HttpResponse<String> resp = client.send(
-                        req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                HttpResponse<String> resp;
+                try {
+                    resp = client.send(
+                            req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                } catch (IOException networkError) {
+                    last = new IOException(
+                            "Registry HTTP endpoint unavailable", networkError);
+                    continue;
+                }
                 if (resp.statusCode() >= 500) {
                     last = new IOException("Registry HTTP server unavailable: status="
                             + resp.statusCode());
@@ -125,9 +132,8 @@ public final class HttpRegistryClient implements AutoCloseable {
                 JsonNode json = responseBody.isBlank()
                         ? NullNode.getInstance() : mapper.readTree(responseBody);
                 return new Response(resp.statusCode(), json);
-            } catch (java.net.http.HttpTimeoutException
-                     | java.net.ConnectException error) {
-                last = new IOException("Registry HTTP endpoint unavailable", error);
+            } catch (IllegalArgumentException invalidUrl) {
+                throw new IllegalArgumentException("Invalid registry HTTP request", invalidUrl);
             }
         }
         throw last == null
@@ -142,10 +148,10 @@ public final class HttpRegistryClient implements AutoCloseable {
      */
     public record Response(int status, JsonNode json) {
         /**
-     * 返回相应配置或运行状态。
-     *
-     * @return 请求是否为 HTTP 2xx
-     */
+         * 判断远端请求是否完成。
+         *
+         * @return 请求是否为 HTTP 2xx
+         */
         public boolean successful() {
             return status >= 200 && status < 300;
         }

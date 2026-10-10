@@ -3,6 +3,7 @@ package com.peachsoft.otryx.registry.consul;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -79,6 +80,15 @@ class ConsulRegistryTest {
                     .toCompletableFuture().get(5, TimeUnit.SECONDS).instances().isEmpty());
             assertFalse(options(agent).toString().contains("test-acl-token"));
         }
+    }
+
+    @Test
+    void refusesMultipleAgentEndpointsToProtectLocalTtlLeases() {
+        RegistryOptions options = new RegistryOptions(
+                java.util.List.of("http://127.0.0.1:8500", "http://127.0.0.1:8501"),
+                "environment-a", Map.of());
+        assertThrows(IllegalArgumentException.class,
+                () -> new ConsulRegistryFactory().create(options));
     }
 
     @Test
