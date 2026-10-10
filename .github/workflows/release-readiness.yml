@@ -16,6 +16,8 @@ on:
       - 'docs/**'
       - 'deploy/observability/**'
       - 'scripts/check_project.py'
+      - 'scripts/check_repository_identity.py'
+      - 'scripts/test_repository_identity.py'
       - 'scripts/check_central_publication.py'
       - 'scripts/check_release_version.py'
       - 'scripts/check_release_readiness.py'

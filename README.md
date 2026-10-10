@@ -15,6 +15,8 @@
 新品牌以 Otti 科技水獭为吉祥物：**让分布式通信，简单而可靠。**
 
 **当前源码：2.0.0-SNAPSHOT（重构开发版，尚未公开发布）**
+
+**GitHub 仓库：** [Ryan-Guizhou/otryx-rpc](https://github.com/Ryan-Guizhou/otryx-rpc)。品牌商标、图片来源及 Maven Central Namespace 尚有外部验收条件，参见 [发布前核查](docs/publication-readiness.md)。
 · **Java：21** · **Spring Boot：3.5.4** · **Wire：v1** · **License：MIT**
 
 本版本迁移了 Maven 坐标、Java 包名及公开 API。Wire v1 二进制帧仍保持冻结，但**不保证与 Peach RPC 1.0.x 的 Java API、Type ID、Method ID、Schema Fingerprint 互通**，详见[迁移指南](docs/migration-to-otryx.md)。
@@ -103,7 +105,7 @@ otryx:
 <!-- doc-section:documentation -->
 ## 文档
 
-[需求蓝图](docs/requirements-blueprint.md) · [技术方案](docs/technical-solution.md) · [架构设计](docs/architecture.md) · [详细设计](docs/detailed-design.md) · [功能描述](docs/features.md) · [协议](docs/protocol.md) · [SPI](docs/spi.md) · [品牌规范](docs/brand-guidelines.md) · [迁移指南](docs/migration-to-otryx.md) · [历史发布说明](docs/release-notes-1.0.1.md)
+[需求蓝图](docs/requirements-blueprint.md) · [技术方案](docs/technical-solution.md) · [架构设计](docs/architecture.md) · [详细设计](docs/detailed-design.md) · [功能描述](docs/features.md) · [协议](docs/protocol.md) · [SPI](docs/spi.md) · [品牌规范](docs/brand-guidelines.md) · [迁移指南](docs/migration-to-otryx.md) · [发布前核查](docs/publication-readiness.md) · [历史发布说明](docs/release-notes-1.0.1.md)
 
 <!-- doc-section:development -->
 ## 开发与贡献

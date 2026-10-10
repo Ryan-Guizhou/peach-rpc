@@ -88,6 +88,7 @@ REQUIRED_FILES = (
     "docs/release-notes-1.0.0-RC1.md",
     "docs/release-notes-1.0.0.md",
     "docs/release-status.properties",
+    "docs/publication-readiness.md",
     "docs/brand-guidelines.md",
     "docs/migration-to-otryx.md",
     "docs/images/brand/otryx-banner.svg",
@@ -186,6 +187,14 @@ def check_release_status() -> None:
                      f"{key}={markers.get(key)!r}, expected {status[key]!r}")
 
 
+def check_repository_identity() -> None:
+    from check_repository_identity import validate
+
+    problems = validate(ROOT)
+    if problems:
+        fail("Repository identity preflight failed: " + "; ".join(problems))
+
+
 def check_readme_parity() -> None:
     zh = (ROOT / "README.md").read_text(encoding="utf-8")
     en = (ROOT / "README.en-US.md").read_text(encoding="utf-8")
@@ -270,6 +279,7 @@ def check_java_hygiene() -> None:
 def main() -> int:
     check_required_files()
     check_release_status()
+    check_repository_identity()
     check_readme_parity()
     check_public_docs_are_ga_clean()
     check_chinese_first_docs()

@@ -15,6 +15,8 @@
 Meet Otti, the engineering otter: **Simple to Call. Built to Scale.**
 
 **Source: 2.0.0-SNAPSHOT (migration in progress, not yet publicly released)**
+
+**GitHub:** [Ryan-Guizhou/otryx-rpc](https://github.com/Ryan-Guizhou/otryx-rpc). Trademark use, original artwork provenance and Maven Central namespace ownership still need external clearance; see [Publication readiness](docs/publication-readiness.md).
 · **Java 21** · **Spring Boot 3.5.4** · **Wire v1** · **MIT**
 
 This release migrates Maven coordinates, Java namespaces and public APIs. It retains Wire v1 framing, **but it does not promise compatibility with Peach RPC 1.0.x Java APIs, Type IDs, Method IDs or schema fingerprints**. See the [migration guide](docs/migration-to-otryx.md).
@@ -103,7 +105,7 @@ Validate deadline, admission, backpressure, retries, TLS and observability again
 <!-- doc-section:documentation -->
 ## Documentation
 
-[Requirements](docs/requirements-blueprint.md) · [Technical solution](docs/technical-solution.md) · [Architecture](docs/architecture.md) · [Detailed design](docs/detailed-design.md) · [Features](docs/features.md) · [Protocol](docs/protocol.md) · [SPI](docs/spi.md) · [Brand guidelines](docs/brand-guidelines.md) · [Migration guide](docs/migration-to-otryx.md) · [Historical release notes](docs/release-notes-1.0.1.md)
+[Requirements](docs/requirements-blueprint.md) · [Technical solution](docs/technical-solution.md) · [Architecture](docs/architecture.md) · [Detailed design](docs/detailed-design.md) · [Features](docs/features.md) · [Protocol](docs/protocol.md) · [SPI](docs/spi.md) · [Brand guidelines](docs/brand-guidelines.md) · [Migration guide](docs/migration-to-otryx.md) · [Publication readiness](docs/publication-readiness.md) · [Historical release notes](docs/release-notes-1.0.1.md)
 
 <!-- doc-section:development -->
 ## Development and contributing

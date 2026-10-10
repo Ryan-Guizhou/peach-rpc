@@ -4,13 +4,15 @@
 
 根 POM 使用 `${revision}` 统一版本。
 
-当前 release-prep 基线：
+当前 **OTRYX 2.0 开发基线**：
 
 ```xml
-<revision>1.0.1</revision>
+<revision>2.0.0-SNAPSHOT</revision>
 ```
 
-1.0.x Patch Release 在 release-prep PR 中同步提升：
+> 本仓库当前为破坏性 API/GAV 迁移后的开发版，不能被视为已完成 Maven Central 发布。参见 [公开发布核查表](publication-readiness.md)。
+
+历史 Peach RPC 1.0.x Patch Release 仅在历史版本维护流程中同步提升：
 
 - 根 POM `revision`；
 - `docs/release-status.properties`；
@@ -73,13 +75,13 @@ mvn -B -ntp clean verify -Pquality
 mvn -B -ntp clean verify -Pquality,release
 ```
 
-指定 Patch 版本：
+历史 1.0.x Patch 示例（仅适用于匹配的历史维护分支，**不适用于当前 2.0 main**）：
 
 ```bash
 mvn -B -ntp -Drevision=1.0.1 clean verify -Pquality,release
 ```
 
-生成后可以校验公开模块的主 JAR、Source JAR 和 Javadoc JAR：
+历史 Patch 生成后可以校验公开模块的主 JAR、Source JAR 和 Javadoc JAR：
 
 ```bash
 python3 scripts/check_central_publication.py \
@@ -134,7 +136,7 @@ python3 scripts/check_central_publication.py \
 真正发布前必须由项目维护者完成：
 
 1. 在 Central Publisher Portal 注册组织/账号；
-2. 验证能够覆盖 `com.peachsoft.otryx` 的 Central namespace 权限；例如拥有 `peach.io` 时可验证 `io.peach`，并在其下发布子组 `com.peachsoft.otryx`；
+2. 验证能够覆盖 `com.peachsoft.otryx` 的 Central namespace 权限：维护者须拥有 `peachsoft.com` 并验证 `com.peachsoft`，或拥有 `otryx.peachsoft.com` 并验证精确的 `com.peachsoft.otryx`；
 3. 生成 Portal User Token；
 4. 准备用于 Maven Central 的 PGP/GPG signing key；
 5. 在 GitHub Repository Secrets 配置：
@@ -143,11 +145,11 @@ python3 scripts/check_central_publication.py \
    - `MAVEN_GPG_PRIVATE_KEY`；
    - `MAVEN_GPG_PASSPHRASE`。
 
-> **Namespace 阻塞条件**：Central 使用反向 DNS 规则。若维护者控制 `peach.io`，可验证 `io.peach` 并发布其子组 `com.peachsoft.otryx`；如果申请精确 namespace `com.peachsoft.otryx`，对应 DNS 域名是 `rpc.peach.io`。如果两者都无法证明所有权，则第一次公开 Central Release 前必须重新决定 groupId，例如使用 Central Portal 已验证的自有域名 namespace，或 GitHub 登录后自动/手动验证的 `io.github.<username>` namespace。这个决定属于公开坐标兼容性决策，不能由 CI 自动替代，也不应在未确认的情况下自动修改现有 `com.peachsoft.otryx` 坐标。
+> **Namespace 阻塞条件：** `io.peach` 并不能覆盖 `com.peachsoft.otryx`。Central 官方要求反向 DNS 与 TXT 验证；`com.peachsoft` 对应 `peachsoft.com`，精确的 `com.peachsoft.otryx` 对应 `otryx.peachsoft.com`。如果两者都无法证明所有权，维护者必须在发布前确认新 groupId（例如经 GitHub 身份验证的 `io.github.<用户名>`）并评审全仓再迁移，而不能通过 CI 自动推断所有权。参见 [Sonatype Namespace 官方文档](https://central.sonatype.org/register/namespace/) 和 [公开发布核查表](publication-readiness.md)。
 
 Token、私钥和 passphrase 禁止写入 POM、workflow 文件、Release Bundle 或日志。
 
-## 7. Patch Release Workflow
+## 7. 历史 1.0.x Patch Release Workflow（不能发布 OTRYX 2.0）
 
 人工触发 `.github/workflows/release.yml`。
 
