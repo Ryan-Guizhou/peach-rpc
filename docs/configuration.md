@@ -1,6 +1,6 @@
 # OTRYX RPC 生产配置与安全加固
 
-> 状态：**2.0.0-SNAPSHOT Migration / Numeric Capacity Values Require Environment Evidence**
+> 状态：**1.0.0-SNAPSHOT Migration / Numeric Capacity Values Require Environment Evidence**
 
 ## 1. 配置原则
 

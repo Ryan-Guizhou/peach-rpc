@@ -4,10 +4,10 @@
 
 根 POM 使用 `${revision}` 统一版本。
 
-当前 **OTRYX 2.0 开发基线**：
+当前 **OTRYX RPC 1.0 首发开发基线**（与历史 Peach RPC 1.x 不保证互通）：
 
 ```xml
-<revision>2.0.0-SNAPSHOT</revision>
+<revision>1.0.0-SNAPSHOT</revision>
 ```
 
 > 本仓库当前为破坏性 API/GAV 迁移后的开发版，不能被视为已完成 Maven Central 发布。参见 [公开发布核查表](../publication-readiness.md)。
@@ -29,22 +29,32 @@
 
 ## 2. Reactor
 
+当前 Maven 采用按能力分组的聚合模块（目录层级，不等同于最终发布坐标）：
+
 ```text
-otryx-core
+otryx-rpc (root parent)
+├── otryx-core
 ├── otryx-codegen
-├── otryx-codec-fory
-├── otryx-transport-vertx
-├── otryx-registry-etcd
-├── otryx-registry-nacos
-├── otryx-proxy-cglib
-├── otryx-proxy-bytebuddy
-├── otryx-observability-micrometer
-├── otryx-observability-opentelemetry
-├── otryx-observability-jfr
-└── otryx-spring-boot-autoconfigure
-    └── otryx-spring-boot-starter
-otryx-examples
-otryx-benchmarks
+├── otryx-registry
+│   ├── otryx-registry-etcd
+│   └── otryx-registry-nacos
+├── otryx-serialization
+│   └── otryx-serialization-fory
+├── otryx-transport
+│   └── otryx-transport-vertx
+├── otryx-proxy
+│   ├── otryx-proxy-cglib
+│   └── otryx-proxy-bytebuddy
+├── otryx-observability
+│   ├── otryx-observability-micrometer
+│   ├── otryx-observability-opentelemetry
+│   └── otryx-observability-jfr
+├── otryx-spring-boot
+│   ├── otryx-spring-boot-autoconfigure
+│   ├── otryx-spring-boot-starter
+│   └── otryx-spring-boot-starter-lite
+├── otryx-examples
+└── otryx-benchmarks
 ```
 
 实际构建顺序由 Maven 依赖图决定。
@@ -75,7 +85,7 @@ mvn -B -ntp clean verify -Pquality
 mvn -B -ntp clean verify -Pquality,release
 ```
 
-历史 1.0.x Patch 示例（仅适用于匹配的历史维护分支，**不适用于当前 2.0 main**）：
+历史 1.0.x Patch 示例（仅适用于匹配的历史维护分支，**不适用于当前 当前 main**）：
 
 ```bash
 mvn -B -ntp -Drevision=1.0.1 clean verify -Pquality,release
@@ -105,7 +115,7 @@ python3 scripts/check_central_publication.py \
 
 公开发布模块：
 
-- `otryx-parent`；
+- `otryx-rpc`；
 - `otryx-core`；
 - `otryx-codegen`；
 - Codec / Transport / Registry / Proxy Adapter；
@@ -149,9 +159,9 @@ python3 scripts/check_central_publication.py \
 
 Token、私钥和 passphrase 禁止写入 POM、workflow 文件、Release Bundle 或日志。
 
-## 7. 历史 1.0.x Patch Release Workflow（不能发布 OTRYX 2.0）
+## 7. 历史 Peach RPC 1.0.x Patch Release Workflow（不能发布 OTRYX 首发版本）
 
-人工触发 `.github/workflows/release.yml`。
+`.github/workflows/release.yml` 当前仍保留历史 Patch 发布参数与检查路径，只用于说明既有发布设计。**当前 main 的 `1.0.0-SNAPSHOT` 不具备经验证的 OTRYX 首发 RC/GA 发布流水线，不应把历史工作流作为可直接执行的生产发布步骤。** 必须先完成新的首发发布设计、实际门禁和授权验收。
 
 输入：
 
@@ -179,7 +189,7 @@ flowchart LR
 真正 publish 时还有两层不可变保护：
 
 - Git Tag 已存在则拒绝；
-- Maven Central 已存在相同 `com.peachsoft.otryx:otryx-parent:<version>` 则拒绝。
+- Maven Central 已存在相同 `com.peachsoft.otryx:otryx-rpc:<version>` 则拒绝。
 
 因此不能通过 workflow 覆盖已发布版本。
 
@@ -219,7 +229,7 @@ Workflow 会等待 `PUBLISHED`，随后创建一个全新的 Maven local reposit
 
 ## 9. 本地使用
 
-以下 1.0.1 发布流程只适用于旧版稳定分支。当前 OTRYX 源码是 **2.0.0-SNAPSHOT**，尚未发布 Maven Central；本地开发使用源码安装而不是 1.0.1 坐标。
+以下 1.0.1 发布流程只适用于旧版稳定分支。当前 OTRYX 源码是 **1.0.0-SNAPSHOT**，尚未发布 Maven Central；本地开发使用源码安装而不是 1.0.1 坐标。
 
 ```bash
 mvn -B -ntp clean install -DskipTests

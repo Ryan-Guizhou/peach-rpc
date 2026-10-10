@@ -1,14 +1,14 @@
-# OTRYX RPC 2.0 功能描述
+# OTRYX RPC 1.0 功能描述
 
-> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration.md)。
+> OTRYX 1.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration.md)。
 
-> 状态：**2.0.0-SNAPSHOT Migration**
+> 状态：**1.0.0-SNAPSHOT Migration**
 
 ## 1. 功能总览
 
 ```mermaid
 mindmap
-  root((OTRYX RPC 2.0))
+  root((OTRYX RPC 1.0))
     调用模型
       Unary RPC
       Generated Stub
