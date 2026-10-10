@@ -1,6 +1,6 @@
 # OTRYX RPC 快速开始
 
-> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration.md)。
+> OTRYX 1.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration.md)。
 
 > 目标：从干净环境运行一个真实的 Provider/Consumer 独立进程调用。
 
@@ -97,23 +97,23 @@ Provider 和 Consumer 是两个独立 JVM；Contract 位于共享 API 模块。
 
 ## 9. 在 Spring Boot 项目中引入
 
-当前 2.0.0-SNAPSHOT Migration 坐标：
+当前 1.0.0-SNAPSHOT Migration 坐标：
 
 ```xml
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-spring-boot-starter</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
-当前 2.0.0-SNAPSHOT 尚未发布至 Maven Central。需先在仓库根目录执行：
+当前 1.0.0-SNAPSHOT 尚未发布至 Maven Central。需先在仓库根目录执行：
 
 ```bash
 mvn -B -ntp clean install -DskipTests
 ```
 
-安装完成后，本地 Maven Repository 才能解析相同的 `2.0.0-SNAPSHOT` 坐标。
+安装完成后，本地 Maven Repository 才能解析相同的 `1.0.0-SNAPSHOT` 坐标。
 
 ## 10. Provider 最小代码
 

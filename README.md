@@ -4,8 +4,8 @@
 
 ![OTRYX 品牌横幅](docs/images/brand/otryx-banner.svg)
 
-<!-- release-status:project=migration -->
-<!-- release-status:version=2.0.0-SNAPSHOT -->
+<!-- release-status:project=development -->
+<!-- release-status:version=1.0.0-SNAPSHOT -->
 <!-- release-status:wire=v1 -->
 
 <!-- doc-section:overview -->
@@ -14,7 +14,7 @@
 **OTRYX RPC** 是由 Peach RPC 1.0.x 演进而来的轻量、高性能、高可用 Java RPC 框架。
 新品牌以 Otti 科技水獭为吉祥物：**让分布式通信，简单而可靠。**
 
-**当前源码：2.0.0-SNAPSHOT（重构开发版，尚未公开发布）**
+**当前源码：1.0.0-SNAPSHOT（首发开发版，尚未正式发布）**
 
 **GitHub 仓库：** [Ryan-Guizhou/otryx-rpc](https://github.com/Ryan-Guizhou/otryx-rpc)。品牌商标、图片来源及 Maven Central Namespace 尚有外部验收条件，参见 [发布前核查](docs/publication-readiness.md)。
 · **Java：21** · **Spring Boot：3.5.4** · **Wire：v1** · **License：MIT**
@@ -76,11 +76,11 @@ mvn -B -ntp clean verify -Pquality
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-spring-boot-starter-lite</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ~~~
 
-完整 Starter：otryx-spring-boot-starter。**2.0.0-SNAPSHOT 并未声明已发布到 Maven Central。**
+完整 Starter：otryx-spring-boot-starter。**1.0.0-SNAPSHOT 并未声明已发布到 Maven Central。**
 
 <!-- doc-section:configuration -->
 ## 配置

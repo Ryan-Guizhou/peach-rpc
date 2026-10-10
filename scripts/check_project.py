@@ -23,18 +23,12 @@ LOGGER_WITH_CHINESE = re.compile(
 EXPECTED_MODULES = (
     "otryx-core",
     "otryx-codegen",
-    "otryx-codec-fory",
-    "otryx-transport-vertx",
-    "otryx-registry-etcd",
-    "otryx-registry-nacos",
-    "otryx-proxy-cglib",
-    "otryx-proxy-bytebuddy",
-    "otryx-observability-micrometer",
-    "otryx-observability-opentelemetry",
-    "otryx-observability-jfr",
-    "otryx-spring-boot-autoconfigure",
-    "otryx-spring-boot-starter",
-    "otryx-spring-boot-starter-lite",
+    "otryx-registry",
+    "otryx-serialization",
+    "otryx-transport",
+    "otryx-proxy",
+    "otryx-observability",
+    "otryx-spring-boot",
     "otryx-examples",
     "otryx-benchmarks",
 )
@@ -155,12 +149,12 @@ def check_required_files() -> None:
 def check_release_status() -> None:
     status = properties(ROOT / "docs" / "release-status.properties")
     version = status.get("version", "")
-    is_migration = version == "2.0.0-SNAPSHOT"
-    if not is_migration and not re.fullmatch(r"1\.0\.\d+", version):
+    is_development = version == "1.0.0-SNAPSHOT"
+    if not is_development and not re.fullmatch(r"1\.0\.\d+", version):
         fail(f"Unsupported source release channel/version: {version!r}")
 
     expected = {
-        "project": "migration" if is_migration else "ga",
+        "project": "development" if is_development else "ga",
         "release_candidate": "1.0.0-RC1",
         "wire": "v1",
         "java": "21",
@@ -169,7 +163,7 @@ def check_release_status() -> None:
         if status.get(key) != value:
             fail(f"Unexpected release status: {key}={status.get(key)!r}, expected {value!r}")
 
-    if not is_migration:
+    if not is_development:
         notes = ROOT / "docs/archive/releases" / f"release-notes-{version}.md"
         if not notes.is_file():
             fail("Missing release notes for current source version: "
@@ -309,7 +303,11 @@ def check_core_boundaries() -> None:
 
 
 def check_java_hygiene() -> None:
-    for path in ROOT.glob("otryx-*/src/**/*.java"):
+    for path in ROOT.rglob("*.java"):
+        if path.is_relative_to(ROOT / "benchmarks" / "rpc-comparison"):
+            continue
+        if any(part in {"target", ".git"} for part in path.parts):
+            continue
         text = path.read_text(encoding="utf-8")
         if "System.out" in text or "System.err" in text:
             fail(f"System output is not allowed: {path.relative_to(ROOT)}")

@@ -4,8 +4,8 @@
 
 ![OTRYX brand banner](docs/images/brand/otryx-banner.svg)
 
-<!-- release-status:project=migration -->
-<!-- release-status:version=2.0.0-SNAPSHOT -->
+<!-- release-status:project=development -->
+<!-- release-status:version=1.0.0-SNAPSHOT -->
 <!-- release-status:wire=v1 -->
 
 <!-- doc-section:overview -->
@@ -14,7 +14,7 @@
 **OTRYX RPC** is a lightweight, high-performance, highly available Java RPC framework evolving from Peach RPC 1.0.x.
 Meet Otti, the engineering otter: **Simple to Call. Built to Scale.**
 
-**Source: 2.0.0-SNAPSHOT (migration in progress, not yet publicly released)**
+**Source: 1.0.0-SNAPSHOT (first-release development, not yet released)**
 
 **GitHub:** [Ryan-Guizhou/otryx-rpc](https://github.com/Ryan-Guizhou/otryx-rpc). Trademark use, original artwork provenance and Maven Central namespace ownership still need external clearance; see [Publication readiness](docs/publication-readiness.md).
 · **Java 21** · **Spring Boot 3.5.4** · **Wire v1** · **MIT**
@@ -76,7 +76,7 @@ Development version:
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-spring-boot-starter-lite</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ~~~
 

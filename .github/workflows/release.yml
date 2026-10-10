@@ -104,14 +104,14 @@ jobs:
         env:
           VERSION: ${{ steps.release.outputs.version }}
         run: |
-          POM_URL="https://repo1.maven.org/maven2/io/peach/rpc/otryx-parent/$VERSION/otryx-parent-$VERSION.pom"
+          POM_URL="https://repo1.maven.org/maven2/io/peach/rpc/otryx-rpc/$VERSION/otryx-rpc-$VERSION.pom"
           STATUS="$(curl --silent --show-error --location --output /dev/null --write-out '%{http_code}' "$POM_URL")"
           case "$STATUS" in
             404)
               echo "Maven Central version is available: $VERSION"
               ;;
             200)
-              echo "Maven Central already contains com.peachsoft.otryx:otryx-parent:$VERSION."
+              echo "Maven Central already contains com.peachsoft.otryx:otryx-rpc:$VERSION."
               exit 1
               ;;
             *)
@@ -259,7 +259,7 @@ jobs:
               -Dmaven.repo.local="$LOCAL_REPO" \
               -f "$CONSUMER_DIR/pom.xml" \
               org.apache.maven.plugins:maven-dependency-plugin:3.11.0:resolve; then
-              test -f "$LOCAL_REPO/io/peach/rpc/otryx-spring-boot-starter/$VERSION/otryx-spring-boot-starter-$VERSION.jar"
+              test -f "$LOCAL_REPO/io/peach/rpc/otryx-spring-boot/otryx-spring-boot-starter/$VERSION/otryx-spring-boot-starter-$VERSION.jar"
               exit 0
             fi
             echo "Maven Central propagation not visible yet; attempt $attempt/30"

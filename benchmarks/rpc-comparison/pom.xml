@@ -16,7 +16,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
-        <otryx.version>2.0.0-SNAPSHOT</otryx.version>
+        <otryx.version>1.0.0-SNAPSHOT</otryx.version>
         <dubbo.version>3.3.6</dubbo.version>
     </properties>
     <build>

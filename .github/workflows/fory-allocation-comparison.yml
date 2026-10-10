@@ -3,7 +3,7 @@ name: Fory Allocation Comparison
 on:
   pull_request:
     paths:
-      - "otryx-codec-fory/src/main/java/com/peachsoft/otryx/codec/fory/ForyRpcCodec.java"
+      - "otryx-serialization/otryx-serialization-fory/src/main/java/com/peachsoft/otryx/codec/fory/ForyRpcCodec.java"
       - "otryx-benchmarks/src/main/java/com/peachsoft/otryx/benchmarks/ForyArgumentEncodingBenchmark.java"
       - "scripts/compare_fory_allocation.py"
       - "scripts/test_compare_fory_allocation.py"

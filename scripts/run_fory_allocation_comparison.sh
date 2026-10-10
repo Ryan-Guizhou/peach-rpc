@@ -50,7 +50,7 @@ fi
 git -C "$ROOT" cat-file -e "${BASE_SHA}^{commit}"
 git -C "$ROOT" cat-file -e "${HEAD_SHA}^{commit}"
 
-BENCH_SRC="otryx-benchmarks/src/main/java/io/peach/rpc/benchmarks/ForyArgumentEncodingBenchmark.java"
+BENCH_SRC="otryx-benchmarks/src/main/java/com/peachsoft/otryx/benchmarks/ForyArgumentEncodingBenchmark.java"
 if [[ ! -f "$ROOT/$BENCH_SRC" ]]; then
   echo "Missing candidate benchmark source $BENCH_SRC" >&2
   exit 1

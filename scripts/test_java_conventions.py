@@ -14,9 +14,9 @@ class JavaConventionsTest(unittest.TestCase):
         cls.runtime = (
             "otryx-core/src/main/java/io/peach/rpc/core/Demo.java")
         cls.transport = (
-            "otryx-transport-vertx/src/main/java/io/peach/rpc/transport/vertx/Demo.java")
+            "otryx-transport/otryx-transport-vertx/src/main/java/io/peach/rpc/transport/vertx/Demo.java")
         cls.test_path = (
-            "otryx-transport-vertx/src/test/java/io/peach/rpc/transport/vertx/DemoTest.java")
+            "otryx-transport/otryx-transport-vertx/src/test/java/io/peach/rpc/transport/vertx/DemoTest.java")
 
     def findings(self, path, source):
         return {f["rule"] for f in lint.scan_source(

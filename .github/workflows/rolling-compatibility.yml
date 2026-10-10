@@ -11,9 +11,9 @@ on:
   pull_request:
     paths:
       - 'otryx-core/**'
-      - 'otryx-codec-fory/**'
-      - 'otryx-transport-vertx/**'
-      - 'otryx-registry-*/**'
+      - 'otryx-serialization/otryx-serialization-fory/**'
+      - 'otryx-transport/otryx-transport-vertx/**'
+      - 'otryx-registry/**'
       - 'otryx-examples/**'
       - 'pom.xml'
       - 'docs/release-status.properties'

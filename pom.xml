@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.peachsoft.otryx</groupId>
-    <artifactId>otryx-parent</artifactId>
+    <artifactId>otryx-rpc</artifactId>
     <version>${revision}</version>
     <packaging>pom</packaging>
 
@@ -38,7 +38,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <revision>2.0.0-SNAPSHOT</revision>
+        <revision>1.0.0-SNAPSHOT</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>${java.version}</maven.compiler.release>
@@ -74,18 +74,12 @@
     <modules>
         <module>otryx-core</module>
         <module>otryx-codegen</module>
-        <module>otryx-codec-fory</module>
-        <module>otryx-transport-vertx</module>
-        <module>otryx-registry-etcd</module>
-        <module>otryx-registry-nacos</module>
-        <module>otryx-proxy-cglib</module>
-        <module>otryx-proxy-bytebuddy</module>
-        <module>otryx-observability-micrometer</module>
-        <module>otryx-observability-opentelemetry</module>
-        <module>otryx-observability-jfr</module>
-        <module>otryx-spring-boot-autoconfigure</module>
-        <module>otryx-spring-boot-starter</module>
-        <module>otryx-spring-boot-starter-lite</module>
+        <module>otryx-registry</module>
+        <module>otryx-serialization</module>
+        <module>otryx-transport</module>
+        <module>otryx-proxy</module>
+        <module>otryx-observability</module>
+        <module>otryx-spring-boot</module>
         <module>otryx-examples</module>
         <module>otryx-benchmarks</module>
     </modules>
@@ -183,7 +177,7 @@
             </dependency>
             <dependency>
                 <groupId>com.peachsoft.otryx</groupId>
-                <artifactId>otryx-codec-fory</artifactId>
+                <artifactId>otryx-serialization-fory</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
