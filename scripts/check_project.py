@@ -223,6 +223,14 @@ def check_public_docs_are_ga_clean() -> None:
                 fail(f"Stale pre-1.0 wording in {path.relative_to(ROOT)}: {token}")
 
 
+def check_current_dependency_coordinates() -> None:
+    """Reject historical Maven dependency snippets in current OTRYX docs."""
+    for directory in (ROOT / "docs", ROOT / "docs/design", ROOT / "docs/reference"):
+        for path in directory.glob("*.md"):
+            if "<version>1.0.1</version>" in path.read_text(encoding="utf-8"):
+                fail(f"Legacy 1.0.1 dependency in current documentation: {path.relative_to(ROOT)}")
+
+
 def check_chinese_first_docs() -> None:
     for path in [ROOT / "CONTRIBUTING.md", *(ROOT / "docs").glob("*.md")]:
         if not CHINESE.search(path.read_text(encoding="utf-8")):
@@ -285,6 +293,7 @@ def main() -> int:
     check_repository_identity()
     check_readme_parity()
     check_public_docs_are_ga_clean()
+    check_current_dependency_coordinates()
     check_chinese_first_docs()
     check_markdown_links()
     check_maven_reactor()

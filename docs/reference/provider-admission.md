@@ -1,6 +1,6 @@
 # Provider 分层 Admission 与 inflight-byte budget
 
-> **状态：1.0.1 当前实现。** 此方案仅保护 Provider 的**已准入请求 Frame**及实际在途业务执行，不构成 JVM 整体堆内存硬隔离。产线吞吐、p99、p99.9 和 10k 负载需要独立受控 Evidence。
+> **状态：OTRYX 2.0.0-SNAPSHOT 当前实现（继承历史设计边界）。** 此方案仅保护 Provider 的**已准入请求 Frame**及实际在途业务执行，不构成 JVM 整体堆内存硬隔离。产线吞吐、p99、p99.9 和 10k 负载需要独立受控 Evidence。
 
 ## 1. 背景和边界
 

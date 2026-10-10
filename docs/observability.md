@@ -33,7 +33,7 @@ flowchart LR
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-observability-micrometer</artifactId>
-    <version>1.0.1</version>
+    <version>2.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -88,7 +88,7 @@ client.retries = attempts - 1
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-observability-opentelemetry</artifactId>
-    <version>1.0.1</version>
+    <version>2.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -119,7 +119,7 @@ sequenceDiagram
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-observability-jfr</artifactId>
-    <version>1.0.1</version>
+    <version>2.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
