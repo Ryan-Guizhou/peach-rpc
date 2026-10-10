@@ -93,8 +93,8 @@ def render_mermaid(path: Path, index: int, source: str, args: argparse.Namespace
     png = temp / f"{name}-{index}.png"
     diagram.write_text(source.strip() + "\n", encoding="utf-8")
     command = [
-        str(args.mmdc), "-i", str(diagram), "-o", str(png), "-b", "transparent",
-        "-p", str(args.puppeteer_config),
+        str(args.mmdc.resolve()), "-i", str(diagram), "-o", str(png), "-b", "transparent",
+        "-p", str(args.puppeteer_config.resolve()),
     ]
     result = subprocess.run(
         command, capture_output=True, text=True, timeout=40, check=False,
