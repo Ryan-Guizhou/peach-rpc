@@ -56,7 +56,7 @@ jobs:
       - name: Verify Nacos pause recovery chaos
         run: >
           mvn -B -ntp
-          -pl otryx-registry-nacos
+          -pl otryx-registry/otryx-registry-nacos
           -am
           test
           -Pnacos-chaos

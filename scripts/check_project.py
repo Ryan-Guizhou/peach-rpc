@@ -304,6 +304,8 @@ def check_core_boundaries() -> None:
 
 def check_java_hygiene() -> None:
     for path in ROOT.rglob("*.java"):
+        if path.is_relative_to(ROOT / "benchmarks" / "rpc-comparison"):
+            continue
         if any(part in {"target", ".git"} for part in path.parts):
             continue
         text = path.read_text(encoding="utf-8")

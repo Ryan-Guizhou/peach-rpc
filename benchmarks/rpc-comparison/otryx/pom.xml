@@ -22,7 +22,7 @@
         </dependency>
         <dependency>
             <groupId>com.peachsoft.otryx</groupId>
-            <artifactId>otryx-codec-fory</artifactId>
+            <artifactId>otryx-serialization-fory</artifactId>
             <version>${otryx.version}</version>
         </dependency>
         <dependency>
