@@ -20,23 +20,23 @@ REQUIRED_FILES = (
     "SECURITY.md",
     "CHANGELOG.md",
     "ROADMAP.md",
-    "docs/requirements-blueprint.md",
-    "docs/technical-solution.md",
+    "docs/design/requirements-blueprint.md",
+    "docs/design/technical-solution.md",
     "docs/features.md",
-    "docs/detailed-design.md",
-    "docs/project-structure.md",
+    "docs/design/detailed-design.md",
+    "docs/design/project-structure.md",
     "docs/getting-started.md",
     "docs/faq.md",
     "docs/wire-compatibility.md",
     "docs/upgrade-rollback.md",
-    "docs/production-configuration.md",
-    "docs/production-observability.md",
-    "docs/release-policy.md",
-    "docs/release-readiness.md",
-    "docs/capacity-planning.md",
+    "docs/configuration.md",
+    "docs/reference/production-observability.md",
+    "docs/archive/releases/release-policy.md",
+    "docs/archive/releases/release-readiness.md",
+    "docs/reference/capacity-planning.md",
     "docs/security.md",
-    "docs/release-notes-1.0.0-RC1.md",
-    "docs/release-notes-1.0.0.md",
+    "docs/archive/releases/release-notes-1.0.0-RC1.md",
+    "docs/archive/releases/release-notes-1.0.0.md",
     "docs/release-status.properties",
     "deploy/observability/grafana/otryx-dashboard.json",
     "deploy/observability/prometheus/otryx-alerts.example.yml",
@@ -180,11 +180,11 @@ def main() -> int:
         fail(f"CHANGELOG must contain patch release {version}")
 
     if args.stage == "rc1":
-        notes = ROOT / "docs/release-notes-1.0.0-RC1.md"
+        notes = ROOT / "docs/archive/releases/release-notes-1.0.0-RC1.md"
     elif args.stage == "ga":
-        notes = ROOT / "docs/release-notes-1.0.0.md"
+        notes = ROOT / "docs/archive/releases/release-notes-1.0.0.md"
     else:
-        notes = ROOT / f"docs/release-notes-{version}.md"
+        notes = ROOT / f"docs/archive/releases/release-notes-{version}.md"
         if not notes.is_file():
             fail(
                 "Missing patch release notes: "

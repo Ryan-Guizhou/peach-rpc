@@ -1,6 +1,6 @@
 # OTRYX RPC 2.0 架构设计
 
-> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration-to-otryx.md)。
+> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration.md)。
 
 > 状态：**Current / 2.0.0-SNAPSHOT Migration**
 
@@ -41,7 +41,7 @@ flowchart TB
     Core -. fallback .-> Cglib[CGLIB / Byte Buddy]
 ```
 
-完整模块责任见 [项目构造思路](project-structure.md)。
+完整模块责任见 [项目构造思路](design/project-structure.md)。
 
 ## 3. Consumer 数据面
 
@@ -254,4 +254,4 @@ Telemetry callback 异常会被隔离。
 - Transport/Core 仍以完整 `byte[]` frame 为边界；
 - 官方性能/容量数字需要固定环境 Evidence。
 
-更完整的设计权衡见 [技术方案](technical-solution.md) 与 [详细设计](detailed-design.md)。
+更完整的设计权衡见 [技术方案](design/technical-solution.md) 与 [详细设计](design/detailed-design.md)。

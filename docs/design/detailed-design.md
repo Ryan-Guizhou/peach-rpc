@@ -1,10 +1,10 @@
 # OTRYX RPC 2.0 详细设计
 
-> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration-to-otryx.md)。
+> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](../migration.md)。
 
 > 状态：**Current / 2.0.0-SNAPSHOT Migration**
 
-![单次 RPC 调用链](images/flows/rpc-lifecycle.svg)
+![单次 RPC 调用链](../images/flows/rpc-lifecycle.svg)
 
 ## 1. Consumer 调用链
 
@@ -64,7 +64,7 @@ flowchart TD
 
 ### Admission
 
-Provider 通过全局、服务、方法三级并发额度及已准入 Frame 字节预算保护业务资源，CPU 模式还有独立的有界队列；拒绝时返回 `OVERLOADED`。详见 [Provider 分层 Admission 设计](provider-admission.md)。这些额度不代表 JVM Heap 的硬上限。
+Provider 通过全局、服务、方法三级并发额度及已准入 Frame 字节预算保护业务资源，CPU 模式还有独立的有界队列；拒绝时返回 `OVERLOADED`。详见 [Provider 分层 Admission 设计](../reference/provider-admission.md)。这些额度不代表 JVM Heap 的硬上限。
 
 准入租约只有在两个条件**同时满足**后归还：
 

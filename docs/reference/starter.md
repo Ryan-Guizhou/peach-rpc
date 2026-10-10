@@ -1,6 +1,6 @@
 # Spring Boot Starter 与配置
 
-> 当前 Maven 坐标：`com.peachsoft.otryx:otryx-* : 2.0.0-SNAPSHOT`（源码开发版，须本地 install，尚未从 Maven Central 发布）。历史 Peach RPC 1.0.x Java API 不与 OTRYX 2.0 自动兼容。参见[迁移指南](migration-to-otryx.md)。
+> 当前 Maven 坐标：`com.peachsoft.otryx:otryx-* : 2.0.0-SNAPSHOT`（源码开发版，须本地 install，尚未从 Maven Central 发布）。历史 Peach RPC 1.0.x Java API 不与 OTRYX 2.0 自动兼容。参见[迁移指南](../migration.md)。
 
 ## 1. 引入
 
@@ -224,7 +224,7 @@ TCP connect
  -> ACTIVE
 ~~~
 
-完整证书校验、在线 Reload、迁移与测试说明见 [TLS / mTLS 安全指南](security.md)。
+完整证书校验、在线 Reload、迁移与测试说明见 [TLS / mTLS 安全指南](../security.md)。
 
 ## 7. 可观测性
 
@@ -256,7 +256,7 @@ Core 的 `RpcObserver`、`RpcTracingBridge`、`RpcMetadataPropagator` 不依赖�
 
 三个 Adapter 都不是 Starter 强制依赖。Micrometer/OpenTelemetry 在对应 Bean 存在时自动装配；JFR 通过 `otryx.rpc.observability.jfr.enabled=true` 启用。
 
-完整指标、Trace 和 JFR 说明见 [可观测性指南](observability.md)。
+完整指标、Trace 和 JFR 说明见 [可观测性指南](../observability.md)。
 
 ## 8. 注解驱动运行时
 

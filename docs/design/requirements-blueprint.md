@@ -1,6 +1,6 @@
 # OTRYX RPC 2.0 需求蓝图
 
-> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration-to-otryx.md)。
+> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](../migration.md)。
 
 > 状态：**2.0.0-SNAPSHOT Migration / 继承自 Peach RPC 1.0.x 的 Wire v1 基线**  
 > 目标读者：使用者、架构师、维护者、贡献者。
@@ -196,4 +196,4 @@ flowchart LR
 
 ## 9. 与后续版本的边界
 
-1.1.x 可以扩展生态，但不允许静默破坏 1.0.x Wire/Public API 兼容。后续方向见根目录 [ROADMAP](../ROADMAP.md)。
+1.1.x 可以扩展生态，但不允许静默破坏 1.0.x Wire/Public API 兼容。后续方向见根目录 [ROADMAP](../../ROADMAP.md)。

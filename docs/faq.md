@@ -56,17 +56,15 @@ Micrometer、OpenTelemetry 和 JFR。见 [可观测性](observability.md)。
 
 没有把 shared CI Runner 数字当作官方生产性能承诺。项目提供 JMH/Soak/Evidence 工具，使用者应在自己的固定硬件环境生成容量数据。
 
-## 15. 如何本地构建当前 1.0.1？
+## 15. 如何从源码构建当前 2.0.0-SNAPSHOT？
 
 ```bash
 mvn -B -ntp clean install
 ```
 
-## 16. 如何构建 RC1？
+## 16. 如何验证历史 RC1？
 
-```bash
-mvn -B -ntp -Drevision=1.0.0-RC1 clean verify -Pquality,release
-```
+历史 RC1 的版本、包名与公开 API 属于 Peach RPC 1.x 基线；必须在其实际历史源码或对应标签上验证，不应在当前 OTRYX 2.0 的 main 上通过修改 Maven revision 冒充旧版构建。参见[历史发布记录](archive/releases/release-notes-1.0.0-RC1.md)与[迁移限制](migration.md)。
 
 ## 17. 如何提交问题？
 
@@ -74,4 +72,4 @@ mvn -B -ntp -Drevision=1.0.0-RC1 clean verify -Pquality,release
 
 ## 18. 如何贡献？
 
-阅读 [CONTRIBUTING.md](../CONTRIBUTING.md) 和 [开发指南](development.md)，所有 PR 必须通过自动化门禁。
+阅读 [CONTRIBUTING.md](../CONTRIBUTING.md) 和 [开发指南](engineering/development.md)，所有 PR 必须通过自动化门禁。

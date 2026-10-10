@@ -107,7 +107,7 @@ management:
 
 仓库提供：
 
-[Grafana Dashboard](../deploy/observability/grafana/otryx-dashboard.json)
+[Grafana Dashboard](../../deploy/observability/grafana/otryx-dashboard.json)
 
 主要面板：
 
@@ -127,7 +127,7 @@ Dashboard 使用 Prometheus 常见 Micrometer 命名规则。
 
 仓库提供：
 
-[Prometheus Alert Example](../deploy/observability/prometheus/otryx-alerts.example.yml)
+[Prometheus Alert Example](../../deploy/observability/prometheus/otryx-alerts.example.yml)
 
 当前示例只对明确的运维异常信号给出基础告警：
 

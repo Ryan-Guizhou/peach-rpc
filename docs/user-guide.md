@@ -33,7 +33,7 @@ java -jar otryx-examples/otryx-example-consumer/target/*-exec.jar
 
 ## 在已有 Spring Boot 项目中引用
 
-推荐先使用轻量 Starter，完整 Starter 的扩展与替代关系见 [Starter 细节](starter.md)。
+推荐先使用轻量 Starter，完整 Starter 的扩展与替代关系见 [Starter 细节](reference/starter.md)。
 
 ```xml
 <dependency>
@@ -53,7 +53,7 @@ otryx:
       type: memory
 ```
 
-业务接口声明、Provider 导出、Consumer 注入、编译期 Stub 与 Nacos/TLS 的实际示例和约束请使用 [Starter](starter.md) 和 [入门教程](getting-started.md) 的源码片段，不要将伪代码替代为可运行实现。
+业务接口声明、Provider 导出、Consumer 注入、编译期 Stub 与 Nacos/TLS 的实际示例和约束请使用 [Starter](reference/starter.md) 和 [入门教程](getting-started.md) 的源码片段，不要将伪代码替代为可运行实现。
 
 ## 重要运行边界
 
@@ -62,4 +62,4 @@ otryx:
 - PLAINTEXT 仅用于受信实验环境，跨信任边界须配置 TLS/mTLS。
 - Wire v1 保留不代表 Peach RPC 1.x 与 OTRYX 2.0 互通，尤其是 Java 类名变化造成的 Type ID、Method ID 和 Schema Fingerprint 变更。
 
-继续阅读：[配置](production-configuration.md) · [安全](security.md) · [兼容迁移](migration-to-otryx.md) · [FAQ](faq.md)。
+继续阅读：[配置](configuration.md) · [安全](security.md) · [兼容迁移](migration.md) · [FAQ](faq.md)。

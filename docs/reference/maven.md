@@ -10,7 +10,7 @@
 <revision>2.0.0-SNAPSHOT</revision>
 ```
 
-> 本仓库当前为破坏性 API/GAV 迁移后的开发版，不能被视为已完成 Maven Central 发布。参见 [公开发布核查表](publication-readiness.md)。
+> 本仓库当前为破坏性 API/GAV 迁移后的开发版，不能被视为已完成 Maven Central 发布。参见 [公开发布核查表](../publication-readiness.md)。
 
 历史 Peach RPC 1.0.x Patch Release 仅在历史版本维护流程中同步提升：
 
@@ -18,7 +18,7 @@
 - `docs/release-status.properties`；
 - 中英文 README release status；
 - CHANGELOG；
-- 对应 `docs/release-notes-<version>.md`。
+- 对应 `docs/archive/releases/release-notes-<version>.md`。
 
 已发布版本不可覆盖。1.0.x 修复必须使用新的 Patch 版本。
 
@@ -145,7 +145,7 @@ python3 scripts/check_central_publication.py \
    - `MAVEN_GPG_PRIVATE_KEY`；
    - `MAVEN_GPG_PASSPHRASE`。
 
-> **Namespace 阻塞条件：** `io.peach` 并不能覆盖 `com.peachsoft.otryx`。Central 官方要求反向 DNS 与 TXT 验证；`com.peachsoft` 对应 `peachsoft.com`，精确的 `com.peachsoft.otryx` 对应 `otryx.peachsoft.com`。如果两者都无法证明所有权，维护者必须在发布前确认新 groupId（例如经 GitHub 身份验证的 `io.github.<用户名>`）并评审全仓再迁移，而不能通过 CI 自动推断所有权。参见 [Sonatype Namespace 官方文档](https://central.sonatype.org/register/namespace/) 和 [公开发布核查表](publication-readiness.md)。
+> **Namespace 阻塞条件：** `io.peach` 并不能覆盖 `com.peachsoft.otryx`。Central 官方要求反向 DNS 与 TXT 验证；`com.peachsoft` 对应 `peachsoft.com`，精确的 `com.peachsoft.otryx` 对应 `otryx.peachsoft.com`。如果两者都无法证明所有权，维护者必须在发布前确认新 groupId（例如经 GitHub 身份验证的 `io.github.<用户名>`）并评审全仓再迁移，而不能通过 CI 自动推断所有权。参见 [Sonatype Namespace 官方文档](https://central.sonatype.org/register/namespace/) 和 [公开发布核查表](../publication-readiness.md)。
 
 Token、私钥和 passphrase 禁止写入 POM、workflow 文件、Release Bundle 或日志。
 
@@ -219,7 +219,7 @@ Workflow 会等待 `PUBLISHED`，随后创建一个全新的 Maven local reposit
 
 ## 9. 本地使用
 
-当前源码 release-prep 版本为 `1.0.1`。若该版本尚未发布到目标 Maven Repository，可先在源码根目录：
+以下 1.0.1 发布流程只适用于旧版稳定分支。当前 OTRYX 源码是 **2.0.0-SNAPSHOT**，尚未发布 Maven Central；本地开发使用源码安装而不是 1.0.1 坐标。
 
 ```bash
 mvn -B -ntp clean install -DskipTests
@@ -233,4 +233,4 @@ mvn -B -ntp clean install -DskipTests
 
 Central Portal 发布使用 GitHub Secrets 注入临时 Credential；组织内部私服继续通过组织自己的 Maven `settings.xml` / deployment policy 管理。
 
-版本、Release Notes、兼容和回滚规则见 [发布策略](release-policy.md)。
+版本、Release Notes、兼容和回滚规则见 [发布策略](../archive/releases/release-policy.md)。

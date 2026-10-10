@@ -60,37 +60,40 @@ REQUIRED_FILES = (
     "SECURITY.md",
     "CHANGELOG.md",
     "ROADMAP.md",
-    "docs/requirements-blueprint.md",
-    "docs/technical-solution.md",
+    "docs/design/requirements-blueprint.md",
+    "docs/design/technical-solution.md",
     "docs/features.md",
-    "docs/detailed-design.md",
-    "docs/project-structure.md",
+    "docs/design/detailed-design.md",
+    "docs/design/project-structure.md",
+    "docs/index.md",
+    "docs/user-guide.md",
+    "docs/operations.md",
     "docs/getting-started.md",
     "docs/architecture.md",
     "docs/protocol.md",
     "docs/wire-compatibility.md",
-    "docs/starter.md",
+    "docs/reference/starter.md",
     "docs/spi.md",
-    "docs/registry-nacos.md",
+    "docs/reference/registry-nacos.md",
     "docs/security.md",
     "docs/observability.md",
-    "docs/production-observability.md",
-    "docs/production-configuration.md",
+    "docs/reference/production-observability.md",
+    "docs/configuration.md",
     "docs/performance.md",
-    "docs/performance-evidence.md",
-    "docs/capacity-planning.md",
+    "docs/reference/performance-evidence.md",
+    "docs/reference/capacity-planning.md",
     "docs/upgrade-rollback.md",
-    "docs/release-policy.md",
-    "docs/release-readiness.md",
-    "docs/maven.md",
-    "docs/development.md",
+    "docs/archive/releases/release-policy.md",
+    "docs/archive/releases/release-readiness.md",
+    "docs/reference/maven.md",
+    "docs/engineering/development.md",
     "docs/faq.md",
-    "docs/release-notes-1.0.0-RC1.md",
-    "docs/release-notes-1.0.0.md",
+    "docs/archive/releases/release-notes-1.0.0-RC1.md",
+    "docs/archive/releases/release-notes-1.0.0.md",
     "docs/release-status.properties",
     "docs/publication-readiness.md",
     "docs/brand-guidelines.md",
-    "docs/migration-to-otryx.md",
+    "docs/migration.md",
     "docs/images/brand/otryx-banner.svg",
     "docs/images/mascot/otti-main.svg",
     "docs/images/architecture/system-overview.svg",
@@ -167,7 +170,7 @@ def check_release_status() -> None:
             fail(f"Unexpected release status: {key}={status.get(key)!r}, expected {value!r}")
 
     if not is_migration:
-        notes = ROOT / "docs" / f"release-notes-{version}.md"
+        notes = ROOT / "docs/archive/releases" / f"release-notes-{version}.md"
         if not notes.is_file():
             fail("Missing release notes for current source version: "
                  + str(notes.relative_to(ROOT)))
@@ -220,6 +223,14 @@ def check_public_docs_are_ga_clean() -> None:
                 fail(f"Stale pre-1.0 wording in {path.relative_to(ROOT)}: {token}")
 
 
+def check_current_dependency_coordinates() -> None:
+    """Reject historical Maven dependency snippets in current OTRYX docs."""
+    for directory in (ROOT / "docs", ROOT / "docs/design", ROOT / "docs/reference"):
+        for path in directory.glob("*.md"):
+            if "<version>1.0.1</version>" in path.read_text(encoding="utf-8"):
+                fail(f"Legacy 1.0.1 dependency in current documentation: {path.relative_to(ROOT)}")
+
+
 def check_chinese_first_docs() -> None:
     for path in [ROOT / "CONTRIBUTING.md", *(ROOT / "docs").glob("*.md")]:
         if not CHINESE.search(path.read_text(encoding="utf-8")):
@@ -237,6 +248,46 @@ def check_markdown_links() -> None:
                 continue
             if not (path.parent / target).resolve().exists():
                 fail(f"Broken local link in {path.relative_to(ROOT)}: {raw}")
+
+
+def check_retired_paths() -> None:
+    """Reject removed root directories and stale active-documentation references."""
+    for retired in ("tools", "config"):
+        if (ROOT / retired).exists():
+            fail(f"Retired repository directory still exists: {retired}")
+
+    obsolete = (
+        "tools" + "/rpc-comparison",
+        "config" + "/agent-mcp.json",
+        "config" + "/java-api-rules.json",
+        "config" + "/otryx-checkstyle.xml",
+        "docs" + "/requirements-blueprint.md",
+        "docs" + "/technical-solution.md",
+        "docs" + "/detailed-design.md",
+        "docs" + "/project-structure.md",
+        "docs" + "/production-configuration.md",
+        "docs" + "/migration-to-otryx.md",
+        "docs" + "/maven.md",
+        "docs" + "/starter.md",
+        "docs" + "/release-notes-",
+        "docs" + "/release-policy.md",
+        "docs" + "/release-readiness.md",
+    )
+    extensions = {".md", ".py", ".sh", ".xml", ".yml", ".yaml", ".toml", ".json"}
+    for path in ROOT.rglob("*"):
+        if (not path.is_file() or path.suffix not in extensions
+                or path == Path(__file__).resolve()
+                or any(part in {"target", ".git", "node_modules", "__pycache__"}
+                       for part in path.parts)):
+            continue
+        content = path.read_text(encoding="utf-8", errors="replace")
+        for removed in obsolete:
+            for match in re.finditer(re.escape(removed), content):
+                # Permit newly relocated paths such as .agents/config/...
+                if match.start() > 0 and (content[match.start() - 1].isalnum()
+                                           or content[match.start() - 1] in "/._-"):
+                    continue
+                fail(f"Stale reference to retired path in {path.relative_to(ROOT)}: {removed}")
 
 
 def check_maven_reactor() -> None:
@@ -282,8 +333,10 @@ def main() -> int:
     check_repository_identity()
     check_readme_parity()
     check_public_docs_are_ga_clean()
+    check_current_dependency_coordinates()
     check_chinese_first_docs()
     check_markdown_links()
+    check_retired_paths()
     check_maven_reactor()
     check_core_boundaries()
     check_java_hygiene()

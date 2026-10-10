@@ -80,7 +80,7 @@ target/frame-allocation-comparison/
   comparison.md
 ~~~
 
-`scripts/compare_frame_allocation.py` 校验两侧的 JMH 参数、JDK/JMH 版本、`gc.alloc.rate.norm` B/op、采样延迟 p99 和来源 SHA，拒绝空缺字段或冒充受控测量的输入。配置对应 [Frame Allocation Comparison GitHub Actions](../.github/workflows/frame-allocation-comparison.yml)。
+`scripts/compare_frame_allocation.py` 校验两侧的 JMH 参数、JDK/JMH 版本、`gc.alloc.rate.norm` B/op、采样延迟 p99 和来源 SHA，拒绝空缺字段或冒充受控测量的输入。配置对应 [Frame Allocation Comparison GitHub Actions](../../.github/workflows/frame-allocation-comparison.yml)。
 
 **必须注意：** `FrameAccumulatorBenchmark` 仅包含本地 TCP 帧重组函数的微基准，JMH B/op 和 p99 不是完整 RPC 的 allocation/op 或端到端 p99；Shared Runner 测量也不具备固定物理宿主的一致性。它用于解释当前代码级热路径变化和方向性风险，不能单独完成整个 Transport 优化的性能验收。
 

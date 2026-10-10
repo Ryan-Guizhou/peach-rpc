@@ -1,6 +1,6 @@
 # Provider 分层 Admission 与 inflight-byte budget
 
-> **状态：1.0.1 当前实现。** 此方案仅保护 Provider 的**已准入请求 Frame**及实际在途业务执行，不构成 JVM 整体堆内存硬隔离。产线吞吐、p99、p99.9 和 10k 负载需要独立受控 Evidence。
+> **状态：OTRYX 2.0.0-SNAPSHOT 当前实现（继承历史设计边界）。** 此方案仅保护 Provider 的**已准入请求 Frame**及实际在途业务执行，不构成 JVM 整体堆内存硬隔离。产线吞吐、p99、p99.9 和 10k 负载需要独立受控 Evidence。
 
 ## 1. 背景和边界
 
@@ -137,4 +137,4 @@ mvn -B -ntp -pl otryx-core -am \
 
 本 PR **不修改** Wire v1、Registry Metadata、Service Fingerprint 或 RPC DTO。Provider 多服务共享配额改为静态分区，可能改变多服务部署的最大可用并发比例；上线前必须统计真实各服务需求，评估权重与峰值并发，不能无条件复制默认值。
 
-相关：[容量规划](capacity-planning.md)、[生产配置](production-configuration.md)、[性能证据](performance-evidence.md)、[Dubbo 对比基准](dubbo-comparison.md)。
+相关：[容量规划](capacity-planning.md)、[生产配置](../configuration.md)、[性能证据](performance-evidence.md)、[Dubbo 对比基准](dubbo-comparison.md)。

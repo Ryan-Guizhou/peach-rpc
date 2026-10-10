@@ -64,10 +64,10 @@ bash scripts/run_v2d2_fixed_evidence.sh target/v2d2-fixed-evidence
 ## 4. 其他高可用场景
 
 已有独立流程：
-- [Etcd Chaos](../.github/workflows/etcd-chaos.yml) 模拟 Leader Transfer；
-- [Nacos Chaos](../.github/workflows/nacos-chaos.yml) 模拟暂停与恢复；
-- [Rolling Compatibility](../.github/workflows/rolling-compatibility.yml) 验证 N/N+1 与回滚；
-- [升级与回滚说明](upgrade-rollback.md) 给出具体恢复操作。
+- [Etcd Chaos](../../.github/workflows/etcd-chaos.yml) 模拟 Leader Transfer；
+- [Nacos Chaos](../../.github/workflows/nacos-chaos.yml) 模拟暂停与恢复；
+- [Rolling Compatibility](../../.github/workflows/rolling-compatibility.yml) 验证 N/N+1 与回滚；
+- [升级与回滚说明](../upgrade-rollback.md) 给出具体恢复操作。
 
 这些流程不能代替真实生产负载下的 TLS/mTLS、GC、网络抖动、Provider 重启、连接排队、Admission 饱和及长时间运行证据。发布容量数字必须依靠目标环境多轮采集与人工审核。
 

@@ -151,7 +151,7 @@ mvn -B -ntp clean install -DskipTests
 3. 不覆盖 `v1.0.1` Git Tag 或 Maven Central GAV；
 4. 修复后发布新的 Patch 版本。
 
-运行时流程见 [升级与回滚](upgrade-rollback.md)。
+运行时流程见 [升级与回滚](../../upgrade-rollback.md)。
 
 ## 10. Verification
 

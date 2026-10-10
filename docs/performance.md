@@ -45,7 +45,7 @@ Consumer 的 Transport 响应完成不直接执行 Fory 解码和业务 Future c
 
 ## 3.1 已实现：帧重组热路径优化
 
-`FrameAccumulator` 在无尾帧的完整帧路径绕过中间 `pending.appendBuffer`，仍保持独立 `byte[]` 的 Core 所有权边界；分片输入继续采用原有重组逻辑。独立基线与候选 Worktree 通过 JMH `-prof gc` 比较 B/op 与 sample p99，并上传原始 JSON。详见 [Frame Allocation Profiling 方案](transport-allocation-profiling.md)。共享 CI 结果仅作 Smoke，不能替代受控端到端 p99/吞吐复核。
+`FrameAccumulator` 在无尾帧的完整帧路径绕过中间 `pending.appendBuffer`，仍保持独立 `byte[]` 的 Core 所有权边界；分片输入继续采用原有重组逻辑。独立基线与候选 Worktree 通过 JMH `-prof gc` 比较 B/op 与 sample p99，并上传原始 JSON。详见 [Frame Allocation Profiling 方案](reference/transport-allocation-profiling.md)。共享 CI 结果仅作 Smoke，不能替代受控端到端 p99/吞吐复核。
 
 ## 3.2 Fory 零参数分配优化与定向基准
 
@@ -61,7 +61,7 @@ mvn -B -ntp -pl otryx-benchmarks -am -DskipTests package
 bash scripts/run_fory_argument_allocation.sh
 ```
 
-原始单版本证据位于 `target/fory-argument-allocation`。历史 Base 与 Candidate 的自动 A/B 多轮比较命令、强制来源校验、变异系数和 `REPORT_ONLY` 规则见 [性能证据与容量验证](performance-evidence.md#10-fory-参数编解码-ab-分配量测量)。共享 CI 数据只属于 Smoke，不得用于生产性能或对比声明。
+原始单版本证据位于 `target/fory-argument-allocation`。历史 Base 与 Candidate 的自动 A/B 多轮比较命令、强制来源校验、变异系数和 `REPORT_ONLY` 规则见 [性能证据与容量验证](reference/performance-evidence.md#10-fory-参数编解码-ab-分配量测量)。共享 CI 数据只属于 Smoke，不得用于生产性能或对比声明。
 
 ## 4. Benchmark
 
@@ -83,11 +83,11 @@ CI 使用短时间 smoke 验证工具可运行；长时间结果应在目标环�
 
 ## 6. 性能证据
 
-完整 Evidence 流程见 [性能证据与容量验证](performance-evidence.md)。
+完整 Evidence 流程见 [性能证据与容量验证](reference/performance-evidence.md)。
 
 ## 7. 容量规划
 
-见 [Capacity Planning](capacity-planning.md)。
+见 [Capacity Planning](reference/capacity-planning.md)。
 
 必须同时考虑：
 

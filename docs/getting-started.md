@@ -1,6 +1,6 @@
 # OTRYX RPC 快速开始
 
-> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration-to-otryx.md)。
+> OTRYX 2.0.0-SNAPSHOT 属于公开 Java API / GAV 的破坏性命名空间迁移；继承历史 Wire v1 并不代表新旧 Java API 保证互通。详见 [迁移指南](migration.md)。
 
 > 目标：从干净环境运行一个真实的 Provider/Consumer 独立进程调用。
 
@@ -135,9 +135,9 @@ private OrderService orderService;
 
 ## 12. 下一步
 
-- [Starter 与完整配置](starter.md)
-- [项目构造与模块](project-structure.md)
-- [技术方案](technical-solution.md)
+- [Starter 与完整配置](reference/starter.md)
+- [项目构造与模块](design/project-structure.md)
+- [技术方案](design/technical-solution.md)
 - [TLS/mTLS](security.md)
 - [可观测性](observability.md)
 - [升级与回滚](upgrade-rollback.md)

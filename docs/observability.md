@@ -33,7 +33,7 @@ flowchart LR
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-observability-micrometer</artifactId>
-    <version>1.0.1</version>
+    <version>2.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -88,7 +88,7 @@ client.retries = attempts - 1
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-observability-opentelemetry</artifactId>
-    <version>1.0.1</version>
+    <version>2.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -119,7 +119,7 @@ sequenceDiagram
 <dependency>
     <groupId>com.peachsoft.otryx</groupId>
     <artifactId>otryx-observability-jfr</artifactId>
-    <version>1.0.1</version>
+    <version>2.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -153,6 +153,6 @@ Observer/Propagator Adapter 回调异常必须被隔离，不得改变 RPC 业�
 
 ## 8. 生产入口
 
-- [生产可观测与 SLO](production-observability.md)
+- [生产可观测与 SLO](reference/production-observability.md)
 - [Grafana Dashboard](../deploy/observability/grafana/otryx-dashboard.json)
 - [Prometheus Alert Example](../deploy/observability/prometheus/otryx-alerts.example.yml)

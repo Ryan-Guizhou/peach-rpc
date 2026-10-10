@@ -43,7 +43,7 @@ DIRECT 只能用于经过证明的极短非阻塞逻辑。
 容量参数：
 
 - max-concurrent；
-- 分层 Admission 的 max-inflight-bytes / 每服务与方法限制（见 [Provider Admission 指南](provider-admission.md)，当前已实现；生产配额仍需受控负载数据验证）；
+- 分层 Admission 的 max-inflight-bytes / 每服务与方法限制（见 [Provider Admission 指南](reference/provider-admission.md)，当前已实现；生产配额仍需受控负载数据验证）；
 - CPU parallelism；
 - CPU queue capacity；
 - drain timeout。
@@ -113,8 +113,8 @@ Benchmark JVM 参数不能未经验证直接复制到生产。
 - TLS handshake/reload；
 - Trace 或等价链路诊断。
 
-见 [生产可观测与 SLO](production-observability.md)；10k 逻辑并发、实际峰值在途量和错误率的差异请参阅 [Soak 质量验收](soak-acceptance.md)。
+见 [生产可观测与 SLO](reference/production-observability.md)；10k 逻辑并发、实际峰值在途量和错误率的差异请参阅 [Soak 质量验收](reference/soak-acceptance.md)。
 
 ## 9. 容量数字
 
-任何 QPS、线程数、连接数、Heap、p99/p99.9 推荐值都必须来自目标环境 Evidence。见 [容量规划](capacity-planning.md)。
+任何 QPS、线程数、连接数、Heap、p99/p99.9 推荐值都必须来自目标环境 Evidence。见 [容量规划](reference/capacity-planning.md)。

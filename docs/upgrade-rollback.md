@@ -2,7 +2,7 @@
 
 
 > 状态：**Engineering Current**  
-> 仅适用于**同一 Java API / Type ID / Method ID / Schema Fingerprint 契约家族**内、经过实际兼容测试的 N/N+1 滚动升级。**不适用于 Peach RPC 1.x → OTRYX 2.0 的直接混部**：本次包名与公开 API 迁移是 Breaking Change，虽然 Wire Protocol v1 仍冻结，但 Type/Method IDs、Schema Fingerprint 可能改变。跨代升级请采用版本隔离/蓝绿迁移并逐个验证业务契约，见[迁移指南](migration-to-otryx.md)。
+> 仅适用于**同一 Java API / Type ID / Method ID / Schema Fingerprint 契约家族**内、经过实际兼容测试的 N/N+1 滚动升级。**不适用于 Peach RPC 1.x → OTRYX 2.0 的直接混部**：本次包名与公开 API 迁移是 Breaking Change，虽然 Wire Protocol v1 仍冻结，但 Type/Method IDs、Schema Fingerprint 可能改变。跨代升级请采用版本隔离/蓝绿迁移并逐个验证业务契约，见[迁移指南](migration.md)。
 
 ## 1. 发布前检查
 
