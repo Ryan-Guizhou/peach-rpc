@@ -1,11 +1,25 @@
 name: Java Agent Quality
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.java"
+      - "AGENTS.md"
+      - ".agents/**"
+      - "pom.xml"
+      - "scripts/check_java_doc_metadata.py"
+      - "scripts/test_java_doc_metadata.py"
+      - ".github/workflows/java-agent-quality.yml"
   pull_request:
     paths:
       - "**/*.java"
       - "AGENTS.md"
       - ".agents/**"
+      - "pom.xml"
+      - "docs/engineering/java-coding-standard.md"
+      - "scripts/check_java_doc_metadata.py"
+      - "scripts/test_java_doc_metadata.py"
       - "scripts/rules/java-api-rules.json"
       - "scripts/check_java_conventions.py"
       - "scripts/test_java_conventions.py"
@@ -24,10 +38,20 @@ jobs:
       - name: Run Java API lint rule tests
         run: python3 scripts/test_java_conventions.py
 
+      - name: Run Peach Javadoc metadata rule fixtures
+        run: python3 scripts/test_java_doc_metadata.py
+
       - name: Validate shared Skills and Agent routing
         run: python3 scripts/validate_repo_skills.py
 
+      - name: Enforce metadata on changed Java types
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python3 scripts/check_java_doc_metadata.py --changed --base "$BASE_SHA"
+
       - name: Reject high-confidence API violations in changed Java files
+        if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: python3 scripts/check_java_conventions.py --changed --base "$BASE_SHA"
@@ -35,11 +59,16 @@ jobs:
       - name: Produce full-repository advisory baseline
         run: python3 scripts/check_java_conventions.py --audit --report target/java-conventions-audit.json
 
+      - name: Produce full-repository Javadoc metadata debt report
+        run: python3 scripts/check_java_doc_metadata.py --audit --report target/java-javadoc-metadata-audit.json
+
       - name: Upload historical findings
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: otryx-java-conventions-${{ github.run_id }}
-          path: target/java-conventions-audit.json
+          path: |
+            target/java-conventions-audit.json
+            target/java-javadoc-metadata-audit.json
           if-no-files-found: warn
           retention-days: 30

@@ -1,31 +1,32 @@
 ---
 name: using-otryx-java-engineering
-description: "OTRYX RPC Java code authoring and review: apply naming conventions, package boundaries, standard Chinese Javadoc, English structured logs, exception handling and resource lifecycle rules. Use when creating, editing or reviewing Java source, Spring Boot configuration, or API documentation."
+description: "OTRYX RPC Java engineering baseline: Chinese Peach Cloud type Javadoc, English SLF4J logs, naming, resource lifecycle and staged quality gates."
 ---
 
-# Java Engineering Workflow
+# OTRYX Java Engineering (V1.1)
 
-1. Read root `AGENTS.md`, `docs/engineering/java-coding-standard.md`, current source, POM and tests. Do not infer implemented behavior from a template.
-2. Inventory exported and internal symbols before renaming. Treat `com.peachsoft.otryx.api`, public Core/SPI, serialization fields, service method IDs and Spring property keys as compatibility boundaries.
-3. Prefer precise English names: `ServiceKey`, `resolveEndpoint`, `maxInflightBytes`. Express units in identifier; do not append `Utils`, `Manager`, `Helper` without a real abstraction.
-4. Keep Core independent of adapters; keep one coherent responsibility per component. Favor constructor injection, immutable snapshots where useful, no new unbounded queues.
-5. Write Chinese Javadoc with genuine contracts: inputs/null, output/ownership, errors, concurrency, cancellation, cleanup and compatibility when relevant. Use standard tags. Add `@since` **only if source history verifies introduction version**. Never copy Peach Cloud `@Author/@Version/@CreateTime`.
-6. Write English SLF4J parameterized messages for real events. Keep identifiers consistent; do not log full request/response, Metadata, token, secret, signed URL or private key. Avoid INFO in per-RPC hot paths.
-7. Avoid catch-and-ignore, `printStackTrace`, blocking EventLoop calls and unnecessary public signatures. Do not blindly replace APIs that are legal in tests or worker threads.
-8. Run affected unit tests, `python3 scripts/check_project.py`, Maven `-Pquality`, and `scripts/check_java_conventions.py` when present. Report actual failures and exceptions.
+1. Read AGENTS.md, docs/engineering/java-coding-standard.md and the affected code, tests, POM and configuration. Code and tests override historical documentation.
+2. For each hand-authored top-level Java class/interface/record/enum/annotation, provide genuine Chinese Javadoc and exactly one type-level @Author, @Version and @CreateTime. Use yyyy/M/d HH:mm. Do not fabricate past creation times, authorship or versions; when unverifiable, surface the audit exception instead of inventing metadata.
+3. Explain meaningful API and SPI contracts: parameters and nullability, returns and ownership, exceptions, thread/callback context, blocking, timeouts, cancellation, cleanup, compatibility within the current release and state transitions. Avoid tautological comments.
+4. Retain SLF4J LoggerFactory (no Lombok introduction solely for logs); English parameterized messages, stable reason codes and safe diagnostic identifiers. INFO is for lifecycle; WARN for recoverable abnormal conditions; ERROR for actionable failures. Review log/trace/exporter sink sensitivity and avoid INFO for each RPC.
+5. Never dump request/response, token, passwords, keys, private metadata, signed URLs or untrusted Throwable messages. A trailing Throwable is permissible only after a sensitivity review; otherwise log safe error type and correlation ID.
+6. Use clear domain English identifiers, unit suffixes (Millis/Nanos/Bytes), 4 spaces, UTF-8/LF, no wildcard imports, 120-column Java lines. Keep Core independent of adapters and use constructor injection for Spring components.
+7. Do not block EventLoop, swallow interrupts, create unbounded queues, or change Future completion or resource ownership under a style-only PR. New semantics and structural behavior changes require separate review and tests.
+8. Project is pre-GA: no backward-compatibility requirement for unreleased versions, but current Wire/Codec/Registry/Starter correctness and security remain mandatory.
+9. Verify with Python metadata fixtures, --changed and --audit reports, existing Checkstyle, Maven -Pquality and targeted tests. Full --enforce-all is the PR-07 exit gate, not a false PR-02 compliance claim.
 
-**Example — precise contract**:
+## Type Javadoc template
 
-```java
+~~~java
 /**
- * 获取指定服务的不可变端点快照。
+ * 定义当前服务发现能力的边界。
  *
- * <p>结果不包含远端注册中心实时查询；调用方不能修改返回集合。</p>
+ * <p>说明线程归属、返回快照及资源释放责任。</p>
  *
- * @param key 已规范化的服务键，不允许为 null
- * @return 当前可用端点集合，未发现时返回空集合
+ * @Author Mr Shu
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/10/10 09:30
  */
-List<RpcEndpoint> endpoints(ServiceKey key);
-```
+~~~
 
-Do not claim the example method exists in this project.
+Template metadata is illustrative, never a substitute for verifying the actual type history.

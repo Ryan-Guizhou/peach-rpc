@@ -11,7 +11,7 @@
 <!-- doc-section:overview -->
 ## Overview
 
-**OTRYX RPC** is a lightweight, high-performance, highly available Java RPC framework evolving from Peach RPC 1.0.x.
+**OTRYX RPC** is a lightweight, high-performance, highly available Java RPC framework preparing for its first stable release, with pluggable transport, registry and serialization.
 Meet Otti, the engineering otter: **Simple to Call. Built to Scale.**
 
 **Source: 1.0.0-SNAPSHOT (first-release development, not yet released)**
@@ -19,7 +19,7 @@ Meet Otti, the engineering otter: **Simple to Call. Built to Scale.**
 **GitHub:** [Ryan-Guizhou/otryx-rpc](https://github.com/Ryan-Guizhou/otryx-rpc). Trademark use, original artwork provenance and Maven Central namespace ownership still need external clearance; see [Publication readiness](docs/publication-readiness.md).
 · **Java 21** · **Spring Boot 3.5.4** · **Wire v1** · **MIT**
 
-This release migrates Maven coordinates, Java namespaces and public APIs. It retains Wire v1 framing, **but it does not promise compatibility with Peach RPC 1.0.x Java APIs, Type IDs, Method IDs or schema fingerprints**. See the [migration guide](docs/migration.md).
+The project has not yet reached GA and makes no backward-compatibility promise to unpublished development snapshots for Java APIs, SPI, Wire, Schema or configuration. Current-version protocol correctness, consumer/provider interoperability and security still require verification. See the [Java coding standard](docs/engineering/java-coding-standard.md).
 
 <!-- doc-section:capabilities -->
 ## Core capabilities

@@ -1,118 +1,148 @@
 # OTRYX RPC Java 工程编码规范
 
-**状态：PR 阶段引入的正式建议；CI 强制范围见“门禁和例外”。**
-**基线**：Java 21、Spring Boot 3.5.4、Maven、Wire v1（以当前 POM 和源码为准）。本规范吸收 Peach Cloud 的高信息量中文 Javadoc、英文日志、并发/资源契约思想，但本仓库不用其自定义类型头。
+**状态：V1.1 首发前治理规范（PR-02 建立执行机制，PR-03 至 PR-07 完成全仓治理）。**  
+**事实基线：** Java 21、Maven、Spring Boot 3.5.4、OTRYX 1.0.0-SNAPSHOT，以当前 POM、代码和测试为准。  
+**参考：** Peach Cloud 的中文 Javadoc、类型元数据、英文日志和可读性要求；保留 RPC 热路径及异步边界的特殊约束。
 
-## 1. 优先级
+## 1. 目标与治理边界
 
-正确性、安全、公开兼容性、可理解性、性能、可维护性、风格一致性。不要为了统一名称或缩短代码而破坏冻结的 Public Core API、Stable Type IDs、Wire v1、Schema Fingerprint 或配置键。所有行为改变先跑受影响测试。
+优先级：正确性 > 安全 > 性能与可靠性 > 可理解性 > 可维护性 > 风格。
 
-### 代码结构
+OTRYX 尚未 GA，不对历史开发版本承担 Java API、SPI、配置、Wire、Schema 或 Maven 坐标兼容义务。**这不表示允许引入协议错误、安全漏洞或 Consumer/Provider 不互通。** 任何对当前运行行为、资源生命周期或公开契约的修改均应与纯规范修改分开提交，并附测试及回滚方案。
 
-- `otryx-core` 只承载 API、协议、中立策略、编排和 SPI；第三方依赖落在 Adapter 模块，不向 Core 反向依赖 Vert.x/Nacos/Etcd/Fory/Spring。
-- Transport 负责网络帧及缓冲区所有权；Codec 负责序列化校验；Registry 负责注册发现/订阅；Runtime 负责准入、执行和结果；Starter 负责 Spring 装配。
-- 不为类行数机械拆分；优先分析变更原因、职责凝聚力、调用关系、生命周期、共享锁与可测性。
-- 优先显式依赖与不可变快照；Spring Bean 采用构造器注入；不要为了“现代化”无理由转换为 `record`、`var`、Stream、Optional 或反射代理。
-- 不允许随意新增 `common` / `misc` / `helpers` 这种无领域边界的收纳模块；算法/策略先选择已有明确的包和 SPI。
+- 采用能力族 Maven 聚合：registry、serialization、transport、proxy、observability、spring-boot；具体实现保持独立。
+- Core 只依赖中立 API、协议、运行时和 SPI，不反向依赖 Vert.x、Nacos、Etcd、Fory 或 Spring 的具体实现。
+- 优先显式依赖、构造器注入和清楚的资源所有权，不为目录对称而增加空模块或无意义抽象。
+- 不机械重构大类、Stream、Optional、record、var 或 reflection；先证明职责问题和实际收益。
 
-架构分层不仅靠源码扫描：Core 生产类与 Public API 的依赖方向还由 [ArchUnit 字节码测试](architecture-guardrails.md) 保护。新增 Java 基础设施依赖前需确认 Core 无逆向依赖；规则以 Maven 自动测试为准。
+## 2. 命名、格式和代码组织
 
-## 2. 命名
+| 对象 | 要求 |
+| --- | --- |
+| Package | 小写英文，按领域及职责分层；不新增 misc、temp 等杂物包 |
+| 类型 | UpperCamelCase，有业务/框架语义的名词或能力 |
+| 方法、参数、字段 | lowerCamelCase；方法优先动词表达语义 |
+| 常量 | UPPER_SNAKE_CASE，必要时体现单位和范围 |
+| 布尔方法 | is/has/can/supports 等正向语义，遵守 Bean 约定 |
+| 数值及超时 | 明示单位：Millis/Nanos/Bytes、maxInflightBytes 等 |
+| 错误类型 | 以具体失败原因命名，拒绝模糊 SystemException |
+| SPI 实现 | 技术名 + 契约名，如 NacosRegistry、VertxRpcTransportFactory |
 
-| 目标 | 必须/推荐 | 避免 |
-|---|---|---|
-| Package | 小写、领域/职责层次，`com.peachsoft.otryx.transport.vertx` | `util2`、`temp`、`misc` |
-| Class / Interface | `UpperCamelCase`、名词或明确能力：`RpcMethodCodec`、`RegistrySubscription` | 无意义 `I` 前缀、`DataManager` |
-| SPI 实现 | `<Technology><Contract>` 或明确策略名：`NacosRegistry`、`VertxRpcTransportFactory` | `DefaultImpl2`、`BaseUtils` |
-| Method | `lowerCamelCase`、动词 + 领域名：`resolveEndpoint`、`tryAcquire` | `handle` 滥用、`doStuff` |
-| Query/command | `find...` (可能不存在)、`require...` (找不到抛错)、`register...`、`release...` | `get...` 同时包含 IO/副作用却未声明 |
-| Boolean | `is...`、`has...`、`can...`、`supports...` 与 Java Bean 约定一致 | 含义相反、双重否定 |
-| Number/unit | `timeoutMillis`、`latencyNanos`、`maxInflightBytes`、`maxConcurrent` | `time`、`size`、`limit` 模糊 |
-| Constant | `UPPER_SNAKE_CASE`，带范围与单位 | 匿名 magic number / 重复字符串 |
-| Error | `RpcOverloadedException`、`RpcUnavailableException`，区分原因 | `SystemException` 之类含糊类型 |
-| Tests | `<behavior>Should<observableOutcome>` 或中文明确的测试 Javadoc | `test1`、不能解释目的的断言 |
+Java 源文件使用 UTF-8 无 BOM、LF、4 空格、行宽 120，禁止通配符 import、行尾空白和无意义空行。建议按 java/javax/jakarta、第三方、项目内包分组；导入顺序全面自动强制前应先评估全仓差异，不造成与行为变更混合的巨大格式化 PR。遵守现有 Checkstyle 零违规门禁。
 
-例外：已经公开的 Java/Record/注解成员即使命名欠佳，在 1.0.x 只能保留兼容（可新增非破坏性别名并安排后续大版本迁移）。RPC ID 和协议键绝不能因为编码风格更改。
+## 3. 中文 Javadoc
 
-## 3. Javadoc 与注释（中文）
+### 3.1 类型级元数据（已确认的 Peach Cloud 规范）
 
-适用类、接口、Record、注解、配置和非平凡 API。第一句描述**能力或契约**，而不是“XX 方法”；在调用方需要时说明 `null`、单位、顺序/可变性、异常条件、线程安全、阻塞/超时、幂等、取消、关闭、资源所有权和兼容要求。简洁是质量原则，不为覆盖率机械补注释。
+所有**手写 Java 顶层** Class、Interface、Enum、Annotation、Record 应具有中文类型 Javadoc 和以下三个标签，各出现一次：
 
-- 使用标准 `@param`、`@return`、`@throws`、`@since`、`@deprecated` 和 `{@code}` / `{@link}`；`@since` 必须由 Git 历史/发行信息证明，查不到就不填。
-- 不使用 Peach Cloud 的 `@Author`、`@Version`、`@CreateTime` 自定义标签；不凭当前时间伪造创建时间。
-- 公共 API 更改须同步签名、方法 Javadoc、测试、调用方和文档；接口覆写不复制整段内容，无额外语义可使用 `{@inheritDoc}`。
-- 内部注释解释“为什么”和安全边界（例如避免 EventLoop 阻塞、Lease 原子释放），不解释每个 if/赋值。
-- Record 构造参数 Javadoc 应对应真实组件；代码语法/泛型版本以 Java 21 为准。
-
-```java
+~~~java
 /**
- * 从本地快照查找指定服务的端点。
+ * 定义服务发现的公开行为边界。
  *
- * <p>此调用不访问远程注册中心；结果顺序不代表负载均衡优先级。</p>
+ * <p>端点列表返回当前缓存快照，不保证远端注册中心即时同步。</p>
  *
- * @param serviceKey 已标准化的服务键，不允许为 null
- * @return 端点快照；未发现时为空集合
- * @throws NullPointerException serviceKey 为 null 时抛出
+ * @Author Mr Shu
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/10/10 09:30
  */
-List<RpcEndpoint> findEndpoints(ServiceKey serviceKey);
-```
+~~~
 
-以上是契约写法示意，并非声明仓库存在该方法。不要凭模板许诺线程安全或异常，必须以实际实现为准。
+以上值仅用于演示格式；**不得直接复制作者、日期或版本到所有历史源文件**。
 
-## 4. 日志（英文）
+- @Author：使用有证据支持的作者/维护者署名；项目管理员身份不自动证明他撰写了历史代码。
+- @Version：记录可证实的类型版本或维护版本。新类型以当前开发版本为准，不随意写旧版本。
+- @CreateTime：使用已有可靠记录；否则可从 Git 首次引入该类型的提交时间取得可追溯的起点，但须按“版本控制首次出现时间”解释，不声称它等于本地首次编写时间。
+- 格式严格为 yyyy/M/d HH:mm，采用一致的项目时区口径；不可填 TODO、unknown、占位符或虚假数据。
+- 标准 @since 与 @Version 不相同；只有存在明确的引入版本证据时填写 @since。
 
-- SLF4J 参数化：`LOGGER.warn("RPC request rejected. serviceId={}, reason={}", serviceId, reason);`，字段名稳定，异常对象最后一个参数；记录实际发生的事件。
-- 禁止日志拼接、异常重复打印、敏感 Header/Metadata、完整请求/响应、访问密钥、密码、Token、签名 URL；响应结果日志记录状态与受批准标识即可。
-- `error` 代表需干预的失败，`warn` 代表非预期但可控的降级/拒绝，`info` 用于生命周期变化，热路径 per-call 正常处理通常不记录 info，`debug/trace` 仍需脱敏和负载审查。
-- 用户可见错误提示由 API/业务的国际化机制决定，技术内部异常消息英文优先；不要把日志语言强制应用于国际化响应。
-- Metrics 标签必须低基数；禁止把完整 endpoint、动态业务 ID、MessageId、Secret 直接作为 Metric Tag。
+根 Maven Javadoc Plugin 注册上述大小写严格一致的自定义标签（仅允许类型位置），原有 doclint=all 和 failOnWarnings=true 不得降低。Javadoc 的存在性、内容真实性与元数据格式是不同的检查维度。
 
-## 5. 禁止/受限 API（见 scripts/rules/java-api-rules.json）
+### 3.2 方法级与字段级契约
 
-| 分类 | 规则 | 理由 |
-|---|---|---|
-| H0 禁止（生产 Runtime） | `System.exit`、`Runtime.exec`、`ProcessBuilder`、`printStackTrace`、`System.out/err` | 破坏宿主/日志治理/命令执行风险 |
-| H0 禁止（Transport EventLoop） | `Thread.sleep`、`TimeUnit.sleep`、`CompletableFuture.join` 等同步阻塞 | 事件循环停顿和尾延迟 |
-| H0 禁止（可被静态证明的日志） | 参数拼接、字符串首参含中文的运行日志 | 结构漂移/国际化边界 |
-| H1 架构审查 | 无界队列/线程池、热路径服务扫描/远程 IO、同步 `whenComplete` 回调、动态反射 | 背压、分配和状态风险 |
-| H1 异常审查 | `catch(Throwable)`、忽略中断、空 catch、泛化重试、隐藏失败返回值 | 故障不可见、资源泄漏 |
-| H2 风格建议 | 无意义缩写、巨型“Manager/Utils”、机械 Javadoc | 可读性差 |
+公开 API/SPI、重要配置、关键生命周期、复杂异步/线程/背压/资源方法必须准确说明：
 
-不能把 `Future.join` 在**所有** Java 线程绝对禁止：启动阶段、worker、测试和 Benchmark 可能合理使用；也不能把 `synchronized`、`ThreadLocal`、反射或 Stream 一刀切，先查线程上下文与热点证据。
+- 参数单位、可空性、校验、枚举取值和所有权
+- 返回值顺序、快照/可变性、空结果、异步完成语义
+- 具体异常、错误状态、可能的副作用
+- 线程归属、阻塞、超时、取消、中断、关闭和释放责任
+- 需要保证的幂等条件、失败后行为及当前版本协议约束
 
-### 例外
+使用 @param、@return、@throws、{@code}、{@link}，继承契约无变化时可用 {@inheritDoc}。不要仅重复方法名、逐行解释 if、伪造线程安全保证或为了注释覆盖率增加无意义内容。
 
-所有自动禁用规则需明确扫描范围。纯测试/CLI/Benchmark 可有特殊许可；生产代码的例外必须先给出可复现需要、风险缓解、替代方案、owner 与追踪 Issue，并通过 Code Review，不允许单纯放 `@SuppressWarnings` 或修改 Lint 脚本跳过。
+### 3.3 全仓迁移门禁
 
-### PR-5：新增自动检查边界
+新增工具：
 
-`B001` 强制 Core 生产源码不能引入 Vert.x、Nacos、Etcd、Fory、Spring 的实现依赖；不影响 Adapter 模块自身的正常引用。
+~~~bash
+python3 scripts/test_java_doc_metadata.py
+python3 scripts/check_java_doc_metadata.py --audit --report target/java-javadoc-metadata-audit.json
+python3 scripts/check_java_doc_metadata.py --changed --base <base-commit-sha>
+python3 scripts/check_java_doc_metadata.py --enforce-all
+~~~
 
-`R002/R003` 禁止在生产运行时代码中直接创建无容量参数的 `LinkedBlockingQueue` 或 `Executors.newCachedThreadPool`。固定容量、VirtualThread 配合独立 Admission 的方案不应被错误拦截。
+- **PR-02：** 全量 --audit 生成带文件/行号/类型的债务台账，不将历史缺口假装为合规；变更过的 Java 源文件由 --changed 严格检查。
+- **PR-03 至 PR-06：** 按模块核实和整改存量手写类型，复杂行为问题另建 PR。
+- **PR-07：** 全量缺口归零后启用 --enforce-all CI；对确实不能核实的历史数据采用有审批、责任人、依据的例外台账，不通过伪造字段来“清零”。
 
-`L003` 禁止在常见 SLF4J 调用首参使用 `String.format()` 进行立即格式化；`L004` 将潜在 Token、Secret、Password 日志列为人工审查告警，而**不是**声明已经实现敏感字段数据流追踪。
+工具是轻量源文本检查，并非完整 Java AST 或元数据真实性鉴定；Checkstyle/Javadoc/Code Review 继续独立运行。测试和独立 Benchmark 的手写 Java 也纳入审计，编译器临时生成文件与 target 不纳入。
 
-`N001` 将新增 `IConnectionFactory` 一类 I 前缀接口标为审查项。**对于历史已公开的接口，不得直接因该规则更名**；若需改名必须提供迁移、二进制兼容和 SPI 检查。
+## 4. 英文日志（原生 SLF4J）
 
-上述检查由 `scripts/rules/java-api-rules.json` 和对应正反向 fixture 管理，历史审计仅生成报告；改变代码前应区分真实风险与误报。
+保留 LoggerFactory，不为统一日志而引入 Lombok。统一使用稳定、简短、英文参数化消息：
 
-## 6. 并发、性能与安全
+~~~java
+private static final Logger LOGGER = LoggerFactory.getLogger(Example.class);
 
-- EventLoop 不调用阻塞 IO，不执行用户业务回调；同步 `CompletableFuture` 结束操作可能执行注册回调，必须核对上下文。
-- Semaphore/Lease、队列、Retry Budget、分片 Buffer、inflight-byte budget 必须在成功、异常、取消、拒绝、关闭路径一并核查。
-- Frame/Decoder 不接受未预算的任意大 payload 或无限对象图；TLS 安全失败不能回退 PLAINTEXT；Registry 断链必须可恢复。
-- 只对幂等可重试操作应用显式预算内 Retry；不能用无限循环、无时限连接/重连替代治理。
-- 性能优化必须先有真实热点，再用 JMH/JFR/allocation、端到端 p99/p99.9 和固定硬件证据评估，不能将 Shared CI smoke 解释为正式业绩。
+LOGGER.warn("RPC request rejected, serviceId={}, methodId={}, reason={}",
+        serviceId, methodId, reason);
+~~~
 
-Checkstyle 在 PR-8 建立 [AST 审计基线](java-style-audit.md)，在 PR-13 依据 **19 份模块 XML、208 个文件、0 违规**的已验证结果升级为严格 CI 门禁，涵盖 TypeName、MethodName、MemberName、ConstantName、ParameterName、MissingJavadocType/Method、AvoidStarImport、LineLength 和 FileTabCharacter。所有配置规则的 warning 都会阻断 CI；这不等于已证明 Javadoc 语义、敏感数据流、并发和公共兼容性完全正确。
+| 级别 | 适用场景 |
+| --- | --- |
+| ERROR | 组件无法继续提供必要能力、需立即关注的不可恢复失败 |
+| WARN | 非正常但可恢复的降级、异常拒绝、重试耗尽或连接风险 |
+| INFO | 初始化成功、服务上线/下线、关键配置与生命周期变化 |
+| DEBUG | 经排障需要开启的详细但非敏感过程信息 |
+| TRACE | 专项调试，评估开销和数据敏感性后有界使用 |
 
-## 7. 检查和存量治理
+- 每次正常 RPC 调用、编解码、心跳等热路径**不记录 INFO**。
+- 禁止运行时动态拼接日志字符串、String.format 预格式化、重复打印同一异常。
+- 只记录排障所需的非敏感白名单字段，例如 requestId、serviceId、methodId、errorType、reason、elapsedMillis；字段名保持一致。
+- 不直接记录 Token、密码、私钥、签名 URL、完整请求/响应、业务参数或未经筛选的 Metadata。
+- Throwable 末尾参数并非绝对安全。用户业务异常/外部 SDK 异常的 message 与堆栈可能包含凭据，应优先记录脱敏 errorType 与请求关联 ID；若必须输出堆栈须完成来源和权限审查。
+- OpenTelemetry Span、Observer、JFR 和其他遥测出口执行相同的脱敏边界；Metrics 标签不得使用请求 ID 或任意业务输入等高基数字段。
+- 高频故障须考虑限频/采样/状态转换记录，不能造成日志风暴或不必要的字符串分配。
 
-```bash
+## 5. 异常、并发与资源生命周期
+
+- 在异步隔离边界不要机械地把 catch(Throwable) 改为 catch(Exception)；需要验证 Future/CompletionStage 是否结束以及 Lease、Permit、ByteBudget 是否归还。
+- 禁止静默吞异常；InterruptedException 必须按线程和取消契约处理。
+- Vert.x EventLoop 不执行阻塞 I/O、同步等待 Future、Thread.sleep 或用户任意阻塞回调。
+- 对 Retry、Circuit Breaker、Admission、连接池、队列、缓冲区等明确上限与退避/拒绝策略，不创建无界线程池或无限缓冲。
+- 资源取消、超时、拒绝、异常、关闭所有路径要可被测试验证；TLS 验证失败不得静默回退至不安全连接。
+- 热路径性能改变需要对照真实基线与 JMH/JFR、allocation、端到端 p99 测试，Shared CI Smoke 不等于生产性能承诺。
+
+## 6. 自动化检查和例外
+
+既有 scripts/check_java_conventions.py 检查高置信度受限 API（如 System.exit、ProcessBuilder、System.out、动态拼接日志、EventLoop sleep）及建议性风险（catch Throwable、敏感字段）。Checkstyle 严格门禁覆盖配置中真实启用的类型/方法/字段命名、public Javadoc、import、行宽等规则。
+
+静态扫描无法证明所有日志都安全，也无法证明 Javadoc 与真实线程/资源契约相符；这些必须由代码审查、故障注入和回归测试验证。历史审计数字只代表当时的规则和提交，不可作为当前全仓合规证明。
+
+### 建议执行
+
+~~~bash
 python3 scripts/check_project.py
+python3 scripts/test_java_conventions.py
+python3 scripts/test_java_doc_metadata.py
 python3 scripts/check_java_conventions.py --audit --report target/java-conventions-audit.json
-python3 scripts/check_java_conventions.py --changed --base <base-commit-sha>
+python3 scripts/check_java_doc_metadata.py --audit --report target/java-javadoc-metadata-audit.json
+python3 scripts/test_checkstyle_audit.py
+mvn -B -ntp -Pstyle-audit -DskipTests install
+python3 scripts/summarize_checkstyle_audit.py --json target/checkstyle-audit.json --markdown target/checkstyle-audit.md --enforce-zero
 mvn -B -ntp clean verify -Pquality
-```
+~~~
 
-基础 Lint 只能识别特定语法，无法证明完整 AST、敏感数据数据流或 JVM 并发正确性。PR 阻断仅针对高置信度规则；全仓 `--audit` 统计包括存量违规作为整改计划，未完成的历史差异需要透明报告。纯注释修复和有行为变化的重构应分 PR，标注兼容性和可回滚性。
+源码行为变更还须受影响测试、Examples 及合适的性能验证。变更的每个 PR 以精确 Head SHA 的 CI 为依据；仅在全部相关检查通过后合并，再核对 main CI。
+
+完整规则由本文件、AGENTS.md 和共享 Java Engineering Skill 协同维护，不另复制多个独立规范版本。

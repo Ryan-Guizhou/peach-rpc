@@ -42,7 +42,7 @@ ArchUnit 不应加载或启动任何 Nacos/Etcd 服务端，测试只检查已�
 
 ## 3. 与接口兼容约束的关系
 
-架构依赖正确并不等于 Wire 兼容、Java 二进制兼容和业务语义正确。进行接口重命名、Record 字段变更、Stable Type ID、Codec、Schema Fingerprint 修改时仍需按 `using-otryx-compatibility` 进行设计审查与 Rolling Compatibility 测试。
+架构依赖正确并不等于 Wire 兼容、Java 二进制兼容和业务语义正确。进行接口重命名、Record 字段变更、Stable Type ID、Codec、Schema Fingerprint 修改时仍需按当前 `using-otryx-compatibility` 进行契约正确性审查、Consumer/Provider 互操作与针对性协议测试；首发前不要求历史开发版本兼容。
 
 本规则不强制大规模 package 调整，也不强制“所有接口独立成另一个 Maven 模块”；只有发现真实依赖反向渗透时才需修正。必要例外须有设计说明、兼容性证据、独立审批，禁止直接删除 ArchUnit 规则使 CI 转绿。
 

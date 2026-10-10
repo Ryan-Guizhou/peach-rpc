@@ -11,7 +11,7 @@
 <!-- doc-section:overview -->
 ## 项目简介
 
-**OTRYX RPC** 是由 Peach RPC 1.0.x 演进而来的轻量、高性能、高可用 Java RPC 框架。
+**OTRYX RPC** 是面向首次正式发布的轻量、高性能、高可用 Java RPC 框架，支持可替换传输、注册中心和序列化实现。
 新品牌以 Otti 科技水獭为吉祥物：**让分布式通信，简单而可靠。**
 
 **当前源码：1.0.0-SNAPSHOT（首发开发版，尚未正式发布）**
@@ -19,7 +19,7 @@
 **GitHub 仓库：** [Ryan-Guizhou/otryx-rpc](https://github.com/Ryan-Guizhou/otryx-rpc)。品牌商标、图片来源及 Maven Central Namespace 尚有外部验收条件，参见 [发布前核查](docs/publication-readiness.md)。
 · **Java：21** · **Spring Boot：3.5.4** · **Wire：v1** · **License：MIT**
 
-本版本迁移了 Maven 坐标、Java 包名及公开 API。Wire v1 二进制帧仍保持冻结，但**不保证与 Peach RPC 1.0.x 的 Java API、Type ID、Method ID、Schema Fingerprint 互通**，详见[迁移指南](docs/migration.md)。
+项目目前尚未正式发布，不对历史开发版提供 Java API、SPI、Wire、Schema 或配置兼容承诺；当前版本必须通过协议正确性、Consumer/Provider 互操作和安全验证。工程规范参见[Java 编码规范](docs/engineering/java-coding-standard.md)。
 
 <!-- doc-section:capabilities -->
 ## 核心能力
