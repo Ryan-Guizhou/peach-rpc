@@ -3,7 +3,13 @@ package com.peachsoft.otryx.benchmarks;
 import com.peachsoft.otryx.api.OtryxRpcContract;
 import com.peachsoft.otryx.api.OtryxRpcIdempotent;
 
-/** 代理调用开销基准服务。 */
+/**
+ * 代理调用开销基准服务。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/23 15:46
+ */
 @OtryxRpcContract
 public interface BenchmarkService {
 

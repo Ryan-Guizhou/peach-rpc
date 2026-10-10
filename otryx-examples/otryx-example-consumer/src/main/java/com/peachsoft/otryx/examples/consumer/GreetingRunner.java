@@ -16,7 +16,13 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
-/** 示例 Consumer，在应用启动后完成一次真实 RPC 调用。 */
+/**
+ * 示例 Consumer，在应用启动后完成一次真实 RPC 调用。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/28 11:36
+ */
 @Component
 public class GreetingRunner implements ApplicationRunner {
 

@@ -22,6 +22,10 @@ import org.openjdk.jmh.annotations.Warmup;
  *
  * <p>与 Wire v1 对齐的 Object[] 载荷不作格式修改。该基准仅观察 Codec
  * 层，不代表完整 RPC 的网络吞吐、p99 或 10k 并发。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/10/9 16:36
  */
 @BenchmarkMode({Mode.AverageTime, Mode.SampleTime})
 @OutputTimeUnit(TimeUnit.NANOSECONDS)

@@ -31,6 +31,10 @@ import java.util.concurrent.CountDownLatch;
  *
  * <p>基准使用固定 Endpoint，不引入 Nacos/Etcd 控制面开销；Provider/Consumer
  * 可在不同主机启动。该入口绝不能与 Dubbo 依赖打包在同一个 JVM 中。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/10/10 14:27
  */
 public final class OtryxComparisonMain {
 

@@ -41,6 +41,10 @@ import org.openjdk.jmh.annotations.Warmup;
  *
  * <p>两个方法都固定单并发和相同字符串负载。两者 AverageTime 的差值可作为
  * 当前环境下的 RPC Added Latency；正式结果仍需记录机器、JVM、payload 与 fork 参数。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/24 11:40
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)

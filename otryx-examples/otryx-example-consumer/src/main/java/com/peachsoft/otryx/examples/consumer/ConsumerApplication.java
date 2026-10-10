@@ -3,7 +3,13 @@ package com.peachsoft.otryx.examples.consumer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-/** OTRYX RPC Consumer 示例应用。 */
+/**
+ * OTRYX RPC Consumer 示例应用。
+ *
+ * @Author Ryan
+ * @Version 1.0.0-SNAPSHOT
+ * @CreateTime 2026/9/28 11:36
+ */
 @SpringBootApplication
 public class ConsumerApplication {
 
