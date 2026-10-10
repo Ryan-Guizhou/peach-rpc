@@ -19,7 +19,7 @@
 **GitHub 仓库：** [Ryan-Guizhou/otryx-rpc](https://github.com/Ryan-Guizhou/otryx-rpc)。品牌商标、图片来源及 Maven Central Namespace 尚有外部验收条件，参见 [发布前核查](docs/publication-readiness.md)。
 · **Java：21** · **Spring Boot：3.5.4** · **Wire：v1** · **License：MIT**
 
-本版本迁移了 Maven 坐标、Java 包名及公开 API。Wire v1 二进制帧仍保持冻结，但**不保证与 Peach RPC 1.0.x 的 Java API、Type ID、Method ID、Schema Fingerprint 互通**，详见[迁移指南](docs/migration-to-otryx.md)。
+本版本迁移了 Maven 坐标、Java 包名及公开 API。Wire v1 二进制帧仍保持冻结，但**不保证与 Peach RPC 1.0.x 的 Java API、Type ID、Method ID、Schema Fingerprint 互通**，详见[迁移指南](docs/migration.md)。
 
 <!-- doc-section:capabilities -->
 ## 核心能力
@@ -53,7 +53,7 @@ Wire Protocol v1 的 32 字节 Header、消息和 Codec 标识、历史 Registry
 - 新旧服务先做版本隔离或蓝绿部署；互通能力必须按业务契约实际验证。
 - 旧版 Registry 兼容键保持为 peach.rpc.protocol.version / peach.rpc.schema.version / peach.rpc.schema.fingerprint。
 
-[详细兼容协议](docs/wire-compatibility.md) · [迁移与回滚指南](docs/migration-to-otryx.md)
+[详细兼容协议](docs/wire-compatibility.md) · [迁移与回滚指南](docs/migration.md)
 
 <!-- doc-section:quick-start -->
 ## 快速开始
@@ -93,19 +93,19 @@ otryx:
       type: memory
 ~~~
 
-完整配置约束和 TLS/Nacos/Etcd 示例见 [Starter 文档](docs/starter.md)、[生产配置](docs/production-configuration.md)。
+完整配置约束和 TLS/Nacos/Etcd 示例见 [Starter 文档](docs/reference/starter.md)、[生产配置](docs/configuration.md)。
 
 <!-- doc-section:operations -->
 ## 生产与性能
 
 先通过项目现有准入、背压、超时、重试、TLS 与可观测性规范验证目标环境；不可将 GitHub shared runner 的 smoke 结果解释为生产吞吐、p99 或容量 SLO。
 
-[性能证据](docs/performance-evidence.md) · [容量规划](docs/capacity-planning.md) · [可观测性](docs/observability.md)
+[性能证据](docs/reference/performance-evidence.md) · [容量规划](docs/reference/capacity-planning.md) · [可观测性](docs/observability.md)
 
 <!-- doc-section:documentation -->
 ## 文档
 
-[文档总览与阅读导航](docs/index.md) · [快速开始](docs/getting-started.md) · [用户指南](docs/user-guide.md) · [运行与排障](docs/operations.md) · [设计与协议](docs/architecture.md) · [SPI](docs/spi.md) · [安全](docs/security.md) · [品牌规范](docs/brand-guidelines.md) · [迁移指南](docs/migration-to-otryx.md) · [发布核查](docs/publication-readiness.md)
+[文档总览与阅读导航](docs/index.md) · [快速开始](docs/getting-started.md) · [用户指南](docs/user-guide.md) · [运行与排障](docs/operations.md) · [设计与协议](docs/architecture.md) · [SPI](docs/spi.md) · [安全](docs/security.md) · [品牌规范](docs/brand-guidelines.md) · [迁移指南](docs/migration.md) · [发布核查](docs/publication-readiness.md)
 
 <!-- doc-section:development -->
 ## 开发与贡献
