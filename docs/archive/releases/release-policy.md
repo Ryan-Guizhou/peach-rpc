@@ -65,7 +65,7 @@ Patch Release 使用稳定语义化版本：
 - `README.md`；
 - `README.en-US.md`；
 - `CHANGELOG.md`；
-- `docs/release-notes-<version>.md`。
+- `docs/archive/releases/release-notes-<version>.md`。
 
 ## 4. 发布门禁
 
